@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 93 (live defect: OOM + Neon transfer)
 **Branch:** `sprint-242-a-poll-downloads-only-the-work-it-takes`
-**Status:** SPEC
+**Status:** BUILT 2026-09-29 on `sprint-242-a-poll-downloads-only-the-work-it-takes` (cloud session), not merged — owed: `uv lock`, Windows `make ci`, `make gate-ran`, F1, retag, F2, memory revert
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-244](../design-log.md) (the defect, measured; the fix direction; the Azure-Postgres option kept) · the builder's design decisions go to the **next free DL** (`DL-246` at spec time: S241 holds DL-243, the planner DL-244/245)
@@ -350,17 +350,38 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+All read whole, first time, 2026-09-29, before the first code change: the six agents' `laws.md` and
+`test-plan.md` below, `docs/laws/conventions.md`, `docs/laws/drift-register.md` (189 lines),
+ADR-0012 (with its S232 correction) and ADR-0014.
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| `kernel/graph*.py` (port, memory, Postgres, guarded) | conventions; ADR-0012; ADR-0014 | ADR-0012 Decision 2 (no pack concept in the substrate); ADR-0014 (the `GraphStore` port over the `nodes`/`edges` spine, no schema change outside Alembic) | Yes: the method takes the label and edge as arguments and names none; the recency filter reads a generic `created_at` prop by text so no timestamp cast can fault a poll; no migration (the anti-join uses the existing edge primary key and `edges_child` index). ADR-0014's "six-method graph port" becomes seven: a count in an ADR's context, not a decision, so no ADR edit |
+| `agents/provider/poll.py`, `barrier_history.py` | provider `laws.md` v1.5 + `test-plan.md` | `PROV-TRG-02` (a recorded need found unconsumed is a trigger; a poll that finds none fetches nothing) ⬜; `PROV-TRG-04` 🟩 (only a **current** run, `is_current_run`, DL-241 D11); `PROV-IDM-02`; DRIFT-082 | Yes: `TRG-04`'s "an older run is never fetched" is kept literally: the SQL bound only narrows, and `is_current_run` still decides on what is fetched |
+| `agents/scanner/poll.py` | scanner `laws.md` v1.3 + `test-plan.md` | `SCAN-TRG-01..03` (RPC and pub/sub only; `TRG-03` ⬜), `SCAN-IDM-02` 🟩, `SCAN-STA-01` ⬜ | No; the TRG silence is recorded (DRIFT-085) |
+| `agents/analyst/poll.py` | analyst `laws.md` v1.6 + `test-plan.md` | `ANLZ-TRG-02`/`-03` (pub/sub; `TRG-03` ⬜), `ANLZ-IN-02`, `ANLZ-IDM-02` 🟩 | Yes: the sync-attempt condition stays part of "pending", so it is applied after the key query, on pending keys only |
+| `agents/portfolio_manager/poll.py` | PM `laws.md` v1.10 + `test-plan.md` | `PM-TRG-02`/`-03` (`TRG-03` ⬜), `PM-IDM-02` 🟩, `PM-IN-05` (the lineage walk this sprint copies) | No |
+| `agents/monitor/poll.py` | monitor `laws.md` v1.1 + `test-plan.md` | `MON-TRG-02`, `MON-TRG-04` ⬜, `MON-IDM-02` 🟩 (not idempotent per invocation: the poll is what keeps a run from being re-monitored), `MON-ORD-01` ⬜ (iteration order) | Yes: `MON-ORD-01` makes order explicit, so the keys come back in `list_nodes` order |
+| `agents/reporter/poll.py`, `performance_inputs.py` | reporter `laws.md` v1.3 + `test-plan.md` | `RPT-TRG-02`/`-04` (`TRG-04` ⬜), `RPT-OUT-07` 🟩 (benchmark bars on `MarketData`), `RPT-IDM-03` 🟩 (nothing after the PM run's as-of), `RPT-FAIL-04` 🟩 | Yes: the run's own `MarketData` keeps the `window_end ≤ as-of` and bar-date guards, so `RPT-IDM-03` holds on a re-report |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **No.** No
+`contracts/` file changes and no agent promises anything new: every poll finds the same work in the same
+order, and the reporter's benchmark is still bars on a `MarketData` bounded by the as-of. The one new
+surface is the kernel port method, and the kernel has no law book. No `laws.md` is edited.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** none. One tension recorded, not a contradiction:
+ADR-0014's context says "the same six-method graph port"; the port now has seven methods.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** (1) the scanner's `TRG` clauses describe RPC and
+pub/sub, not the graph-pull poll the fleet runs (DRIFT-085); (2) the same silence in the analyst, PM,
+monitor and reporter `TRG` clauses, and no clause anywhere bounds what a poll may download to decide
+it has no work (DRIFT-086); (3) `RPT-OUT-07` says the benchmark is "bars on `MarketData`" but not
+**which** `MarketData`: the code read the latest by `window_end`, now the run's own (DRIFT-087).
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** none. The new tests cite `SCAN-TRG-03`, `ANLZ-TRG-03`,
+`PM-TRG-03`, `MON-TRG-04`, `RPT-TRG-04` and `PROV-TRG-02`, but each proves only the poll's half of its
+clause (no download to decide there is no work), not "idle ⇒ zero provider calls and zero writes"; the
+test plans are read-only here and the rows stay ⬜ (conventions §7a).
 
 ---
 
@@ -368,48 +389,91 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1–A8 | *to fill* | | | |
+| A1 | `test_keys_without_an_outgoing_edge_come_back_in_list_order`; `test_the_guarded_store_reads_through` | `tests/test_graph_keys_without_edge.py` | PASS | DL-246 D1/D3 (kernel: no law book) |
+| A2 | `test_the_anti_join_selects_the_key_and_nothing_else[outgoing/incoming]`; `test_the_store_sends_values_as_parameters_and_reads_keys_only`; `test_a_naive_bound_is_refused_and_faulted`; `test_the_anti_join_on_a_real_postgres_when_configured` (opt-in, `POSTGRES_TEST_DSN`; skipped in the gate, **run by hand against a local PostgreSQL 16.13: PASS**) | `tests/test_graph_postgres_keys.py` (fake: `tests/graph_postgres_keys_fake.py`) | PASS | DL-246 D1–D3 |
+| A3 | `test_the_created_at_bound_keeps_only_current_nodes` (at/after in, 1 s before out, +1 µs in; **a missing or non-string `created_at` is excluded**); `test_the_bound_compares_in_utc_and_refuses_a_naive_instant` | `tests/test_graph_keys_without_edge.py` | PASS | DL-246 D2 |
+| A4 | `test_no_poll_downloads_a_payload_to_find_its_work[provider, scanner, analyst, portfolio_manager, monitor, reporter, barrier_history]` | `tests/test_poll_payloads.py` (spy + fixtures: `tests/poll_payload_fixtures.py`) | PASS (all 7 red before the fix) | `PROV-TRG-02`, `PROV-TRG-04`, `SCAN-TRG-03`, `ANLZ-TRG-03`, `PM-TRG-03`, `MON-TRG-04`, `RPT-TRG-04` |
+| A5 | `test_the_memory_store_finds_the_old_pending_set_in_order[×7]`; `test_the_postgres_store_finds_the_old_pending_set_in_order[×7]` — each finder against the pre-fix list-then-walk code kept verbatim as an oracle (`tests/poll_reference.py`): equal node lists, same order | `tests/test_poll_same_work.py` | PASS | `PROV-TRG-02`, `PROV-TRG-04`, `SCAN-IDM-02`, `ANLZ-IDM-02`, `PM-IDM-02`, `MON-ORD-01`, `RPT-TRG-04` |
+| A6 | `test_a_run_benchmarks_on_its_own_market_data_by_lineage` (the other run's later `MarketData` is never read; no `MarketData` listing) | `agents/reporter/tests/test_benchmark_lineage.py` | PASS | `RPT-OUT-07`, `RPT-IDM-03` |
+| A7 | `test_no_benchmark_on_the_runs_own_node_is_the_no_benchmark_path` ("missing benchmark", another run's series never used); `test_the_runs_own_node_without_a_usable_benchmark_gives_none[×6]`; `test_a_broken_lineage_gives_no_benchmark_and_never_another_runs` | `agents/reporter/tests/test_benchmark_lineage.py`, `test_benchmark_lineage_edges.py` | PASS | `RPT-OUT-07`, `RPT-NEV-03`, `RPT-IDM-03` |
+| A8 | `test_the_barrier_backlog_is_never_fetched` (71 stale runs without `BarrierHistory` + 1 current: `fetched == ["current"]`) | `tests/test_poll_payloads.py` | PASS | `PROV-TRG-04` |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** `surfaces/tests/test_dashboard_read_cache.py::test_caching_graph_store_caches_key_and_edge_lookups` (the dashboard's `CachingGraphStore` implements the port, so it gained the method). Existing tests adjusted, behaviour unchanged: four reporter fixtures now link their `MarketData` into the PM run's lineage (`test_performance.py`, `test_performance_inputs_edges.py`, `test_performance_snapshot.py` ×2; the `RPT-FAIL-04` double now fails the `DERIVED_FROM` hop instead of a `MarketData` listing); `tests/test_replay_fidelity_facts.py` expects the seventh port method on the read-only export view (which refuses it, like its walks); the supervisor's `_BrokenGraph` double now subclasses the in-memory store so it keeps the whole port.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill (BUILT)*
+**Status:** BUILT 2026-09-29 — not merged. Branch `sprint-242-a-poll-downloads-only-the-work-it-takes`; the cloud session's own branch `claude/confident-archimedes-sz4so4` carries the same commit.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container's clone of `yury-gurevich/trading-agents`, branch cut from `main` at `6851752`; **no `.env`**, no `gh`, no Azure. Python deps from the untouched `uv.lock` (`uv run --frozen`). One extra local observation: a throwaway PostgreSQL 16.13 cluster in the container, migrated with the repo's Alembic `0001_spine`, for the opt-in live SQL test; it is not the fleet's Neon and proves the SQL parses and answers, nothing about bytes on the fleet.
 
-**Result:** *to fill — what is now true, in the artefact's own words*
+**Result:** `GraphStore.keys_without_edge(label, edge_type, *, downstream=True, created_at_from=None)` returns keys only — in Postgres from one `NOT EXISTS` anti-join whose `SELECT` list is `n.key`, ordered `ORDER BY n.key` as `list_nodes` is. The provider, scanner, analyst, PM, monitor and reporter `find_pending` and the provider's `find_pending_barrier_history` find their work through it (`kernel.graph_pending.pending_nodes`) and `get_node` only the keys that lack their processed edge; none lists its label or walks its processed edge (A4), each finds the pre-fix set in the pre-fix order on both stores (A5), and the barrier poll never reads a run older than `CLAIM_RUN_MAX_AGE` (A8). The reporter's benchmark reads one `MarketData`, its run's own, by `PMRun.source_analyst_run_id` → `AnalystRun` ← `ScanRun` → `MarketData` (A6/A7).
 
-**Files changed:** *to fill*
+**Files changed:** kernel `graph.py`, `graph_memory.py`, `graph_guarded.py`, `graph_postgres.py` (split), `graph_support.py`; new `kernel/graph_postgres_reads.py`, `graph_postgres_keys.py`, `graph_pending.py`. Agents: `provider/poll.py`, `provider/barrier_history.py`, `scanner/poll.py`, `analyst/poll.py`, `portfolio_manager/poll.py`, `monitor/poll.py`, `reporter/poll.py`, `reporter/performance_inputs.py`; new `reporter/benchmark_input.py`. Port implementers outside the scope list, changed only to keep the port whole: `surfaces/dashboard/read_cache.py`, `scripts/replay_fidelity_facts.py`. Tests as listed above. Docs: `docs/design-log.md` (DL-246), `docs/laws/drift-register.md` (DRIFT-085/086/087), this spec, `docs/sprints/README.md`, `docs/sprints/INDEX.md`. **No `contracts/`, no `laws.md`, no `test-plan.md`, no `pyproject.toml`, no `uv.lock`.**
 
-**Design decisions:** *to fill — the DL taken and where the rejected alternatives are*
+**Design decisions:** [DL-246](../design-log.md) — D1 the method and `pending_nodes`, D2 the recency filter in the method (text order, `COLLATE "C"`, `is_current_run` still decides), D3 order = each store's own `list_nodes` order, D4 the read-side mixin split; each with its rejected alternatives, plus the residue named for the follow-up.
 
-**Proof — the red run first:**
+**Proof — the red run first:** (A1/A3/A4/A8 and A6/A7, on `6851752` + the new tests only, before any implementation)
 
 ```text
-to fill
+$ uv run pytest --no-cov tests/test_graph_keys_without_edge.py tests/test_poll_payloads.py
+E   AttributeError: 'InMemoryGraphStore' object has no attribute 'keys_without_edge'   (×3)
+E   AttributeError: 'GuardedGraphStore' object has no attribute 'keys_without_edge'
+E   AssertionError: poll listed every RunRequest with its props
+E   AssertionError: poll listed every MarketData with its props
+E   AssertionError: poll listed every ScanRun with its props
+E   AssertionError: poll listed every AnalystRun with its props
+E   AssertionError: poll listed every ExecutionRun with its props
+E   AssertionError: poll listed every MonitorRun with its props
+E   AssertionError: poll listed every AnalystRun with its props                       (×2, barrier)
+12 failed in 0.58s
+
+$ uv run pytest --no-cov agents/reporter/tests/test_benchmark_lineage.py
+E   AssertionError: the reporter listed every MarketData
+E   AssertionError: assert 'missing benchmark' in '… Performance: no usable sessions since 2026-08-10 (performance inputs unavailable)'
+FAILED agents/reporter/tests/test_benchmark_lineage.py::test_a_run_benchmarks_on_its_own_market_data_by_lineage
+FAILED agents/reporter/tests/test_benchmark_lineage.py::test_no_benchmark_on_the_runs_own_node_is_the_no_benchmark_path
+2 failed in 0.33s
 ```
 
 **Proof — the green run:**
 
 ```text
-to fill
+$ uv run pytest --no-cov tests/test_graph_keys_without_edge.py tests/test_graph_postgres_keys.py \
+    tests/test_poll_payloads.py tests/test_poll_same_work.py \
+    agents/reporter/tests/test_benchmark_lineage.py agents/reporter/tests/test_benchmark_lineage_edges.py
+SKIPPED [1] tests/test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+39 passed, 1 skipped in 0.56s
+
+$ POSTGRES_TEST_DSN=<local PostgreSQL 16.13, migrated 0001_spine> uv run pytest --no-cov \
+    tests/test_graph_postgres_keys.py tests/test_graph_postgres.py -k "real_postgres or round_trip"
+2 passed, 10 deselected in 0.52s
 ```
 
-**Guards planted:** *to fill — per plant: what, red, restored*
+**Guards planted:** each on the finished tree, run, then restored from a copy (the restored tree is the one `make ci` passed):
 
-**Module line counts:** *to fill*
+1. **The Postgres SQL selects `n.props` again** (`SELECT n.key, n.props` in `KEYS_WITHOUT_OUTGOING_SQL`) → `E AssertionError: assert 'n.key, n.props' == 'n.key'` · `FAILED …test_the_anti_join_selects_the_key_and_nothing_else[outgoing]` · 1 failed, 3 passed, 1 skipped. Restored.
+2. **The scanner's poll back on `list_nodes`** (list `MarketData`, walk `SCANNED_BY` per node) → `E AssertionError: poll listed every MarketData with its props` · `FAILED …[scanner]` · 1 failed, 7 passed. Restored.
+3. **The reporter picks the latest `MarketData` by `window_end`** (list all, keep the max at or before the as-of) → `E AssertionError: the reporter listed every MarketData` and `E AssertionError: assert 'missing benchmark' in '…'` · 2 failed. Also run without the spy, on a plain store over the same fixture: planted `closes read: {08-10: 200.0, 08-11: 202.0, 08-12: 204.0}` (the other run's series), restored `{08-10: 100.0, 08-11: 101.0}`. Restored.
+4. **The recency filter dropped** (no `created_at_from` in `find_pending_barrier_history`) → `E AssertionError: assert ('stale-00', …) == ('current',)` … `Left contains 71 more items` and `E AssertionError: assert ['stale-00', …] == ['current']` · the barrier A4 case and A8 red. Restored.
 
-**`make ci`:** *to fill — file, exit code, passed/skipped, coverage, audit, detect-secrets*
+**Module line counts:** all < 200. Kernel: `graph.py` 98, `graph_memory.py` 176, `graph_guarded.py` 81, `graph_postgres.py` 147 (was **199**), `graph_postgres_reads.py` 113, `graph_postgres_keys.py` 58, `graph_pending.py` 34, `graph_support.py` 121, `graph_postgres_queries.py` 150 (untouched). Agents: `provider/poll.py` 145, `provider/barrier_history.py` 191, `scanner/poll.py` 78, `analyst/poll.py` 160, `portfolio_manager/poll.py` 111, `monitor/poll.py` 127, `reporter/poll.py` 44, `reporter/performance_inputs.py` 146 (was **190**), `reporter/benchmark_input.py` 87. Others: `surfaces/dashboard/read_cache.py` 174, `scripts/replay_fidelity_facts.py` 99. Tests: `tests/poll_payload_fixtures.py` 166, `tests/test_graph_postgres_keys.py` 117, `tests/test_graph_keys_without_edge.py` 102, `tests/graph_postgres_keys_fake.py` 85, `tests/test_poll_payloads.py` 69, `tests/test_poll_same_work.py` 68, `tests/poll_reference.py` 63, `tests/test_replay_fidelity_facts.py` 71, `agents/reporter/tests/test_benchmark_lineage.py` 93, `test_benchmark_lineage_edges.py` 76, `benchmark_lineage.py` 66, `test_performance.py` 160, `test_performance_inputs_edges.py` 98, `test_performance_snapshot.py` 162, `agents/supervisor/tests/test_supervisor_agent.py` 181 (was 197), `surfaces/tests/test_dashboard_read_cache.py` 115.
+
+**`make ci`:** `make ci > ci.txt 2>&1; echo $?` in the cloud tree (no `.env`) → **exit 0**. ruff clean, format clean, mypy `Success: no issues found in 1105 source files`, import-linter 5 kept / 0 broken, module size / header / law coverage / PARAM sync / sprint status / markdown links / version scheme passed, pytest **3632 passed, 8 skipped**, coverage **100.00 %** (19,536 statements, 0 missed), dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`, detect-secrets **Passed** (tracked and 14 untracked new files). Re-run on the final tree with this handback written (`ci3.txt`): **exit 0**, the same 3632 passed / 8 skipped, 100.00 %, audit and detect-secrets clean.
 
 **`make gate-ran`:** owed to the planner.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:** nothing in the build list is unmet. **Not done here, by design:** any live proof (F1, F2), `uv lock`, `make gate-ran`, Windows `make ci`, the retag, the memory revert — see Return notes.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- **Scope held**, with two out-of-list files touched only because they implement the port (`surfaces/dashboard/read_cache.py`, `scripts/replay_fidelity_facts.py`) and one supervisor test double; no `agents/forecaster/`, `agents/execution/` or `agents/deliberator/` file changed; no label, property, edge, env key or tunable added; `descendants()`/`ancestors()` untouched for every caller; no `# noqa` added.
+- **Law-cycle answer: No.** No `contracts/` change, no new agent guarantee, no `laws.md` or `test-plan.md` edit. Three silences filed as DRIFT-085 (scanner TRG), DRIFT-086 (the graph-pull polls of analyst/PM/monitor/reporter, and no clause bounding what a poll downloads), DRIFT-087 (`RPT-OUT-07` does not say which `MarketData`).
+- **What I disagreed with after reading the laws:** nothing that blocked the spec. Two notes: ADR-0014's context says "six-method graph port" (now seven; a count, not a decision); and the spec's A4 wording ("fails on a traversal on its own label") would forbid the analyst's `DERIVED_FROM` walk, which is part of *its* pending rule (the sync check), so the spy refuses the **processed-edge** walk and the listing, and pins which nodes are fetched instead.
+- **Residue (not built, for the follow-up):** the analyst still reads one `MarketData` (with props, via `DERIVED_FROM`) per **un-analysed** `ScanRun` per poll to learn its `run_id` for the sync check — unchanged from before for those, but a `ScanRun` that never syncs costs ~3 MB a poll forever; the reporter `get_node`s every never-reported sync `MonitorRun` (small props, one per run, grows by one a run); the monitor's `find_pending_position_sync` still lists `BrokerPositionSnapshot`s.
+- **Other callers that still list a heavy label:** `agents/forecaster/poll.py` and `agents/forecaster/settlement_pass.py` (`AnalystRun`, ~4.4 MB a poll); execution and the deliberator (`PMRun`); resume (`orchestration/resume.py` clones a `MarketData` by copying its props — a write, but ~3 MB per resume); tooling that lists `MarketData`/`AnalystRun` for reports. `grep -rn 'list_nodes("MarketData")\|list_nodes(MARKET_DATA_LABEL)'` is the starting list.
+- **`uv.lock`: untouched.** No `pyproject.toml` change and no version bump (PATCH at merge, the planner's); every command ran `uv run --frozen` or plain `uv run` against the unchanged lock.
+- **Owed to the planner:** `uv lock` with the PATCH bump; Windows `make ci`; `make gate-ran` from the worktree at this branch's `HEAD` (check the printed SHA); **F1** — a live dry run of every poll against Neon (pending sets equal `main`'s, bytes per poll measured; the text-order recency filter and the anti-join have never met Neon's data or collation); merge; the image-only **retag** of the six agents; **F2** on the next run (8/8, `RxBytes` for scanner and provider down by orders of magnitude); then the **memory revert** of reporter + scanner to 0.5 CPU / 1 GiB and the run after it 8/8. No `GATE PROVEN` and no live result is claimed here.

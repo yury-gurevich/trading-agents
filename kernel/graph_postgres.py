@@ -1,13 +1,14 @@
 """PostgreSQL-backed GraphStore implementation.
 
 Agent: kernel
-Role: adapt generic graph node/edge operations to psycopg and the PG spine schema.
+Role: adapt generic graph node/edge operations to psycopg and the PG spine schema;
+      the read methods live in ``kernel.graph_postgres_reads`` (split, S242).
 External I/O: PostgreSQL database.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping  # noqa: TC003 - runtime.
+from collections.abc import Callable, Mapping  # noqa: TC003 - runtime.
 from typing import Any, cast
 
 import psycopg
@@ -19,19 +20,16 @@ from kernel.graph import GraphStore, Node
 from kernel.graph_postgres_config import PostgresGraphSettings
 from kernel.graph_postgres_queries import (
     ADD_EDGE_SQL,
-    GET_NODE_SQL,
-    LIST_NODES_SQL,
     MERGE_NODE_SQL,
     NODE_EXISTS_SQL,
-    TRAVERSE_ANCESTORS_SQL,
-    TRAVERSE_DESCENDANTS_SQL,
     json_props,
     node_from_row,
 )
+from kernel.graph_postgres_reads import PostgresGraphReads
 from kernel.graph_support import Props, _append_props
 
 
-class PostgresGraphStore(GraphStore):
+class PostgresGraphStore(PostgresGraphReads, GraphStore):
     """Thin psycopg adapter for the GraphStore protocol."""
 
     def __init__(
@@ -88,41 +86,6 @@ class PostgresGraphStore(GraphStore):
                 ),
             )
 
-    def get_node(self, label: str, key: str) -> Node | None:
-        """Return a node by ``(label, key)`` if present."""
-        with fault_boundary(
-            self.sink, agent="kernel", module="kernel.graph", reraise=True
-        ):
-            row = self._fetchone(GET_NODE_SQL, (label, key))
-            return None if row is None else node_from_row(row)
-
-    def list_nodes(self, label: str) -> tuple[Node, ...]:
-        """Return all nodes with the given label."""
-        with fault_boundary(
-            self.sink, agent="kernel", module="kernel.graph", reraise=True
-        ):
-            return tuple(
-                node_from_row(row) for row in self._fetchall(LIST_NODES_SQL, (label,))
-            )
-
-    def ancestors(
-        self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
-    ) -> Iterator[Node]:
-        """Walk upstream parent nodes."""
-        with fault_boundary(
-            self.sink, agent="kernel", module="kernel.graph", reraise=True
-        ):
-            return iter(self._traverse(node, max_depth, edge_types, upstream=True))
-
-    def descendants(
-        self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
-    ) -> Iterator[Node]:
-        """Walk downstream child nodes."""
-        with fault_boundary(
-            self.sink, agent="kernel", module="kernel.graph", reraise=True
-        ):
-            return iter(self._traverse(node, max_depth, edge_types, upstream=False))
-
     def _connect(self) -> Any:  # noqa: ANN401 - psycopg connection shape is sufficient.
         return psycopg.connect(
             self._settings.postgres_dsn,
@@ -145,21 +108,6 @@ class PostgresGraphStore(GraphStore):
     def _require_node(self, node: Node) -> None:
         if self._fetchone(NODE_EXISTS_SQL, (node.label, node.key)) is None:
             raise KeyError(f"missing graph node {node.label}.{node.key}")
-
-    def _traverse(
-        self,
-        node: Node,
-        max_depth: int,
-        edge_types: set[str] | None,
-        *,
-        upstream: bool,
-    ) -> list[Node]:
-        if max_depth < 1:
-            return []
-        filters = None if edge_types is None else sorted(edge_types)
-        query = TRAVERSE_ANCESTORS_SQL if upstream else TRAVERSE_DESCENDANTS_SQL
-        params = (node.label, node.key, filters, filters, max_depth, filters, filters)
-        return [node_from_row(row) for row in self._fetchall(query, params)]
 
     def _fetchone(
         self, query: str, params: tuple[object, ...]

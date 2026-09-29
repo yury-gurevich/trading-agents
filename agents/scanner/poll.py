@@ -18,6 +18,7 @@ from agents.scanner.results import scan_explanation
 from agents.scanner.store import write_scan
 from contracts.provider import MARKET_DATA_LABEL, MarketData
 from contracts.scanner import CandidateSet
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.scanner.settings import ScannerSettings
@@ -28,13 +29,12 @@ _DEFAULT_UNIVERSE_NAME = "sp500"
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return MarketData nodes with no downstream ScanRun (unprocessed work)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(MARKET_DATA_LABEL):
-        scanned = list(graph.descendants(node, max_depth=1, edge_types={SCANNED_EDGE}))
-        if not scanned:
-            pending.append(node)
-    return pending
+    """Return MarketData nodes with no downstream ScanRun (unprocessed work).
+
+    Found by key and edge alone: a poll with nothing to scan downloads no MarketData,
+    and one with work downloads only that node (DL-246).
+    """
+    return pending_nodes(graph, MARKET_DATA_LABEL, SCANNED_EDGE)
 
 
 def scan_market_node(

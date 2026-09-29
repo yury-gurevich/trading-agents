@@ -12,13 +12,14 @@ from datetime import date
 import pytest
 
 from agents.reporter.performance_inputs import read_performance_inputs
+from agents.reporter.tests.benchmark_lineage import link_run_market
 from kernel import InMemoryGraphStore
 
 
 def test_performance_inputs_ignore_malformed_optional_facts() -> None:
     """RPT-IDM-03: malformed optional performance facts are ignored, not corrected."""
     graph = InMemoryGraphStore()
-    pm_run = graph.merge_node("PMRun", "pm-run", {"created_at": "2026-08-12T22:30:00Z"})
+    graph.merge_node("PMRun", "pm-run", {"created_at": "2026-08-12T22:30:00Z"})
     graph.merge_node(
         "BrokerPositionSnapshot",
         "bad-created-type",
@@ -60,18 +61,7 @@ def test_performance_inputs_ignore_malformed_optional_facts() -> None:
             "holdings": None,
         },
     )
-    graph.merge_node("MarketData", "missing-window", {"snapshot": {"benchmark": []}})
-    graph.merge_node(
-        "MarketData",
-        "bad-window",
-        {"window_end": "not-a-date", "snapshot": {"benchmark": []}},
-    )
-    graph.merge_node(
-        "MarketData",
-        "empty-benchmark-window",
-        {"window_end": "2026-08-11", "snapshot": {"benchmark": []}},
-    )
-    graph.merge_node(
+    market = graph.merge_node(
         "MarketData",
         "good-window",
         {
@@ -87,6 +77,10 @@ def test_performance_inputs_ignore_malformed_optional_facts() -> None:
             },
         },
     )
+
+    link_run_market(graph, "pm-run", market, run="edges")
+    pm_run = graph.get_node("PMRun", "pm-run")
+    assert pm_run is not None
 
     inputs = read_performance_inputs(graph, pm_run, inception=date(2026, 8, 10))
 

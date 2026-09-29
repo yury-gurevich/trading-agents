@@ -36,6 +36,7 @@ def test_the_view_has_every_graph_store_method_with_the_ports_signature() -> Non
         "add_edge",
         "get_node",
         "list_nodes",
+        "keys_without_edge",
         "ancestors",
         "descendants",
     }
@@ -66,3 +67,5 @@ def test_the_view_refuses_walks_it_cannot_answer() -> None:
         VIEW.ancestors(HELD, max_depth=1)
     with pytest.raises(PermissionError, match="descendants"):
         VIEW.descendants(HELD, max_depth=1)
+    with pytest.raises(PermissionError, match=r"keys_without_edge\(Position, OPENS in"):
+        VIEW.keys_without_edge("Position", "OPENS", downstream=False)

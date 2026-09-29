@@ -18,10 +18,13 @@ from kernel.graph_support import (
     _edge_allowed,
     _edge_key,
     _node_key,
+    created_at_bound,
+    created_at_on_or_after,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from datetime import datetime
 
 
 class InMemoryGraphStore:
@@ -68,6 +71,34 @@ class InMemoryGraphStore:
             self.sink, agent="kernel", module="kernel.graph", reraise=True
         ):
             return tuple(node for node in self._nodes.values() if node.label == label)
+
+    def keys_without_edge(
+        self,
+        label: str,
+        edge_type: str,
+        *,
+        downstream: bool = True,
+        created_at_from: datetime | None = None,
+    ) -> tuple[str, ...]:
+        """Return keys of ``label`` nodes with no ``edge_type`` edge, in list order."""
+        with fault_boundary(
+            self.sink, agent="kernel", module="kernel.graph", reraise=True
+        ):
+            bound = (
+                None if created_at_from is None else created_at_bound(created_at_from)
+            )
+            linked = {
+                edge.parent if downstream else edge.child
+                for edge in self._edges
+                if edge.edge_type == edge_type
+            }
+            return tuple(
+                node.key
+                for node_key, node in self._nodes.items()
+                if node.label == label
+                and node_key not in linked
+                and created_at_on_or_after(node.props, bound)
+            )
 
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None

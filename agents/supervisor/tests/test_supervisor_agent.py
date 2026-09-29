@@ -15,8 +15,6 @@ from contracts.supervisor import CONTRACT, DispatchResult, DispatchRunRecord
 from kernel import AgentFault, AgentMessage, InMemoryGraphStore, InProcessBus
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from kernel import Node
     from kernel.graph_support import Props
 
@@ -169,7 +167,9 @@ def _node_count(graph: InMemoryGraphStore, label: str) -> int:
     return len(graph.list_nodes(label))
 
 
-class _BrokenGraph:
+class _BrokenGraph(InMemoryGraphStore):
+    """An empty graph whose every write fails."""
+
     def merge_node(
         self, label: str, key: str, props: Props, *, schema_version: int = 1
     ) -> Node:
@@ -179,19 +179,3 @@ class _BrokenGraph:
         self, parent: Node, child: Node, edge_type: str, props: Props | None = None
     ) -> None:
         raise RuntimeError("graph write failed")
-
-    def get_node(self, label: str, key: str) -> Node | None:
-        return None
-
-    def list_nodes(self, label: str) -> tuple[Node, ...]:
-        return ()
-
-    def ancestors(
-        self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
-    ) -> Iterator[Node]:
-        return iter(())
-
-    def descendants(
-        self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
-    ) -> Iterator[Node]:
-        return iter(())

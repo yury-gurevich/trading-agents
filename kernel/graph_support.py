@@ -8,6 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -98,3 +99,23 @@ def _is_partial_completion(existing: Props, new_props: Props, prop_name: str) ->
 
 def _edge_allowed(edge: _GraphEdge, edge_types: set[str] | None) -> bool:
     return edge_types is None or edge.edge_type in edge_types
+
+
+def created_at_bound(instant: datetime) -> str:
+    """Render a ``created_at`` lower bound as the UTC text the fleet stamps.
+
+    Fleet writers stamp ``created_at`` with ``datetime.now(tz=UTC).isoformat()``,
+    whose byte order is time order, so a text comparison against this bound keeps
+    exactly the nodes created at or after ``instant`` (DL-246 D2).
+    """
+    if instant.tzinfo is None:
+        raise ValueError("created_at_from must be timezone-aware")
+    return instant.astimezone(UTC).isoformat()
+
+
+def created_at_on_or_after(props: Props, bound: str | None) -> bool:
+    """Whether a node's ``created_at`` is a string sorting at or after ``bound``."""
+    if bound is None:
+        return True
+    created_at = props.get("created_at")
+    return isinstance(created_at, str) and created_at >= bound

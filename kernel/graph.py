@@ -9,9 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator  # noqa: TC003 - Protocol evaluated at runtime.
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from kernel.graph_support import NodeKey, Props, _frozen_props
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass(frozen=True)
@@ -63,6 +66,23 @@ class GraphStore(Protocol):
 
     def list_nodes(self, label: str) -> tuple[Node, ...]:
         """Return all nodes with the given label."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    def keys_without_edge(
+        self,
+        label: str,
+        edge_type: str,
+        *,
+        downstream: bool = True,
+        created_at_from: datetime | None = None,
+    ) -> tuple[str, ...]:
+        """Return keys of ``label`` nodes with no ``edge_type`` edge, no props.
+
+        ``downstream`` asks for no outgoing edge (the node is never that edge's
+        parent), else no incoming one. ``created_at_from`` keeps only nodes whose
+        ``created_at`` string sorts at or after it in UTC. Keys come back in this
+        store's ``list_nodes`` order.
+        """
         ...  # pragma: no cover - protocol declaration only.
 
     def ancestors(

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from datetime import datetime
 
     from kernel.graph import GraphStore, Node
     from kernel.graph_support import Props
@@ -53,6 +54,19 @@ class GuardedGraphStore:
     def list_nodes(self, label: str) -> tuple[Node, ...]:
         """Read through to the wrapped store."""
         return self._inner.list_nodes(label)
+
+    def keys_without_edge(
+        self,
+        label: str,
+        edge_type: str,
+        *,
+        downstream: bool = True,
+        created_at_from: datetime | None = None,
+    ) -> tuple[str, ...]:
+        """Read through to the wrapped store."""
+        return self._inner.keys_without_edge(
+            label, edge_type, downstream=downstream, created_at_from=created_at_from
+        )
 
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None

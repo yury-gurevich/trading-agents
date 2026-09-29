@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, NoReturn
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from datetime import datetime
 
     from kernel.graph import Node
     from kernel.graph_support import Props
@@ -77,6 +78,20 @@ class ExportedFacts:
     ) -> Iterator[Node]:
         """Refuse: the export carries no edges, so no walk can be answered."""
         _refuse(f"descendants({node.label}, {node.key})")
+
+    def keys_without_edge(
+        self,
+        label: str,
+        edge_type: str,
+        *,
+        downstream: bool = True,
+        created_at_from: datetime | None = None,
+    ) -> tuple[str, ...]:
+        """Refuse: with no edges exported, "no such edge" would read as a fact."""
+        direction = "out" if downstream else "in"
+        _refuse(
+            f"keys_without_edge({label}, {edge_type} {direction}, {created_at_from})"
+        )
 
 
 def _refuse(call: str) -> NoReturn:

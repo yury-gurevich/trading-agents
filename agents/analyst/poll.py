@@ -26,6 +26,7 @@ from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 from contracts.scanner import CandidateSet
 from kernel import CollectingFaultSink, fault_boundary
 from kernel.fault_graph import GraphFaultSink
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from contracts.analyst import RecommendationSet
@@ -37,15 +38,16 @@ _DERIVED_FROM = "DERIVED_FROM"
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return synced ScanRun nodes with no downstream AnalystRun."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(SCAN_RUN_LABEL):
-        analyzed = list(
-            graph.descendants(node, max_depth=1, edge_types={ANALYZED_EDGE})
-        )
-        if not analyzed and _book_sync_attempted(graph, node):
-            pending.append(node)
-    return pending
+    """Return synced ScanRun nodes with no downstream AnalystRun.
+
+    The un-analysed ScanRuns are found by key and edge alone (DL-246); the sync
+    check then reads each one's MarketData lineage, as before.
+    """
+    return [
+        node
+        for node in pending_nodes(graph, SCAN_RUN_LABEL, ANALYZED_EDGE)
+        if _book_sync_attempted(graph, node)
+    ]
 
 
 def analyze_scan_node(

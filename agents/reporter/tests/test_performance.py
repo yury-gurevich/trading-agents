@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from agents.reporter.tests.benchmark_lineage import link_run_market
 from kernel import InMemoryGraphStore
 
 if TYPE_CHECKING:
@@ -104,7 +105,7 @@ def _seed_graph(
     if include_future:
         _snapshot(graph, "2026-08-13", equity_cents=800_000, long_value_cents=800_000)
 
-    graph.merge_node(
+    bounded = graph.merge_node(
         "MarketData",
         "market-data:bounded",
         {
@@ -112,6 +113,7 @@ def _seed_graph(
             "snapshot": {"benchmark": _benchmark_bars(include_future=False)},
         },
     )
+    link_run_market(graph, "pm-run-performance", bounded, run="performance")
     if include_future:
         graph.merge_node(
             "MarketData",

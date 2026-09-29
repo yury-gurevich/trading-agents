@@ -99,3 +99,17 @@ def test_caching_graph_store_write_through_clears_stale_entries() -> None:
 
     assert cached.list_nodes("Child") == (child,)
     assert tuple(cached.descendants(parent, max_depth=1)) == (child,)
+
+
+def test_caching_graph_store_caches_key_and_edge_lookups() -> None:
+    """DL-246: the key-and-edge query reads through the cache like the others."""
+    graph = InMemoryGraphStore()
+    parent = graph.merge_node("Parent", "p", {})
+    graph.merge_node("Parent", "q", {})
+    graph.add_edge(parent, graph.merge_node("Child", "c", {}), "LINK")
+    cached = CachingGraphStore(graph, 5.0, now=_Clock())
+
+    assert cached.keys_without_edge("Parent", "LINK") == ("q",)
+    assert cached.keys_without_edge("Parent", "LINK") == ("q",)
+    assert cached.keys_without_edge("Child", "LINK", downstream=False) == ()
+    assert (cached.stats.hits, cached.stats.misses) == (1, 2)

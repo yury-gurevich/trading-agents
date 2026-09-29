@@ -1,7 +1,7 @@
 """Date-bounded graph inputs for reporter performance.
 
 Agent: reporter
-Role: read execution snapshots and provider benchmark bars without mutation.
+Role: read execution snapshots and the run's own benchmark bars without mutation.
 External I/O: GraphStore reads via the injected backend.
 """
 
@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
+from agents.reporter.benchmark_input import run_benchmark
 from agents.reporter.domain.performance import PerformancePoint, calculate_performance
 from agents.reporter.snapshot_result import performance_headline_clause
 
@@ -46,7 +47,7 @@ def read_performance_inputs(
         raise ValueError("PMRun.created_at must be an ISO-8601 timestamp")
     as_of = cutoff.date()
     points = _snapshot_points(graph, inception=inception, cutoff=cutoff)
-    benchmark_closes, benchmark_ticker = _benchmark(graph, as_of=as_of)
+    benchmark_closes, benchmark_ticker = run_benchmark(graph, pm_run, as_of=as_of)
     return PerformanceInputs(points, benchmark_closes, benchmark_ticker, as_of)
 
 
@@ -112,42 +113,6 @@ def _snapshot_points(
     )
 
 
-def _benchmark(
-    graph: GraphStore, *, as_of: date
-) -> tuple[dict[date, float], str | None]:
-    eligible: list[tuple[date, Mapping[str, object]]] = []
-    for market_data in graph.list_nodes("MarketData"):
-        window_end = _date_only(market_data.props.get("window_end"))
-        snapshot = market_data.props.get("snapshot")
-        if (
-            window_end is None
-            or window_end > as_of
-            or not isinstance(snapshot, Mapping)
-        ):
-            continue
-        benchmark = snapshot.get("benchmark")
-        if isinstance(benchmark, Sequence) and benchmark:
-            eligible.append((window_end, snapshot))
-    if not eligible:
-        return {}, None
-    _, snapshot = max(eligible, key=lambda item: item[0])
-    benchmark = snapshot["benchmark"]
-    assert isinstance(benchmark, Sequence)
-    closes: dict[date, float] = {}
-    ticker: str | None = None
-    for bar in benchmark:
-        if not isinstance(bar, Mapping):
-            continue
-        bar_date = _date_only(bar.get("bar_date"))
-        close = bar.get("close")
-        if bar_date is None or bar_date > as_of or not isinstance(close, int | float):
-            continue
-        closes[bar_date] = float(close)
-        if ticker is None and isinstance(bar.get("ticker"), str):
-            ticker = bar["ticker"]
-    return closes, ticker
-
-
 def _long_value_cents(holdings: object) -> int:
     if not isinstance(holdings, Sequence):
         return 0
@@ -169,15 +134,6 @@ def _utc_datetime(value: object) -> datetime | None:
     return (
         parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
     )
-
-
-def _date_only(value: object) -> date | None:
-    if not isinstance(value, str):
-        return None
-    try:
-        return date.fromisoformat(value[:10])
-    except ValueError:
-        return None
 
 
 def _no_sessions_reason(inputs: PerformanceInputs) -> str:

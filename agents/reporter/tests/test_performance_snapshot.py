@@ -8,12 +8,19 @@ External I/O: none.
 from __future__ import annotations
 
 from datetime import date
+from typing import TYPE_CHECKING
 
 import pytest
 
 from agents.reporter.result import build_snapshot
 from agents.reporter.settings import ReporterSettings
-from kernel import CollectingFaultSink, InMemoryGraphStore, Node
+from agents.reporter.tests.benchmark_lineage import link_run_market
+from kernel import CollectingFaultSink, InMemoryGraphStore
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from kernel import Node
 
 
 def test_snapshot_names_no_fresh_snapshots_without_raising() -> None:
@@ -61,6 +68,8 @@ def test_snapshot_contains_performance_fault_without_losing_other_groups() -> No
     """RPT-FAIL-04: MarketData failure faults once and preserves groups."""
     graph = _MarketDataFailingGraph()
     graph.merge_node("PMRun", "pm-run", {"created_at": "2026-08-10T22:30:00Z"})
+    market = graph.merge_node("MarketData", "market-data:pm-run", {})
+    link_run_market(graph, "pm-run", market, run="failing")
     _snapshot(graph, "first", "2026-08-10T22:30:00Z", 1_000_000, status="fresh")
     sink = CollectingFaultSink()
 
@@ -89,7 +98,7 @@ def test_snapshot_ignores_prior_reporter_performance_output() -> None:
         "result:old",
         {"snapshot": {"performance_metrics": {"portfolio_return_pct": 999.0}}},
     )
-    graph.merge_node(
+    market = graph.merge_node(
         "MarketData",
         "market-data:pm-run",
         {
@@ -102,6 +111,8 @@ def test_snapshot_ignores_prior_reporter_performance_output() -> None:
             },
         },
     )
+
+    link_run_market(graph, "pm-run", market, run="prior")
 
     snapshot = build_snapshot(graph, "pm-run", settings=_settings())
 
@@ -143,7 +154,9 @@ def _settings() -> ReporterSettings:
 
 
 class _MarketDataFailingGraph(InMemoryGraphStore):
-    def list_nodes(self, label: str) -> tuple[Node, ...]:
-        if label == "MarketData":
+    def descendants(
+        self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
+    ) -> Iterator[Node]:
+        if edge_types == {"DERIVED_FROM"}:
             raise RuntimeError("market data unavailable")
-        return super().list_nodes(label)
+        return super().descendants(node, max_depth=max_depth, edge_types=edge_types)

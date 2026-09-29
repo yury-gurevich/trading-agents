@@ -10,6 +10,82 @@ and is marked CLOSED here.
 
 ---
 
+## DL-246 - a graph-pull poll finds its work by key and edge, and the reporter reads its own run's MarketData - status: DECIDED (builder, 2026-09-29; S242)
+
+**The defect (DL-244, measured by the planner).** Every graph-pull `find_pending` listed its whole label
+with props, then walked the processed edge with `descendants()`, whose SQL also selects `n.props`: the
+provider's edge check downloaded every `MarketData` (128.9 MB of JSON, 785 MB in Python, ~3 MB more per
+run), the scanner's list did the same, and the reporter's `_benchmark` listed every `MarketData` to keep
+one. Fix direction from DL-244; these are the builder's four decisions.
+
+**D1 - the port method.** `GraphStore.keys_without_edge(label, edge_type, *, downstream=True,
+created_at_from=None) -> tuple[str, ...]`: the **keys** of `label` nodes with no `edge_type` edge in the
+given direction (`downstream=True`: no outgoing edge, the node is never a parent of that type), no props.
+Postgres: one anti-join (`NOT EXISTS` on `edges`), two SQL constants (one per direction, so each probe
+uses the edge primary key or `edges_child`), every value a bound `%s` parameter. Memory: the same
+predicate over its dict and edge list. Guarded: reads through. It names no label, edge or pack concept
+(ADR-0012). A generic helper, `kernel.graph_pending.pending_nodes`, pairs it with `get_node` so each of
+the seven polls fetches props for its pending keys only, in key order.
+*Rejected:* **`list_keys(label)` plus a per-key edge check** (DL-244's first sketch) - N+1 round trips per
+poll, and `descendants()` for the edge check still returns the child's props, which *is* the defect;
+**a key-only flag on `descendants()`** - changes a signature dozens of callers share and still costs one
+query per node; **stripping props from `descendants`/`ancestors` globally** - ruled out by the spec
+(callers read the props they walk to); **a generic props filter (`prop == value`) in the method** -
+would let the reporter drop sync `MonitorRun`s in SQL, but widens the port into a query language for one
+caller; the reporter filters its pending keys' props after `get_node` instead.
+
+**D2 - the recency filter lives in the method.** `created_at_from` keeps only nodes whose `created_at`
+prop is a JSON string that sorts, byte-wise (`COLLATE "C"`), at or after `created_at_from` rendered as UTC
+`isoformat()`; a naive instant is refused (`ValueError`); a missing or non-string `created_at` is
+excluded. For timestamps written by `datetime.now(tz=UTC).isoformat()` - every fleet writer of
+`AnalystRun.created_at` (`agents/analyst/store.py`, and resume clones that copy it) - text order is time
+order, including the optional microseconds (`+` sorts before `.`). The provider's barrier poll passes
+`now - CLAIM_RUN_MAX_AGE` and **still applies `is_current_run` to what it fetches**, so the rule stays
+the one in `contracts/barrier_history.py` (fail closed) and the SQL can only ever over-include (a `Z`
+suffix, a zone-less or garbage string), never decide. The 71-run backlog is never fetched.
+*Accepted limit:* a `created_at` written with a **negative** UTC offset could sort before the bound while
+being current; no writer produces one. *Rejected:* **a second key-only query** (keys by date, intersected
+in Python) - two queries and the same text comparison; **casting to `timestamptz` in SQL** - exact, but
+one malformed stored value (`2026-02-30T…`) raises in Postgres and faults every poll, where Python's rule
+just says "not current"; **the default collation** - a linguistic collation may ignore `+` and `.` and
+misorder same-second stamps, so the comparison is pinned to `"C"`, which is Python's `str` order.
+*[measured 2026-09-29, local PostgreSQL 16.13, ICU `en-US` database]* `'…:05+00:00' < '…:05.000001+00:00'` is
+**false** under the default collation and true under `COLLATE "C"`. The fleet's Neon collation was not
+measured from here; the pin makes it irrelevant.
+
+**D3 - order.** Each store returns keys in **its own `list_nodes` order**: Postgres `ORDER BY n.key` - the
+very expression `LIST_NODES_SQL` uses, same column and collation, and `(label, key)` is the primary key
+so the order is total; memory, insertion order, as its `list_nodes`. Every poll then fetches in that
+order, so each pending list is the old one, item for item. *Rejected:* a set-based SQL with no
+`ORDER BY` (passes every membership test and reorders work).
+
+**D4 - the split of `kernel/graph_postgres.py` (199 lines).** The port's **read** methods (`get_node`,
+`list_nodes`, the new `keys_without_edge`, `ancestors`, `descendants`, `_traverse`) move to a mixin,
+`kernel/graph_postgres_reads.py::PostgresGraphReads`, which declares the two fetch helpers it needs;
+`PostgresGraphStore` keeps construction, the connection and its reconnect-once `_run`, the writes and the
+merge-conflict path. `psycopg` and `Jsonb` stay in `kernel/graph_postgres.py`, so every existing test's
+monkeypatch (`graph_postgres.psycopg.connect`, `graph_postgres.Jsonb`) is untouched. The new SQL goes to
+`kernel/graph_postgres_keys.py` (the queries module is at 150 lines). *Rejected:* moving the connection
+plumbing to a base class (every reconnect test patches `psycopg` through `kernel.graph_postgres` and
+would have to be rewritten); moving `merge_node`'s conflict path (it is the write contract).
+
+**The reporter's benchmark (spec item 3).** `_benchmark` reads **one** `MarketData`: `PMRun.source_analyst_run_id`
+→ `AnalystRun` (its key is that run id) → `ANALYZED_BY` ancestor `ScanRun` → `DERIVED_FROM` child
+`MarketData`, as the PM's poll walks it. A missing link, a `window_end` after the as-of, or no benchmark
+bars on that node → the no-benchmark path of today (`{}`, `None`, headline "missing benchmark"); bars
+after the as-of are still dropped (`RPT-IDM-03`). A resumed run's cloned `PMRun` carries its source's
+`source_analyst_run_id`, so it reads the source run's `MarketData`, whose bars the clone copied.
+*Rejected:* the latest `MarketData` by `window_end` (today's rule; loads all of them and, on a two-run
+day, can read the other run's series); guessing the key from the run id (a resume's id differs).
+
+**Residue, named for the follow-up (not built here).** The analyst's pending check still walks each
+un-analysed `ScanRun`'s `DERIVED_FROM` child (one `MarketData` with props) to read its `run_id` for the
+position-book sync check; the reporter `get_node`s every never-reported sync `MonitorRun` (small props,
+one per run); the monitor's `find_pending_position_sync` lists `BrokerPositionSnapshot`s; the forecaster
+(`AnalystRun`), execution and the deliberator (`PMRun`) and tooling still list their labels.
+
+---
+
 ## DL-245 - the barrier history reuses a one-day integrity guard on three years, and a named "no claim" pages the operator - status: OPEN (planner, 2026-09-29; work-queue 94)
 
 **What happened (measured 2026-09-29).** `sched-2026-09-28`'s brief read *Needs you: 2 open incidents*:

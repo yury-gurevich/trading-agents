@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from agents.reporter.result import build_snapshot
 from contracts.position_sync import POSITION_SYNC_PHASE
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -22,17 +23,16 @@ REPORTED_EDGE = "REPORTED_BY"
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return MonitorRun nodes with no downstream Snapshot (unprocessed work)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(MONITOR_RUN_LABEL):
-        if node.props.get("phase") == POSITION_SYNC_PHASE:
-            continue
-        reported = list(
-            graph.descendants(node, max_depth=1, edge_types={REPORTED_EDGE})
-        )
-        if not reported:
-            pending.append(node)
-    return pending
+    """Return MonitorRun nodes with no downstream Snapshot (unprocessed work).
+
+    The unreported MonitorRuns are found by key and edge alone (DL-246); a sync
+    marker among them is never reported, so it is dropped after its fetch.
+    """
+    return [
+        node
+        for node in pending_nodes(graph, MONITOR_RUN_LABEL, REPORTED_EDGE)
+        if node.props.get("phase") != POSITION_SYNC_PHASE
+    ]
 
 
 def report_monitor_node(node: Node, *, graph: GraphStore) -> None:

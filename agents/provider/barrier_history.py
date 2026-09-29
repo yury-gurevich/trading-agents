@@ -20,6 +20,7 @@ from contracts.analyst import RecommendationSet
 from contracts.barrier_history import (
     BARRIER_HISTORY_EDGE,
     BARRIER_HISTORY_LABEL,
+    CLAIM_RUN_MAX_AGE,
     BarrierHistory,
     TickerHistory,
     barrier_buys,
@@ -29,6 +30,7 @@ from contracts.barrier_history import (
 from contracts.common import Window
 from contracts.provider import DataRequest
 from kernel.errors import fault_boundary
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
@@ -51,16 +53,19 @@ def find_pending_barrier_history(
 ) -> list[Node]:
     """AnalystRun nodes with a qualifying buy and no BarrierHistory yet.
 
-    With ``now`` (the deployed loop), only a current run counts (DL-241 D11).
+    With ``now`` (the deployed loop), only a current run counts (DL-241 D11): the
+    store is asked only for runs created since ``now - CLAIM_RUN_MAX_AGE``, so the
+    backlog is never fetched, and ``is_current_run`` still decides (DL-246 D2).
     """
-    pending: list[Node] = []
-    for node in graph.list_nodes(ANALYST_RUN_LABEL):
-        if now is not None and not is_current_run(node.props, now):
-            continue
-        done = graph.descendants(node, max_depth=1, edge_types={BARRIER_HISTORY_EDGE})
-        if not list(done) and _qualifying_tickers(node):
-            pending.append(node)
-    return pending
+    since = None if now is None else now - CLAIM_RUN_MAX_AGE
+    return [
+        node
+        for node in pending_nodes(
+            graph, ANALYST_RUN_LABEL, BARRIER_HISTORY_EDGE, created_at_from=since
+        )
+        if (now is None or is_current_run(node.props, now))
+        and _qualifying_tickers(node)
+    ]
 
 
 def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:

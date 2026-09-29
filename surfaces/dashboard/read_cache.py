@@ -16,6 +16,7 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Hashable, Iterator
+    from datetime import datetime
 
     from kernel import GraphStore, Node
     from kernel.graph_support import Props
@@ -117,6 +118,23 @@ class CachingGraphStore:
         """Return cached label scans within the TTL."""
         return self._cache.read(
             ("list_nodes", label), lambda: self._inner.list_nodes(label)
+        )
+
+    def keys_without_edge(
+        self,
+        label: str,
+        edge_type: str,
+        *,
+        downstream: bool = True,
+        created_at_from: datetime | None = None,
+    ) -> tuple[str, ...]:
+        """Return cached key-and-edge lookups within the TTL."""
+        key = ("keys_without_edge", label, edge_type, downstream, created_at_from)
+        return self._cache.read(
+            key,
+            lambda: self._inner.keys_without_edge(
+                label, edge_type, downstream=downstream, created_at_from=created_at_from
+            ),
         )
 
     def ancestors(

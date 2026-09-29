@@ -22,6 +22,7 @@ from agents.monitor.settings import MonitorSettings
 from contracts.provider import MarketData
 from kernel import CollectingFaultSink
 from kernel.fault_graph import GraphFaultSink
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from kernel import FaultSink, GraphStore, Node
@@ -43,15 +44,11 @@ class MonitorWorkItem:
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return ExecutionRun nodes with no downstream MonitorRun (unprocessed work)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(EXECUTION_RUN_LABEL):
-        monitored = list(
-            graph.descendants(node, max_depth=1, edge_types={MONITORED_EDGE})
-        )
-        if not monitored:
-            pending.append(node)
-    return pending
+    """Return ExecutionRun nodes with no downstream MonitorRun (unprocessed work).
+
+    Found by key and edge alone; only the pending ExecutionRuns are fetched (DL-246).
+    """
+    return pending_nodes(graph, EXECUTION_RUN_LABEL, MONITORED_EDGE)
 
 
 def find_pending_work(graph: GraphStore) -> list[MonitorWorkItem]:

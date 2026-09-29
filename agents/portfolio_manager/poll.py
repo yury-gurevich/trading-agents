@@ -21,6 +21,7 @@ from contracts.analyst import RecommendationSet
 from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 from kernel import CollectingFaultSink
 from kernel.fault_graph import GraphFaultSink
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.portfolio import PortfolioState
@@ -33,15 +34,11 @@ _DERIVED_FROM = "DERIVED_FROM"
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return AnalystRun nodes with no downstream PMRun (unprocessed work)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(ANALYST_RUN_LABEL):
-        evaluated = list(
-            graph.descendants(node, max_depth=1, edge_types={EVALUATED_EDGE})
-        )
-        if not evaluated:
-            pending.append(node)
-    return pending
+    """Return AnalystRun nodes with no downstream PMRun (unprocessed work).
+
+    Found by key and edge alone; only the pending AnalystRuns are fetched (DL-246).
+    """
+    return pending_nodes(graph, ANALYST_RUN_LABEL, EVALUATED_EDGE)
 
 
 def evaluate_analyst_node(

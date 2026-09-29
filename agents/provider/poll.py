@@ -29,6 +29,7 @@ from contracts.provider import (
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
 )
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
@@ -79,15 +80,11 @@ def process_work_item(item: ProviderWorkItem, *, agent: ProviderAgent) -> None:
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return RunRequest nodes with no downstream MarketData (uningested work)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(RUN_REQUEST_LABEL):
-        ingested = list(
-            graph.descendants(node, max_depth=1, edge_types={INGESTED_EDGE})
-        )
-        if not ingested:
-            pending.append(node)
-    return pending
+    """Return RunRequest nodes with no downstream MarketData (uningested work).
+
+    Found by key and edge alone; only the pending RunRequests are fetched (DL-246).
+    """
+    return pending_nodes(graph, RUN_REQUEST_LABEL, INGESTED_EDGE)
 
 
 def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:

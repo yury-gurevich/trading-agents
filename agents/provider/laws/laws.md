@@ -94,7 +94,10 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   extreme-move guard, or nothing served), never silently absent; a served ticker whose last bar is
   stale is listed as `stale`. A **failed fetch still writes the node**, `status: failed` with the
   reason and every ticker dropped with it, so no reader waits forever — never an empty success, never
-  no node. *(DL-241 D10.)*
+  no node. A barrier fetch holds too few tickers for the `PROV-OUT-09` guard to fire (its √(n−1)
+  ceiling), so this path **leans on the daily request's guard**: its newest session is the one the
+  daily request judged, and a ticker the daily request excluded never becomes a buy.
+  *(DL-241 D10; DRIFT-090, DL-247 D4.)*
 - `PROV-OUT-09` — The **extreme-move guard** judges each served ticker's **newest bar only**: its
   open-to-close move against the pooled (population mean and σ) open-to-close moves of every
   ticker's bar on **that same session**. A move beyond `max_daily_move_sigma` σ excludes the ticker,
@@ -371,9 +374,9 @@ status:
   PARAM row said "the requested window", so a real extreme day anywhere in it dropped a name → new
   `PROV-OUT-09`, newest session only; `PROV-OUT-08`'s "unchanged" → "shared"; the PARAM default cell
   read `4.0` while `settings.py` has held `8.0` since DRIFT-012).
-- **OPEN (S243)** — DRIFT-090 (a pooled z-score over *n* moves cannot exceed √(n−1), so at 8 σ the
-  guard cannot fire on a session of 65 names or fewer, which is every barrier-history fetch; stated in
-  `PROV-OUT-09` and the PARAM row, not fixed).
+- **CORRECTED (S243, planner)** — DRIFT-090 (a pooled z-score over *n* moves cannot exceed √(n−1), so
+  at 8 σ the guard cannot fire on a session of 65 names or fewer, which is every barrier-history fetch;
+  accepted, and `PROV-OUT-08` now says the barrier path leans on the daily request's guard, DL-247 D4).
 - **OPEN (S239)** — DRIFT-082 (`PROV-TRG-01` still says the provider acts *only* on a request event
   from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and now
   `AnalystRun`s (`PROV-TRG-04`) from the graph; `TRG-02` was reconciled in v1.5, `TRG-01` is 🟩 on a
@@ -445,5 +448,6 @@ status:
   instead of calling it "unchanged". `PARAM`: `max_daily_move_sigma`'s default cell reconciled
   `4.0` → `8.0` (the code's value since DRIFT-012) and its rationale re-worded from "the requested
   window". No tunable, contract or vocabulary change. One clause added and proven: 20 / 65 → 21 / 66.
-  DRIFT-088 corrected; DRIFT-090 (the ceiling) left OPEN for the planner. DRIFT-084 (the bars'
+  DRIFT-088 corrected; DRIFT-090 (the ceiling) accepted by the planner before merge: `PROV-OUT-08`
+  states that the barrier path leans on the daily request's guard (DL-247 D4). DRIFT-084 (the bars'
   price adjustment) was not in this sprint's amendment list and stays OPEN.

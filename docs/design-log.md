@@ -65,10 +65,21 @@ fault); a second exception class for designed refusals (renames the `error_type`
 fault, dashboard row and ack is keyed on); `info` for designed refusals (the S213 precedent,
 `RegimeVixShortfall`, puts a designed shortfall at `warning`, and `info` is read as noise).
 
+**D4 — the barrier fetch leans on the ingest's guard (planner, 2026-09-29, before merge).** The builder
+left DRIFT-090 as a forced decision. Decided: accept. The barrier fetch's newest session is the
+session the daily ingest judged minutes earlier from the same feed, over ~99 names (ceiling ≈ 9.9σ),
+and a ticker the ingest excludes has no bars for the analyst, so it never becomes a buy. A bad newest
+bar therefore cannot reach a barrier claim through a guard that did not fire. `PROV-OUT-08` now says
+so. *Rejected:* a leave-one-out σ (D2's reasons stand: it changes DRIFT-014's formula and sharpens the
+quiet-day trap, with nothing measured); having the barrier fetch reuse the run's `MarketData` verdict
+(the right shape, but only once something lets the barrier path see a session the ingest did not
+judge, such as a different feed or a fetch on a later day; nothing does today). *Re-open if* the
+barrier fetch's feed, end rule or timing ever diverges from the ingest's.
+
 **Laws.** Provider v1.6 (`PROV-OUT-09` new, `PROV-OUT-08` amended, PARAM row reconciled `4.0` →
 `8.0`); forecaster v1.8 (`FORE-FAIL-04` amended). Drift rows DRIFT-088 (the guard's scope was never a
 clause; CORRECTED), DRIFT-089 (refusal severity was never a clause; CORRECTED), DRIFT-090 (the pooled
-guard's √(n−1) ceiling; OPEN).
+guard's √(n−1) ceiling; CORRECTED by D4, the barrier path leans on the ingest's guard).
 
 ---
 

@@ -73,9 +73,10 @@ def test_get_market_data_round_trips_and_writes_provenance() -> None:
 
 
 def test_integrity_anomaly_is_reported_without_crashing() -> None:
-    """PROV-NEV-01 / PROV-OUT-03b: an integrity anomaly is FLAGGED (the offending
-    ticker excluded into anomalous_tickers), never crashed, never silently clean.
-    Here the lone ticker is the outlier, so nothing survives -> used_fallback
+    """PROV-NEV-01 / PROV-OUT-03b / PROV-OUT-09: an integrity anomaly is FLAGGED (the
+    offending tickers excluded into anomalous_tickers), never crashed, never silently
+    clean. The guard judges the newest session's cross-section (DL-247); at 0.5 sigma
+    both of its two moves are outliers, so nothing survives -> used_fallback
     (DRIFT-014)."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
@@ -88,17 +89,20 @@ def test_integrity_anomaly_is_reported_without_crashing() -> None:
                 _bar("AAPL", 1),
                 _bar("AAPL", 2),
                 _bar("AAPL", 3, close=300.0),
+                _bar("MSFT", 3),
             )
         ),
         settings=settings,
     ).bind()
 
-    response = bus.request(_message("get_market_data", _market_payload()))
+    response = bus.request(
+        _message("get_market_data", _market_payload(("AAPL", "MSFT")))
+    )
 
     quality = response.payload["quality"]
     assert response.message_type == "response"
     assert quality["used_fallback"] is True  # nothing survived -> whole-batch degraded
-    assert "AAPL" in quality["anomalous_tickers"]
+    assert quality["anomalous_tickers"] == ["AAPL", "MSFT"]
 
 
 def test_source_failure_records_fault_and_returns_degraded_data() -> None:

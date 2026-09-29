@@ -29,11 +29,12 @@ def validate_bars(
     """Filter invalid bars and summarize data quality."""
     notes: list[str] = []
     valid = [bar for bar in bars if _valid_bar(bar, notes)]
-    # An extreme-move outlier is attributed to its OWN ticker and that ticker is
+    # An extreme NEWEST bar is attributed to its OWN ticker and that ticker is
     # EXCLUDED — a partial degradation (DRIFT-014), not a whole-batch fallback. At
     # S&P-500 scale one >Nsigma name must not reject the clean survivors; the batch
-    # note tainted everything. Staleness is measured on the pre-exclusion bars so an
-    # excluded anomalous name is not double-counted as missing.
+    # note tainted everything. An older bar is never re-judged (DL-247). Staleness is
+    # measured on the pre-exclusion bars so an excluded anomalous name is not
+    # double-counted as missing.
     anomalous = _anomalous_tickers(valid, settings)
     stale = _stale_tickers(tickers, valid, window.end, settings.max_staleness_days)
     if stale:
@@ -82,18 +83,31 @@ def _valid_bar(bar: OHLCVBar, notes: list[str]) -> bool:
 
 
 def _anomalous_tickers(bars: list[OHLCVBar], settings: ProviderSettings) -> set[str]:
-    """Tickers with an extreme intraday move, vs the POOLED cross-sectional spread.
+    """Tickers whose NEWEST bar is an extreme open-to-close move (PROV-OUT-09).
 
-    The detector is deliberately pooled: a >Nsigma move (earnings/news/bad-print
-    relative to the whole batch) is a data-integrity flag, not a per-stock vol filter.
-    DRIFT-014 only changes the consequence: instead of one batch note tainting every
-    name, the outlier is attributed to its own ticker, which the caller then excludes.
+    The detector is deliberately pooled: a >Nsigma move against every ticker's move
+    on the same session is a data-integrity flag, not a per-stock vol filter.
+    DRIFT-014 made the consequence per-ticker (the caller excludes the outlier).
+    DL-247 narrows the scope: only each ticker's own last bar is judged, against
+    that session's cross-section, so a real extreme day in its history never drops
+    it. The pool cannot put one move beyond sqrt(n - 1) sigma (DRIFT-090).
     """
-    moves = [
-        (bar.ticker, (bar.close - bar.open) / bar.open)
-        for bar in bars
-        if bar.open > 0 and math.isfinite((bar.close - bar.open) / bar.open)
-    ]
+    sessions: dict[date, list[tuple[str, float]]] = {}
+    newest: dict[str, date] = {}
+    for bar in bars:  # validated: every price finite and > 0 (_valid_bar)
+        move = (bar.close - bar.open) / bar.open
+        sessions.setdefault(bar.bar_date, []).append((bar.ticker, move))
+        newest[bar.ticker] = max(newest.get(bar.ticker, date.min), bar.bar_date)
+    return {
+        ticker
+        for day in set(newest.values())
+        for ticker in _outliers(sessions[day], settings.max_daily_move_sigma)
+        if newest[ticker] == day
+    }
+
+
+def _outliers(moves: list[tuple[str, float]], max_sigma: float) -> set[str]:
+    """Tickers beyond ``max_sigma`` of one session's pooled moves; <2 abstains."""
     if len(moves) < 2:
         return set()
     returns = [value for _, value in moves]
@@ -101,7 +115,7 @@ def _anomalous_tickers(bars: list[OHLCVBar], settings: ProviderSettings) -> set[
     if sigma == 0:
         return set()
     center = mean(returns)
-    limit = settings.max_daily_move_sigma * sigma
+    limit = max_sigma * sigma
     return {ticker for ticker, value in moves if abs(value - center) > limit}
 
 

@@ -16,6 +16,7 @@ from agents.provider.barrier_history import (
     find_pending_barrier_history,
     write_barrier_history,
 )
+from agents.provider.settings import ProviderSettings
 from agents.provider.tests.barrier_history_helpers import (
     analyst_run,
     bars,
@@ -77,34 +78,41 @@ def test_an_exception_in_the_fetch_path_still_writes_a_failed_node(
 
 
 def test_a_dropped_ticker_carries_its_named_reason() -> None:
-    """PROV-OUT-08 / PROV-FAIL-02: the unchanged 8-sigma guard's exclusion and a
-    ticker the source served nothing for are each listed with a reason; a served
-    but stale ticker keeps its bars and is marked stale."""
+    """PROV-OUT-08 / PROV-OUT-09 / PROV-FAIL-02: the guard's exclusion (its newest
+    bar, against that session's cross-section) and a ticker the source served
+    nothing for are each listed with a reason; a served but stale ticker keeps its
+    bars and is marked stale. Four names on the newest session cap a z-score at
+    sqrt(3) (DRIFT-090), so the guard runs here at 1.5 sigma, not the default 8."""
     graph = InMemoryGraphStore()
     run = analyst_run(
         graph,
-        rec("AAPL", "buy"),
-        rec("TSLA", "buy"),
-        rec("GME", "buy"),
+        *(rec(ticker, "buy") for ticker in ("AAPL", "MSFT", "NVDA", "TSLA", "GME")),
         rec("IBM", "buy"),
     )
     spike = bars("TSLA", 800)
-    jump = spike[400].model_copy(
-        update={"close": spike[400].open * 1.6, "high": spike[400].open * 1.6}
+    jump = spike[-1].model_copy(
+        update={"close": spike[-1].open * 1.6, "high": spike[-1].open * 1.6}
     )
     served = (
         *bars("AAPL", 800),
-        *spike[:400],
+        *bars("MSFT", 800),
+        *bars("NVDA", 800),
+        *spike[:-1],
         jump,
-        *spike[401:],
-        *bars("IBM", 800, end_days_ago=20),
+        *bars("IBM", 780, end_days_ago=20),
+    )
+    agent = ProviderAgent(
+        InProcessBus(),
+        graph=graph,
+        source=counting_source(served),
+        settings=ProviderSettings(max_staleness_days=7, max_daily_move_sigma=1.5),
     )
 
-    write_barrier_history(run, agent=provider_agent(graph, counting_source(served)))
+    write_barrier_history(run, agent=agent)
 
     history = read_history(graph)
     assert history.status == "ok"
-    assert set(history.histories) == {"AAPL", "IBM"}
+    assert set(history.histories) == {"AAPL", "MSFT", "NVDA", "IBM"}
     assert history.dropped["TSLA"].startswith("extreme_move_guard")
     assert history.dropped["GME"] == "no_bars_returned: stale_or_missing"
     assert history.stale == ("IBM",)

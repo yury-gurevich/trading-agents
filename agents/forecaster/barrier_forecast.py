@@ -7,7 +7,8 @@ Role: for one ticker and its stop and target, read ~3 years of its own daily bar
       probabilities as an append-only, advisory BarrierForecast claim. Any refusal
       (malformed barriers, no or a failed history, a ticker the provider dropped,
       short history, a failed fit, a conflicting rerun) records a fault and returns
-      the neutral reading; a claim is never fabricated (FORE-FAIL-04).
+      the neutral reading; a claim is never fabricated (FORE-FAIL-04). A designed
+      refusal's fault is a warning, a missing or broken input's an error (DL-247).
 External I/O: none (the bars are read from the graph; the fitter is injected).
 """
 
@@ -19,6 +20,14 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from agents.forecaster.barrier_refusal import (
+    DESIGNED,
+    MODULE,
+    BarrierClaimRefusedError,
+    barriers,
+    read_history,
+    record_refusal,
+)
 from agents.forecaster.barrier_store import BARRIER_LABEL, BarrierClaim, write_claim
 from agents.forecaster.domain.barrier_garch import (
     BARRIER_MODEL_ID,
@@ -29,7 +38,6 @@ from agents.forecaster.domain.barrier_garch import (
 )
 from agents.forecaster.domain.features import confidence_from_history
 from agents.forecaster.domain.sentiment import NEUTRAL
-from contracts.barrier_history import BARRIER_HISTORY_LABEL, BarrierHistory
 from contracts.common import Provenance
 from contracts.forecaster import ForecastRequest, ShadowPrediction
 from kernel.errors import fault_boundary
@@ -41,10 +49,6 @@ if TYPE_CHECKING:
     from agents.forecaster.settings import ForecasterSettings
     from contracts.barrier_history import BarRow
     from kernel import FaultSink, GraphStore
-
-
-class BarrierClaimRefusedError(RuntimeError):
-    """No claim is stated for this request; the message says why."""
 
 
 def forecast_barrier(
@@ -61,12 +65,16 @@ def forecast_barrier(
     with fault_boundary(
         sink,
         agent="forecaster",
-        module="agents.forecaster.barrier_forecast",
+        module=MODULE,
         capability="forecast_barrier",
         reraise=False,
     ) as capture:
-        claim = _state_claim(graph, settings, fitter, forecast)
-        write_claim(graph, claim)
+        try:
+            claim = _state_claim(graph, settings, fitter, forecast)
+        except BarrierClaimRefusedError as refusal:
+            record_refusal(sink, refusal)
+        else:
+            write_claim(graph, claim)
     if capture.fault is not None or claim is None:
         return ShadowPrediction(
             model_id=BARRIER_MODEL_ID,
@@ -97,19 +105,22 @@ def _state_claim(
     forecast: ForecastRequest,
 ) -> BarrierClaim:
     """Read, fit and simulate; raise BarrierClaimRefusedError on any refusal."""
-    stop, target = _barriers(forecast.features)
+    stop, target = barriers(forecast.features)
     ticker = forecast.subject_ref
-    history = _history(graph, forecast.history_ref, ticker)
+    history = read_history(graph, forecast.history_ref, ticker)
     rows = history.histories[ticker].bars
     if len(rows) < settings.barrier_min_history_sessions:
         raise BarrierClaimRefusedError(
             f"{ticker}: {len(rows)} bars < barrier_min_history_sessions "
-            f"{settings.barrier_min_history_sessions}; no claim"
+            f"{settings.barrier_min_history_sessions}; no claim",
+            severity=DESIGNED,
         )
     r, lh_pct, ll_pct = _moves(rows)
     params = accept_fit(fitter.fit(r))
     if params is None:
-        raise BarrierClaimRefusedError(f"{ticker}: GARCH fit failed; no claim")
+        raise BarrierClaimRefusedError(
+            f"{ticker}: GARCH fit failed; no claim", severity=DESIGNED
+        )
     as_of = date.fromisoformat(rows[-1][0])
     seed = barrier_seed(ticker, as_of)
     probabilities = garch_path_probs(
@@ -138,37 +149,6 @@ def _state_claim(
         history_ref=str(forecast.history_ref),
         sessions_requested=history.sessions_requested,
     )
-
-
-def _history(graph: GraphStore, ref: str | None, ticker: str) -> BarrierHistory:
-    """The provider's BarrierHistory for this request, holding this ticker's bars."""
-    node = graph.get_node(BARRIER_HISTORY_LABEL, ref) if ref else None
-    if node is None:
-        raise BarrierClaimRefusedError(
-            f"{ticker}: no BarrierHistory {ref!r} in the graph; no claim"
-        )
-    history = BarrierHistory.model_validate(dict(node.props))
-    if ticker in history.dropped:
-        raise BarrierClaimRefusedError(
-            f"{ticker}: provider dropped: {history.dropped[ticker]}; no claim"
-        )
-    if ticker not in history.histories:
-        raise BarrierClaimRefusedError(
-            f"{ticker}: not requested in BarrierHistory {ref!r}; no claim"
-        )
-    return history
-
-
-def _barriers(features: dict[str, float]) -> tuple[float, float]:
-    """Return ``(stop_pct, target_pct)``, each in (0, 1] (FORE-IN-07)."""
-    stop = features.get("stop_pct")
-    target = features.get("target_pct")
-    if stop is None or target is None or not (0 < stop <= 1 and 0 < target <= 1):
-        raise BarrierClaimRefusedError(
-            f"barriers must be fractions in (0, 1]: stop_pct={stop} "
-            f"target_pct={target}; no claim"
-        )
-    return stop, target
 
 
 def _moves(rows: tuple[BarRow, ...]) -> tuple[np.ndarray, ...]:

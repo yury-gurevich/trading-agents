@@ -10,6 +10,79 @@ and is marked CLOSED here.
 
 ---
 
+## DL-247 - the extreme-move guard judges each name's newest session only, and a designed "no claim" is a warning - status: DECIDED (builder, 2026-09-29; S243)
+
+**Why.** DL-245 measured two defects: the guard in `agents/provider/domain/integrity.py` pooled every
+bar of the window, so one real extreme day anywhere in a name's history dropped it (CHTR out of the
+scan universe on 41 of 78 runs for 2026-04-24; TXN/COP out of the barrier history for 2025-04-09);
+and the forecaster recorded the resulting designed "no claim" at `error`, which
+`kernel/fault_incidents.py` counts as an open incident. The planner decided the direction (newest
+session, warning); these are the builder's decisions inside it.
+
+**D1 — which bar is "newest", and what a lagging one is judged against.** Each ticker's **own last
+valid bar** is judged, against the pooled open-to-close moves of **every ticker's bar on that same
+session**. For every ticker current on the batch's last date this is exactly "the batch's newest
+session". A ticker whose last bar is older (halted, late, or stale) is judged against the
+cross-section of *its* session, so its newest bar is never left unjudged; staleness itself stays the
+separate `stale_tickers` flag (`PROV-STA-04`), unchanged. No bar older than a ticker's last is ever
+judged, so a history day never drops a name. *Rejected:* (a) judge only bars dated the batch's last
+date, leaving a lagging ticker's newest bar unjudged (a bad print on a ticker one session behind
+would reach a decision, the one thing the guard is for); (b) pool every ticker's own last bar
+whatever its date (mixes sessions: a lagging bar from a volatile day would be scored against a calm
+day's spread, or dilute it).
+
+**D2 — the pool.** Population mean and σ over that session's moves, the ticker's own move included,
+exactly the old formula on a narrower set; fewer than two moves, or zero spread, abstains (as
+before). *Rejected:* a leave-one-out σ (the ticker's move excluded from its own pool). It lifts the
+√(n−1) ceiling below, but it changes the formula DRIFT-014 kept and makes the ingest *more* sensitive
+on quiet days (the trap the spec names), with no measurement to set 8σ against it. A per-ticker
+volatility model stays the spec's recorded out-of-scope alternative.
+
+**Measured bound, recorded, not fixed (DRIFT-090).** For a population z-score over *n* moves,
+|x − mean| ≤ σ·√(n−1) (Samuelson), and the guard needs *more* than `max_daily_move_sigma` = 8, so
+it can fire only on a session holding **more than 65** moves (66 or more). The daily ingest (~99
+names, ceiling ≈ 9.9σ) can; the barrier fetch (~14 buys, ceiling ≈ 3.6σ) **cannot**. The old whole-window pool (14 × 760 moves) had
+no such ceiling, which is why it fired on TXN/COP. The barrier path is still covered upstream: its
+newest session is the ingest's, and a name the ingest drops never becomes a buy. Proven:
+`test_a_session_of_65_names_or_fewer_cannot_pass_8_sigma` (+500 % passes among 65, dropped among 66).
+
+**D3 — which forecaster refusals are designed.** Designed ("the system worked and says no claim"),
+`warning`: a ticker the provider dropped, **including a history written as failed** (the provider
+records its own `error` Fault for every failed fetch, in `agent.py` or `barrier_history.py`, so the
+forecaster's echo at `error` counted one outage twice); fewer than `barrier_min_history_sessions`
+bars; a fit outside EXP-018's acceptance rule. Missing or broken input, `error`: no named
+`BarrierHistory` in the graph; a history that does not hold the ticker; malformed barriers (the loop
+never sends them, so one is a defect upstream); an optimiser exception; an absent `arch` (a deploy
+defect); a conflicting rerun (`FORE-IDM-04`). Severity readers checked: only
+`kernel/fault_incidents.py` decides by severity (`error`/`critical` are incidents), and the brief,
+the supervisor's health, `surfaces/queries/faults.py`, the dashboard's `incidents` quick ask and MCP
+all read that one function; `kernel/fault_graph.py` still writes every `warning` as a `Fault` node,
+`kernel/metrics_prometheus.py` still counts it, so a warning is recorded and visible, not an
+incident (`FORE-OBS-02`). One exception type, `BarrierClaimRefusedError`, carries its severity, so a
+Fault's `error_type` and collapse signature do not move. *Rejected:* a `severity` argument on
+`kernel.errors.fault_boundary` (a kernel change for one caller; the handler can submit its own
+fault); a second exception class for designed refusals (renames the `error_type` every existing
+fault, dashboard row and ack is keyed on); `info` for designed refusals (the S213 precedent,
+`RegimeVixShortfall`, puts a designed shortfall at `warning`, and `info` is read as noise).
+
+**D4 — the barrier fetch leans on the ingest's guard (planner, 2026-09-29, before merge).** The builder
+left DRIFT-090 as a forced decision. Decided: accept. The barrier fetch's newest session is the
+session the daily ingest judged minutes earlier from the same feed, over ~99 names (ceiling ≈ 9.9σ),
+and a ticker the ingest excludes has no bars for the analyst, so it never becomes a buy. A bad newest
+bar therefore cannot reach a barrier claim through a guard that did not fire. `PROV-OUT-08` now says
+so. *Rejected:* a leave-one-out σ (D2's reasons stand: it changes DRIFT-014's formula and sharpens the
+quiet-day trap, with nothing measured); having the barrier fetch reuse the run's `MarketData` verdict
+(the right shape, but only once something lets the barrier path see a session the ingest did not
+judge, such as a different feed or a fetch on a later day; nothing does today). *Re-open if* the
+barrier fetch's feed, end rule or timing ever diverges from the ingest's.
+
+**Laws.** Provider v1.6 (`PROV-OUT-09` new, `PROV-OUT-08` amended, PARAM row reconciled `4.0` →
+`8.0`); forecaster v1.8 (`FORE-FAIL-04` amended). Drift rows DRIFT-088 (the guard's scope was never a
+clause; CORRECTED), DRIFT-089 (refusal severity was never a clause; CORRECTED), DRIFT-090 (the pooled
+guard's √(n−1) ceiling; CORRECTED by D4, the barrier path leans on the ingest's guard).
+
+---
+
 ## DL-246 - a graph-pull poll finds its work by key and edge, and the reporter reads its own run's MarketData - status: DECIDED (builder, 2026-09-29; S242)
 
 **The defect (DL-244, measured by the planner).** Every graph-pull `find_pending` listed its whole label

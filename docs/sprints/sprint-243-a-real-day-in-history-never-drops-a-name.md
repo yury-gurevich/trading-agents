@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 94 (live defect)
 **Branch:** `sprint-243-a-real-day-in-history-never-drops-a-name`
-**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; not deployed (image-only retag and F2 owed)
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 owed
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-245](../design-log.md) (the defect, measured, and the direction) · DRIFT-014 / DRIFT-012 (why the guard exists) · the builder's decisions go to the **next free DL** (`DL-247` at spec time)
@@ -379,7 +379,7 @@ prefix table says `FCST` for the forecaster while its book uses `FORE`.
 
 ## Closeout — evidence
 
-**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; not deployed (image-only retag and F2 owed)
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 owed
 
 **Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container, `/home/user/trading-agents` on branch `claude/zealous-bell-91iycb` (the session forced this name instead of `sprint-243-a-real-day-in-history-never-drops-a-name`), cut from `main` `0bb2292a`. **No `.env`**; `uv run --frozen` against the existing `uv.lock`; no network in any test.
 
@@ -497,6 +497,6 @@ the cloud branch's `5d609810`; F1 ran with the main checkout's `.env`.
 - **Merge.** Not a fast-forward (the cloud branch was cut before `61a93e86`, a one-line `STATE.md`
   commit, green on `main`); merge commit `7e157697` differs from the gated tree by that line only.
 
-**Owed:** image-only retag (operator's call; rollback `s242`), then **F2** on the next scheduled run
+**Deployed** `s243` 2026-09-29 (image-only retag, operator: *"retag"*; 16 / 16 apps + `dispatcher-cron`, `DeployRecord` recorded; rollback `s242`). **Owed:** **F2** on the next scheduled run
 (CHTR scanned; no barrier drop for a history day; the brief's incident count unchanged by a designed
 refusal) and ack the two TXN / COP Faults from `sched-2026-09-28`.

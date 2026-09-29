@@ -10,6 +10,7 @@ HOW TO USE THIS FILE
   Base lineage: S164 (law rigour, handback contract, law reading record) merged with S177–S184
   (measured evidence, design decisions, blast radius, traps, Codex handover block). Two sections
   exist because a real sprint was damaged by their absence — they are marked 🩹.
+  The Blast radius table's Rollback row was added at the operator's request (2026-09-29).
 
   DELETE every HTML comment before handing over. Leave no placeholder unfilled: a handback with a
   placeholder intact is returned, not repaired (DL-48).
@@ -161,6 +162,7 @@ when you merge.
 | Graph vocabulary change? | <new label or property? → the deploy is a full `up`, not a retag> |
 | New env keys / tunables | <names — these make the deploy a full `up` too> |
 | Deploy implication | <image-only retag \| full `up`> |
+| Rollback | <how the deploy is undone: the image tag to retag back to, and **what a retag does not undo** (graph writes, broker orders, a schema migration, an injected pack, an infra setting). "Nothing beyond the retag" is an answer; a blank is not> |
 
 ---
 
@@ -237,7 +239,8 @@ field before the metrics.
 3. **Post-merge CodeQL.** `codeql.yml` runs **only on `main`**, so a green branch gate is not proof of
    a CodeQL-clean merge. Check after merging.
 4. **Deploy** per the Blast radius row: image-only retag, or a full `up` if the sprint adds a graph
-   label/property, an env key, or a tunable.
+   label/property, an env key, or a tunable. **Record the Rollback row's tag with the deploy** (STATE
+   and the `DeployRecord`), so undoing it is one command, not an investigation.
 
 ---
 

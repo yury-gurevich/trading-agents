@@ -10,6 +10,97 @@ and is marked CLOSED here.
 
 ---
 
+## DL-245 - the barrier history reuses a one-day integrity guard on three years, and a named "no claim" pages the operator - status: OPEN (planner, 2026-09-29; work-queue 94)
+
+**What happened (measured 2026-09-29).** `sched-2026-09-28`'s brief read *Needs you: 2 open incidents*:
+two forecaster `Fault`s, severity `error`, *"TXN / COP: provider dropped: extreme_move_guard … no claim"*.
+The provider's `BarrierHistory` (S239) runs `domain/integrity.py`'s pooled guard, built for one day's
+batch, over **760 sessions**: pooled open-to-close sigma over the 14 buys is 1.42 %, so 8 sigma is
+11.34 %, and both names trip on **2025-04-09**, the tariff-pause rally (TXN +16.76 %, COP +12.82 %,
+SIP raw, reproduced from here). A real market-wide day, not a bad print.
+
+**Two defects.** (1) The guard drops a name for one genuine extreme day anywhere in three years, so TXN
+and COP get no claim until that day leaves the window (~2028-04), and the ledger is biased toward calm
+names that EXP-018's test bed did not exclude. (2) A designed, named "no claim" is raised at `error`,
+so it counts as an open incident and the brief asks for the operator every time: the cry-wolf class
+the etalon bar names.
+
+**Direction (not decided).** The barrier fetch should not reuse the one-day pooled guard; candidates:
+the guard on the latest session only (its original scope), or per-ticker on the name's own history with
+market-wide days (most names moving together) exempt. The "no claim" fault becomes `warning`, which
+the incident count does not read. Both touch provider and forecaster laws (S239's D-decisions).
+**Ruled out:** acking the two faults as the fix (they recur on every run where TXN or COP is a buy).
+
+---
+
+## DL-244 - no agent loads every MarketData: the reporter and scanner were OOM-killed on `sched-2026-09-28` - status: OPEN (planner, 2026-09-29; work-queue 93)
+
+**What happened (measured 2026-09-29).** `sched-2026-09-28` stopped at 7/8: the reporter was
+`OOMKilled` (exit 137, 8 restarts, `CrashLoopBackOff`) from 23:00 UTC, and the scanner, after its
+stage, the same (12 restarts). Both run at 0.5 CPU / 1 GiB. Two readers load **every** `MarketData`
+node, full props: the reporter's `_benchmark` (`agents/reporter/performance_inputs.py:119`, to pick the
+latest SPY series) and the scanner's `find_pending` (`agents/scanner/poll.py:33`, on every 60 s poll).
+78 nodes are 142 MB of JSON and peak at **785 MB** of Python objects when listed (tracemalloc, from
+here); each run adds ~3 MB JSON / ~16 MB loaded, so this crept up and `sched-2026-09-28`'s node
+crossed the limit. Not caused by S238–S240: the newest node is 2,963 KB against 2,947 KB on 09-15.
+
+**Mitigation, operator-approved (*"yes, bump both now"*), 23:25 UTC.** Reporter and scanner raised to
+1 CPU / 2 GiB (`reporter--0000169`, `scanner--0000175`); image, scale, env names, secret names and
+identity identical to the pre-change snapshot; ephemeral storage 2 → 4 GiB follows the CPU. The
+reporter wrote the Snapshot at 23:27 and the run read **8/8**. Headroom ≈ 70 runs. Revert to 0.5 / 1
+GiB after the fix deploys.
+
+**Fix direction (not built).** (a) The reporter reads its own run's `MarketData` through lineage
+(`PMRun` → `AnalystRun` → `ScanRun` → `MarketData`, as the PM's poll does), one node by key. (b) The
+scanner finds unscanned work without loading payloads: a key-only `list_keys(label)` on the kernel
+`GraphStore` port (memory, Postgres, guarded), then `get_node` only for the pending key.
+**Ruled out:** listing `RunRequest`s and `get_node` per `market-data:{run_id}` (still pulls every
+payload, one at a time, every poll); guessing the key from the run id in the reporter (a resumed run's
+id differs from its source's); a permanent memory raise (moves the cliff, does not remove it).
+**Unmeasured:** the scanner's poll pulls ~142 MB from Neon each minute of its window; Neon egress
+against the plan's transfer allowance has not been checked.
+
+**Compaction considered and ruled out as the fix (operator asked, 2026-09-29).** Measured on Neon:
+the database is **98 MB** (`nodes` 80 MB / 40,471 rows, `edges` 11 MB); `MarketData` is 34.8 MB
+stored (TOAST-compressed) for the 142 MB of JSON that loads as 785 MB. The store is not under
+pressure; the readers are. Options recorded for later: (1) **bars stored once** — consecutive
+`MarketData` share 202 of 203 sessions, so ~99 % is duplicate and a shared bar store would shrink it
+~50×, but a bar table is pack vocabulary (ADR-0012), so it is a design sprint, not a chore; the
+trigger is the store nearing its plan limit or a second pack. (2) **retention for log-like labels**
+(`Fault` 9.3 MB, `AgentMessage` 8.9 MB, `CapabilityGrant`, `AgentInstance`, `BrokerOrderStatus`),
+per-label, because acceptance, scorecards and the fidelity check read some history. (3) ~~archive old
+`MarketData`~~ — ruled out: it is lineage evidence that re-reports, the fidelity check and S241's
+settlement read. (4) ~~`VACUUM FULL`~~ — ruled out, measured: it reclaims dead tuples only, and
+`nodes` holds 188 dead against 40,471 live (650 deletes ever; 11,880 updates, 89 % HOT), 70 MB of its
+80 MB live rows; autovacuum last ran 2026-09-22. Shrinking means storing less (option 1), not reclaiming.
+
+**Neon data transfer is the same defect, measured (2026-09-29).** Neon billed **$35.68** for
+2026-09-01 → 09-21, **$33.74 of it data transfer (837.39 GB)**; compute $1.92, storage $0.02. Azure
+`RxBytes` per app, 09-01 → 09-28: **scanner 513 GB, provider 490 GB**, analyst 46, PM 30,
+deliberator-manager 26, the rest < 10 each (1,121 GB). A full list is sent as uncompressed JSON:
+`MarketData` 128.9 MB, `AgentMessage` 13.4, `Fault` 9.6, `AnalystRun` 4.4. The scanner lists every
+`MarketData` per poll; the provider lists every `RunRequest` and walks `INGESTED_BY` to its
+`MarketData`, and `TRAVERSE_DESCENDANTS_SQL` returns `n.props`, so **an edge-existence check downloads
+every payload**. Analyst, PM and deliberator repeat the pattern on smaller labels. The fix is therefore
+one kernel primitive — find pending work by key and edge, no props — used by every graph-pull
+`find_pending`, then `get_node` for the one pending item; the reporter's `_benchmark` reads by lineage.
+**Local clients ruled out (operator asked, 2026-09-29).** Over Neon's own billing window (09-01 → 09-21)
+the fleet's `RxBytes` sum to **813.2 GB of the 837.39 GB** billed (97 %, vendor traffic included), so the
+dashboard, `infra/status.ps1` and planner scripts are ≤ 24 GB together. `status.ps1` makes `az` calls only
+and never opens the store; the dashboard has no auto-refresh and reads per run by key (the scorecard's
+~20-session `accept_run` memo is the largest, tens of MB per fresh load).
+
+**Option kept (operator, 2026-09-29): move the store into Azure, same region.** Azure Database for
+PostgreSQL Flexible Server in australiaeast beside the fleet makes agent traffic intra-region.
+**Not now:** the traffic is the readers', and fixing them should cut it from ~40 GB a day to megabytes,
+*[assumed: within Neon's included transfer, not checked]*, where Neon compute is $1.92 a month; a Flexible Server is a standing monthly
+charge *[unverified: price not checked]* and reopens [ADR-0014](decisions/INDEX.md). **Postgres, not
+MS SQL:** the store is Postgres-specific (JSONB props, recursive-CTE traversal, psycopg, alembic), so
+MS SQL is a port rewrite for no gain. **Trigger to reopen:** Neon transfer still material after the fix
+ships, or its latency / cold starts measured as a cost to the run window.
+
+---
+
 ## DL-243 - each barrier claim is settled once, on the first later run whose own bars cover it, by one pass per run; a claim that cannot be settled honestly is void - status: DECIDED (builder, 2026-09-28; S241)
 
 **Context.** [S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md) is sprint B of the ledger (DL-240):

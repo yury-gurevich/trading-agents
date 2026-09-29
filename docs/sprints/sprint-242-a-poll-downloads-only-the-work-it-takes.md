@@ -166,6 +166,7 @@ DL-243; a branch cut before another DL lands can still collide.
 | Graph vocabulary change? | No: no label, property or edge |
 | New env keys / tunables | None |
 | Deploy implication | **Image-only retag** of the six agents (the planner's), then revert reporter + scanner to 0.5 CPU / 1 GiB |
+| Rollback | Retag the six agents back to the tag running before the deploy (`s239` at spec time). **Not undone by a retag:** nothing in the graph (no label, property or schema change) or at the broker; the one infra setting is the memory, so **revert to 1 GiB only after F2**, and on a rollback put reporter + scanner back to 1 CPU / 2 GiB first |
 
 ---
 

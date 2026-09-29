@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 95 (live defect)
 **Branch:** `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master`
 **Status:** BUILT 2026-09-29 by a cloud session on `claude/loving-gates-f8vfsd` (the session's forced branch; cut from `main` `8cef3ac`), not merged — C1–C11 green, six DL-70 plants red and restored, `make ci` exit 0 in the container (3,687 passed, 100.00 %); owed to the planner: `uv lock`, Windows `make ci`, `make gate-ran`, retag, F1, F2
-**Version:** *next available PATCH at merge*
+**Version:** `0.119.03` (PATCH)
 **Effort:** M
 **Decisions:** [DL-248](../design-log.md) (the defect, measured, and the direction) · R004
 ([a2a-boundary](../research/a2a-boundary/a2a-boundary.md), why A2A is not the fix) · the builder's
@@ -615,6 +615,16 @@ detect-secrets Passed, untracked secrets Passed (12 new files scanned). Linux on
 owed.
 
 **`make gate-ran`:** owed to the planner.
+
+**Planner verification (2026-09-29):** code reviewed against the spec: classification is by status
+first; one body goes out on every attempt; the replay checks the type before it returns anything and
+never remembers a failed mint; `MasterAgent`'s only per-activation mutable state is the already-locked
+instance counter; the graph store runs autocommit single statements with no transactions, so sharing
+the connection is safe. PATCH bump `0.119.02` → `0.119.03`. `uv lock` changed only the package's own version line
+(`Updated trading-agents v0.119.2 -> v0.119.3`, 180 packages resolved). Windows `make ci` in worktree
+`trading-agents-s244`, redirected to a file: **exit 0**, 3,687 passed, 8 skipped, 100.00 %,
+dependency audit and detect-secrets passed. Committed on `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master`
+(the conventional name) above the builder's `e2b7b68`.
 
 **Not met / verified failing:** nothing in the spec's build list is unmet. **Not done (owed, by
 design):** `uv lock` with the PATCH bump (`uv.lock` untouched, `UV_FROZEN=1` throughout), Windows

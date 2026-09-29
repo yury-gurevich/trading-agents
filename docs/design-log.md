@@ -12,8 +12,8 @@ and is marked CLOSED here.
 
 ## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)
 
-**Why.** DL-248 measured the defect (one EHLO attempt against a single-threaded master: 54 `TimeoutError`
-+ 5 `HTTP 503` boot crashes in four weeks) and set the direction: resend with backoff and one boot id,
+**Why.** DL-248 measured the defect (one EHLO attempt against a single-threaded master: 54 `TimeoutError` plus
+5 `HTTP 503` boot crashes in four weeks) and set the direction: resend with backoff and one boot id,
 replay a repeated boot id, serve concurrently. These are the builder's five decisions inside it.
 
 **D1 — the envelope (`kernel/ehlo_settings.py`, `EhloSettings`, no env prefix, no key set).**

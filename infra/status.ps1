@@ -1,7 +1,7 @@
 # status.ps1 — One-command status board for the trading-agents fleet.
 #
 #   pwsh infra/status.ps1              # single snapshot (fast: 4 remote calls)
-#   pwsh infra/status.ps1 -Watch       # refresh every 15s (Ctrl-C to stop)
+#   pwsh infra/status.ps1 -Watch       # refresh every 5s (Ctrl-C to stop)
 #   pwsh infra/status.ps1 -Replicas    # also count live replicas (one az call per app)
 #
 # Verdict first: one GREEN/RED line, reasons under it, detail below.
@@ -27,7 +27,7 @@ param(
   [switch]$Watch,
   [switch]$Replicas,
   [ValidateRange(5, 3600)]
-  [int]$IntervalSeconds = 15
+  [int]$IntervalSeconds = 5
 )
 
 Set-StrictMode -Version Latest

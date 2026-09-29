@@ -57,3 +57,8 @@ archive, add a row above, and update the *Older sprints* pointer in STATE.md plu
 [`../INDEX.md`](../INDEX.md). Check at the same time that the newest sprints actually have *Recent*
 entries — at the 2026-07-22 split, S128–S134 existed only inside the header paragraph, so a
 size-only trim would have dropped them.
+
+🪤 **"Verbatim" means the text, not the links.** An entry's relative links resolve from `docs/`; in
+`state-archive/` each one needs a `../` prefix. The 2026-09-29 split moved them unchanged and turned
+`main` red on markdown link integrity (`391eff86`, repaired in `071c23b7`). Run
+`uv run python scripts/check_markdown_links.py` and read its **exit code**, not its last lines.

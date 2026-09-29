@@ -10,6 +10,55 @@ and is marked CLOSED here.
 
 ---
 
+## DL-248 - an agent's EHLO has one attempt against a single-threaded master, so the tail of every activation wave crashes - status: OPEN (planner, 2026-09-29; work-queue 95, S244)
+
+**What happened (measured 2026-09-29).** On the `s243` retag, provider and both deliberator peers
+crashed at 06:23:53 UTC with `TimeoutError` in `kernel/bootstrap.py` `activate_agent`: their EHLO
+went out at ~06:23:23, woke master from zero (KEDA activated it at 06:23:22), master served at
+06:23:44 and then worked through the queued activations one at a time (`AgentInstance`
+`started_at` 06:23:44 → :50 → :52.7 → :55.9 → :58.0), finishing theirs after the callers had
+given up (master logged two `BrokenPipeError`s). The containers restarted and activated at
+06:24:00–06:24:06, so each timeout also left an orphan `AgentInstance`.
+
+**It is not rare, and not only a cold master (measured, Log Analytics, 2026-09-01 → 09-29).**
+**54** agent containers crashed on an EHLO `TimeoutError` on **19** days, and **5** on an EHLO
+`HTTP 503`, across 8 apps. About 48 were outside every KEDA window (deploys, test runs, restarts:
+master is at zero by design then). **About 10 were inside the agent window, with master already up.**
+Master's window opens at 20:25 UTC (22:25 before ~09-20) and the agents' at 22:30, and on
+09-12 and 09-28 master logged no scale-down between its start and 22:40, so the operator's
+hypothesis (*"master going down after a timeout before the agents wake"*) is **ruled out**. Instead
+the wave itself overflows master: on 09-24, 12 agents activated 22:30:16–22:30:41, about 2 s
+apart, and the last three (provider, operator, deliberator-manager) only at 22:32:06–09, the
+~90 s of a crash and restart; 09-25 the same shape (12 by 22:30:55, three more at 22:32:17–51).
+
+**Three causes, all in code (measured).** (1) The agent makes **one** `/ehlo` POST, 30 s timeout,
+no retry, and dies on failure, although master's own law book declares a resend budget
+(`handshake_timeout_1_seconds` 10, `handshake_max_retries` 5, `handshake_timeout_2_seconds` 300 in
+`MasterSettings`) that **no code reads**: they sit on master, and the agent side cannot import them.
+(2) Master serves `/ehlo` on `socketserver.TCPServer`, **single-threaded**, with Python's default
+listen backlog of **5**, while each activation takes ~2–6 s (Key Vault, live credential probes once
+the 5-minute pass cache is stale, then the graph writes) and 15 agents wake together. (3) An EHLO is
+not idempotent: every attempt writes a new `AgentInstance`, so a naive retry would multiply work
+behind a single-threaded server. *[ASSUMED, not measured: that the in-window 503s are the ingress
+failing to connect past the 5-slot backlog; S244 does not depend on it.]*
+
+**Direction (the standard resilience patterns; S244).** The agent resends on a transport failure
+(timeout, refused or reset connection, 502/503/504) with exponential backoff and full jitter inside
+a bounded budget, reusing one boot id, and treats a 4xx or a bad signature as final; master answers a
+repeated boot id with the same ACTIVATE (an idempotency key) and serves EHLOs concurrently with a
+backlog sized to the fleet. The budget moves from `MasterSettings` to a kernel settings class, and
+the master law book says what the fleet actually does (`MST-TRG-01` still names a "handshake queue",
+`MST-ORD-02` assumes master is up first).
+**Ruled out:** master `minReplicas 1` (an always-on bill against LLM-tight funds, and it fixes
+neither the wave nor a master restart); staggering the agents' cron windows (hides the queue, adds
+a scheduling coupling, and a deploy still wakes everything at once); a longer single timeout
+(still one attempt, still dies on a 503); adopting Google's A2A for the handshake (the operator
+asked, 2026-09-29): R004 stands, A2A has no controller-issued-credentials handshake and its
+discovery is the same HTTP call against a sleeping endpoint; retry-with-backoff and idempotency
+keys are the standard this fix adopts.
+
+---
+
 ## DL-247 - the extreme-move guard judges each name's newest session only, and a designed "no claim" is a warning - status: DECIDED (builder, 2026-09-29; S243)
 
 **Why.** DL-245 measured two defects: the guard in `agents/provider/domain/integrity.py` pooled every

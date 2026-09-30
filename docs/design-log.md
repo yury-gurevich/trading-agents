@@ -443,6 +443,24 @@ barrier forecast shown to the deliberators would take part in gating. `FORE-NEV-
 gates, vetoes, or blocks a recommendation, sizing, or exit"*). Including forecasts needs the operator's
 decision and a forecaster law cycle. Every other missing row is a renderer omission.
 
+✅ **AMENDMENT 4, 2026-09-30 18:40 AEST — decided: the barrier forecast waits for its own track record; every other fact goes in** (the operator agreed the planner's recommendation).
+
+**Decision.** `FORE-NEV-02` is **not** amended now. The deliberators decide from the facts about the trade, which all go
+into the packet (work-queue **98**). The barrier forecast joins them only when the live `barrier_scorecard` reports
+`skill_lo > 0`, and then always beside its scorecard (work-queue **99**, parked with that trigger).
+
+**Why.** *[measured 2026-09-30]* The forecaster has stated 15 live claims since 2026-09-28 and **none is settled**; each
+needs 10 sessions. DL-240's rule is that nothing acts on a probability until a ledger shows it comes true, and
+`FORE-NEV-02` is pinned green by two tests that keep every other module from reading the ledger. The goal set in
+amendment 2 is to prove the deliberators *understand* the evidence: a crisp, unproven probability in front of a binding
+veto invites them to defer to it, and a deferring ruling would look evidence-based while measuring nothing.
+
+**Rejected: amend `FORE-NEV-02` now** (the operator's first instruction, withdrawn the same hour). It also could not land
+as a text edit: §5 of the conventions forbids the forecaster's book to name the reader, so the conditions (*shown with its
+track record*, *never decides alone*) belong in the deliberator's book, and the two green isolation tests would have to be
+widened in the same change. **Rejected: never show it.** The debaters ask for exactly this (18 of 19 guided turns name a
+missing stop-out probability or similar), and a forecast that beats climatology live is evidence like any other.
+
 ---
 
 ## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)

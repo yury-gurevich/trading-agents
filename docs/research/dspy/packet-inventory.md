@@ -54,7 +54,10 @@ law:
   blocks a recommendation, sizing, or exit."* The deliberation veto is **`binding`** on every recent
   run (`ExecutionRun.deliberation_posture`, measured). A forecast that informs a binding veto
   therefore takes part in gating. Adding it needs the operator's decision and a forecaster law cycle,
-  not only a renderer change. `FORE-NEV-01` (forecasts stay `shadow=True`) is not affected: showing a
+  not only a renderer change.
+  **Decided 2026-09-30 (DL-250 amendment 4): held until the live `barrier_scorecard` reports
+  `skill_lo > 0`** (work-queue 99). No live claim was settled when this was decided. Every other row goes in
+  now (work-queue 98). `FORE-NEV-01` (forecasts stay `shadow=True`) is not affected: showing a
   forecast as evidence does not make it a signal.
 
 **One design constraint follows from DSPy** ([concepts.md](concepts.md)). Each fact must arrive

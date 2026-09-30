@@ -192,7 +192,7 @@ a new eval case with an unmeasured effect (item 75/97), so the text is unchanged
 
 ---
 
-## DL-250 - the referee reads ~60 quants with no definitions, and one of its six hard-coded facts has been false since before it was compiled - status: MEASURED; direction PROPOSED (planner, 2026-09-30; work-queue 96, 97)
+## DL-250 - the referee reads ~60 quants with no definitions, and one of its six hard-coded facts has been false since before it was compiled - status: MEASURED; direction DECIDED (operator, 2026-09-30; work-queue 96, 97)
 
 **The operator's question.** How does quant data reach the first deliberator call and what does the model
 start out knowing? How do we make the debate use our parameters and read them the way *this* system
@@ -376,6 +376,49 @@ accepted diskcache advisory rests on "installed by 0 of 15 Dockerfiles". The two
 - **The golden firewall no longer tests production's models.** It was frozen on `gpt-5.5` debaters and
   a `claude-opus-4-8` judge, while production runs `claude-opus-5` for every role. Re-freezing it is
   paid, and belongs to 97.
+
+🚨 **AMENDMENT 2, 2026-09-30 15:22 AEST — terms are defined in the prompt; no debate role gets
+internet access** (the operator's question; the planner's decision, delegated).
+
+**The question.** *"I see a lot of numbers in the prompt, I do not see discussion citing numbers. We
+either give the LLM access to internet, or explain what terms mean in the initial message/prompt."*
+
+**Measured first: the debaters cite numbers; they do not understand them.** *[measured 2026-09-30,
+read-only, no LLM call]* 772 recorded turns from 35 real `DeliberationRun`s, each matched to its own
+packet through `source_pm_run_id` and `orchestration/replay_corpus.py` (synthetic `verify-*` runs
+excluded). **759 of 772 (98.3 %) quote at least one packet number verbatim.** A turn quotes on
+average **7.2** packet numbers and names **9.0** packet metrics (defender 9.4 / 10.8, challenger
+5.1 / 7.2). A number counts only if it has a decimal point or at least 4 digits, so *"5 sentences"*
+never matches. The page the operator read showed the round-1 *input*, whose transcript is empty,
+which is why no discussion appeared on it. The defect is comprehension: S119 read understanding at
+**17 %**, and 150 turns asserted the false calendar-day fact while quoting numbers correctly.
+**0 of 772** turns carry a typed reasoning, because S246 is merged and not deployed.
+
+**Decision: define the terms in the prompt.** These are steps 2 and 3 above, work-queue 97 (b) and
+(c), unchanged: names that cannot be misread, then one glossary generated from code and given to all
+three roles in the cacheable system message.
+
+**Rejected: internet access for any debate role.**
+
+- **The web cannot know what our code computes.** No search says that `pe=30` in our packet is a
+  0–100 sub-score while the P/E sits in the same packet as `peTTM=35.84`. It cannot say that the
+  scanner's and the analyst's `relative_strength` are two different metrics, or that our oscillator
+  bands are contrarian. A web definition pulls the model toward the general-finance meaning, which
+  is the misreading this entry measured. `meaning_here`'s own schema rules it out: *"in THIS
+  system, not in general finance"*.
+- **Replays would stop being replays.** A recorded debate re-run later would read a different web,
+  which breaks the replay corpus and the golden firewall.
+- **Fetched pages would enter the prompt of a system that places orders.** That is an injection
+  surface.
+- **It adds cost and latency to every turn** against a tight LLM budget.
+
+**Glossary denominator.** *[measured, same pass]* **73** distinct source-owned keys across 371
+packets. This is the finite set that step 3's registry must define.
+
+**Sequence (proposed).** Retag S246 first, so live turns record `meaning_here` against today's
+packet: that is the baseline. The records persist on `DeliberationRun`, so S247's scorer can grade
+the baseline after the fact. The names-and-glossary sprint therefore waits only for baseline runs to
+exist, not for S247's code.
 
 ---
 

@@ -25,8 +25,9 @@ from kernel import (
     prompts_from_artifacts,
 )
 
-_S119_JUDGE_ARTIFACT = Path("scripts/deliberation_judge_prompt.json")
-_S121_CHALLENGER_ARTIFACT = Path("scripts/deliberation_challenger_prompt.json")
+# Promoted in S245 (DL-251): the champions are rebuilt from pack-side sources.
+_JUDGE_ARTIFACT = Path("scripts/deliberation_judge_prompt.json")
+_CHALLENGER_ARTIFACT = Path("scripts/deliberation_challenger_prompt.json")
 
 
 def _artifact(role: str, *, prompt: str = "compiled") -> dict[str, object]:
@@ -145,18 +146,18 @@ def test_prompts_from_artifacts_can_overlay_one_role() -> None:
 
 
 def test_promoted_judge_prompt_matches_committed_artifact() -> None:
-    artifact = load_prompt_artifact(_S119_JUDGE_ARTIFACT)
+    artifact = load_prompt_artifact(_JUDGE_ARTIFACT)
 
     assert artifact.task == "deliberation.judge"
-    assert artifact.version == "2026-07-08-s119-v4-judge-claude-opus-4-8"
+    assert artifact.version == "2026-09-30-s245-v6-judge-claude-opus-5"
     assert DEFAULT_DELIBERATION_PROMPTS.judge == artifact.system_prompt
 
 
 def test_promoted_challenger_prompt_matches_committed_artifact() -> None:
-    artifact = load_prompt_artifact(_S121_CHALLENGER_ARTIFACT)
+    artifact = load_prompt_artifact(_CHALLENGER_ARTIFACT)
 
     assert artifact.task == "deliberation.challenger"
-    assert artifact.version == "2026-07-08-s121-v5-challenger-gpt-5.5"
+    assert artifact.version == "2026-09-30-s245-v6-challenger-claude-opus-5"
     assert DEFAULT_DELIBERATION_PROMPTS.challenger == artifact.system_prompt
 
 

@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -68,6 +68,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   comparison no agent enforces. Every rendered debate-context verdict names the
   check and enforcing agent that produced it; descriptive evidence is rendered
   without a verdict.
++ **DLIB-NEV-09** -- Never tells a debate role how this system's code behaves
+  unless a test pins that statement to the code it describes.
 
 ## State & Effects (`STA`)
 
@@ -256,3 +258,12 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + v1.9 -- DL-203 / work-queue item 33 declares `llm_provider`, the vendor
   selector the role-model rows already resolve their defaults against. PARAM
   row only; no clause moves.
++ v1.10 -- S245 (DL-251) adds `DLIB-NEV-09`: a statement a role prompt makes
+  about how this system's code behaves needs a test that pins it to that code.
+  The book had never governed whether the prompts' facts were true, and one was
+  false when S121 promoted it: the challenger and judge were told the staleness
+  gate counts calendar days, which it has not done since S87, and the challenger
+  was told to argue it (DRIFT-092). S245 removes that fact and the stale
+  name-correlation example, rebuilds the champions byte for byte from pack-side
+  sources, and pins the four surviving distinctions, their worked examples and
+  the parameter names the prompts cite. One clause added and proven.

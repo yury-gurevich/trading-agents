@@ -10,17 +10,23 @@
   "threshold": 0.5,
   "passing": [
     "alpha158-weight-zero",
-    "calendar-staleness",
     "fixed-fraction-size",
     "lightgbm-shadow",
     "pooled-sigma"
   ],
   "fractions": {
     "pooled-sigma": 1.0,
-    "calendar-staleness": 1.0,
-    "name-correlation": 0.333,
     "fixed-fraction-size": 1.0,
     "alpha158-weight-zero": 1.0,
     "lightgbm-shadow": 1.0
+  },
+  "corrected": {
+    "date": "2026-09-30",
+    "by": "S245 (DL-251 D3, DRIFT-092)",
+    "removed": [
+      "calendar-staleness",
+      "name-correlation"
+    ],
+    "why": "Both cases left the Class-1 library because each stated a fact about our code that is false. calendar-staleness said the staleness gate counts calendar days: it has counted trading sessions since S87 (2026-06-22, DL-10). name-correlation said the portfolio cap has no name-correlation penalty: PM-NEV-08's measured correlated-cluster gate has run since S184 (2026-08-20). check_robust reports every golden-passing name a candidate lacks as regressed, so a removed name left here would trip the firewall on every check. The remaining names and fractions are the 2026-07-08 freeze, unchanged; nothing was re-run and no model was called."
   }
 }

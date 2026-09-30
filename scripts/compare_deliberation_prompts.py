@@ -77,7 +77,7 @@ class _FakeReportLLM:
                 "max_daily_move_sigma = pooled cross-sectional batch gate; "
                 "base_min_confidence = regime-modulated baseline; "
                 "signal_diversity_slack = unused pillar rationale. "
-                "pooled cross-sectional calendar trading day name-correlation "
+                "pooled cross-sectional "
                 "fixed-fraction beta weight 0.00 shadow does not feed."
             )
         return "Defends the decision while citing the supplied evidence."

@@ -11,6 +11,10 @@ so every re-run nested the calibration and the examples a second time (13,023 vs
 from the existing Class-1 library", which is also what a person wrote before the
 S121 promotion. The defender has never been promoted, so its kernel constant is
 its base and it is not repeated here.
+
+🪤 A sentence here that tells a role how this system's code behaves reaches the
+referee on the next promotion. It needs a pin in
+`tests/test_deliberation_prompt_facts.py` first (DLIB-NEV-09), or `make ci` fails.
 """
 
 from __future__ import annotations
@@ -38,17 +42,13 @@ CLASS1_CALIBRATION = (
     " Compiled calibration from the existing Class-1 library: when grounding names "
     "an implementation-specific flaw, address that exact flaw before generic "
     "finance caution. Preserve these distinctions: pooled cross-sectional sigma is "
-    "not per-name volatility; calendar-day staleness is not trading-session "
-    "freshness; the sector cap is not a name-correlation penalty; fixed-fraction "
-    "sizing is not volatility-adjusted; Alpha158 weight 0.00 contributes nothing; "
-    "LightGBM shadow output does not feed the live decision."
+    "not per-name volatility; fixed-fraction sizing is not volatility-adjusted; "
+    "Alpha158 weight 0.00 contributes nothing; LightGBM shadow output does not "
+    "feed the live decision."
 )
+# A steer, not a fact about our code; changing steers is work-queue 75's
+# experiment. S245 removed the calendar-staleness sentences that followed it.
 CHALLENGER_CALIBRATION = (
     " For each attack, explicitly state why the exact flaw should force REVISE or "
-    "OVERTURN rather than being dismissed as a policy preference. For the calendar "
-    "staleness pattern, say that calendar-day counting can falsely pass a signal "
-    "that is stale in trading-session terms after a long weekend; that is the "
-    "decision flaw under test. Do not frame calendar staleness as merely using "
-    "the wrong clock; say that rule-compliant calendar freshness still needs a "
-    "post-holiday recheck because the context warns about multi-session staleness."
+    "OVERTURN rather than being dismissed as a policy preference."
 )

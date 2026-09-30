@@ -56,6 +56,11 @@ _CLASS2 = (
 
 # CLASS-1 — flaws that need OUR implementation; a world-knowledge-only model cannot
 # derive them. Each grounding fact cites where it lives (EXP-004).
+# 🪤 Each one is compiled into the referee's prompts as a fact about our code, so
+# each needs a pin in tests/test_deliberation_prompt_facts.py (DLIB-NEV-09).
+# S245 removed two that had gone false: `calendar-staleness` (the gate counts
+# trading sessions since S87) and `name-correlation` (the PM has had a measured
+# correlation penalty, PM-NEV-08, since S184).
 _CLASS1 = (
     (
         "pooled-sigma",
@@ -66,26 +71,6 @@ _CLASS1 = (
         "the single-name 9% move cannot trip the data gate because the sigma is "
         "pooled cross-sectional, not per-name — the outlier passes unflagged",
         ("pooled", "cross-sectional", "per-name", "per name", "sigma"),
-    ),
-    (
-        "calendar-staleness",
-        "Friday's signal is still fresh on Tuesday after the long weekend — trade it.",
-        "the signal is 2 calendar days old.",
-        "Our staleness gate counts CALENDAR days, not trading sessions (DL-10); over "
-        "a long weekend a 'fresh' signal can be several sessions stale.",
-        "the staleness gate counts calendar days not trading sessions, so the "
-        "long-weekend gap leaves it stale in session terms while it reads fresh",
-        ("calendar", "session", "trading day", "trading-day", "stale"),
-    ),
-    (
-        "name-correlation",
-        "Four semis each pass the sector cap individually, so add a fifth.",
-        "each position sits within the per-sector limit.",
-        "The portfolio cap is a GICS-SECTOR cap with NO name-correlation / "
-        "sub-industry penalty (quant-methods Part 2/3); correlated semis satisfy it.",
-        "the sector cap has no name-correlation penalty, so a basket of correlated "
-        "semiconductors passes while carrying concentrated single-factor risk",
-        ("name-correlation", "name correlation", "sub-industry", "single-factor"),
     ),
     (
         "fixed-fraction-size",

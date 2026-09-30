@@ -104,7 +104,6 @@ def test_compare_deliberation_prompts_fake_path_passes(tmp_path) -> None:
             {
                 "passing": [
                     "alpha158-weight-zero",
-                    "calendar-staleness",
                     "lightgbm-shadow",
                     "pooled-sigma",
                 ]

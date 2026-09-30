@@ -53,11 +53,31 @@ and challenger texts are their transcript turns; the judge's is the ruling's rec
   `GuidedReasoning`, but the judge's prompt, message and parse were left unchanged on purpose (its
   test B7). **The role that decides records no readings at all.**
 
-**The guided format does make the debaters read.** In the 2026-09-30 replay of S246 on the 10 most
-recent real packets, a parsed turn held **8–15 readings, about 11 on average**. That replay did not
-save *which* metrics were read, so its quant and sentiment coverage is still unmeasured. It also ran
-at `effort=max` where production runs `high`, so its latency and token figures do not describe
-production.
+**Measured directly in the guided format, at production effort.** *[measured 2026-09-30, `effort=high`, the
+10 most recent real packets, every reading saved and classified by its content]*
+
+| | Defender (88 readings, 10 turns) | Challenger (71 readings, 9 turns) |
+| --- | --- | --- |
+| Process (gates, sizing, stop basis, regime thresholds) | **78 %**, 66 of them `supports` | 52 % |
+| Quant (technical, fundamental, scanner, market) | 19 % | 39 %, all `against` |
+| **Sentiment** | **0**, although the sentiment score was in all 10 packets | 3 readings |
+| Quoted `key=value` pairs equal to the packet | at least 93 % | at least 93 % |
+| `metric` written as an exact packet key | 3 % | 23 % |
+| Turns whose gaps name missing risk or portfolio evidence | **10 / 10** | **8 / 9** |
+
+- **Values are copied accurately.** At least 93 % of the quoted pairs match. Most of the listed
+  mismatches are a closing parenthesis caught by the parser, not the model's error.
+- **Some meanings are right.** The TMO defender read `rsi=87.19` as *"already penalized inside the
+  composite (rsi_score=25)"*: the contrarian scoring, read correctly.
+- **The defender's case is "the process passed".** It argues from gates clearing, not from the
+  stock, and it never uses sentiment, even when the sentiment is strongly positive for its side.
+- **The `metric` field is not the exact key the schema asks for.** Models write line labels
+  (`PM gate outcome: name=cash_available`) and compounds (`atr_pct / applied_stop_pct`). A metric that
+  looks up exact names, such as S247's planned check, has to parse the quoted `key=value` pairs
+  instead, or the instructions must be made explicit.
+- **The models ask for what we withhold.** The TMO challenger's first gap: *"No stop-out probability,
+  hit-rate, or MAE/adverse-excursion statistic anywhere."* The forecaster computes exactly that
+  ([packet-inventory.md](packet-inventory.md)).
 
 ---
 

@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code`
 **Status:** BUILT — 2026-09-30 by a cloud session on `claude/sprint-245-referee-facts-5co3h4`, not merged (Closeout below)
-**Version:** *next available PATCH at merge*
+**Version:** `0.119.05` (PATCH)
 **Effort:** M
 **Decisions:** [DL-250](../design-log.md) (the measurement and the direction) · work-queue **96** · new `DLIB-NEV-09` · `DRIFT-092`
 
@@ -520,6 +520,12 @@ unit of work. No existing deliberator clause changes status.
 ---
 
 ## Closeout — evidence
+
+**Planner verification (2026-09-30):** re-measured independently in worktree `trading-agents-s245`, not taken from the handback. The defender prompt is byte-identical to `main` (434 chars); the challenger (6,764 → 4,818) and the judge (6,341 → 4,713) changed by **deletion only** (`difflib` opcodes: `delete`). Neither contains an A1 phrase or the word *calendar*, and the four remaining distinctions are exactly the four pinned. Every changed file is in the spec's list. `main` merged into the branch as `beae1a14`; the only conflicts were the S245 and S246 rows in both sprint indexes, and both were kept. PATCH bump `0.119.04` → `0.119.05`; `uv lock` changed only the package's own version line (`Updated trading-agents v0.119.4 -> v0.119.5`, 180 packages resolved). Windows `make ci` in `trading-agents-s245`, redirected to a file: **exit 0**, 3,701 passed, 8 skipped, 100.00 %, dependency audit and detect-secrets passed.
+
+**Live check (planner, 2026-09-30, `.env` from the main checkout, read-only on the spine):** challenger round 1 on the 10 most recent recorded propositions whose challenger had asserted calendar-day counting. Each used the recorded defender r1 text as the transcript and `claude-opus-5` at effort `high`, `max_tokens` 4,096, and ran with the old champion (`02f3e7da`) and with the new one. Budget stated first: 20 calls, ≈ $1.5. **The old champion asserted it in 8 of 10; the new one in 0 of 10, and never used the word *calendar*.** All 20 calls ended `end_turn`, in 17.6–38.8 s, with 1,306–2,709 output tokens; measured cost $1.45. One of the ten is GILD on `sched-2026-09-29`, so the false fact was still argued the night before this merge.
+
+**ADR-0010 firewall (the handback's question, decided by the planner):** the 20-call replay stands in for `deliberation_gate.py --check` for this change. The golden is frozen on `gpt-5.5` debaters and a `claude-opus-4-8` judge, while production runs `claude-opus-5` for all three roles. A `--check` would therefore compare the new champion, on models production does not use, with a baseline measured under the old prompt set, at ≈ $6–12. Re-freezing on production's models stays with work-queue 97. **Accepted as reported:** the sector-cap sentence (true, but pointing at "no correlation penalty") is removed as the spec asked; the pooled-sigma example's *"one 9% name does not trip it"* holds on an ordinary session and fails on a calm one (8.66σ at ±0.5 %), which the builder pinned, and its wording goes to work-queue 97.
 
 **Status:** BUILT — 2026-09-30, on `claude/sprint-245-referee-facts-5co3h4` (cloud session), not merged.
 

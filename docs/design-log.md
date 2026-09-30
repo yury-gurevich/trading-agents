@@ -90,6 +90,8 @@ move is **8.66σ** and is excluded. The distinction (*"pooled cross-sectional si
 volatility"*) holds either way; the example sentence holds only on an ordinary day. Rewording a case is
 a new eval case with an unmeasured effect (item 75/97), so the text is unchanged and this is reported.
 
+**Planner, at merge (2026-09-30): the ADR-0010 firewall.** The 20-call challenger replay stands in for `deliberation_gate.py --check` for S245. The golden is frozen on `gpt-5.5` debaters and a `claude-opus-4-8` judge, and production runs `claude-opus-5` for every role, so a `--check` would test models production does not use against a baseline measured under the old prompts. The replay measures the change's purpose directly: the old champion asserted calendar-day counting in **8 of 10** recorded propositions, the new one in **0 of 10** ($1.45). *Rejected:* (a) running `--check` anyway, ≈ $6–12 for a signal about the wrong models; (b) re-freezing the golden on `claude-opus-5` inside this merge, a paid baseline design that belongs to work-queue 97.
+
 ---
 
 ## DL-250 - the referee reads ~60 quants with no definitions, and one of its six hard-coded facts has been false since before it was compiled - status: MEASURED; direction PROPOSED (planner, 2026-09-30; work-queue 96, 97)

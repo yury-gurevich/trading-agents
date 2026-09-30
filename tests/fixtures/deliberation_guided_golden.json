@@ -242,6 +242,33 @@
       }
     },
     {
+      "name": "indented_header",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n  [[ ## argument ## ]] A.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "]] A."
+      }
+    },
+    {
       "name": "first_section_wins",
       "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## argument ## ]]\nB.\n\n[[ ## completed ## ]]",
       "dspy": {

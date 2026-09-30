@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 93 (live defect: OOM + Neon transfer)
 **Branch:** `sprint-242-a-poll-downloads-only-the-work-it-takes`
-**Status:** BUILT 2026-09-29 on `sprint-242-a-poll-downloads-only-the-work-it-takes` (cloud session), not merged — owed: `uv lock`, Windows `make ci`, `make gate-ran`, F1, retag, F2, memory revert
+**Status:** MERGED 2026-09-29 — `f704907c`, tag `v0.119.01`, GATE PROVEN `f704907c`, F1 passed on Neon; **deployed `s242`** (full `up`, 2026-09-29 11:21–11:49 AEST, with S241). Owed: F2 on `sched-2026-09-29`, then the reporter and scanner memory revert (operator) and one more 8/8 run
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-244](../design-log.md) (the defect, measured; the fix direction; the Azure-Postgres option kept) · the builder's design decisions go to the **next free DL** (`DL-246` at spec time: S241 holds DL-243, the planner DL-244/245)

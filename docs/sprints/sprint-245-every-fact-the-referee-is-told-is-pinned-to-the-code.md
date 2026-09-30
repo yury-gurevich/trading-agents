@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code`
-**Status:** SPEC
+**Status:** BUILT — 2026-09-30 by a cloud session on `claude/sprint-245-referee-facts-5co3h4`, not merged (Closeout below)
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-250](../design-log.md) (the measurement and the direction) · work-queue **96** · new `DLIB-NEV-09` · `DRIFT-092`
@@ -490,48 +490,488 @@ unit of work. No existing deliberator clause changes status.
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | |
+| A1 | `test_no_false_fact_reaches_a_role` | `tests/test_deliberation_prompt_truth.py` | PASS (red on `main` first: 34 hits) | `DLIB-NEV-09` |
+| A2 | `test_the_champion_is_its_sources_rebuilt` | `tests/test_deliberation_prompt_pipeline.py` | PASS (red on `main` first: `(13023, 2, 2) == (6764, 1, 1)`; green on the unchanged constants at the characterisation commit) | `DLIB-NEV-09` |
+| A3 | `test_pooled_sigma_is_one_sessions_cross_section` | `tests/test_deliberation_prompt_facts.py` | PASS | `DLIB-NEV-09`, `PROV-OUT-09` (read-only) |
+| A4 | **Both.** `test_sizing_is_a_fixed_fraction_not_volatility_adjusted` (`size_quantity`: 20, the floor 3, exactly three parameters) and `test_a_high_beta_buy_gets_the_same_size_as_a_low_beta_one` (the PM-level pair through `evaluate_recommendations`, using the existing `recommendation` / `cash_portfolio` helpers) | `tests/test_deliberation_prompt_facts.py` | PASS | `DLIB-NEV-09`, `PM-IDN-01`, `PM-NEV-05` (read-only) |
+| A5 | `test_alpha158_contributes_nothing` | `tests/test_deliberation_prompt_facts.py` | PASS | `DLIB-NEV-09`, `ANLZ-IDN-01` (read-only) |
+| A6 | `test_lightgbm_does_not_feed_the_live_decision` | `tests/test_deliberation_prompt_facts.py` | PASS | `DLIB-NEV-09`, `FORE-NEV-02` (read-only) |
+| A7 | `test_every_stated_fact_has_a_pin[challenger]`, `[judge]` | `tests/test_deliberation_prompt_facts.py` | PASS (red on `main` first: six distinctions, zero pins) | `DLIB-NEV-09` |
+| A8 | `test_the_golden_names_only_live_cases` | `tests/test_deliberation_prompt_truth.py` | PASS | `DLIB-NEV-09`, ADR-0010 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:**
+
+- `tests/test_deliberation_prompt_truth.py::test_no_script_builds_from_the_promoted_champions`
+  (`DLIB-NEV-09`, DL-251 D5): the doubling guard, an AST scan of `scripts/` for `CHALLENGER_SYSTEM` /
+  `JUDGE_SYSTEM`. It was red on `main` (`compile_deliberation_prompts.py`) in the same red run.
+- `tests/test_deliberation_prompt_truth.py::test_every_parameter_a_role_is_shown_is_a_live_setting`
+  `[defender]`, `[challenger]` (`DLIB-NEV-09`, DL-251 D5): the three example parameter names every
+  prompt cites are exactly `max_daily_move_sigma`, `base_min_confidence` (`ProviderSettings`) and
+  `max_sector_pct` (`PortfolioManagerSettings`), each a live field. No prompt text changed.
+- `tests/test_deliberation_prompt_truth.py::test_the_same_nine_percent_is_excluded_on_a_calm_session`
+  (`PROV-OUT-09`): the pooled-sigma example's *"one 9% name does not trip it"* holds on an ordinary
+  session only; at ±0.5 % the same +9 % is 8.66σ and excluded (Return notes).
+- Edited: `tests/test_deliberation_prompt_artifacts.py` (its two promotion tests pinned the S119/S121
+  version strings; they now read S245's) and `tests/test_deliberation_prompt_pipeline.py` (its
+  temporary golden no longer names `calendar-staleness`). New helper `tests/deliberation_fact_probes.py`
+  (not collected) holds the probes the pins read the code with, so every pin and the registry stay in
+  one module under 150 lines.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT at handback, MERGED at merge)*
+**Status:** BUILT — 2026-09-30, on `claude/sprint-245-referee-facts-5co3h4` (cloud session), not merged.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container's clone,
+`/home/user/trading-agents`, branch `claude/sprint-245-referee-facts-5co3h4`. The session forced that
+name; the spec's is `sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code`. Cut from `main`
+`02f3e7da`. **No `.env`**, no `gh`, no Azure. Dependencies from `uv sync --frozen` (dev group, no
+extras; `dspy` is not installed). Every command ran frozen (`uv run --frozen`, `UV_FROZEN=1`). No LLM
+call was made and no network was needed for any proof.
 
-**Result:** *(builder fills — what is now true, in the artefact's own words)*
+**Result:** `CHALLENGER_SYSTEM` (4,818 chars) and `JUDGE_SYSTEM` (4,713) tell the referee to *"Preserve
+these distinctions: pooled cross-sectional sigma is not per-name volatility; fixed-fraction sizing is
+not volatility-adjusted; Alpha158 weight 0.00 contributes nothing; LightGBM shadow output does not feed
+the live decision"*, with six worked examples: Class-2 `concentration` and `event-risk`, Class-1
+`pooled-sigma`, `fixed-fraction-size`, `alpha158-weight-zero` and `lightgbm-shadow`. No constant and
+no committed artifact says the staleness gate counts calendar days or that the portfolio has no
+name-correlation penalty (A1). Every distinction and every Class-1 example is registered to a pin test
+that reads the code it describes (A7, pins A3–A6). `compile_artifacts` rebuilds both champions and all
+three committed artifacts byte for byte from `scripts/deliberation_prompt_sources.py` and the case
+library, with the calibration and the examples once each (A2), and no `scripts/` module reads the
+champions. The golden names only the four live cases and records the correction (A8). Deliberator laws
+v1.10 carry `DLIB-NEV-09`, 🟩, **24 / 57** (was 23 / 56). The defender prompt, the debate flow, parsing,
+models, effort, rounds and the context renderer are unchanged: the only runtime text that moved is the
+two champion strings (the ⚠️ invariant), and with it, by design, `PROMPT_RECIPE_HASH` and the challenger
+and judge `system_prompt_hash`.
 
-**Files changed:** *(builder fills)*
+**What left the prompts (diff summary):** challenger 6,764 → **4,818** chars (−1,946), judge 6,341 →
+**4,713** (−1,628), eight examples → six in each. Both lost two distinctions (*"calendar-day staleness is
+not trading-session freshness;"*, *"the sector cap is not a name-correlation penalty;"*) and two worked
+examples (`calendar-staleness`, `name-correlation`: inputs, expected output and rationale). The
+challenger also lost the three calendar sentences of its calibration (*"For the calendar staleness
+pattern … that is the decision flaw under test. Do not frame calendar staleness … post-holiday recheck
+…"*); its first sentence, a steer, stays. The defender artifact (never promoted) went 6,940 → 5,192 by
+the same removals; `DEFENDER_SYSTEM` is unchanged (434 chars). Stamps: `claude-opus-5` for all three,
+version `2026-09-30-s245-v6-<role>-claude-opus-5`, through the injected fake `dspy_module` (DL-251 D4).
+Measured against `main`'s constants with `difflib`: both champions changed **by deletion only** (opcodes
+`equal` and `delete`, no insertion or rewrite), the challenger in 3 spans (1,946 chars) and the judge in
+2 (1,628); `DEFENDER_SYSTEM` and `_DEFINE_THEN_JUSTIFY` are byte-identical to `main`'s.
 
-**Design decisions:** *(builder fills — the DL taken, and where the rejected alternatives are)*
+**Files changed:** `kernel/deliberation_prompts.py` (the two champions re-promoted, docstring);
+`scripts/deliberation_prompt_sources.py` (new); `scripts/compile_deliberation_prompts.py`;
+`scripts/deliberation_eval.py`; `scripts/deliberation_{defender,challenger,judge}_prompt.json`
+(regenerated); `scripts/deliberation_golden.json`; `scripts/compare_deliberation_prompts.py` (line 80's
+fake text only); tests: new `tests/test_deliberation_prompt_facts.py`,
+`tests/test_deliberation_prompt_truth.py`, `tests/deliberation_fact_probes.py`, edited
+`tests/test_deliberation_prompt_pipeline.py`, `tests/test_deliberation_prompt_artifacts.py`; laws:
+`agents/deliberator/laws/laws.md` + `test-plan.md` (v1.10), `docs/laws/ledger.md`, `docs/laws/INDEX.md`,
+`docs/laws/drift-register.md` (DRIFT-092); docs: `docs/design-log.md` (DL-251), this spec,
+`docs/sprints/README.md`, `docs/sprints/INDEX.md`. **Not touched:** `pyproject.toml`, `uv.lock`,
+`scripts/deliberation_gate.py`, any agent's code.
 
-**Proof — the red run first:**
+**Design decisions:** [DL-251](../design-log.md) — D1 the bases and calibration live in
+`scripts/deliberation_prompt_sources.py` (kernel rejected: ADR-0012 residue, and compile-only text in a
+`PROMPT_MODULES` module would move the recipe digest for text no role reads); D2 the registry is two
+dicts of pin test functions compared by set equality; D3 the golden is edited and the edit recorded, not
+re-frozen; D4 regeneration through the fake `dspy_module`; D5 the clause's reach over the example
+parameter names, the scope of A2 (three artifacts, calibration and examples once each) and the static
+doubling guard. Rejected alternatives are in each decision; *"Measured while pinning"* records the
+pooled-sigma caveat.
+
+**Proof — the red run first** (A1, A2, A7 and the doubling guard, written before any other change,
+against the unchanged `main` code at `7065e719`, which differs from `main` `02f3e7da` only by the two
+documents above):
 
 ```text
-(builder pastes)
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+______________________ test_no_false_fact_reaches_a_role _______________________
+tests/test_deliberation_prompt_truth.py:74: in test_no_false_fact_reaches_a_role
+    assert hits == []
+E   assert [('CHALLENGER...leness'), ...] == []
+E
+E     Left contains 34 more items, first extra item: ('CHALLENGER_SYSTEM', '"calendar-staleness"')
+E     Use -v to get more diff
+______________ test_no_script_builds_from_the_promoted_champions _______________
+tests/test_deliberation_prompt_truth.py:92: in test_no_script_builds_from_the_promoted_champions
+    assert readers == []
+E   AssertionError: assert ['compile_del...n_prompts.py'] == []
+E
+E     Left contains one more item: 'compile_deliberation_prompts.py'
+E     Use -v to get more diff
+_________________ test_every_stated_fact_has_a_pin[challenger] _________________
+tests/test_deliberation_prompt_facts.py:49: in test_every_stated_fact_has_a_pin
+    assert _distinctions(prompt) == set(DISTINCTION_PINS)
+E   AssertionError: assert {'Alpha158 we...tion penalty'} == set()
+E
+E     Extra items in the left set:
+E     'calendar-day staleness is not trading-session freshness'
+E     'Alpha158 weight 0.00 contributes nothing'
+E     'fixed-fraction sizing is not volatility-adjusted'
+E     'LightGBM shadow output does not feed the live decision'
+E     'the sector cap is not a name-correlation penalty'
+E     'pooled cross-sectional sigma is not per-name volatility'
+E     Use -v to get more diff
+___________________ test_every_stated_fact_has_a_pin[judge] ____________________
+tests/test_deliberation_prompt_facts.py:49: in test_every_stated_fact_has_a_pin
+    assert _distinctions(prompt) == set(DISTINCTION_PINS)
+E   AssertionError: assert {'Alpha158 we...tion penalty'} == set()
+E
+E     Extra items in the left set:
+E     'calendar-day staleness is not trading-session freshness'
+E     'Alpha158 weight 0.00 contributes nothing'
+E     'fixed-fraction sizing is not volatility-adjusted'
+E     'LightGBM shadow output does not feed the live decision'
+E     'the sector cap is not a name-correlation penalty'
+E     'pooled cross-sectional sigma is not per-name volatility'
+E     Use -v to get more diff
+___________________ test_the_champion_is_its_sources_rebuilt ___________________
+tests/test_deliberation_prompt_pipeline.py:51: in test_the_champion_is_its_sources_rebuilt
+    assert _shape(rebuilt[role].system_prompt) == _shape(champion), role
+E   AssertionError: challenger
+E   assert (13023, 2, 2) == (6764, 1, 1)
+E
+E     At index 0 diff: 13023 != 6764
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_deliberation_prompt_truth.py::test_no_false_fact_reaches_a_role
+FAILED tests/test_deliberation_prompt_truth.py::test_no_script_builds_from_the_promoted_champions
+FAILED tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[challenger]
+FAILED tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[judge]
+FAILED tests/test_deliberation_prompt_pipeline.py::test_the_champion_is_its_sources_rebuilt
+5 failed in 0.47s
 ```
 
-**Proof — the green run:**
+A1's 34 hits by source:
 
 ```text
-(builder pastes)
+34 distinct (source, claim) hits
+  CHALLENGER_SYSTEM: 8 of 8 banned claims
+  JUDGE_SYSTEM: 6 of 8 banned claims
+  deliberation_challenger_prompt.json: 8 of 8 banned claims
+  deliberation_defender_prompt.json: 6 of 8 banned claims
+  deliberation_judge_prompt.json: 6 of 8 banned claims
+  DEFENDER_SYSTEM: 0
 ```
 
-**Guards planted:** *(builder fills — per plant (a)-(e))*
+**Proof — the green run.** The characterisation step, before any content changed: the working tree that
+became `41bd823c`, with `kernel/deliberation_prompts.py` byte-identical to `main`'s:
 
-**Module line counts:** *(builder fills)*
+```text
+HEAD 7065e719; kernel/deliberation_prompts.py blob 48e68cd9d32e8567b03693bdf8352584fabb7045 (HEAD: 48e68cd9d32e8567b03693bdf8352584fabb7045)
+============================= test session starts ==============================
+collecting ... collected 2 items
+tests/test_deliberation_prompt_pipeline.py::test_the_champion_is_its_sources_rebuilt PASSED [ 50%]
+tests/test_deliberation_prompt_truth.py::test_no_script_builds_from_the_promoted_champions PASSED [100%]
+============================== 2 passed in 0.41s ===============================
+```
 
-**`make ci`:** *(builder fills — file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+Every S245 test module on the final tree:
 
-**`make gate-ran`:** *(planner — owed)*
+```text
+HEAD 2aea53b5
+tests/test_deliberation_prompt_truth.py::test_no_false_fact_reaches_a_role PASSED
+tests/test_deliberation_prompt_truth.py::test_no_script_builds_from_the_promoted_champions PASSED
+tests/test_deliberation_prompt_truth.py::test_the_golden_names_only_live_cases PASSED
+tests/test_deliberation_prompt_truth.py::test_every_parameter_a_role_is_shown_is_a_live_setting[defender] PASSED
+tests/test_deliberation_prompt_truth.py::test_every_parameter_a_role_is_shown_is_a_live_setting[challenger] PASSED
+tests/test_deliberation_prompt_truth.py::test_the_same_nine_percent_is_excluded_on_a_calm_session PASSED
+tests/test_deliberation_prompt_facts.py::test_pooled_sigma_is_one_sessions_cross_section PASSED
+tests/test_deliberation_prompt_facts.py::test_sizing_is_a_fixed_fraction_not_volatility_adjusted PASSED
+tests/test_deliberation_prompt_facts.py::test_a_high_beta_buy_gets_the_same_size_as_a_low_beta_one PASSED
+tests/test_deliberation_prompt_facts.py::test_alpha158_contributes_nothing PASSED
+tests/test_deliberation_prompt_facts.py::test_lightgbm_does_not_feed_the_live_decision PASSED
+tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[challenger] PASSED
+tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[judge] PASSED
+tests/test_deliberation_prompt_pipeline.py::test_the_champion_is_its_sources_rebuilt PASSED
+tests/test_deliberation_prompt_pipeline.py::test_compile_deliberation_prompts_writes_role_artifacts PASSED
+tests/test_deliberation_prompt_pipeline.py::test_compile_deliberation_prompts_can_write_one_role PASSED
+tests/test_deliberation_prompt_pipeline.py::test_compare_deliberation_prompts_fake_path_passes PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_rejects_invalid_json[payload0] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_rejects_invalid_json[payload1] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_rejects_invalid_json[payload2] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_rejects_invalid_json[payload3] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_rejects_invalid_json[payload4] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_parse_prompt_artifact_accepts_examples PASSED
+tests/test_deliberation_prompt_artifacts.py::test_load_and_validate_one_deliberation_artifact PASSED
+tests/test_deliberation_prompt_artifacts.py::test_ensure_deliberation_artifact_rejects_wrong_task PASSED
+tests/test_deliberation_prompt_artifacts.py::test_ensure_deliberation_artifact_requires_model_and_prompt[ -prompt-model] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_ensure_deliberation_artifact_requires_model_and_prompt[m- -system_prompt] PASSED
+tests/test_deliberation_prompt_artifacts.py::test_load_directory_and_compose_prompts PASSED
+tests/test_deliberation_prompt_artifacts.py::test_prompts_from_artifacts_can_overlay_one_role PASSED
+tests/test_deliberation_prompt_artifacts.py::test_promoted_judge_prompt_matches_committed_artifact PASSED
+tests/test_deliberation_prompt_artifacts.py::test_promoted_challenger_prompt_matches_committed_artifact PASSED
+tests/test_deliberation_prompt_artifacts.py::test_prompts_from_artifacts_rejects_unknown_role PASSED
+============================== 32 passed in 0.77s ==============================
+```
 
-**Not met / verified failing:** *(builder fills)*
+**Guards planted (DL-70)** — each planted in the tracked file, run red, restored with `git checkout`,
+`git status --porcelain` empty, then green again:
+
+(a) the calendar sentence put back into `CHALLENGER_SYSTEM` → A1 red:
+
+```text
+=== PLANT (a): calendar sentence prepended to CHALLENGER_SYSTEM ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________________ test_no_false_fact_reaches_a_role _______________________
+tests/test_deliberation_prompt_truth.py:90: in test_no_false_fact_reaches_a_role
+    assert hits == []
+E   AssertionError: assert [('CHALLENGER...LENDAR days')] == []
+E
+E     Left contains one more item: ('CHALLENGER_SYSTEM', 'counts CALENDAR days')
+FAILED tests/test_deliberation_prompt_truth.py::test_no_false_fact_reaches_a_role
+1 failed in 0.38s
+pytest exit=1
+restored: []
+.                                                                        [100%]
+1 passed in 0.35s
+after restore exit=0
+```
+
+(b) a fifth distinction with no pin, added to `CLASS1_CALIBRATION`, then regenerated and re-promoted so
+A2 and A1 stay green → A7 red on both prompts (2 failed, 2 passed):
+
+```text
+=== PLANT (b): fifth distinction 'the reward-risk floor is disclosure-only' added to CLASS1_CALIBRATION, artifacts regenerated, champions re-promoted ===
+FF..                                                                     [100%]
+=================================== FAILURES ===================================
+_________________ test_every_stated_fact_has_a_pin[challenger] _________________
+tests/test_deliberation_prompt_facts.py:143: in test_every_stated_fact_has_a_pin
+    assert distinctions(prompt) == set(DISTINCTION_PINS)
+E   AssertionError: assert {'Alpha158 we...closure-only'} == {'Alpha158 we...e volatility'}
+E
+E     Extra items in the left set:
+E     'the reward-risk floor is disclosure-only'
+___________________ test_every_stated_fact_has_a_pin[judge] ____________________
+tests/test_deliberation_prompt_facts.py:143: in test_every_stated_fact_has_a_pin
+    assert distinctions(prompt) == set(DISTINCTION_PINS)
+E   AssertionError: assert {'Alpha158 we...closure-only'} == {'Alpha158 we...e volatility'}
+E
+E     Extra items in the left set:
+E     'the reward-risk floor is disclosure-only'
+FAILED tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[challenger]
+FAILED tests/test_deliberation_prompt_facts.py::test_every_stated_fact_has_a_pin[judge]
+2 failed, 2 passed in 0.43s
+pytest exit=1
+restored: []
+...........                                                              [100%]
+11 passed in 0.98s
+after restore exit=0
+```
+
+(c) `alpha158_pillar_weight`'s default set to `0.10` → A5 red:
+
+```text
+=== PLANT (c): alpha158_pillar_weight default 0.00 -> 0.10 (agents/analyst/settings.py) ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________________ test_alpha158_contributes_nothing _______________________
+tests/test_deliberation_prompt_facts.py:93: in test_alpha158_contributes_nothing
+    assert AnalystSettings().alpha158_pillar_weight == 0.0
+E   assert 0.1 == 0.0
+E    +  where 0.1 = AnalystSettings(rsi_period=14, macd_fast=12, macd_slow=26, macd_signal=9, bollinger_window=20, bollinger_sigma=2.0, sm... rs_window=20, relative_strength_weight=0.2, signal_diversity_slack=5.0, max_top_signals=5, alpha158_pillar_weight=0.1).alpha158_pillar_weight
+E    +    where AnalystSettings(rsi_period=14, macd_fast=12, macd_slow=26, macd_signal=9, bollinger_window=20, bollinger_sigma=2.0, sm... rs_window=20, relative_strength_weight=0.2, signal_diversity_slack=5.0, max_top_signals=5, alpha158_pillar_weight=0.1) = AnalystSettings()
+FAILED tests/test_deliberation_prompt_facts.py::test_alpha158_contributes_nothing
+1 failed in 0.42s
+pytest exit=1
+restored: []
+.                                                                        [100%]
+1 passed in 0.35s
+after restore exit=0
+```
+
+(c2, beyond the spec) an `ANALYST_ALPHA158_PILLAR_WEIGHT` key in the pack's analyst block → A5 red on its
+second half:
+
+```text
+=== PLANT (c2, beyond the spec): ANALYST_ALPHA158_PILLAR_WEIGHT=0.10 in the analyst env block of orchestration/packs/trading_tunables.json ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________________ test_alpha158_contributes_nothing _______________________
+tests/test_deliberation_prompt_facts.py:94: in test_alpha158_contributes_nothing
+    assert [key for key in keys(pack) if "ALPHA158" in key.upper()] == []
+E   AssertionError: assert ['ANALYST_ALP...ILLAR_WEIGHT'] == []
+E
+E     Left contains one more item: 'ANALYST_ALPHA158_PILLAR_WEIGHT'
+FAILED tests/test_deliberation_prompt_facts.py::test_alpha158_contributes_nothing
+1 failed in 0.39s
+pytest exit=1
+restored: []
+```
+
+(d1) `max_daily_move_sigma`'s default dropped to `4.0` → A3 red (the +9 % is now excluded):
+
+```text
+=== PLANT (d1): max_daily_move_sigma default 8.0 -> 4.0 (agents/provider/settings.py) ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_pooled_sigma_is_one_sessions_cross_section ________________
+tests/test_deliberation_prompt_facts.py:49: in test_pooled_sigma_is_one_sessions_cross_section
+    assert anomalous(109.0) == ()
+E   AssertionError: assert ('X',) == ()
+E
+E     Left contains one more item: 'X'
+FAILED tests/test_deliberation_prompt_facts.py::test_pooled_sigma_is_one_sessions_cross_section
+1 failed in 0.35s
+pytest exit=1
+restored: []
+.                                                                        [100%]
+1 passed in 0.38s
+after restore exit=0
+```
+
+(d2) `_anomalous_tickers` rewritten to judge each name against its own history → A3 red (the −30 % is no
+longer excluded, a one-bar history abstains):
+
+```text
+=== PLANT (d2): _anomalous_tickers judges each name against its OWN history (moves grouped by ticker, not by session) ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_pooled_sigma_is_one_sessions_cross_section ________________
+tests/test_deliberation_prompt_facts.py:50: in test_pooled_sigma_is_one_sessions_cross_section
+    assert anomalous(70.0) == ("X",)
+E   AssertionError: assert () == ('X',)
+E
+E     Right contains one more item: 'X'
+FAILED tests/test_deliberation_prompt_facts.py::test_pooled_sigma_is_one_sessions_cross_section
+1 failed in 0.35s
+pytest exit=1
+restored: []
+.                                                                        [100%]
+1 passed in 0.37s
+after restore exit=0
+```
+
+(e) one character of `JUDGE_SYSTEM` edited by hand → A2 red:
+
+```text
+=== PLANT (e): one character of JUDGE_SYSTEM edited by hand ('Weigh' -> 'weigh') ===
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________________ test_the_champion_is_its_sources_rebuilt ___________________
+tests/test_deliberation_prompt_pipeline.py:52: in test_the_champion_is_its_sources_rebuilt
+    assert rebuilt[role].system_prompt == champion, role
+E   AssertionError: judge
+E   assert 'You are the ... confirmation' == 'You are the ... confirmation'
+E
+E     Skipping 4663 identical trailing characters in diff, use -v to show
+E     - You are the JUDGE in a decision review. weigh the
+E     ?                                         ^
+E     + You are the JUDGE in a decision review. Weigh the
+E     ?                                         ^
+FAILED tests/test_deliberation_prompt_pipeline.py::test_the_champion_is_its_sources_rebuilt
+1 failed in 0.35s
+pytest exit=1
+restored: []
+.                                                                        [100%]
+1 passed in 0.33s
+after restore exit=0
+```
+
+**Module line counts** (as `check_module_size.py` counts them; `main` in brackets; all under 200):
+
+| Module | Lines |
+| --- | --- |
+| `kernel/deliberation_prompts.py` | 155 (199) |
+| `scripts/compile_deliberation_prompts.py` | 170 (185) |
+| `scripts/deliberation_eval.py` | 180 (195) |
+| `scripts/deliberation_prompt_sources.py` | 54 (new) |
+| `scripts/compare_deliberation_prompts.py` | 363 (363): frozen baseline, **not grown** |
+| `scripts/deliberation_gate.py` | 230 (230): frozen baseline, **untouched** |
+| `tests/test_deliberation_prompt_facts.py` | 148 (new) |
+| `tests/test_deliberation_prompt_truth.py` | 143 (new) |
+| `tests/deliberation_fact_probes.py` | 90 (new) |
+| `tests/test_deliberation_prompt_pipeline.py` | 131 (96) |
+| `tests/test_deliberation_prompt_artifacts.py` | 168 (167) |
+
+**`make ci`:** `UV_FROZEN=1 make ci > <scratchpad>/make_ci_final.txt 2>&1` in the cloud container's clone
+(the scratchpad is session storage, not persisted), on the final tree including this handback: **exit 0**,
+all 15 steps. Ruff clean; format 1,489 files; mypy no issues in 1,118 source files; import-linter 5 kept,
+0 broken; module size 0 `[FAIL]` (warnings only; `kernel/deliberation_prompts.py` warns at 155, down
+from 199); module header; law coverage (deliberator derived **24 / 57**, both rollups agree); PARAM/settings
+sync (the two pre-existing PM envelope warnings); sprint status (`docs_seen=250 SPEC=10 BUILT=3
+MERGED=237`); markdown links; version scheme; pytest **3,701 passed, 8 skipped, 100.00 %** (19,755
+statements, 4,208 branches, none missed); dependency audit *"No unaccepted vulnerabilities; 1 accepted
+advisory re-checked"*; detect-secrets passed; untracked secrets *"no untracked files to scan"*.
+`UV_FROZEN=1` keeps every step on the committed lock, as CI's `uv sync --frozen` does; an unfrozen
+`uv run` would try to re-lock and cannot reach `download.pytorch.org`. The pinned markdownlint hook (not
+a `make ci` step) also passes on every changed document.
+
+**`make gate-ran`:** *(planner — owed)*. The container has no `gh`.
+
+**Not met / verified failing:** nothing in the spec's build list is unmet. **Not done (owed, by design):**
+
+- **`uv lock`: not done.** `uv.lock` is untouched (sha256 `313ca0f1…4a38b`, identical to `main`), and so is
+  `pyproject.toml` (`0.119.04`): the handover says not to pin a version, the PATCH is the next available
+  at merge (`0.119.05` if nothing lands first), and a re-lock needs `download.pytorch.org`, which this
+  session cannot reach.
+- **`make gate-ran`: not done** (no `gh`). **Windows `make ci`: not done.**
+- **The 20-call replay check: not done** (no `.env`; no LLM call is allowed here).
+- **The image-only retag (rollback tag `s244`) and F1: not done**; both are the planner's after merge.
+- **ADR-0010 D1's firewall run on the new prompts: not done** (paid, and forbidden here); a planner
+  decision (Return notes).
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- **Branch.** The session forced `claude/sprint-245-referee-facts-5co3h4`. Commits: `7065e719` (law
+  reading record + DL-251, before any code), `41bd823c` (the characterisation step alone), `2aea53b5`
+  (removal, regeneration, re-promotion, pins, law cycle), then this handback. Pushed; not merged.
+- **Scope held.** Only the challenger and judge prompt text changed at runtime. Three files outside the
+  spec's blast radius, each forced: `tests/test_deliberation_prompt_artifacts.py` (its two promotion
+  tests pinned the S119/S121 version strings), the helper `tests/deliberation_fact_probes.py` (keeps the
+  pins and their registry in one module under 150 lines), and the `docs/sprints/INDEX.md` row.
+  `pyproject.toml` was not bumped (the handover's *"do not pin a version"*; S244's builder did the same).
+  `compile_deliberation_prompts.py` gained one `# noqa: E402` for its new import, the file's existing
+  `sys.path` idiom (three before it), not a gate bypass.
+- **What I read differently from the spec, after reading the laws.**
+  1. *"The sector cap is not a name-correlation penalty"* is literally **true**: `PM-NEV-06` says the
+     label cap *"is not the correlation penalty"*. It is removed as the spec says, because it existed only
+     to serve the stale `name-correlation` example and, alone, points the referee at *"there is no
+     correlation penalty"* while `PM-NEV-08` is one. Keeping it as a pinned true distinction would be a
+     one-line source change plus a pin, but it is a prompt change whose effect is item 75's to measure.
+  2. A7's *"up to the first `.`"* stops inside *"Alpha158 weight 0.00"*; the parse runs to the first
+     sentence-ending period (DL-251 D2).
+  3. The spec's −30 % figure: measured **8.86σ**, not ≈8.95σ (population σ including the mover). It trips
+     either way; the +9 % is 5.11σ as computed.
+  4. **ADR-0010 D1** says every prompt change must pass the frozen set before promotion. This sprint
+     promotes without a firewall run: real LLM calls are forbidden here, and the golden's models are not
+     production's (item 97). Whether the planner runs `deliberation_gate.py --check` before the deploy,
+     or accepts the 20-call replay in its place, is the planner's call; this handback does not claim it.
+  5. **The pooled-sigma example is true only on an ordinary day.** *"One 9% name does not trip it"*
+     holds at ±1.5 % (5.11σ), but among 98 names at ±0.5 % the same move is 8.66σ and is excluded
+     (`test_the_same_nine_percent_is_excluded_on_a_calm_session`). The distinction it serves is true
+     either way. The text is unchanged (rewording a case is item 75/97's), and this is reported so the
+     next case library does not keep an unconditional sentence that is conditional.
+- **The event-risk premise, for item 75.** The Class-2 `event-risk` example (*"Earnings are in 2 days and
+  the -3% stop is not earnings-gap-aware"*) describes an order the referee should not see: the scanner
+  excludes a name whose known next earnings date is within `earnings_exclusion_days` = 5
+  (`agents/scanner/settings.py:70`, applied in `agents/scanner/domain/filter_attestation.py:40`). It can
+  still arrive when the earnings date is unknown and the filter is recorded as skipped
+  (`filter_attestation.py:49`), so it is not impossible, only off the normal path. Changed nothing.
+- **The kernel/pack leak.** `kernel/deliberation_prompts.py` still holds trading content in the substrate
+  (ADR-0012's S232 correction lists it as deferred residue). S245 moved only the compile-time sources, to
+  `scripts/` (pack tooling), and the module shrank 199 → 155 lines. The champions stay: moving them
+  renames a module hashed into every `LLMCall`'s recipe digest (`DLIB-OBS-07`). The new module docstring
+  names a `scripts/` path in prose; there is no import. `compare_deliberation_prompts.py` and
+  `deliberation_gate.py` still read `DEFAULT_DELIBERATION_PROMPTS` to evaluate the champion, never to
+  build an instruction.
+- **Prompt caching (`DLIB-OBS-06`) still applies.** The API reference gives Claude Opus 5 a 512-token
+  minimum cacheable prefix. The new prompts are ~1.1–1.4k tokens (an estimate at 3.5–4.5 chars per token;
+  `count_tokens` needs a key), so the cache-marked system block still caches, carrying ~28 % fewer tokens
+  per call. F1 can confirm non-zero cache reads on the first challenger and judge calls.
+- **Digests.** `PROMPT_RECIPE_HASH` moves because `kernel.deliberation_prompts` is in `PROMPT_MODULES`,
+  and the challenger and judge `system_prompt_hash` move with the text. None of the new `scripts/` or
+  `tests/` modules is runtime, so none belongs in `PROMPT_MODULES`.
+- **Historical records left as they are.** EXP-004, EXP-005, the S119 transcripts and `STATE-03` still
+  describe the removed cases as they were; they are dated evidence, not prompts.
+- **The compile CLI** cannot run in this container (`dspy` is in the `optimizer` extra), and its defaults
+  still read `gpt-5.5` / `claude-opus-4-8` / `2026-07-08-s119-v1`. Unchanged, because the spec asks for
+  flags, not new defaults.
+- **Owed to the planner:** `uv lock` with the PATCH bump, `make gate-ran` (from the proving worktree,
+  SHA checked against `git rev-parse HEAD`), Windows `make ci`, the 20-call replay check (budget first,
+  row in `functionality-checks.md`), the image-only retag (rollback `s244`), and F1.

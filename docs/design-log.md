@@ -10,6 +10,104 @@ and is marked CLOSED here.
 
 ---
 
+## DL-252 - each debater turn is a DSPy-rendered guided turn, reproduced without DSPy, parsed strictly, and recorded with its packet - status: DECIDED (builder, 2026-09-30; S246)
+
+**Why.** DL-250's amendment (the operator, 2026-09-30) asks for the *guided* reasoning, the structure
+`dspy.ChainOfThought(..., rationale_field_type=GuidedReasoning)` imposes, recorded so it can be scored
+later for completeness and truth (S247).
+[S246](sprints/sprint-246-every-debate-turn-records-how-it-read-the-evidence.md) settles DL-250's open
+runtime placement as option (b): DSPy renders and parses offline into a golden fixture, and the runtime
+reproduces both without importing it. These are the builder's decisions inside it; the planner's
+recommendations were taken for D1 and D4.
+
+**Measured before deciding (DSPy 3.3.1, read in source and run).** `ChatAdapter.format_system_message`
+is the field-description block, `\n`, the structure block, `\n`, then the task description, which is
+`textwrap.dedent(instructions)` split with `str.splitlines()` and each line prefixed with `\n` plus 8
+spaces: blank lines are indented too, a trailing newline disappears, and common indentation is
+removed. The user message is the three input sections and one output-requirements sentence joined by
+a blank line, then stripped. `parse` splits `completion.splitlines()` on `\[\[ ## (\w+) ## \]\]`
+matched at the start of each stripped line (the rest of that line is content), keeps the **first**
+section of each name, ignores a preamble and unknown headers, strips each section, and never needs
+`[[ ## completed ## ]]`. A typed field goes through `json_repair.loads`, then `ast.literal_eval`, then
+pydantic. `ConfigDict(frozen=True)` leaves the rendered JSON schema byte-identical; `extra="forbid"`
+or `"allow"` adds `additionalProperties` to it.
+
+**D1 — the frozen text lives in `kernel/deliberation_guided_format.py`; a CI test proves it equals the
+golden.** Three literals: `GUIDED_TURN_PREFIX` (DSPy's field-description and structure blocks, with the
+`\n` that follows each), the objective lead (*"In adhering to this structure, your objective is: "*)
+and the user message's output-requirements sentence. Newlines are written as `\n` escapes, so the
+trailing spaces DSPy emits stay inside string literals. B1 compares all three, and whole rendered
+messages, with `tests/fixtures/deliberation_guided_golden.json`, which only
+`scripts/render_guided_turn_golden.py` writes. A second test recomputes `GuidedReasoning`'s JSON schema
+with pydantic the way DSPy does (type key first, `ensure_ascii=False`) and requires it inside the
+prefix, so editing a field description without regenerating the golden fails CI. *Rejected:* (a)
+**render the schema at import from pydantic.** A pydantic upgrade would then change a live prompt with
+no diff in our code, and DSPy's field-description block cannot be derived without DSPy anyway. (b)
+**the runtime reads the golden.** `tests/` is in no image, and a runtime reading a test fixture inverts
+the tree. (c) **the literals inside `kernel/deliberation_guided.py`.** ~35 literal lines beside the
+models and the parser crowd the 200-line block, and a separate module lets `PROMPT_MODULES` name
+exactly the text the model reads.
+
+**D2 — the turn `text`: readings, gaps, argument, every value verbatim.**
+`Readings:` then one `- <metric> = <value>: <meaning_here> (<bears_on>)` line each (or
+`Readings: none`), `Gaps:` then one `- <gap>` line each (or `Gaps: none`), then `Argument: <argument>`.
+No number formatting: `value` is the string the model copied, printed as written. Rounding or
+normalising it would show the opponent and the judge a value the model never wrote, and S247 compares
+the string with the packet. *Rejected:* (a) **argument only.** The judge loses the definitions it reads
+today inside the free text (the spec's road not taken). (b) **the reasoning as JSON in `text`.** The
+opponent and the judge read prose, and it roughly doubles the transcript's tokens. (c) **the raw
+completion with its `[[ ## … ## ]]` markers.** It puts DSPy's field headers into the next speaker's
+transcript section. It remains the fallback when the reasoning cannot be read, because then there is
+nothing typed to render.
+
+**D3 — the `reasoning_error` vocabulary, bounded at 500 characters like `failed_open_reason`.**
+`missing field: <names>` (a required section is absent, names in signature order);
+`invalid JSON in reasoning: <json error>` (the named deviation: DSPy would repair it);
+`schema: <location>: <message>` plus `(+N more)` (valid JSON that is not a `GuidedReasoning`, first
+pydantic error; `(root)` when the location is empty); and, at the turn level,
+`empty field: argument` (the argument section is present but blank). The parser returns exactly what
+DSPy returns there (an empty string); the turn does not render it, because `Argument: ` with nothing
+after it is an empty turn dressed as a readable one (`DLIB-NEV-07`), so the raw text is kept and the
+reason named. The completion is never copied into the error: it is already the turn's `text`.
+*Rejected:* (a) **exception class names** (`AdapterParseError` says nothing a reader can act on); (b)
+**pydantic's full error list** (unbounded, and some messages echo input values); (c) **a numeric
+code** (unreadable in the graph).
+
+**D4 — the packet is stored once per order, at `debates[ticker]["decision"]` and `["context"]`.** Every
+turn of an order reads the same packet, so one copy per order suffices; four copies per transcript row
+would quadruple the largest string on the node. It is recorded whenever the proposition was built,
+including a fail-open after that point, because the roles were given it; it is `None` only when
+building it failed. Not on `LLMCall`: `DLIB-OUT-05` forbids prompt text there. *Rejected:* per
+transcript row (4× the bytes); a separate label (a vocabulary change and a full `up` for no reader).
+
+**D5 — how the guided user message renders the transcript.** One `[<role> r<round>] <text>` line per
+turn, joined by `\n`, or `(none yet)`: `render_debate_prompt`'s line shape without its two-space
+indent, which only existed to sit under a `DEBATE SO FAR:` heading that the `[[ ## transcript ## ]]`
+section replaces. *Rejected:* `render_debate_prompt` whole (it repeats the decision and packet the
+message already carries as sections, doubling the largest input); JSON turns.
+
+**D6 — parse parity, and what stays as today.** `parse_guided_turn` mirrors `ChatAdapter.parse` line
+for line (same regex, stripped-line match, first section wins, preamble and unknown headers ignored,
+marker optional) and differs only in `json.loads` + pydantic, where DSPy runs `json_repair` and
+`ast.literal_eval` first. A fenced reasoning (```` ```json ````) is the same deviation class and is in
+the golden so F1 can see it if it happens. Unknown keys are dropped exactly as DSPy's pydantic does;
+forbidding them would add `additionalProperties: false` to the rendered schema and turn a harmless
+extra key into an unreadable turn. An empty completion still raises `empty_debate_turn`
+(`DLIB-NEV-07`); a stopped or failed call still fails the order open (`DLIB-FAIL-01`); an unreadable
+reasoning does neither (`DLIB-OUT-06`).
+
+**D7 — the replay and eval harnesses keep the free-text path, and that is a known divergence.**
+`kernel.deliberate`, `orchestration/deliberation_replay.py` and `scripts/deliberation_eval.py` still
+render `render_debate_prompt`, so `scripts/deliberation_reproducibility.py` will count every
+post-S246 `defender:r1` turn as `mismatched`. The new `prompt_recipe_hash` on those rows is what says
+the renderer changed (`DLIB-OBS-07`); S247 owns moving the harnesses.
+
+**D8 — `max_tokens` 4,096 → 8,192.** Challenger max 3,026 output tokens and p95 2,720 since
+2026-09-01 (0 stopped at the cap); the readings add an estimated 400–700 per turn. 8,192 is the
+tunable's own ceiling, and billing is per generated token, so an unused cap costs nothing.
+
+---
+
 ## DL-251 - the referee's champion prompts are rebuilt from pack-side sources, and every fact they state about our code has a named pin - status: DECIDED (builder, 2026-09-30; S245)
 
 **Why.** DL-250 measured the defect: `CHALLENGER_SYSTEM` and `JUDGE_SYSTEM` tell the model the staleness

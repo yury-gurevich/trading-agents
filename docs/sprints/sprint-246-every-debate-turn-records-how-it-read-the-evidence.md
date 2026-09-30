@@ -526,15 +526,43 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+Filled 2026-09-30 before the first code change. Read whole: `agents/deliberator/laws/laws.md` (v1.10),
+`agents/deliberator/laws/test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md`.
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+| Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
+| --- | --- | --- | --- |
+| `contracts/deliberator.py` (`DebateTurnRecord`) | deliberator `laws.md` + `test-plan.md` | `DLIB-TYP-01` (amended: names `reasoning`, `reasoning_error`) | Yes: S205's rule means the new fields go into the clause text and the required-fields test, not only the model |
+| `kernel/deliberation_guided.py`, `kernel/deliberation_guided_format.py` | same; conventions §3/§7 | `DLIB-OUT-06` (new), `DLIB-OBS-06` (one frozen system string per role), `DLIB-NEV-09` | Yes: `DLIB-NEV-09` binds any sentence about how our code behaves. The guided format states only the output structure, no fact about our code, so it needs no pin; checked, not assumed |
+| `agents/deliberator/agent.py`, new `guided_turn.py` | same | `DLIB-OUT-06`, `DLIB-NEV-06`, `DLIB-NEV-07`, `DLIB-FAIL-01`/`-04`, `DLIB-OUT-03`/`-05` | Yes: `DLIB-NEV-07` decided the empty-argument case (DL-252 D3); `DLIB-OUT-05` rules out storing anything on `LLMCall` |
+| `agents/deliberator/review_record.py` (+ `poll.py` carrying the proposition) | same | `DLIB-OUT-06`, `DLIB-OUT-07` (new), `DLIB-OBS-01`, `DLIB-OUT-02` | Yes: the packet goes on the order's `debates` entry, once (DL-252 D4) |
+| `agents/deliberator/prompt_recipe.py` | same | `DLIB-OBS-07` | Yes: the three new modules are declared and the pinned roots gain `agents.deliberator.guided_turn` |
+| `agents/deliberator/settings.py` (`max_tokens`) | same (`PARAM`) | `PARAM` `max_tokens` row | No |
+| The judge (`verdict`, `judge_verdict`, `parse_verdict`) | same | `DLIB-TYP-03`, `DLIB-FAIL-04`, `DLIB-NEV-06` | Not touched (the ⚠️ invariant); B7 proves it |
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, both**, as the
+spec answers: two optional fields on `DebateTurnRecord` and two guarantees. Owed and done in this unit
+of work: deliberator v1.10 → v1.11 (`DLIB-TYP-01` amended, `DLIB-OUT-06`, `DLIB-OUT-07`, `PARAM`
+`max_tokens`), Changelog, test-plan rows, clause IDs in docstrings, rollups in `ledger.md` and
+`INDEX.md`.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Contradictions found between a law and this spec:** none that stop the sprint. Two readings to note:
+(1) `DLIB-NEV-07` ("never records an empty debate turn") met a case the spec does not name: a
+completion whose sections parse but whose `argument` is blank. DSPy accepts it; rendering it would put
+`Argument: ` with nothing into the transcript. Resolved under the clause: the turn keeps its raw text
+and records `reasoning_error = "empty field: argument"` (DL-252 D3), so nothing is dropped and nothing
+empty is dressed up. (2) The `PARAM` table's `effort` (`max`) and `request_timeout_seconds` (`30.0`)
+rows match `settings.py`, while the spec's measurements say `high` and 120 s: both come from the pack,
+not the law. Not a contradiction; recorded so nobody "fixes" the table from the spec.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Laws found silent where a decision was needed:** (1) Nothing says what a debater turn's `text` is when
+the turn carries structure: `DLIB-OUT-02` says "per-ticker debate turns" and `DLIB-OBS-01` says the
+transcript is reconstructable. The rendering is a design decision (DL-252 D2), and the new
+`DLIB-OUT-06` names the reasoning, not the rendering. (2) No clause bounds the size of a
+`DeliberationRun`; D4 stores the packet once per order for that reason. Neither is a drift (no law
+disagrees with the code), so no register row.
+
+**Clauses that were ⬜ and are now proven:** none were ⬜ before; `DLIB-OUT-06` and `DLIB-OUT-07` are new
+and start proven by B3–B5; `DLIB-TYP-01` stays 🟩 with its required-fields test widened.
 
 ---
 

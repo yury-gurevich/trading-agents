@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code`
-**Status:** BUILT — 2026-09-30 by a cloud session on `claude/sprint-245-referee-facts-5co3h4`, not merged (Closeout below)
+**Status:** MERGED 2026-09-30 — `0.119.05`, fast-forwarded to `d1ba474f`, tag `v0.119.05`, GATE PROVEN `d1ba474f`; Windows `make ci` 3,701 passed / 100.00 %; built by a cloud session on `claude/sprint-245-referee-facts-5co3h4`; live check PASS (old champion asserted calendar-day counting 8 / 10, new 0 / 10, $1.45); not deployed: retag and F1 owed
 **Version:** `0.119.05` (PATCH)
 **Effort:** M
 **Decisions:** [DL-250](../design-log.md) (the measurement and the direction) · work-queue **96** · new `DLIB-NEV-09` · `DRIFT-092`

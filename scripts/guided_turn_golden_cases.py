@@ -108,6 +108,8 @@ PARSE_CASES: tuple[tuple[str, str], ...] = (
     # Edges DL-252 D6 names, so the parity covers them too.
     ("fenced_json", _R + "```json\n" + _VALID + "\n```" + _A + "A." + _DONE),
     ("header_with_inline_content", _R + _VALID + "\n\n[[ ## argument ## ]] A." + _DONE),
+    # DSPy slices an indented header's remainder from the unstripped line.
+    ("indented_header", _R + _VALID + "\n\n  [[ ## argument ## ]] A." + _DONE),
     ("first_section_wins", _R + _VALID + _A + "A." + _A + "B." + _DONE),
     ("unknown_header_between", _R + _VALID + "\n\n[[ ## notes ## ]]\nN." + _A + "A."),
     ("multi_line_argument", _R + _VALID + _A + "  A.\nB.\n\n  " + _DONE),

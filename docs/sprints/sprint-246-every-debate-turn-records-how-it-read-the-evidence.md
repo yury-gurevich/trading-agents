@@ -2,8 +2,8 @@
 # Sprint 246 — Every debate turn records how it read the evidence, before it argued
 
 **Phase:** Etalon-first continuous improvement (DL-19)
-**Branch:** `sprint-246-every-debate-turn-records-how-it-read-the-evidence`
-**Status:** SPEC
+**Branch:** `sprint-246-every-debate-turn-records-how-it-read-the-evidence` (built on `claude/focused-bardeen-3975ju`: the cloud session forces that name)
+**Status:** BUILT — 2026-09-30, on `claude/focused-bardeen-3975ju` (cloud session, cut from `main` `61068bc` after S245 merged), not merged. `make ci` exit 0 in the container (3,764 passed, 100.00 %); owed to the planner: `uv lock` with the MINOR bump, `make gate-ran`, Windows `make ci`, the 20-call replay check, the image-only retag, F1
 **Version:** *next available MINOR at merge*
 **Effort:** L
 **Decisions:** [DL-250](../design-log.md) and its amendment (the operator's direction) · work-queue **97 (a)** · ADR-0010 (DSPy behind a port) · DL-184 (no image installs `dspy`)
@@ -524,11 +524,11 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
-| Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
-| --- | --- | --- | --- |
 Filled 2026-09-30 before the first code change. Read whole: `agents/deliberator/laws/laws.md` (v1.10),
 `agents/deliberator/laws/test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md`.
 
+| Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
+| --- | --- | --- | --- |
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
 | `contracts/deliberator.py` (`DebateTurnRecord`) | deliberator `laws.md` + `test-plan.md` | `DLIB-TYP-01` (amended: names `reasoning`, `reasoning_error`) | Yes: S205's rule means the new fields go into the clause text and the required-fields test, not only the model |
@@ -568,52 +568,227 @@ and start proven by B3–B5; `DLIB-TYP-01` stays 🟩 with its required-fields t
 
 ## Test plan results — fill at handback
 
+All PASS in the container (`make ci`, 2026-09-30). Test-plan rows added for `DLIB-OUT-06` and `DLIB-OUT-07`;
+`DLIB-TYP-01`'s summary names the two new fields.
+
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| B1 | *(builder fills)* | | | |
+| B1 | `test_the_frozen_prefix_and_requirements_are_dspys`; `test_the_system_message_is_byte_identical_to_dspys` (3 fixture prompts: blank line + multi-line paragraph + literal `\n` + non-ASCII; common indent + whitespace-only line + trailing newline; one line); `test_the_user_message_is_byte_identical_to_dspys` (3: first turn, multi-line context and transcript with leading/trailing newlines, empty transcript) | `tests/test_deliberation_guided.py` | PASS | `DLIB-OUT-06`, `DLIB-OBS-06` |
+| B2 | `test_the_runtime_parses_what_dspy_parses` (15 rows); `test_the_named_deviation_records_an_error_where_dspy_repairs` (2 rows: the trailing comma, and a fenced reasoning, the same class); `test_the_golden_was_written_by_dspy_and_covers_the_spec_table` | `tests/test_deliberation_guided.py` | PASS | `DLIB-OUT-06` |
+| B3 | `test_a_defender_turn_carries_its_guided_reading` (rendering row 1); `test_a_challenger_turn_reads_the_transcript_and_carries_its_reading` (rendering row 2); both also assert the exact system and user messages sent | `agents/deliberator/tests/test_guided_turn.py` | PASS | `DLIB-OUT-06`, `DLIB-TYP-01` |
+| B4 | `test_an_unreadable_reasoning_keeps_the_raw_turn_and_names_why` (5: enum, missing argument, trailing comma, no sections, empty argument); `test_an_unreadable_reasoning_never_fails_the_turn_or_the_order` (the same 5 through a full manager review: `failed_open_count == 0`, verdict recorded); `test_an_empty_completion_still_raises` | `agents/deliberator/tests/test_guided_turn_edges.py`, `test_guided_record.py` | PASS | `DLIB-OUT-06`, `DLIB-NEV-06`, `DLIB-NEV-07` |
+| B5 | `test_the_record_keeps_every_reading_and_the_packet_it_read` (real proponent/opponent/manager on the in-process bus, 2 rounds: 4 rows each with `reasoning` and `reasoning_error`; `debates["AAPL"]` `decision`/`context` equal to the proposition every request carried) | `agents/deliberator/tests/test_guided_record.py` | PASS | `DLIB-OUT-06`, `DLIB-OUT-07` |
+| B6 | `test_every_reader_reads_an_old_record_as_it_reads_a_new_one` (seven readers, old shape == new shape); `test_a_turn_row_of_either_shape_validates_as_a_turn_record` (2) | `tests/test_guided_record_compat.py` | PASS | `DLIB-OBS-01`, `DLIB-OUT-07`, `DLIB-TYP-01` |
+| B7 | `test_the_judge_is_asked_and_parsed_exactly_as_before` (system == `JUDGE_SYSTEM`, user == `render_debate_prompt(...)`, ruling and rationale parsed) | `agents/deliberator/tests/test_guided_turn_edges.py` | PASS | `DLIB-FAIL-04`, `DLIB-TYP-03` |
+| B8 | `test_no_runtime_module_imports_dspy` (AST: 0 static imports; the only dynamic `"dspy"` import is ADR-0010's `kernel/dspy_optimizer.py`); `test_a_guided_turn_never_loads_dspy` (a fresh interpreter, `tests/dspy_free_probe.py`, loads the whole agent and serves a turn: `loaded=[]`, also run with DSPy installed); `test_no_image_installs_the_optimizer_extra` (15 Dockerfiles) | `tests/test_no_dspy_at_runtime.py` | PASS | `DLIB-OUT-06` (DL-184) |
+| B9 | `test_the_deliberator_declares_every_module_that_builds_its_prompt` (roots gain `agents.deliberator.guided_turn`; the three kernel modules and `guided_turn` in the required set) | `tests/test_prompt_recipe.py` | PASS | `DLIB-OBS-07` (its existing test-plan row) |
+| B10 | `test_the_output_cap_is_8192_and_its_law_row_agrees` (default, the `why` cites 3,026, the `PARAM` row); `test_max_tokens_default_is_its_own_ceiling` | `agents/deliberator/tests/test_guided_turn_edges.py`, `test_llm_provider.py` | PASS | `DLIB-DEP-04` |
+| B11 | `test_the_program_is_the_spec_signature_with_the_typed_reasoning`; `test_the_golden_writer_produces_the_goldens_shape`; `test_the_committed_golden_was_rendered_from_todays_cases`; `test_the_replay_instrument_prints_one_line_per_turn`; `test_a_failed_call_is_a_row_and_ends_that_subject` (fake `dspy` module, fake LLMs) | `tests/test_guided_offline_scripts.py` | PASS | — (tooling) |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `tests/test_deliberation_guided_text.py` (rendering table, values printed verbatim,
+the transcript input, every `reasoning_error` in the vocabulary, malformed JSON named with its position, the
+500-character bound, and `test_the_frozen_prefix_states_the_models_own_schema`: the kernel model's schema,
+rendered the way DSPy renders it, sits inside the frozen prefix, so a description edited without regenerating
+the golden fails CI); `test_deliberator_bus_payload_fields_required_by_law` widened (`DLIB-TYP-01`). **Two
+existing tests changed, both because their premise changed by design:**
+`test_stop_reason_fail_open.py::test_one_stopped_turn_fails_only_that_order_and_records_reason` asserted the
+sentinel appears nowhere in `DeliberationRun`; `DLIB-OUT-07` now stores the packet, so it asserts the sentinel
+**is** in `debates["AAPL"]["context"]` and nowhere else (not in a reason, rationale, row or fault).
+`test_llm_provider.py::test_max_tokens_ceiling_is_tunable_above_the_default` became
+`test_max_tokens_default_is_its_own_ceiling` (Scope 6 puts the default at the ceiling).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT at handback, MERGED at merge)*
+**Status:** BUILT — 2026-09-30, on `claude/focused-bardeen-3975ju`, not merged.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** the cloud container's clone, `/home/user/trading-agents`, branch
+`claude/focused-bardeen-3975ju` cut from `main` `61068bc`. **No `.env`.** `uv sync --frozen --extra optimizer`
+succeeded from PyPI (DSPy 3.3.1, used offline only for the golden and a local B8 check); no LLM call was made.
 
-**Result:** *(builder fills — what is now true, in the artefact's own words)*
+**Result:** each defender and challenger turn is now asked in DSPy 3.3.1's `ChainOfThought` format with a typed
+`GuidedReasoning` (`readings` of `metric`/`value`/`meaning_here`/`bears_on`, then `gaps`) written before the
+`argument`. The kernel renders the system and user messages byte for byte as DSPy does (B1 against a golden DSPy
+wrote), parses the completion exactly as `ChatAdapter.parse` does except that the reasoning must be strict JSON
+(B2), and never imports DSPy (B8). `DebateTurnRecord` carries `reasoning` and `reasoning_error`; each
+`DeliberationRun.transcript` row keeps them; each `debates[ticker]` carries the order's `decision` and `context`.
+A turn's `text` is the rendered readings, gaps and argument; when the reasoning cannot be read, `text` is the raw
+completion and `reasoning_error` says why, and the order is debated and judged as usual. The judge's system
+prompt, message and parse are unchanged (B7). Deliberator laws v1.11: 26 / 59.
 
-**Files changed:** *(builder fills)*
+**Files changed:** new `kernel/deliberation_guided.py` (models, strict parser), `kernel/deliberation_guided_format.py`
+(the frozen DSPy text), `kernel/deliberation_guided_render.py` (messages, turn text, transcript input),
+`agents/deliberator/guided_turn.py`, `scripts/deliberation_guided_program.py`, `scripts/render_guided_turn_golden.py`,
+`scripts/guided_turn_golden_cases.py`, `scripts/guided_turn_replay.py`,
+`tests/fixtures/deliberation_guided_golden.json`, and the tests below; changed `contracts/deliberator.py`,
+`agents/deliberator/{agent,poll,review_record,settings,prompt_recipe}.py`,
+`agents/deliberator/laws/{laws,test-plan}.md`, `docs/laws/{ledger,INDEX}.md`, `docs/design-log.md`,
+`tests/test_prompt_recipe.py`, `tests/test_contract_required_payload_fields.py`, two deliberator tests (above).
+New tests: `tests/test_deliberation_guided{,_text}.py`, `tests/test_guided_record_compat.py`,
+`tests/test_no_dspy_at_runtime.py` (+ `tests/dspy_free_probe.py`), `tests/test_guided_offline_scripts.py`,
+`agents/deliberator/tests/{guided_fixtures,test_guided_turn,test_guided_turn_edges,test_guided_record}.py`.
+**Not changed:** `pyproject.toml`, `uv.lock`, any Dockerfile, `kernel/deliberation.py`, `kernel/deliberation_prompts.py`,
+`kernel/deliberation_verdicts.py`, the replay and eval harnesses.
 
-**Design decisions:** *(builder fills — the DL taken, and where the rejected alternatives are)*
+**Design decisions:** [DL-252](../design-log.md) D1–D8, each with its rejected alternatives: D1 frozen literals in
+`kernel/deliberation_guided_format.py` proven by B1 and a schema test; D2 the `text` rendering, values verbatim;
+D3 the `reasoning_error` vocabulary (`missing field:`, `invalid JSON in reasoning:`, `schema: <loc>: <msg>`,
+`empty field: argument`), bounded at 500; D4 the packet once per order at `debates[ticker]`, also on a fail-open
+once built; D5 the transcript input; D6 parse parity; D7 the harness divergence; D8 `max_tokens`.
 
-**Golden fixture:** *(builder fills — the command, DSPy version, commit)*
-
-**Proof — the red run first:**
+**Golden fixture:** written only by real DSPy **3.3.1**, committed alone, twice (the second adds one case):
 
 ```text
-(builder pastes)
+LITELLM_LOCAL_MODEL_COST_MAP=True PYTHONPATH=. uv run --frozen --extra optimizer \
+    python scripts/render_guided_turn_golden.py
+wrote tests/fixtures/deliberation_guided_golden.json
 ```
 
-**Proof — the green run:**
+`ef05c47` (sha256 `91293ab9…`, 16 parse rows), then `4790696` (sha256 `693478ba…`, adds `indented_header`, after
+`5acb1f1` added the case). `test_the_committed_golden_was_rendered_from_todays_cases` fails if the cases and the
+golden drift apart.
+
+**Proof — the red run first** (B1, B2, B3, B5 against the stub implementation, before any runtime code; the stubs
+raised `NotImplementedError`, the format literals were empty, and the agent still served free-text turns):
 
 ```text
-(builder pastes)
+$ uv run pytest --no-cov -q tests/test_deliberation_guided.py agents/deliberator/tests/test_guided_turn.py \
+      agents/deliberator/tests/test_guided_record.py
+tests/test_deliberation_guided.py:59: in test_the_frozen_prefix_and_requirements_are_dspys
+E   AssertionError: assert '' == 'Your input f...leted ## ]]\n'
+tests/test_deliberation_guided.py:66: in test_the_system_message_is_byte_identical_to_dspys
+E   NotImplementedError
+agents/deliberator/tests/test_guided_turn.py:55: in test_a_defender_turn_carries_its_guided_reading
+agents/deliberator/agent.py:76: in debate_turn
+E   kernel.llm.LLMCompletionStoppedError: kernel completion stopped: stop_reason=empty_debate_turn
+agents/deliberator/tests/test_guided_record.py:91: in test_the_record_keeps_every_reading_and_the_packet_it_read
+E   AssertionError: assert [] == [('defender',...allenger', 2)]
+agents/deliberator/tests/test_guided_record.py:119: in test_an_unreadable_reasoning_never_fails_the_turn_or_the_order
+E   assert 1 == 0
+FAILED tests/test_deliberation_guided.py::test_the_frozen_prefix_and_requirements_are_dspys
+FAILED tests/test_deliberation_guided.py::test_the_system_message_is_byte_identical_to_dspys[...] (3)
+FAILED tests/test_deliberation_guided.py::test_the_user_message_is_byte_identical_to_dspys[...] (3)
+FAILED tests/test_deliberation_guided.py::test_the_runtime_parses_what_dspy_parses[...] (14)
+FAILED tests/test_deliberation_guided.py::test_the_named_deviation_records_an_error_where_dspy_repairs[...] (2)
+FAILED agents/deliberator/tests/test_guided_turn.py::test_a_defender_turn_carries_its_guided_reading
+FAILED agents/deliberator/tests/test_guided_turn.py::test_a_challenger_turn_reads_the_transcript_and_carries_its_reading
+FAILED agents/deliberator/tests/test_guided_record.py::test_the_record_keeps_every_reading_and_the_packet_it_read
+FAILED agents/deliberator/tests/test_guided_record.py::test_an_unreadable_reasoning_never_fails_the_turn_or_the_order[...] (5)
+31 failed, 1 passed in 0.57s
 ```
 
-**Guards planted:** *(builder fills — per plant (a)-(f))*
+The one pass was `test_the_golden_was_written_by_dspy_and_covers_the_spec_table`, which reads only the golden.
 
-**Module line counts:** *(builder fills)*
+**Proof — the green run** (every sprint test and the two changed ones, after the implementation):
 
-**`make ci`:** *(builder fills — file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+```text
+$ uv run pytest --no-cov -q tests/test_deliberation_guided.py tests/test_deliberation_guided_text.py \
+      tests/test_guided_record_compat.py tests/test_no_dspy_at_runtime.py tests/test_guided_offline_scripts.py \
+      tests/test_prompt_recipe.py tests/test_contract_required_payload_fields.py \
+      agents/deliberator/tests/test_guided_turn.py agents/deliberator/tests/test_guided_record.py \
+      agents/deliberator/tests/test_guided_turn_edges.py agents/deliberator/tests/test_llm_provider.py \
+      agents/deliberator/tests/test_stop_reason_fail_open.py
+89 passed in 2.36s
+```
 
-**`make gate-ran`:** *(planner — owed)*
+**Guards planted** (DL-70; each planted on the committed code `e5209ca`, run, then `git checkout` restored it and
+the tree was clean):
 
-**Not met / verified failing:** *(builder fills)*
+- **(a)** one character of `GUIDED_TURN_PREFIX` (`are:` → `are;`) → B1 red:
+  `E   - Your input fields are;` / `E   + Your input fields are:` in
+  `test_the_frozen_prefix_and_requirements_are_dspys`, and every system-message row. Restored.
+- **(b)** a lenient parser (strip trailing commas before `json.loads`) → B2's deviation row red:
+  `FAILED tests/test_deliberation_guided.py::test_the_named_deviation_records_an_error_where_dspy_repairs[malformed_json_trailing_comma]`
+  (`GuidedReasoning(...) != None`), `1 failed, 24 passed`. Restored.
+- **(c)** `reasoning` dropped from the transcript rows (renamed) → B5 red: `E   KeyError: 'reasoning'` in
+  `test_the_record_keeps_every_reading_and_the_packet_it_read` and all five B4 record rows. Restored.
+- **(d)** raise on an unreadable reasoning → B4 red: `E   ValueError: schema: readings.0.bears_on: Input should
+  be 'supports', 'against' or 'neutral'` (and the other four reasons) at the turn, and `assert 1 == 0` on
+  `failed_open_count` for every order. Restored.
+- **(e)** the judge routed through the guided path (`guided_system(JUDGE_SYSTEM)`) → B7 red:
+  `FAILED …test_guided_turn_edges.py::test_the_judge_is_asked_and_parsed_exactly_as_before`
+  (`('Your input… != ('You are th…`), `1 failed, 7 passed`. Restored.
+- **(f)** `kernel.deliberation_guided_render` removed from `PROMPT_MODULES` → the recipe test red:
+  `Extra items in the left set: 'kernel.deliberation_guided_render'`,
+  `FAILED tests/test_prompt_recipe.py::test_the_deliberator_declares_every_module_that_builds_its_prompt`. Restored.
+
+**Module line counts** (every touched Python file, all under 200): `kernel/deliberation_guided.py` 155 (warn),
+`kernel/deliberation_guided_format.py` 88, `kernel/deliberation_guided_render.py` 76, `contracts/deliberator.py` 134,
+`agents/deliberator/agent.py` 168 (was 184), `guided_turn.py` 81, `review_record.py` 127, `poll.py` 188,
+`prompt_recipe.py` 71, `settings.py` 158; `scripts/deliberation_guided_program.py` 58,
+`render_guided_turn_golden.py` 118, `guided_turn_golden_cases.py` 120, `guided_turn_replay.py` 174;
+`tests/test_deliberation_guided.py` 111, `_text.py` 156, `test_guided_record_compat.py` 130,
+`test_no_dspy_at_runtime.py` 92, `dspy_free_probe.py` 52, `test_guided_offline_scripts.py` 195,
+`test_prompt_recipe.py` 184, `test_contract_required_payload_fields.py` 120;
+`agents/deliberator/tests/guided_fixtures.py` 102, `test_guided_turn.py` 89, `test_guided_turn_edges.py` 125,
+`test_guided_record.py` 136, `test_llm_provider.py` 157, `test_stop_reason_fail_open.py` 199 (was 196; the
+packet-stripping helper lives in `guided_fixtures.py` to keep it under the block).
+
+**`make ci`:** `make ci > ci.txt 2>&1; echo $?` in the container → **exit 0**, all 15 steps: ruff, format (1,507
+files), mypy (1,126 files), import-linter (5 kept, 0 broken), module size, module header, law coverage,
+PARAM/settings sync, sprint status, markdown links, version scheme, pytest **3,764 passed, 8 skipped, coverage
+100.00 %** (19,878 statements, 4,230 branches), dependency audit *"No unaccepted vulnerabilities; 1 accepted
+advisory re-checked"*, detect-secrets **Passed**, untracked secrets clean. Not the Windows run: owed.
+
+**`make gate-ran`:** *(planner — owed; this container has no `gh`)*
+
+**`uv.lock`:** untouched (`git diff --stat uv.lock` empty on every commit). `uv sync --frozen --extra optimizer`
+installed from the existing lock; `pyproject.toml` is unchanged (no version pinned: MINOR at merge).
+
+**Not met / verified failing:** nothing in scope. **Not done (planner's, by the spec):** `uv lock` with the MINOR
+bump, `make gate-ran`, Windows `make ci`, the 20-call replay check, the image-only retag, F1.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- **Scope held**, with three moves inside it: (1) the kernel side is three modules, not one or two
+  (`deliberation_guided.py` would have been 212 lines), and `kernel.deliberation_guided` re-exports the renderers
+  so the spec's names hold; (2) the golden has 9 rows beyond the spec's 7 (fenced JSON, inline and indented
+  headers, first section wins, unknown header, multi-line and empty argument, a bare-number value, a non-object
+  reasoning, no sections); (3) `poll.py` carries the proposition to the record (`OrderReview.proposition`), also on
+  a fail-open once the packet was built (DL-252 D4).
+- **What I disagreed with, or found, after reading the laws.** (1) `DLIB-NEV-07` met a case the spec does not
+  name: a parsed turn with a blank `argument`. DSPy accepts it; the runtime parses it identically, and the turn
+  records `reasoning_error = "empty field: argument"` with the raw text, so `Argument: ` with nothing is never
+  dressed up as a readable turn. (2) An existing test asserted no prompt text anywhere on `DeliberationRun`;
+  `DLIB-OUT-07` makes the packet part of the record by design, so the test now proves the payload sits only in
+  `debates[ticker]["context"]` (`DLIB-OUT-05` still keeps it off `LLMCall`). Worth a planner glance, because
+  the node now carries each order's packet text (its size on a live night is not measured here; F1 can read it). (3) **The spec's "judge digests do not move" is
+  half right:** `JUDGE_SYSTEM` and so the judge's `system_prompt_hash` are unchanged, but `PROMPT_RECIPE_HASH` is
+  one digest for all three roles (`prompt_recipe.py`'s own rule), so the judge's `prompt_recipe_hash` **does**
+  change, and its `prompt_hash` changes too because the transcript texts it quotes are now rendered. F1 should
+  check the judge's `system_prompt_hash` only, as F1 is written.
+- **DSPy's parse quirks the runtime copies, by parity:** an indented header's remainder is sliced from the
+  unstripped line (DSPy reads `"  [[ ## argument ## ]] A."` as `"]] A."`); a bare-number `value` (`30`, not
+  `"30"`) fails DSPy's own schema too, so it is a `reasoning_error` in both. If F1 shows parse failures, those
+  two and the fence (the named deviation) are the first three to count.
+- **Measured here:** the frozen prefix is **1,974** characters (the spec's 1,995 was measured on a different
+  cut); the defender's system message grows 434 → **2,467** and the challenger's 4,818 → **7,043** (the spec's
+  9,058 was on the pre-S245 champion); the user message gains the 238-character reminder and sends the packet
+  once, as before.
+- **The replay/eval harness divergence, for S247.** `kernel.deliberate`, `orchestration/deliberation_replay.py`,
+  `orchestration/replay_rounds.py` (the batch replay) and `scripts/deliberation_eval.py` / `deliberation_gate.py`
+  still render `render_debate_prompt` free text for every role, so (a) they no longer exercise the prompts the
+  fleet's debaters run; (b) `scripts/deliberation_reproducibility.py` will report every post-S246 `defender:r1`
+  as `mismatched`, which the new `prompt_recipe_hash` explains (`DLIB-OBS-07`); (c) the golden firewall's
+  baseline is free-text debate. S247 owns moving them.
+- **The judge now reads rendered readings.** Its prompt, message shape and parse are unchanged (B7), but the
+  debater `text` it quotes is the `Readings:` / `Gaps:` / `Argument:` rendering, or a raw completion with its
+  `[[ ## … ## ]]` markers when a reasoning could not be read. Intended (the spec's trap); not "fixed".
+- `scripts/guided_turn_replay.py --limit 10` is the planner's instrument: one line per turn (readings, latency,
+  `tokens_out`, stop reason, `parse=ok` or the error), then `parsed X of 20; max_tokens stops N; challenger max
+  latency_s S`. It builds one client per role from `DeliberatorSettings`, so run it with the pack's env.
+- Vocabulary: `kernel/graph_vocabulary.py` declares no property names (it is the checker); the pack's
+  `trading_graph_vocabulary.json` lists `DeliberationRun`'s top-level props, `transcript` and `debates` among
+  them. Every key this sprint adds is nested inside those, so **no vocabulary change: image-only retag**.
+- Readers of `transcript` / `debates` checked for old rows (B6): `review_record.narrative`,
+  `orchestration.verdict_sources.real_verdicts`, `orchestration.trace_deliberation.format_deliberation_trace`,
+  `orchestration.packs.trading_deliberation_view.deliberation`, `agents.execution.deliberation_gate`
+  (`failed_open_tickers`, `deliberation_status`, `drop_vetoed`); `scripts/fidelity_export_outcomes.py` and
+  `scripts/run_local.py` read neither key. **No code reads `transcript` rows**; `debates` is read for its count
+  and, in `narrative`, `verdict`/`rationale`.
+- **Owed to the planner:** `uv lock` (with the MINOR bump), `make gate-ran` from the proving worktree (check the
+  printed SHA), Windows `make ci`, the 20-call replay check (≥ 19 of 20 parse, 0 `max_tokens`, challenger
+  ≤ 60 s), the image-only retag (rollback `s245`), F1.

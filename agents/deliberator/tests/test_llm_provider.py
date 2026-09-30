@@ -109,10 +109,16 @@ def test_openai_returns_the_assistant_text(monkeypatch: pytest.MonkeyPatch) -> N
     assert client.max_tokens == 4096
 
 
-def test_max_tokens_ceiling_is_tunable_above_the_default() -> None:
+def test_max_tokens_default_is_its_own_ceiling() -> None:
+    """S246 (DL-252 D8): the guided readings need room; the default is the ceiling.
+
+    It sat at 4,096 below an 8,192 ceiling until the debaters began writing their
+    readings before the argument; billing is per generated token, so the raised
+    cap costs nothing unless used, and it can still be tuned down.
+    """
     row = {item.name: item for item in describe(DeliberatorSettings)}["max_tokens"]
 
-    assert row.default == 4096
+    assert row.default == 8192
     assert row.minimum == 64
     assert row.maximum == 8192
 

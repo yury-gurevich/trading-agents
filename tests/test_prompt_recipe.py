@@ -107,12 +107,17 @@ def test_the_deliberator_declares_every_module_that_builds_its_prompt() -> None:
     module without declaring it fails here instead of silently widening the
     blind spot. `build_veto_context` and `render_debate_prompt` are the two
     entry points; every first-party module reachable from them must be declared.
+    S246 adds `guided_turn`, which asks the debaters in the guided format (B9).
     """
     from agents.deliberator.prompt_recipe import PROMPT_MODULES
 
     declared = {module.__name__ for module in PROMPT_MODULES}
     reachable = _first_party_closure(
-        ("agents.deliberator.context", "kernel.deliberation")
+        (
+            "agents.deliberator.context",
+            "kernel.deliberation",
+            "agents.deliberator.guided_turn",
+        )
     )
 
     # Exact, not a subset: this also fails if a module is quietly added to the
@@ -126,6 +131,10 @@ def test_the_deliberator_declares_every_module_that_builds_its_prompt() -> None:
         "agents.deliberator.context_values",
         "kernel.deliberation",
         "kernel.deliberation_prompts",
+        "agents.deliberator.guided_turn",
+        "kernel.deliberation_guided",
+        "kernel.deliberation_guided_format",
+        "kernel.deliberation_guided_render",
     }
 
 

@@ -14,6 +14,7 @@ import pytest
 from agents.deliberator.agent import DeliberatorAgent
 from agents.deliberator.poll import review_pm_node
 from agents.deliberator.settings import DeliberatorSettings
+from agents.deliberator.tests.guided_fixtures import without_packets
 from contracts.common import Explanation, Money, Provenance
 from contracts.deliberator import (
     DebateProposition,
@@ -156,8 +157,10 @@ def test_one_stopped_turn_fails_only_that_order_and_records_reason() -> None:
     assert "max_tokens" in str(run.props["failed_open_reason"])
     assert all(record["ticker"] == "AAPL" for record in run.props["transcript"])
     assert all(record["text"] for record in run.props["transcript"])
-    evidence = repr(run.props)
-    assert _SENTINEL not in evidence
+    # S246 (DLIB-OUT-07): each order's packet is recorded once, on purpose; the
+    # prompt payload may appear there and in no reason, rationale, row or fault.
+    assert _SENTINEL in str(run.props["debates"]["AAPL"]["context"])
+    assert _SENTINEL not in without_packets(run.props)
     (fault,) = graph.list_nodes("Fault")
     assert _SENTINEL not in repr(fault.props)
 

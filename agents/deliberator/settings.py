@@ -89,8 +89,14 @@ class DeliberatorSettings(AgentSettings):
         why="Anthropic output_config effort for deliberation calls.",
     )
     max_tokens: int = tunable(
-        4096,
-        why="Caps each role's reasoning and answer payload.",
+        8192,
+        why=(
+            "Caps each role's reasoning and answer payload. S246 debaters write "
+            "their readings before the argument: challenger output peaked at "
+            "3,026 tokens (p95 2,720) before them, and the readings add an "
+            "estimated 400-700, so 4,096 would leave little room. Billed per "
+            "generated token, so the unused cap costs nothing."
+        ),
         ge=64,
         le=8192,
         unit="tokens",

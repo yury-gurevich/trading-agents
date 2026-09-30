@@ -35,21 +35,35 @@ from agents.deliberator import (
     context_pm,
     context_stop,
     context_values,
+    guided_turn,
 )
-from kernel import deliberation, deliberation_prompts
+from kernel import (
+    deliberation,
+    deliberation_guided,
+    deliberation_guided_format,
+    deliberation_guided_render,
+    deliberation_prompts,
+)
 from kernel.prompt_recipe import recipe_digest
 
 #: Every module whose source can change the text of a deliberation prompt.
-#: `kernel.deliberation` renders the turn and `kernel.deliberation_prompts`
+#: `kernel.deliberation` renders the judge's turn and `kernel.deliberation_prompts`
 #: holds the champion role prompts; the five `context*` modules build the
-#: CONTEXT / EVIDENCE block interpolated into it.
+#: CONTEXT / EVIDENCE block interpolated into it. S246's debaters are asked
+#: through `guided_turn`, in the format `kernel.deliberation_guided_format`
+#: freezes and `kernel.deliberation_guided_render` renders, and
+#: `kernel.deliberation_guided` shapes the turn text every later prompt quotes.
 PROMPT_MODULES = (
     context,
     context_market,
     context_pm,
     context_stop,
     context_values,
+    guided_turn,
     deliberation,
+    deliberation_guided,
+    deliberation_guided_format,
+    deliberation_guided_render,
     deliberation_prompts,
 )
 

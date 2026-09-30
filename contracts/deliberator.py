@@ -13,6 +13,7 @@ from pydantic import Field
 
 from contracts.common import _Frozen
 from kernel.contract import AgentContract, Capability
+from kernel.deliberation_guided import GuidedReasoning
 
 DebateRole = Literal["defender", "challenger"]
 Ruling = Literal["uphold", "overturn", "revise"]
@@ -27,11 +28,17 @@ class DebateProposition(_Frozen):
 
 
 class DebateTurnRecord(_Frozen):
-    """One already-spoken deliberation turn."""
+    """One already-spoken deliberation turn.
+
+    A guided defender or challenger turn also carries the reasoning it wrote
+    before its argument, or why that reasoning could not be read (S246).
+    """
 
     role: DebateRole
     round: int = Field(ge=1)
     text: str
+    reasoning: GuidedReasoning | None = None
+    reasoning_error: str | None = None
 
 
 class DebateTurnRequest(_Frozen):

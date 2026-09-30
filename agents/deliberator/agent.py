@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from agents.deliberator.guided_turn import guided_turn
 from agents.deliberator.prompt_recipe import PROMPT_RECIPE_HASH
 from agents.deliberator.settings import DeliberatorSettings
 from contracts.deliberator import (
     DebateProposition,
-    DebateRole,
     DebateTurnRecord,
     DebateTurnReply,
     DebateTurnRequest,
@@ -27,7 +27,6 @@ from kernel import (
     LLMCompletionStoppedError,
     Proposition,
     Turn,
-    debate_turn,
     llm_stop_reason,
     llm_usage,
     record_llm_call,
@@ -61,7 +60,7 @@ class DeliberatorAgent(AgentBase):
         )
 
     def debate_turn(self, request: DebateTurnRequest) -> DebateTurnReply:
-        """Return one peer contribution using the unchanged debate-core prompt."""
+        """Return one peer contribution as a guided turn (DLIB-OUT-06)."""
         peer_role = self.settings.peer_role
         if peer_role is not None and request.role != peer_role:
             raise ValueError(f"{self.settings.identity} cannot serve {request.role}")
@@ -73,16 +72,9 @@ class DeliberatorAgent(AgentBase):
             model=model,
             correlation_id=request.request_id,
         )
-        turn = debate_turn(
-            ledger,
-            _proposition(request.proposition),
-            role=request.role,
-            round_number=request.round_number,
-            transcript=_transcript(request.transcript),
-        )
         return DebateTurnReply(
             request_id=request.request_id,
-            turn=_turn_record(turn),
+            turn=guided_turn(ledger, request),
             llm_call_key=ledger.last_node_key,
         )
 
@@ -174,11 +166,3 @@ def _proposition(proposition: DebateProposition) -> Proposition:
 
 def _transcript(records: tuple[DebateTurnRecord, ...]) -> tuple[Turn, ...]:
     return tuple(Turn(item.role, item.round, item.text) for item in records)
-
-
-def _turn_record(turn: Turn) -> DebateTurnRecord:
-    return DebateTurnRecord(
-        role=cast("DebateRole", turn.role),
-        round=turn.round,
-        text=turn.text,
-    )

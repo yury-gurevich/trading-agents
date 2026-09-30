@@ -115,6 +115,7 @@ def _review_one(
 ) -> OrderReview:
     """Run all peer turns plus the manager verdict; fail open on faults."""
     result = fail_open_review()
+    proposition: DebateProposition | None = None
     with fault_boundary(
         sink,
         agent="deliberator-manager",
@@ -130,7 +131,7 @@ def _review_one(
             order_set.run_id, intent.ticker, proposition, manager, peer_client, settings
         )
     if capture.fault is not None:
-        return fail_open_review(_reason_from_fault(capture.fault))
+        return fail_open_review(_reason_from_fault(capture.fault), proposition)
     return result
 
 
@@ -183,4 +184,5 @@ def _debate(
         verdict.rationale,
         tuple(transcript),
         tuple(llm_call_keys),
+        proposition=proposition,
     )

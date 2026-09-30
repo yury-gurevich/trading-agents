@@ -67,7 +67,9 @@ def test_curator_payload_fields_required_by_law() -> None:
 def test_deliberator_bus_payload_fields_required_by_law() -> None:
     """DLIB-TYP-01: deliberator payload types carry the fields its clauses require."""
     _assert_fields(deliberator.DebateProposition, "decision context")
-    _assert_fields(deliberator.DebateTurnRecord, "role round text")
+    _assert_fields(
+        deliberator.DebateTurnRecord, "role round text reasoning reasoning_error"
+    )
     _assert_fields(
         deliberator.DebateTurnRequest,
         "request_id proposition role round_number transcript",

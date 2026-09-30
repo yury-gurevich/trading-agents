@@ -9,15 +9,20 @@ External I/O: none.
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+from kernel.deliberation_guided_render import guided_system as guided_system
+from kernel.deliberation_guided_render import guided_user as guided_user
+from kernel.deliberation_guided_render import render_guided_text as render_guided_text
+from kernel.deliberation_guided_render import render_transcript as render_transcript
 
 if TYPE_CHECKING:
     from pydantic.config import JsonDict
-
-    from kernel.deliberation import Turn
 
 
 def _no_description(schema: JsonDict) -> None:
@@ -74,6 +79,14 @@ class GuidedReasoning(BaseModel):
     )
 
 
+#: DSPy's section header (`dspy/adapters/chat_adapter.py`), matched at the start
+#: of each stripped line.
+HEADER = re.compile(r"\[\[ ## (\w+) ## \]\]")
+_OUTPUTS = ("reasoning", "argument")
+#: The precedent is `failed_open_reason`'s cap (DL-252 D3).
+_ERROR_LIMIT = 500
+
+
 @dataclass(frozen=True)
 class GuidedTurn:
     """A parsed completion: the reasoning and argument, or why it could not be read."""
@@ -83,26 +96,60 @@ class GuidedTurn:
     error: str | None = None
 
 
-def guided_system(role_prompt: str) -> str:
-    """Return DSPy's system message for this signature around one role prompt."""
-    raise NotImplementedError
-
-
-def guided_user(decision: str, context: str, transcript: str) -> str:
-    """Return DSPy's user message for one turn's three inputs."""
-    raise NotImplementedError
-
-
-def render_transcript(transcript: tuple[Turn, ...]) -> str:
-    """Return the debate so far as the guided message's transcript input."""
-    raise NotImplementedError
-
-
 def parse_guided_turn(completion: str) -> GuidedTurn:
-    """Parse a completion as DSPy's ChatAdapter does, with strict JSON."""
-    raise NotImplementedError
+    """Parse a completion as DSPy's `ChatAdapter.parse` does, with strict JSON.
+
+    The one named deviation (DL-252 D6): the reasoning is read with `json.loads`,
+    where DSPy would first repair it with `json_repair`. A repaired reading is
+    not the one the model wrote, so it is refused by name instead.
+    """
+    sections = _sections(completion)
+    missing = [name for name in _OUTPUTS if name not in sections]
+    if missing:
+        return unreadable("missing field: " + ", ".join(missing))
+    try:
+        payload = json.loads(sections["reasoning"])
+    except json.JSONDecodeError as exc:
+        return unreadable(f"invalid JSON in reasoning: {exc}")
+    try:
+        reasoning = GuidedReasoning.model_validate(payload)
+    except ValidationError as exc:
+        return unreadable(_schema_error(exc))
+    return GuidedTurn(reasoning, sections["argument"])
 
 
-def render_guided_text(reasoning: GuidedReasoning, argument: str) -> str:
-    """Return the turn text the next speaker and the judge read."""
-    raise NotImplementedError
+def unreadable(reason: str) -> GuidedTurn:
+    """Return a turn whose reasoning could not be read, with a bounded reason."""
+    if len(reason) > _ERROR_LIMIT:
+        reason = reason[: _ERROR_LIMIT - 3] + "..."
+    return GuidedTurn(None, None, reason)
+
+
+def _sections(completion: str) -> dict[str, str]:
+    """Split on DSPy's headers; the first section of each name wins, as in DSPy."""
+    found: dict[str, str] = {}
+    name: str | None = None
+    lines: list[str] = []
+    for line in completion.splitlines():
+        match = HEADER.match(line.strip())
+        if match is None:
+            lines.append(line)
+            continue
+        if name is not None:
+            found.setdefault(name, "\n".join(lines).strip())
+        name = match.group(1)
+        # DSPy slices the *unstripped* line at the stripped match's end; kept so
+        # an indented header parses as it does there.
+        rest = line[match.end() :].strip()
+        lines = [rest] if rest else []
+    if name is not None:
+        found.setdefault(name, "\n".join(lines).strip())
+    return found
+
+
+def _schema_error(exc: ValidationError) -> str:
+    errors = exc.errors()
+    first = errors[0]
+    where = ".".join(str(part) for part in first["loc"]) or "(root)"
+    more = f" (+{len(errors) - 1} more)" if len(errors) > 1 else ""
+    return f"schema: {where}: {first['msg']}{more}"

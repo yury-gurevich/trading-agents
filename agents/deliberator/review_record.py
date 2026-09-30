@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from agents.deliberator.settings import DeliberatorSettings
-    from contracts.deliberator import DebateTurnRecord
+    from contracts.deliberator import DebateProposition, DebateTurnRecord
 
 _FAILED_OPEN_REASON_LIMIT = 500
 _UNKNOWN_FAIL_OPEN_REASON = "UnknownError: reason unavailable"
@@ -28,6 +28,8 @@ class OrderReview:
     llm_call_keys: tuple[str, ...]
     failed_open: bool = False
     failed_open_reason: str = ""
+    #: The packet the roles were given; None only when building it failed.
+    proposition: DebateProposition | None = None
 
 
 def failed_open_reason(error_type: str, message: str) -> str:
@@ -38,7 +40,9 @@ def failed_open_reason(error_type: str, message: str) -> str:
     return reason[: _FAILED_OPEN_REASON_LIMIT - 3] + "..."
 
 
-def fail_open_review(reason: str | None = None) -> OrderReview:
+def fail_open_review(
+    reason: str | None = None, proposition: DebateProposition | None = None
+) -> OrderReview:
     """Return the lawful fail-open review marker for one affected order."""
     recorded_reason = reason or _UNKNOWN_FAIL_OPEN_REASON
     return OrderReview(
@@ -48,11 +52,17 @@ def fail_open_review(reason: str | None = None) -> OrderReview:
         (),
         failed_open=True,
         failed_open_reason=recorded_reason,
+        proposition=proposition,
     )
 
 
 def debate_record(review: OrderReview) -> dict[str, object]:
-    """Return the per-ticker debate payload stored on DeliberationRun."""
+    """Return the per-ticker debate payload stored on DeliberationRun.
+
+    The decision and packet are stored once per order, since every turn of the
+    order read the same one (DLIB-OUT-07, DL-252 D4).
+    """
+    proposition = review.proposition
     return {
         "verdict": review.verdict,
         "rationale": review.rationale,
@@ -62,15 +72,32 @@ def debate_record(review: OrderReview) -> dict[str, object]:
             {"role": turn.role, "round": turn.round, "text": turn.text}
             for turn in review.turns
         ],
+        "decision": proposition.decision if proposition is not None else None,
+        "context": proposition.context if proposition is not None else None,
     }
 
 
 def transcript_records(
     ticker: str, turns: tuple[DebateTurnRecord, ...]
 ) -> list[dict[str, object]]:
-    """Return transcript rows stamped with the order ticker."""
+    """Return transcript rows stamped with the order ticker (DLIB-OUT-06).
+
+    Each row keeps the guided reasoning exactly as parsed, or why it could not
+    be read; a turn recorded before S246 has neither and reads as ``None``.
+    """
     return [
-        {"ticker": ticker, "role": turn.role, "round": turn.round, "text": turn.text}
+        {
+            "ticker": ticker,
+            "role": turn.role,
+            "round": turn.round,
+            "text": turn.text,
+            "reasoning": (
+                turn.reasoning.model_dump(mode="json")
+                if turn.reasoning is not None
+                else None
+            ),
+            "reasoning_error": turn.reasoning_error,
+        }
         for turn in turns
     ]
 

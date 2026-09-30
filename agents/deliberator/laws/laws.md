@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -54,6 +54,14 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   unchanged.
 + **DLIB-OUT-05** -- Each LLM call records the provider stop reason as compact
   audit metadata without storing prompt or completion payload text.
++ **DLIB-OUT-06** -- Each defender and challenger turn records the guided
+  reasoning its completion carried -- readings of named values, each with its
+  meaning in this system and how it bears on the decision, and gaps, written
+  before its argument -- exactly as the model wrote it, or records why that
+  reasoning could not be read. A reasoning that cannot be read never fails the
+  turn or the order.
++ **DLIB-OUT-07** -- Each debated order's record carries the decision and the
+  evidence packet the roles were given.
 
 ## Prohibitions (`NEV`)
 
@@ -112,7 +120,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-TYP-01** -- Deliberator bus payloads carry, at minimum, the fields its own clauses
   require; the clause, not `contracts/deliberator.py`, is the authority on what must be present.
   `DebateProposition` carries `decision` and `context` (`DLIB-IN-02`/`DLIB-IN-03`).
-  `DebateTurnRecord` carries `role`, `round`, and `text` (`DLIB-OUT-02`/`DLIB-NEV-07`).
+  `DebateTurnRecord` carries `role`, `round`, `text` (`DLIB-OUT-02`/`DLIB-NEV-07`), `reasoning`,
+  and `reasoning_error` (`DLIB-OUT-06`).
   `DebateTurnRequest` carries `request_id`, `proposition`, `role`, `round_number`, and
   `transcript` (`DLIB-IN-02`/`DLIB-ORD-01`). `DebateTurnReply` carries `request_id`, `turn`, and
   `llm_call_key` (`DLIB-OUT-03`/`DLIB-OBS-02`). `VerdictRequest` carries `request_id`,
@@ -199,7 +208,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
-| `max_tokens` | `4096` | int >= 64 <= 8192 | YES | Per-call response cap |
+| `max_tokens` | `8192` | int >= 64 <= 8192 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8) |
 | `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |
 | `debate_concurrency` | `4` | int >= 1 <= 25 | YES | Manager fan-out over independent PM-approved orders, bounded by the vendor rate limit because each concurrent order holds one in-flight completion per peer role |
 | `poll_interval_seconds` | `60` | int >= 1 <= 300 | YES | Bounds manager idle polling |
@@ -267,3 +276,17 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   name-correlation example, rebuilds the champions byte for byte from pack-side
   sources, and pins the four surviving distinctions, their worked examples and
   the parameter names the prompts cite. One clause added and proven.
++ v1.11 -- S246 (DL-252) records how each debater read the evidence before it
+  argued. The defender and challenger turns become DSPy `ChainOfThought` turns
+  with a typed reasoning (readings, then gaps, then the argument), rendered and
+  parsed by the runtime byte for byte as DSPy 3.3.1 does, without importing it,
+  except that malformed JSON is refused by name rather than repaired. Amends
+  `DLIB-TYP-01` (`DebateTurnRecord` also carries `reasoning` and
+  `reasoning_error`) and adds `DLIB-OUT-06` (each debater turn records its
+  guided reasoning exactly as written, or why it could not be read, and an
+  unreadable one never fails the turn or the order) and `DLIB-OUT-07` (each
+  debated order's record carries its decision and evidence packet, stored once
+  per order). The `max_tokens` `PARAM` row follows its new default, 8,192, the
+  tunable's own ceiling. The judge's prompt, message and parse are unchanged.
+  Two clauses added and proven; `DLIB-TYP-01` stays proven with its
+  required-fields test widened.

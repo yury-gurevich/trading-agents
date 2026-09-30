@@ -1,0 +1,377 @@
+{
+  "generator": "scripts/render_guided_turn_golden.py",
+  "command": "LITELLM_LOCAL_MODEL_COST_MAP=True PYTHONPATH=. uv run --frozen --extra optimizer python scripts/render_guided_turn_golden.py",
+  "dspy_version": "3.3.1",
+  "prefix": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\n",
+  "requirements": "Respond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`.",
+  "system": [
+    {
+      "name": "blank_line_and_paragraph",
+      "instructions": "You are the CHALLENGER in a decision review.\n\nAttack the decision: find its weakest assumption,\ncite the value you read (e.g. 5.87% or 'Semiconductors'),\nand say what would change your mind.\nExample: a stop of 3% reads 'stop_pct=0.03\\nbasis=atr'.\nMax ~5 sentences — no more.",
+      "rendered": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\nIn adhering to this structure, your objective is: \n        You are the CHALLENGER in a decision review.\n        \n        Attack the decision: find its weakest assumption,\n        cite the value you read (e.g. 5.87% or 'Semiconductors'),\n        and say what would change your mind.\n        Example: a stop of 3% reads 'stop_pct=0.03\\nbasis=atr'.\n        Max ~5 sentences — no more."
+    },
+    {
+      "name": "common_indent_and_trailing_newline",
+      "instructions": "  Two spaces lead every line.\n\n    This one leads with four.\n   \n  Back to two.\n",
+      "rendered": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\nIn adhering to this structure, your objective is: \n        Two spaces lead every line.\n        \n          This one leads with four.\n        \n        Back to two."
+    },
+    {
+      "name": "single_line",
+      "instructions": "Argue from the packet only. Max ~5 sentences.",
+      "rendered": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\nIn adhering to this structure, your objective is: \n        Argue from the packet only. Max ~5 sentences."
+    }
+  ],
+  "user": [
+    {
+      "name": "first_turn",
+      "inputs": {
+        "decision": "buy AAPL (qty 12)",
+        "context": "confidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors",
+        "transcript": "(none yet)"
+      },
+      "rendered": "[[ ## decision ## ]]\nbuy AAPL (qty 12)\n\n[[ ## context ## ]]\nconfidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors\n\n[[ ## transcript ## ]]\n(none yet)\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "name": "later_turn_with_edges",
+      "inputs": {
+        "decision": "buy MSFT (qty 3)",
+        "context": "\n  relative_strength: 5.87%\nearnings: 2026-10-19\n",
+        "transcript": "[defender r1] Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\nGaps: none\nArgument: A.\n[challenger r1] The stop is inside one ATR."
+      },
+      "rendered": "[[ ## decision ## ]]\nbuy MSFT (qty 3)\n\n[[ ## context ## ]]\n\n  relative_strength: 5.87%\nearnings: 2026-10-19\n\n\n[[ ## transcript ## ]]\n[defender r1] Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\nGaps: none\nArgument: A.\n[challenger r1] The stop is inside one ATR.\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "name": "empty_transcript",
+      "inputs": {
+        "decision": "sell X (qty 1)",
+        "context": "c",
+        "transcript": ""
+      },
+      "rendered": "[[ ## decision ## ]]\nsell X (qty 1)\n\n[[ ## context ## ]]\nc\n\n[[ ## transcript ## ]]\n\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    }
+  ],
+  "parse": [
+    {
+      "name": "valid",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "no_completed_marker",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "preamble",
+      "completion": "Let me read the packet first.\n\n[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "empty_readings",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [], \"gaps\": []}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "bears_on_outside_enum",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": false,
+        "error": "AdapterParseError"
+      }
+    },
+    {
+      "name": "missing_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": false,
+        "error": "AdapterParseError"
+      }
+    },
+    {
+      "name": "malformed_json_trailing_comma",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "fenced_json",
+      "completion": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "header_with_inline_content",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]] A.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "first_section_wins",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## argument ## ]]\nB.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "unknown_header_between",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## notes ## ]]\nN.\n\n[[ ## argument ## ]]\nA.",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A."
+      }
+    },
+    {
+      "name": "multi_line_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n  A.\nB.\n\n  \n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": "A.\nB."
+      }
+    },
+    {
+      "name": "empty_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": true,
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "argument": ""
+      }
+    },
+    {
+      "name": "value_as_number",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": false,
+        "error": "AdapterParseError"
+      }
+    },
+    {
+      "name": "reasoning_not_an_object",
+      "completion": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+      "dspy": {
+        "parsed": false,
+        "error": "AdapterParseError"
+      }
+    },
+    {
+      "name": "no_sections",
+      "completion": "I uphold the decision.",
+      "dspy": {
+        "parsed": false,
+        "error": "AdapterParseError"
+      }
+    }
+  ]
+}

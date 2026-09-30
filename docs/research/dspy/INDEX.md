@@ -17,6 +17,7 @@ and use it as arguments.**
 | File | Read it for |
 | --- | --- |
 | [three-roles-goal.md](three-roles-goal.md) | **Start here.** Where each role stands (measured), what DSPy offers for each part of the goal, the offline checks, the proposed sequence and the decisions left open |
+| [packet-inventory.md](packet-inventory.md) | Everything computed about a trade, against what the deliberators receive today, and the one law (`FORE-NEV-02`) that blocks part of it |
 | [concepts.md](concepts.md) | Signatures, modules, adapters, language models, settings and threads, saving and loading |
 | [optimization.md](optimization.md) | Data, metrics, `Evaluate`, every optimiser, GEPA in depth, and what a GEPA run would cost here |
 | [api-reference.md](api-reference.md) | The call shapes a three-role program would use, checked against the source |

@@ -420,6 +420,29 @@ packet: that is the baseline. The records persist on `DeliberationRun`, so S247'
 the baseline after the fact. The names-and-glossary sprint therefore waits only for baseline runs to
 exist, not for S247's code.
 
+🚨 **AMENDMENT 3, 2026-09-30 17:55 AEST — all of it, with explicit meanings, for all three roles**
+(operator direction; planner inventory).
+
+**The direction.** *"Whatever can be calculated about a trade should be given to deliberators. ALL OF
+IT. What we need is to determine if the agents understand fully what they are discussing. The
+instructions should be explicit."* It widens the packet boundary that `build_veto_context` states today
+(*"this packet contains no holdings, open positions, sibling orders, or dual-class exposure facts"*), and
+makes three things the target: complete facts, an explicit meaning for each, and proof of understanding
+for the defender, the challenger **and the judge**.
+
+**Measured the same day** ([R009](research/dspy/INDEX.md)). Over 229 debated orders the judge names a
+quant metric in 40.2 % of rulings and rests 38.0 % on process facts alone, and S246 guides only the two
+debaters. The inventory ([packet-inventory](research/dspy/packet-inventory.md)) lists what is computed
+before the debate but never shown: the barrier forecast (`p_stop_first`, `p_target_first`, `p_neither`;
+present for 10 of the 12 orders debated on 2026-09-28), the forecaster's settled track record, current
+holdings and cash, the other orders in the batch, past fills in the ticker, the VIX's staleness, and the
+order's own `decision_atr_pct` and `position_ref`.
+
+**Blocked by a law, for the operator.** The deliberation veto is `binding` on every recent run, so a
+barrier forecast shown to the deliberators would take part in gating. `FORE-NEV-02` forbids that (*"Never
+gates, vetoes, or blocks a recommendation, sizing, or exit"*). Including forecasts needs the operator's
+decision and a forecaster law cycle. Every other missing row is a renderer omission.
+
 ---
 
 ## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)

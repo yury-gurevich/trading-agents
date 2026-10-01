@@ -35,10 +35,10 @@ from kernel.graph_vocabulary import Vocabulary
 
 
 def test_only_buys_with_both_barriers_get_a_history_from_one_fetch() -> None:
-    """PROV-TRG-04 / PROV-OUT-08: one batched OHLCV request for exactly the buys
-    with a stop and a target (not the sell, the hold, or the buy missing a target),
-    over 1,125 calendar days ending today; one node, linked from the AnalystRun,
-    holding the last 760 bars per ticker."""
+    """PROV-TRG-04 / PROV-OUT-08 / PROV-TRG-01: one batched OHLCV request for exactly
+    the buys with a stop and a target (not the sell, the hold, or the buy missing a
+    target), over 1,125 calendar days ending today; one node, linked from the
+    AnalystRun, holding the last 760 bars per ticker."""
     graph = InMemoryGraphStore()
     run = analyst_run(graph, *MIXED)
     everyone = tuple(

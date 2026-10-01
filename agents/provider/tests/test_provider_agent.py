@@ -52,8 +52,9 @@ def _market_payload(tickers: tuple[str, ...] = ("AAPL",)) -> dict[str, object]:
 
 
 def test_get_market_data_round_trips_and_writes_provenance() -> None:
-    """PROV-OUT-01 / PROV-OUT-04 / PROV-STA-01: validated facts written to the store
-    with provenance; a clean request round-trips to a SUCCESS response."""
+    """PROV-OUT-01 / PROV-OUT-04 / PROV-STA-01 / PROV-TRG-01: an authorised capability
+    request is acted on; validated facts are written to the store with provenance; a
+    clean request round-trips to a SUCCESS response."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ProviderAgent(

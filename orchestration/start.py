@@ -22,6 +22,7 @@ from contracts.provider import (
     RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUESTED_AT_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
 )
 from orchestration.history_window import declared_lookback_days
@@ -84,7 +85,7 @@ def place_run_request(
         {
             "run_id": run_id,
             "tickers": list(tickers),
-            "requested_at": requested.isoformat(),
+            RUN_REQUEST_REQUESTED_AT_PROP: requested.isoformat(),
             RUN_REQUEST_LOOKBACK_DAYS_PROP: active_lookback,
             RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: required_history_bars(settings),
             RUN_REQUEST_BENCHMARK_TICKER_PROP: ScannerSettings().benchmark_ticker,

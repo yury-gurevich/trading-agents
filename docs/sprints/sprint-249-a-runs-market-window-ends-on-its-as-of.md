@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 103
 **Branch:** `sprint-249-a-runs-market-window-ends-on-its-as-of`
-**Status:** SPEC
+**Status:** BUILT 2026-10-01 — by a Claude cloud session on `claude/vibrant-pasteur-4x99vq` (the name the session forces; cut from `main` `a9fff56`); `make ci` exit 0 (3,793 passed, 8 skipped, 100.00 %); DL-256, provider laws v1.7 (22 / 67), DRIFT-095 corrected; owed to the planner: `uv lock` + PATCH bump, `make gate-ran`, Windows `make ci`, F1, retag
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-255](../design-log.md) (the defect, measured, and the direction) · the builder's
@@ -452,17 +452,45 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Written 2026-10-01, before the first code change, in the cloud session's checkout of `main` @
+`a9fff56` (branch `claude/vibrant-pasteur-4x99vq`, the name the session forces; see Return notes).
+Read whole: `agents/provider/laws/laws.md` (v1.6, 453 lines), `agents/provider/laws/test-plan.md`,
+`docs/laws/conventions.md`, `docs/laws/drift-register.md`.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `agents/provider/poll.py` (`ingest_run_node`, `_covered_sessions`) | provider `laws.md` + `test-plan.md`; conventions | `PROV-TRG-02` (a `RunRequest` is a request, ⬜), `PROV-TRG-03` (a valid request is the precondition to fetch, ⬜), new `PROV-TRG-05` | **Yes.** `TRG-03` says an invalid request is refused *before any fetch*, so the as-of is parsed and checked at the top of `ingest_run_node`, beside the lookback check, and B7 asserts the source was never called. |
+| `agents/provider/ingest.py`, `ingest_chunked.py` | same | `PROV-IN-01` (a valid window, `start ≤ end`, 🟩), `PROV-IN-02` (a regime request is a single as-of date, ⬜), `PROV-STA-04` (every stored datum carries its as-of, 🟩), `PROV-OUT-05` (append-only, ⬜) | **Yes.** `STA-04` is why the stored `window_end` must *be* the run's as-of, not the clock's day: the node already claims to carry its as-of, and today it carries the wrong one. One window helper serves both paths so the two cannot disagree. |
+| `contracts/provider.py` | same; conventions §2 | `PROV-TYP-03` (the contract is versioned, ⬜) | No. The constant names an existing property; no type, field or version moves. |
+| `orchestration/start.py` | conventions §5 | none of the provider's (the writer of the request) | No. It writes the same key under the constant. |
+| `docs/laws/drift-register.md` | itself; conventions §9 | — | DRIFT-095 (the silence below). |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **YES, both**
+(as the spec decided): a constant in `contracts/provider.py`, and a guarantee no clause states (which
+dates a run's ingest serves). Owed and done in this unit of work: `PROV-TRG-05`, v1.6 → v1.7 with a
+Changelog line, test-plan row, clause ID in every new test's docstring, both rollups, DRIFT-095.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none about what this sprint changes. One older
+one, recorded and not acted on (S248's precedent): **DRIFT-082** (OPEN) — `PROV-TRG-01` still says the
+provider acts *only* on a request event from its subscribed topic, and `PROV-TRG-05` is a second clause
+that names a graph-pulled `RunRequest` as a trigger. `TRG-05` does not depend on `TRG-01`'s wording;
+the widening stays with the planner.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:**
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+1. **Which dates a run's ingest serves** — no clause says (the spec's finding). `PROV-IN-02` says a
+   regime request has one as-of; nothing ties it to the run. → `PROV-TRG-05`, DRIFT-095.
+2. **What a `RunRequest` with an unusable as-of means** (absent, not a date, a datetime, a date after
+   today). `TRG-03` says an invalid request is refused, but no clause says the as-of is part of a
+   `RunRequest`'s validity. → decisions 1, 2 and 4 (DL-256), written into `PROV-TRG-05`.
+3. **Which "today" an ingest with no run serves.** The code has always used the UTC date; no clause
+   names a zone. `PROV-TRG-05` says "the UTC date it runs on", matching the dispatcher's default as-of
+   (`scripts/dispatch_scheduled_run.py`, "defaults to today's UTC date").
+
+**Clauses that were ⬜ and are now proven:** none. `PROV-TRG-05` is new and proven (B1–B9). B7 proves
+a slice of `PROV-TRG-03` (an invalid as-of is refused before any fetch) and B2 a slice of `PROV-IN-02`
+(the regime is read on one as-of), but neither covers its whole clause, so both stay ⬜ (conventions
+§7a) and the B-tests cite `PROV-TRG-05` only.
 
 ---
 
@@ -470,44 +498,220 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| B1 | `test_a_runs_market_window_ends_on_its_as_of` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B2 | `test_the_regime_is_read_as_of_the_runs_as_of` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B3 | `test_the_chunked_path_serves_the_same_as_of` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B4 | `test_news_and_earnings_are_anchored_on_the_as_of` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B5 | `test_a_run_whose_as_of_is_today_is_unchanged` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B6 | `test_the_coverage_check_counts_sessions_up_to_the_as_of` + `test_a_lookback_short_of_the_as_ofs_sessions_is_refused` | `agents/provider/tests/test_run_as_of_refusals.py` | PASS (both) | `PROV-TRG-05` |
+| B7 | `test_a_request_with_no_usable_as_of_is_refused_before_any_fetch` (9 cases: absent, empty, `not-a-date`, a full datetime, `20260930`, `2026-W40-3`, `2026-9-30`, a non-string, `9999-12-31`) | `agents/provider/tests/test_run_as_of_refusals.py` | PASS (9 / 9) | `PROV-TRG-05` |
+| B8 | `test_an_ingest_with_no_run_keeps_todays_window` | `agents/provider/tests/test_run_as_of_window.py` | PASS | `PROV-TRG-05` |
+| B9 | `test_the_provider_serves_the_as_of_the_dispatcher_wrote` | `orchestration/tests/test_start_as_of.py` | PASS | `PROV-TRG-05` |
 
-**Tests added beyond the plan:** *(builder fills)*
+Fixtures: `agents/provider/tests/as_of_helpers.py` (`RecordingSource` records every OHLCV window and
+regime date; `RecordingFinnhub` is the real `FinnhubDataSource` with its four downloads overridden,
+so B4 checks the dates the Finnhub code computes from `window.end`, not just the window it is handed).
+B1–B4 compare against the fixed dates 2026-09-30 / 2025-09-30 / 2026-09-23; nothing in them reads the
+clock. B5 and B8 read it on purpose (their claim *is* "today"). B6 uses the 2025 Christmas week so the
+as-of's count (5 sessions in 7 days) differs from any count the clock gives this week (6).
+
+**Tests added beyond the plan:** B6 is two tests (one ingested, one refused) and B7 has nine cases,
+one per form decision 2 and 4 refuse. No other test was added. Three existing helpers gained the as-of
+*input* (decision 1's stated cost), with no expected value changed: `test_provider_poll.py`'s
+`_run_request` and its short-lookback node (`"2026-09-30"`), `test_provider_benchmark_ingest.py`'s
+`_run_request` (`"2026-09-30"`), and `test_barrier_history.py::test_the_provider_loop_carries_both_work_kinds`
+(`TODAY`, the date its fixture bars end on, so that run is exactly what it was).
 
 ---
 
 ## Closeout — evidence
 
-*(builder fills every field below; a field left as written here returns the handback)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud session's clone,
+`/home/user/trading-agents`, branch `claude/vibrant-pasteur-4x99vq` cut from `main` `a9fff56`;
+**no `.env`**. Environment built with `uv sync --frozen` (`uv.lock` untouched). Every proof is a unit
+test on `InMemoryGraphStore`.
 
-**Tree the proofs ran in (and `.env` present?):**
+**Result:** a `RunRequest`'s ingest serves its own as-of on both paths. `ingest_run_node` parses
+`requested_at` once (exactly `YYYY-MM-DD`, not after today, else `ValueError` before any fetch),
+checks the lookback against the sessions up to it, and passes it to `ingest_once` /
+`ingest_chunked`, which build the window with one helper, `_run_window`. The regime, the stored
+`window_end`s and the news and earnings anchors follow because they key on `window.end`. An ingest
+with no run (`as_of=None`) still calls `_today_window`.
 
-**Result:**
+**Files changed:** `contracts/provider.py` (`RUN_REQUEST_REQUESTED_AT_PROP = "requested_at"`);
+`orchestration/start.py` (writes under it); `agents/provider/poll.py`, `ingest.py`,
+`ingest_chunked.py`; new `agents/provider/tests/as_of_helpers.py`, `test_run_as_of_window.py`,
+`test_run_as_of_refusals.py`, `orchestration/tests/test_start_as_of.py`; the as-of input in
+`test_provider_poll.py`, `test_provider_benchmark_ingest.py`, `test_barrier_history.py`;
+`agents/provider/laws/laws.md` (v1.7), `test-plan.md`; `docs/laws/ledger.md`, `docs/laws/INDEX.md`,
+`docs/laws/drift-register.md` (DRIFT-095); `docs/design-log.md` (DL-256); this file and its
+`docs/sprints/README.md` row.
 
-**Files changed:**
+**Design decisions:** [DL-256](../design-log.md), next free on `main` at `a9fff56` (DL-255 was the
+last). D1: an absent or unparseable as-of is refused with `ValueError` before any fetch (rejected:
+fall back to today; fall back to the node's creation time; fault and skip). D2: only the exact
+`YYYY-MM-DD` string parses, by round trip (`date.fromisoformat(s).isoformat() == s`); a datetime,
+the compact and ISO-week forms, an unpadded date and a non-string are refused (rejected: take a
+datetime's date, because its zone decides the day; accept whatever `fromisoformat` takes). D3: an
+`as_of: date | None = None` parameter on `ingest_once` and `ingest_chunked`, one window helper
+`_run_window` for both paths, `_today_window` kept (rejected: build the `Window` in `poll.py` and pass
+it down, two copies of one fact; give `_today_window` an as-of, a name that lies). D4: an as-of later
+than the UTC date the provider reaches it on is refused (rejected: serve up to today, the defect's
+shape; serve the future window, a `window_end` for a session not yet closed).
 
-**Design decisions:**
+**Proof — the red run first:** the three tests on unfixed provider code (the contract constant was
+already added so the file imported; it changes no behaviour), 2026-10-01 UTC:
 
-**Proof — the red run first:**
+```text
+E   assert [Window(start...2026, 10, 1))] == [Window(start...2026, 9, 30))]
+E     At index 0 diff: Window(start=datetime.date(2025, 10, 1), end=datetime.date(2026, 10, 1)) != Window(start=datetime.date(2025, 9, 30), end=datetime.date(2026, 9, 30))
+E   assert [datetime.date(2026, 10, 1)] == [datetime.date(2026, 9, 30)]
+E     At index 0 diff: datetime.date(2026, 10, 1) != datetime.date(2026, 9, 30)
+E   assert [Window(start...2026, 10, 1))] == [Window(start...2026, 9, 30))]
+E     At index 0 diff: Window(start=datetime.date(2025, 10, 1), end=datetime.date(2026, 10, 1)) != Window(start=datetime.date(2025, 9, 30), end=datetime.date(2026, 9, 30))
+FAILED agents/provider/tests/test_run_as_of_window.py::test_a_runs_market_window_ends_on_its_as_of
+FAILED agents/provider/tests/test_run_as_of_window.py::test_the_regime_is_read_as_of_the_runs_as_of
+FAILED agents/provider/tests/test_run_as_of_window.py::test_the_chunked_path_serves_the_same_as_of
+3 failed in 0.54s
+```
+
+In the same red run of all 18: B4, both B6 tests, all nine B7 cases and B9 failed too (16 failed);
+B5 and B8 passed, as they must (the scheduled and standalone paths do not move).
 
 **Proof — the green run:**
 
-**The reproduction after the fix:**
+```text
+agents/provider/tests/test_run_as_of_window.py::test_a_runs_market_window_ends_on_its_as_of PASSED
+agents/provider/tests/test_run_as_of_window.py::test_the_regime_is_read_as_of_the_runs_as_of PASSED
+agents/provider/tests/test_run_as_of_window.py::test_the_chunked_path_serves_the_same_as_of PASSED
+agents/provider/tests/test_run_as_of_window.py::test_news_and_earnings_are_anchored_on_the_as_of PASSED
+agents/provider/tests/test_run_as_of_window.py::test_a_run_whose_as_of_is_today_is_unchanged PASSED
+agents/provider/tests/test_run_as_of_window.py::test_an_ingest_with_no_run_keeps_todays_window PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_the_coverage_check_counts_sessions_up_to_the_as_of PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_lookback_short_of_the_as_ofs_sessions_is_refused PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[absent] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[empty] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[not-a-date] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[a-full-datetime] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[compact-iso] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[iso-week] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[unpadded] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[not-a-string] PASSED
+agents/provider/tests/test_run_as_of_refusals.py::test_a_request_with_no_usable_as_of_is_refused_before_any_fetch[after-today] PASSED
+orchestration/tests/test_start_as_of.py::test_the_provider_serves_the_as_of_the_dispatcher_wrote PASSED
+============================== 18 passed in 0.45s ==============================
+```
 
-**Guards planted:**
+**The reproduction after the fix** (the spec's script, unchanged, run from the repo root):
 
-**Module line counts:**
+```text
+today (UTC)             : 2026-10-01
+run's as-of             : 2026-09-30
+MarketData.window_end   : 2026-09-30
+RegimeContext.window_end: 2026-09-30
+regime as_of            : 2026-09-30
+```
 
-**`make ci`:**
+On `main` `a9fff56` the same script printed `2026-10-01` on the last three lines (re-run in this
+session before any change; matches the spec).
 
-**`pyproject.toml` and `uv.lock`:**
+**Guards planted:** each planted alone, its test run, the file restored and checked byte-identical by
+SHA-256.
 
-**Owed to the planner:**
+1. *The clock again in the single path* — `ingest.py`, `window = _run_window(lookback_days, as_of)`
+   → `window = _today_window(lookback_days)`. B1 red:
 
-**Not met / verified failing:**
+   ```text
+   E   assert [Window(start...2026, 10, 1))] == [Window(start...2026, 9, 30))]
+   E     At index 0 diff: Window(start=datetime.date(2025, 10, 1), end=datetime.date(2026, 10, 1)) != Window(start=datetime.date(2025, 9, 30), end=datetime.date(2026, 9, 30))
+   1 failed in 0.36s
+   ```
+
+   Restored: identical.
+2. *The clock in the chunked path* — `ingest_chunked.py`, `_run_window(lookback_days, as_of)` →
+   `_run_window(lookback_days, None)` (the today branch). B3 red:
+
+   ```text
+   E   assert [Window(start...2026, 10, 1))] == [Window(start...2026, 9, 30))]
+   E     At index 0 diff: Window(start=datetime.date(2025, 10, 1), end=datetime.date(2026, 10, 1)) != Window(start=datetime.date(2025, 9, 30), end=datetime.date(2026, 9, 30))
+   1 failed in 0.39s
+   ```
+
+   Restored: identical.
+3. *The regime read as of today* — `ingest.py`, `RegimeRequest(as_of=window.end)` →
+   `RegimeRequest(as_of=datetime.now(tz=UTC).date())`. B2 red:
+
+   ```text
+   E   assert [datetime.date(2026, 10, 1)] == [datetime.date(2026, 9, 30)]
+   E     At index 0 diff: datetime.date(2026, 10, 1) != datetime.date(2026, 9, 30)
+   1 failed in 0.38s
+   ```
+
+   Restored: identical.
+
+**Module line counts** (all < 200; ⚠ = over the 150 warning):
+
+| File | Before | After |
+| --- | --- | --- |
+| `contracts/provider.py` | 174 ⚠ | 176 ⚠ |
+| `orchestration/start.py` | 100 | 101 |
+| `agents/provider/poll.py` | 145 | 167 ⚠ |
+| `agents/provider/ingest.py` | 179 ⚠ | 191 ⚠ |
+| `agents/provider/ingest_chunked.py` | 159 ⚠ | 162 ⚠ |
+| `agents/provider/tests/as_of_helpers.py` | new | 135 |
+| `agents/provider/tests/test_run_as_of_window.py` | new | 103 |
+| `agents/provider/tests/test_run_as_of_refusals.py` | new | 78 |
+| `orchestration/tests/test_start_as_of.py` | new | 37 |
+| `agents/provider/tests/test_provider_poll.py` | 94 | 97 |
+| `agents/provider/tests/test_provider_benchmark_ingest.py` | 159 ⚠ | 161 ⚠ |
+| `agents/provider/tests/test_barrier_history.py` | 129 | 130 |
+
+`poll.py` crosses the 150 warning for the first time. `test_ingest.py` (175) and
+`test_ingest_chunked.py` (198) are untouched.
+
+**`make ci`:** `make ci > scratchpad/ci.txt 2>&1 ; echo $?` → **exit 0**, in the tree above (no
+`.env`). All 15 steps of the `ci:` target ran: ruff, format (1,515 files), mypy, import-linter (5
+kept, 0 broken), module size (warnings only), module header, law coverage (provider 22 / 67), PARAM
+sync, sprint status, markdown links, version scheme, pytest **3,793 passed, 8 skipped**, coverage
+**100.00 %** (19,929 statements, 0 missed), dependency audit ("No unaccepted vulnerabilities; 1
+accepted advisory re-checked"), detect-secrets **Passed**, untracked secrets **Passed** (4 new files
+scanned).
+
+**`pyproject.toml` and `uv.lock`:** **untouched**, both. The version still reads `0.120.02`; the
+PATCH bump and the `uv lock` it needs are the planner's (this session cannot reach
+`download.pytorch.org`). The environment was built with `uv sync --frozen`, which does not write the
+lock.
+
+**Owed to the planner:** `uv lock` with the PATCH bump (next available at merge); `make gate-ran` from
+the proving worktree (check the printed SHA against `git rev-parse HEAD`); Windows `make ci`; **F1**
+(the branch's provider on `main`'s live sources, ingest for as-of 2026-09-30, compared with
+`market-data:sched-2026-09-30`: `window_end` 2026-09-30, 203 bars a name, same first and last bar
+dates, same closes); the merge; the image-only retag. Re-check that DL-256 and DRIFT-095 are still
+free at merge.
+
+**Not met / verified failing:** nothing in the builder's list. Not attempted, by design: F1, the gate
+and any live proof (no `.env`, no `gh`); no run result read through the GitHub connector is claimed
+as `GATE PROVEN`.
 
 ---
 
 ## Return notes
 
-*(builder fills)*
+- **Branch name.** The session forces `claude/vibrant-pasteur-4x99vq`; the spec's
+  `sprint-249-a-runs-market-window-ends-on-its-as-of` was not created. Cut from `main` `a9fff56`.
+- **What a past-as-of run now refuses that it used to accept.** A `RunRequest` without a usable
+  `requested_at` raises `ValueError` in the provider's loop, as a bad lookback already did. All 81 live
+  requests carry one (DL-255), and `orchestration/resume.py` copies its source's, so no live request is
+  newly refused. A `--as-of` override typed as a datetime or a future date now fails at ingest instead
+  of running for the wrong day.
+- **A run for today is unchanged** (B5): its window is `_today_window(lookback)` exactly, and the
+  coverage check counts to the same date as before. No existing expected value moved.
+- **Left as it was, on purpose (spec, Out of scope):** the barrier history window still follows the
+  clock, so a past-as-of run's `BarrierHistory` (if its run is current) still ends today while its
+  `MarketData` ends on the as-of. Fundamentals and sectors are still the latest values. The eight
+  wall-clock reads in five other agents stay in work-queue 103, part two.
+- **DRIFT-082** (OPEN, older): `PROV-TRG-01` still reads "only a request event"; `PROV-TRG-05` adds a
+  second clause that names a graph-pulled `RunRequest`, which makes the widening the planner already
+  owes a little more pressing. Not touched.
+- **Partial proofs not counted.** B7 proves a slice of `PROV-TRG-03` and B2 a slice of `PROV-IN-02`;
+  both rows stay ⬜ (conventions §7a).

@@ -10,6 +10,68 @@ and is marked CLOSED here.
 
 ---
 
+## DL-256 - a run's ingest reads its as-of once, as an exact ISO date no later than today, and one helper builds the window from it - status: DECIDED (builder, 2026-10-01; S249)
+
+**Why.** DL-255 (below) measured the defect and set the direction: the provider reads the
+`RunRequest`'s as-of and builds the window from it.
+[S249](sprints/sprint-249-a-runs-market-window-ends-on-its-as-of.md) left four decisions to the
+builder. The planner's recommendation was taken for D1; D2–D4 are the builder's. All four are stated
+in `PROV-TRG-05` (provider laws v1.7).
+
+**D1 — a `RunRequest` with no as-of, or one that does not parse, is refused with a `ValueError`
+before any fetch.** The same shape `_lookback_days` already uses for a bad lookback, and what
+`PROV-TRG-03` asks (an invalid request is refused, nothing fetched). All 81 live requests carry one
+(DL-255). The lookback's own checks run first, so an existing test that omits both still meets the
+lookback error it expects. Cost: the request helper in `test_provider_poll.py` and the short-lookback
+test add the as-of, and so does the benchmark test's helper.
+
+- *Ruled out: fall back to today.* That is the defect, made silent.
+- *Ruled out: fall back to the node's creation time.* A second date source for one fact, and a resume
+  child is created later than its source's as-of, so it would read the wrong day again.
+- *Ruled out: record a fault and skip the request.* The `INGESTED_BY` edge is the processed mark; a
+  skip without it is re-polled anyway, and with it the run is lost quietly.
+
+**D2 — only the exact ISO calendar date the dispatcher writes parses**: a string `s` with
+`date.fromisoformat(s).isoformat() == s`, i.e. `YYYY-MM-DD`. A full datetime, a non-string, the compact
+`20260930` and the week form `2026-W40-3` are refused (B7 proves each).
+
+- *Ruled out: accept a datetime and take its date.* Which date depends on the zone: a 22:30 UTC
+  placement written with a `+10:00` offset reads as the next day. The surfaces already read a naive
+  `requested_at` as UTC; the provider would be a second interpreter of the same field, and nobody
+  writes a datetime there today.
+- *Ruled out: accept whatever `date.fromisoformat` accepts.* On Python 3.11+ that includes the compact
+  and ISO-week forms. The writer never produces them, so a typed `--as-of` override in one of them is a
+  mistake to refuse, not a date to guess.
+
+**D3 — the as-of travels as a parameter, `as_of: date | None = None`, on `ingest_once` and
+`ingest_chunked`, and one helper in `ingest.py`, `_run_window(lookback_days, as_of)`, builds the
+window for both paths** (`as_of − lookback … as_of`; `_today_window` when `as_of` is `None`).
+`_today_window` stays as it is: the standalone path still calls it, and two test files import it.
+
+- *Ruled out: build the `Window` in `poll.py` and pass it down.* `ingest_once` would then take a
+  lookback *and* a window, two copies of one fact free to disagree, and the chunked dispatch would carry
+  both.
+- *Ruled out: give `_today_window` an as-of argument.* Its name would then lie, and its two importing
+  tests (at 175 and 198 lines) would need edits for no behaviour change.
+
+**D4 — an as-of later than the UTC date the provider reaches the request on is refused**
+(`ValueError`, before any fetch). The dispatcher never writes one (its as-of is the UTC date it runs,
+DL-255), so only a mistyped `--as-of` override can, and the operator should hear about it.
+
+- *Ruled out: serve up to today.* The stored `window_end` would differ from the request's as-of: the
+  shape of the defect this sprint removes, made silent.
+- *Ruled out: serve the future window as asked.* The stored `window_end` would claim a session that
+  has not closed, and the regime would be read as of a day with no `^VIX` bar; the SIP end rule caps the
+  bars anyway, so what is stored could not match what it claims (`PROV-STA-04`).
+
+**The coverage check** (`_covered_sessions`) counts sessions from the lookback's start up to the
+as-of, the same date `declared_lookback_days` declared the lookback against
+(`orchestration/start.py`). For a scheduled run this is the date it used before.
+
+**Not changed.** The barrier history window (`barrier_history.py:94`) and the eight wall-clock reads
+in five other agents (DL-255, out of scope); the value `"requested_at"`; `surfaces/` and
+`orchestration/resume.py`.
+
 ## DL-255 - the provider builds a run's window from the clock, not from the run's as-of - status: OPEN (planner, 2026-10-01; work-queue 103, S249)
 
 **Why.** The fleet test run `verify-2026-10-01-s248-a` was placed for as-of 2026-09-30, the session `sched-2026-09-30` had run on that morning. It read 202 bars a name where the scheduled run read 203, and bought TGT (0.61) where the scheduled run had rejected it (0.587).

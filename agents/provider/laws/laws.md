@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -56,6 +56,15 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   buy missing either barrier ask for no history. The **deployed** loop counts only a *current* run,
   one created within 24 h (`contracts/barrier_history.is_current_run`, DL-241 D11): an older run is
   never fetched, so the backlog of runs no forecaster ever read is not claimed on later bars.
+- `PROV-TRG-05` — An ingest a **`RunRequest`** triggers serves **that run's as-of** (its
+  `requested_at`), **whenever the provider reaches the request**: the market window **ends on the
+  as-of** and starts the declared lookback before it, the declared lookback is checked against the
+  sessions up to the as-of, the **regime is read as of it**, and the news and earnings windows are
+  **anchored on it**. The as-of is exactly an ISO calendar date (`YYYY-MM-DD`); a request whose
+  as-of is absent, in any other form, or later than the UTC date on which the provider reaches it is
+  **refused before any fetch** (`PROV-TRG-03`). An ingest no run triggered serves **today**, the UTC
+  date it runs on. Fundamentals and sectors stay their sources' latest values: this clause does not
+  promise point-in-time replay. *(DRIFT-095; DL-255, DL-256.)*
 
 ## Outputs (`OUT`)
 
@@ -381,6 +390,9 @@ status:
   from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and now
   `AnalystRun`s (`PROV-TRG-04`) from the graph; `TRG-02` was reconciled in v1.5, `TRG-01` is 🟩 on a
   pub/sub test and is left for the planner).
+- **CORRECTED (S249)** — DRIFT-095 (no clause said which dates a run's ingest serves, and the code
+  built every run's window from the clock, so a run the provider reached after its as-of read a
+  shifted window, regime, news and earnings → new `PROV-TRG-05`).
 - **CORRECTED (S238)** — DRIFT-080 (which volume a bar carries → new `PROV-OUT-07`; the
   `alpaca_data_feed` default moves `"iex"` → `"sip"`).
 - **CORRECTED (S69)** — DRIFT-006 (`PROV-OUT-01`: benchmark added as `DataRequest.benchmark_ticker` +
@@ -451,3 +463,13 @@ status:
   DRIFT-088 corrected; DRIFT-090 (the ceiling) accepted by the planner before merge: `PROV-OUT-08`
   states that the barrier path leans on the daily request's guard (DL-247 D4). DRIFT-084 (the bars'
   price adjustment) was not in this sprint's amendment list and stays OPEN.
+- **v1.7 — S249 / DL-256 (2026-10-01).** New `PROV-TRG-05`: an ingest a `RunRequest` triggers serves
+  that run's as-of, whenever the provider reaches it (the window ends on it and starts the lookback
+  before it, the coverage check counts up to it, the regime is read as of it, news and earnings are
+  anchored on it); an unusable as-of (absent, not an exact ISO date, after today) is refused before
+  any fetch; an ingest with no run serves today. Why: the book was silent and the code used the
+  clock, so 8 of 21 non-scheduled runs live stored a window one day after their as-of, and a test run
+  for 2026-09-30 read 202 bars a name where the scheduled run read 203 and bought a name it had
+  rejected (DL-255, DRIFT-095). `contracts/provider.py` names the property
+  (`RUN_REQUEST_REQUESTED_AT_PROP = "requested_at"`, value unchanged); no type, field, label,
+  tunable or contract version moves. One clause added and proven: 21 / 66 → 22 / 67.

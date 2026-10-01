@@ -20,6 +20,7 @@ from contracts.provider import (
     RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUESTED_AT_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
     MarketData,
     OHLCVBar,
@@ -66,6 +67,7 @@ def _run_request(graph: InMemoryGraphStore, **extra: object) -> Node:
         {
             "run_id": "r1",
             "tickers": ["AAPL"],
+            RUN_REQUEST_REQUESTED_AT_PROP: "2026-09-30",
             RUN_REQUEST_LOOKBACK_DAYS_PROP: 365,
             RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: 200,
             **extra,

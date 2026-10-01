@@ -19,6 +19,7 @@ from contracts.provider import (
     MARKET_DATA_LABEL,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUESTED_AT_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
 )
 from kernel import InMemoryGraphStore, InProcessBus
@@ -38,6 +39,7 @@ def _run_request(graph: InMemoryGraphStore, tickers: tuple[str, ...]) -> Node:
         {
             "run_id": "r1",
             "tickers": list(tickers),
+            RUN_REQUEST_REQUESTED_AT_PROP: "2026-09-30",
             RUN_REQUEST_LOOKBACK_DAYS_PROP: 365,
             RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: 200,
         },
@@ -85,6 +87,7 @@ def test_ingest_run_node_rejects_short_declared_lookback() -> None:
         {
             "run_id": "r1",
             "tickers": ["AAPL"],
+            RUN_REQUEST_REQUESTED_AT_PROP: "2026-09-30",
             RUN_REQUEST_LOOKBACK_DAYS_PROP: 1,
             RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: 200,
         },

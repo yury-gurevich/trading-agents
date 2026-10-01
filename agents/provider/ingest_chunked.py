@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 from agents.provider.domain.integrity import validate_bars
 from agents.provider.ingest import (
     MARKET_FIELDS,
-    _today_window,
+    _run_window,
     _with_cached_sectors,
     _write_market_data,
     _write_regime_context,
@@ -31,6 +31,7 @@ from contracts.provider import DataRequest, MarketData, RegimeRequest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import date
 
     from agents.provider.agent import ProviderAgent
     from contracts.common import Window
@@ -120,6 +121,7 @@ def ingest_chunked(
     lookback_days: int,
     fields: tuple[str, ...] = MARKET_FIELDS,
     benchmark_ticker: str | None = None,
+    as_of: date | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str | None:
     """Fetch *universe* in paced chunks, reassemble one batch, write it once.
@@ -128,12 +130,13 @@ def ingest_chunked(
     boundary + MarketSnapshot part); ``sleep(delay_seconds)`` paces the gap
     between chunks so the aggregate per-minute API call rate stays under the
     free-tier ceiling. The reassembled node is keyed by *run_id* (DRIFT-011).
+    Every chunk is asked for the one window ending on *as_of*, else today (PROV-TRG-05).
     Returns the reassembled MarketData node key, or ``None`` when *universe* is empty.
     """
     if not universe:
         return None
     fields = with_benchmark_field(fields, benchmark_ticker)
-    window = _today_window(lookback_days)
+    window = _run_window(lookback_days, as_of)
     chunks = _chunks(universe, chunk_size)
     parts: list[MarketData] = []
     for index, chunk in enumerate(chunks):

@@ -109,6 +109,7 @@ def test_the_provider_loop_carries_both_work_kinds() -> None:
         {
             "run_id": "run-1",
             "tickers": ["AAPL"],
+            "requested_at": TODAY.isoformat(),
             "lookback_days": 400,
             "required_history_bars": 200,
         },

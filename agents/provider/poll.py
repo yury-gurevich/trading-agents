@@ -12,7 +12,7 @@ External I/O: delegates to ProviderAgent which calls the injected DataSource.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
 from agents.provider.barrier_history import (
@@ -27,6 +27,7 @@ from contracts.provider import (
     RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUESTED_AT_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
 )
 from kernel.graph_pending import pending_nodes
@@ -88,14 +89,20 @@ def find_pending(graph: GraphStore) -> list[Node]:
 
 
 def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
-    """Ingest one RunRequest's universe and link the MarketData back to it."""
+    """Ingest one RunRequest's universe for its as-of and link the MarketData back.
+
+    The window ends on the run's as-of whenever the provider reaches the request
+    (PROV-TRG-05); an unusable request is refused before any fetch (DL-256).
+    """
+    lookback_days, as_of = _declared_history(node)
     tickers = tuple(str(ticker) for ticker in node.props["tickers"])
     market_key = ingest_once(
         agent,
         _union(tickers, open_position_tickers(agent._graph)),
         run_id=str(node.props["run_id"]),
-        lookback_days=_lookback_days(node),
+        lookback_days=lookback_days,
         benchmark_ticker=_benchmark_ticker(node),
+        as_of=as_of,
     )
     assert market_key is not None  # the dispatcher always places a non-empty universe
     market_node = agent._graph.get_node(MARKET_DATA_LABEL, market_key)
@@ -121,7 +128,8 @@ def _benchmark_ticker(node: Node) -> str | None:
     return raw.strip().upper()
 
 
-def _lookback_days(node: Node) -> int:
+def _declared_history(node: Node) -> tuple[int, date]:
+    """The run's lookback and as-of, checked to cover its required sessions."""
     raw = node.props.get(RUN_REQUEST_LOOKBACK_DAYS_PROP)
     required = node.props.get(RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP)
     if (
@@ -134,12 +142,26 @@ def _lookback_days(node: Node) -> int:
             "RunRequest.lookback_days and required_history_bars must be positive "
             "integers"
         )
-    if _covered_sessions(raw) < required:
+    as_of = _as_of(node)
+    if _covered_sessions(raw, as_of) < required:
         raise ValueError("RunRequest.lookback_days does not cover required history")
-    return raw
+    return raw, as_of
 
 
-def _covered_sessions(lookback_days: int) -> int:
-    end = datetime.now(tz=UTC).date()
-    start = end - timedelta(days=lookback_days)
-    return trading_sessions_between(start - timedelta(days=1), end)
+def _as_of(node: Node) -> date:
+    """The run's as-of: exactly the ISO date the dispatcher writes, not after today."""
+    raw = node.props.get(RUN_REQUEST_REQUESTED_AT_PROP)
+    try:
+        as_of = date.fromisoformat(raw) if isinstance(raw, str) else None
+    except ValueError:
+        as_of = None
+    if as_of is None or as_of.isoformat() != raw:
+        raise ValueError("RunRequest.requested_at must be an ISO date (YYYY-MM-DD)")
+    if as_of > datetime.now(tz=UTC).date():
+        raise ValueError("RunRequest.requested_at is after today")
+    return as_of
+
+
+def _covered_sessions(lookback_days: int, as_of: date) -> int:
+    start = as_of - timedelta(days=lookback_days)
+    return trading_sessions_between(start - timedelta(days=1), as_of)

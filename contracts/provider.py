@@ -98,6 +98,8 @@ RUN_REQUEST_LABEL = "RunRequest"
 RUN_REQUEST_LOOKBACK_DAYS_PROP = "lookback_days"
 RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP = "required_history_bars"
 RUN_REQUEST_BENCHMARK_TICKER_PROP = "benchmark_ticker"
+# The run's as-of, an ISO date; the provider serves it (PROV-TRG-05, DL-256).
+RUN_REQUEST_REQUESTED_AT_PROP = "requested_at"
 
 
 class RegimeContext(_Frozen):

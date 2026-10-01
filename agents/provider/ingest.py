@@ -23,6 +23,8 @@ from contracts.provider import (
 )
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from agents.provider.agent import ProviderAgent
     from contracts.provider import MarketData, RegimeContext
     from kernel import GraphStore
@@ -73,6 +75,13 @@ def _today_window(lookback_days: int) -> Window:
     """Return a Window from (today - lookback_days) to today."""
     today = datetime.now(tz=UTC).date()
     return Window(start=today - timedelta(days=lookback_days), end=today)
+
+
+def _run_window(lookback_days: int, as_of: date | None) -> Window:
+    """The window an ingest serves: its run's as-of, else today (PROV-TRG-05)."""
+    if as_of is None:
+        return _today_window(lookback_days)
+    return Window(start=as_of - timedelta(days=lookback_days), end=as_of)
 
 
 def _write_market_data(
@@ -136,6 +145,7 @@ def ingest_once(
     *,
     lookback_days: int,
     benchmark_ticker: str | None = None,
+    as_of: date | None = None,
 ) -> str | None:
     """Fetch all data fields for *universe*, write them to the graph, return the key.
 
@@ -144,7 +154,8 @@ def ingest_once(
     full ``MarketData`` + ``RegimeContext`` payloads for downstream graph-pull
     agents, keyed by *run_id* (DRIFT-011). Returns the ``MarketData`` node key
     written, or ``None`` (no-op) when *universe* is empty. A missing *run_id*
-    defaults to a fresh uuid so a standalone ingest is still collision-free.
+    defaults to a fresh uuid so a standalone ingest is still collision-free. The
+    window ends on *as_of* (a run's), else today (PROV-TRG-05).
     """
     if not universe:
         return None
@@ -163,8 +174,9 @@ def ingest_once(
             fields=fields,
             lookback_days=lookback_days,
             benchmark_ticker=benchmark_ticker,
+            as_of=as_of,
         )
-    window = _today_window(lookback_days)
+    window = _run_window(lookback_days, as_of)
     market_request = DataRequest(
         tickers=universe,
         window=window,

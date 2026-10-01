@@ -118,14 +118,14 @@ def _seed_position_sync(
 
 
 def test_find_pending_returns_unanalyzed_scan_run() -> None:
-    """ANLZ-TRG-03 / MON-TRG-04: synced ScanRuns become analyst-eligible."""
+    """ANLZ-TRG-02 / ANLZ-TRG-03 / MON-TRG-04: synced ScanRuns become eligible."""
     graph = InMemoryGraphStore()
     _seed_scan_run(graph)
     assert len(find_pending(graph)) == 1
 
 
 def test_find_pending_waits_for_position_sync() -> None:
-    """ANLZ-TRG-03 / MON-TRG-04: missing sync marker blocks analyst polling."""
+    """ANLZ-TRG-02 / ANLZ-TRG-03 / MON-TRG-04: missing sync marker blocks polling."""
     graph = InMemoryGraphStore()
     _seed_scan_run(graph, book_status=None)
     assert find_pending(graph) == []
@@ -137,7 +137,7 @@ def test_find_pending_empty_when_no_scan_run() -> None:
 
 
 def test_analyze_scan_node_scores_candidates_from_graph() -> None:
-    """ANLZ-TRG-03 / MON-TRG-04: analyst scores only after book sync is marked."""
+    """ANLZ-TRG-02 / ANLZ-TRG-03 / MON-TRG-04: scores only after book sync is marked."""
     graph = InMemoryGraphStore()
     node = _seed_scan_run(graph)
     analyze_scan_node(node, graph=graph)
@@ -171,6 +171,7 @@ def test_analyze_scan_node_records_stale_book_incident() -> None:
 
 
 def test_analyze_scan_node_marks_node_processed() -> None:
+    """ANLZ-TRG-02 (graph-pull): an analysed ScanRun is linked, so never work again."""
     graph = InMemoryGraphStore()
     node = _seed_scan_run(graph)
     analyze_scan_node(node, graph=graph)

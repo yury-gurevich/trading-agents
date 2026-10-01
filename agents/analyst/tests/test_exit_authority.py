@@ -29,7 +29,7 @@ _RUN_ID = "risk-run"
 
 
 def test_graph_pull_forces_weighted_multilot_stop_sell() -> None:
-    """ADR-0017: graph-pull held stop forces sell despite high confidence."""
+    """ANLZ-OUT-09 / ADR-0017: graph-pull held stop forces sell despite confidence."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     scan = _seed_scan(graph, _held_bars("RISK", latest_close=166.25))
@@ -53,7 +53,7 @@ def test_graph_pull_forces_weighted_multilot_stop_sell() -> None:
 
 
 def test_graph_pull_sells_above_stop_when_confidence_below_floor() -> None:
-    """ADR-0017: above-stop held names still use the thesis exit floor."""
+    """ANLZ-OUT-09 / ADR-0017: above-stop held names still use the thesis floor."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     scan = _seed_scan(graph, _held_bars("RISK", latest_close=110.00))
@@ -73,7 +73,7 @@ def test_graph_pull_sells_above_stop_when_confidence_below_floor() -> None:
 
 
 def test_graph_pull_holds_above_stop_when_confidence_above_floor() -> None:
-    """ADR-0017: above-stop held names stay held when alpha remains confident."""
+    """ANLZ-OUT-09 / ADR-0017: above-stop held names stay held when confident."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     scan = _seed_scan(graph, _held_bars("RISK", latest_close=110.00))
@@ -92,7 +92,7 @@ def test_graph_pull_holds_above_stop_when_confidence_above_floor() -> None:
 
 
 def test_graph_pull_faults_on_multilot_different_stop_pct() -> None:
-    """ADR-0017: one ticker with two stop percentages is not representable."""
+    """ANLZ-OUT-09 / ADR-0017: one ticker with two stop widths is a fault."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     scan = _seed_scan(graph, _held_bars("RISK", latest_close=100.00))

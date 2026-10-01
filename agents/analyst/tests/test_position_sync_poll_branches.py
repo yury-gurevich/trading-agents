@@ -20,7 +20,7 @@ from kernel import InMemoryGraphStore
 
 
 def test_find_pending_waits_when_scan_lacks_market_lineage() -> None:
-    """ANLZ-TRG-03 / MON-TRG-04: no MarketData lineage means no analysis."""
+    """ANLZ-TRG-02 / ANLZ-TRG-03 / MON-TRG-04: no MarketData lineage, no analysis."""
     graph = InMemoryGraphStore()
     graph.merge_node("ScanRun", "scan-orphan", {"candidate_set": {"candidates": []}})
 

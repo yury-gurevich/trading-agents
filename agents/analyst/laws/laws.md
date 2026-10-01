@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -43,9 +43,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **ANLZ-TRG-01** — RPC capability `analyze`: invoked on demand by any caller in
   `allowed_callers`. Pull mode; returns a `RecommendationSet` synchronously.
-- **ANLZ-TRG-02** — Pub/sub: `scan.candidates.ready` event auto-invokes `analyze`; the result
-  is written via claim-check and `analysis.recommendations.ready` is published. This is the
-  primary production trigger path.
+- **ANLZ-TRG-02** — Two event-driven paths, neither one a timer. **Pub/sub:** a
+  `scan.candidates.ready` event auto-invokes `analyze`; the result is written via claim-check and
+  `analysis.recommendations.ready` is published. **Graph-pull** (DL-08/08b, the path the fleet runs):
+  a `ScanRun` with no `ANALYZED_BY` edge is a request once its `MarketData` lineage
+  (`ScanRun -DERIVED_FROM-> MarketData`) exists and its run's position-book sync has been attempted
+  (S147). One without the lineage or the sync marker waits and is not analysed. The poll analyses it
+  from the graph alone, with no bus call, writes the `AnalystRun` carrying its `RecommendationSet`, and
+  links `ScanRun -ANALYZED_BY-> AnalystRun`, so each `ScanRun` is analysed once. The poll finds its
+  pending work **by key and edge alone** and **fetches props only for `ScanRun`s without that edge**
+  (DL-246). *(DRIFT-086; was: pub/sub only, called "the primary production trigger path".)*
 - **ANLZ-TRG-03** — The analyst never self-triggers. Idle (no inbound request or event) →
   zero provider calls, zero graph writes.
 
@@ -82,6 +89,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   counterfactual mode, stop and target for the proposal that was not used. The counterfactual is
   evidence for later operator comparison and never reaches the portfolio manager as a proposal.
   *(Declares capability decided in ADR-0013; shipped in S150.)*
+- **ANLZ-OUT-09** — Each held position gets a **stop check** (ADR-0017's stop exit). Its threshold
+  comes from the held book's stop inputs, read through the shared stop-width resolver
+  (`contracts/stop_width.py`): the PM lineage's decided width, else the width recorded on the
+  position, over the ticker's weighted entry across its active lots. If the latest close is at or
+  below `opened_price_cents × (1 − stop_pct)`, the recommendation is `sell` with
+  `exit_trigger="stop"`, whatever its confidence. A close above the threshold is no stop exit, and the
+  name is judged on its thesis. A position whose **broker stop is live** is left to that stop, and the
+  check reports no breach for it. A held book whose stop inputs cannot be read (one ticker's lots
+  carrying different widths, or missing inputs) is a fault and an empty result with the reason
+  `held position stop threshold unavailable`, never a guessed stop. *(DRIFT-074; ADR-0017, S230 /
+  DL-223.)*
 
 ---
 
@@ -377,3 +395,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   indicator spans in `settings_indicators.py` and `exit_confidence_floor`, replacing the note that
   said they existed without naming them. They were 22 of the 57 divergences DRIFT-052 held as
   warnings since S187. No clause was added, changed or proven; the green count does not move.
+- v1.7 — amendment (S251 / DL-259, DL-260, 2026-10-01). New `ANLZ-OUT-09`, the held-position
+  stop check, which the analyst has run since ADR-0017 with no clause naming it (DRIFT-074). It
+  states the shared resolver, the forced `stop` sell at or below the decided stop, the broker stop
+  taking precedence when live, and the fault on an unreadable book. It is proven by
+  `tests/test_analyst_held_stop.py` (the USB shape, where a close beyond the decided stop but above
+  the 5 % fallback is a stop sell), the four ADR-0017 `test_exit_authority.py` tests, and
+  `tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop`. `ANLZ-TRG-02` names
+  the graph-pull trigger the fleet runs and its key-and-edge bound (DRIFT-086), and stays 🟩. No
+  behaviour change. One clause added and proven: 26 / 49 → 27 / 50.

@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -25,6 +25,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (the run-start holdings snapshot, DL-44) and `BrokerOrderStatus` (append-only broker
   order-status reads). No other agent writes to these labels. *(Declares capability decided in
   ADR-0015 §3 and DL-44; see changelog v1.1.)*
+- **EXEC-IDN-04** — The execution agent also writes, **not exclusively**, `Flag` and
+  `FlagResolution` nodes of **one family only**: the broker-position divergence Flags of run-start
+  reconciliation (`EXEC-OBS-07`), whose `subject_ref` begins `broker-position-divergence:`, and the
+  `FlagResolution`s that close them. It writes no other `Flag` or `FlagResolution`. Any other flag it
+  raises goes through the `flag_for_human` capability. Both labels are in the contract's
+  `owns_graph`, shared with the governance role, whose book declares this one exception to its
+  single-writer rule. *(DRIFT-094. Declared rather than routed, so run-start reconciliation never
+  waits on another agent, `EXEC-TRG-07`.)*
 
 ---
 
@@ -72,17 +80,23 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **EXEC-OUT-01** — `submit` always returns an `ExecutionResult`: `run_id`, `stage`, `fills`
   (tuple of `Fill`), `submitted` count, `rejected` count (stage-gate rejections, not
-  portfolio rejections), `pm_run_id`, `provenance`.
-- **EXEC-OUT-02** — Each `Fill` carries: `ticker`, `side`, `quantity`, `price` (Decimal),
-  `broker_order_id`, `client_order_id` (idempotency key), `status`, `timestamp`, `stage`.
+  portfolio rejections), `dropped` and `skipped` counts (`EXEC-OUT-07`), and `provenance`. It has no
+  `pm_run_id` field. *(DRIFT-061; was: `pm_run_id` instead of `dropped`/`skipped`.)*
+- **EXEC-OUT-02** — Each `Fill` carries: `ticker`, `side`, `quantity`, `price` (Decimal money),
+  `broker_order_id`, `status`. The idempotency key (`client_order_id`, `EXEC-NEV-03`) is sent on the
+  broker call and is not a `Fill` field. A timestamp and the stage are not `Fill` fields either; the
+  result's `stage` carries the stage. *(DRIFT-061; was: also `client_order_id`, `timestamp`,
+  `stage`.)*
 - **EXEC-OUT-03** — If the current stage is not in `{"paper", "broker_shadow"}`, every intent
   is rejected with reason `"live_gate_rejected"` and zero fills are submitted. The
   `ExecutionResult` still returns with `submitted=0`.
-- **EXEC-OUT-04** — `reconcile` returns a `ReconcileResult`: `run_id`, `matched`, `discrepancies`
-  (list of unmatched in-process fills), `provenance`. A `Reconciliation` node is written.
-- **EXEC-OUT-05** — `promote_stage` returns a `PromoteStageResult` with `from_stage`,
-  `to_stage`, `evidence_summary`, `dry_run`. When not dry-run, a `StageTransition` node is
-  written to the graph.
+- **EXEC-OUT-04** — `reconcile` returns a `ReconcileResult`: `matched`, `discrepancies`
+  (unmatched fills), `provenance`. A `Reconciliation` node is written. *(DRIFT-061; was: also
+  `run_id`.)*
+- **EXEC-OUT-05** — `promote_stage` returns a `PromoteStageResult`: `accepted`, `previous_stage`,
+  `current_stage`, `reason`, `provenance`. Only a confirmed, accepted promotion writes a
+  `StageTransition` node; a request that is not accepted writes none and says why in `reason`.
+  *(DRIFT-061; was: `from_stage`, `to_stage`, `evidence_summary`, `dry_run`.)*
 - **EXEC-OUT-06** — `execution.fills.ready` pub/sub event carries only a claim-check
   reference, not the `ExecutionResult` payload. `pm_run_id` is included in the event envelope
   for downstream routing.
@@ -210,10 +224,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (`EXEC-OUT-02`/`EXEC-TYP-01`/`EXEC-TYP-02`). `ReconcileResult` carries `matched`,
   `discrepancies`, and `provenance` (`EXEC-OUT-04`). `StageStatus` carries `stage`, `idempotent`,
   and `reason` (`EXEC-STA-02`). `PromoteStageResult` carries `accepted`, `previous_stage`,
-  `current_stage`, `reason`, and `provenance` (`EXEC-OUT-05`). `CONTRACT.version` remains the
-  authoritative version string for current schema identity. DRIFT-060 tracks the missing gate that
-  would require the version to move when payload shape changes; DRIFT-061 tracks older execution
-  output clauses whose field names are wider than the current contract.
+  `current_stage`, `reason`, and `provenance` (`EXEC-OUT-05`). `CONTRACT.version` names the current
+  schema. No clause promises that it moves when a payload field is added, removed or renamed
+  (DRIFT-060). Since v1.11 the output clauses name exactly these fields (DRIFT-061).
 
 ---
 
@@ -332,9 +345,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
       "ExecutionResultEvent",
       "BrokerStopOrder",
       "BrokerPositionSnapshot",
-      "BrokerOrderStatus"
+      "BrokerOrderStatus",
+      "Flag",
+      "FlagResolution"
     ],
-    "access": "write_own_labels_only"
+    "access": "write_own_labels_only; Flag and FlagResolution for the divergence family only (EXEC-IDN-04)"
   },
   "broker": {
     "operations": [
@@ -479,3 +494,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   contradiction with the supervisor book's single-writer rule for `Flag` found on the way is
   DRIFT-094 and is not decided here. No `contracts/`, label or property change; `EXEC-TRG-07` is
   unchanged.
+- **v1.11 — S251, the law says what execution writes and returns (2026-10-01; DL-259, DL-260).** New
+  `EXEC-IDN-04` declares the one exception DRIFT-094 found: execution writes divergence-family `Flag`
+  and `FlagResolution` nodes, and no others. `contracts/execution.py` `owns_graph` and the CAP
+  labels gain both (the sprint's one code edit; nothing reads `owns_graph` at runtime).
+  `tests/test_boundary_map.py` now allows exactly that shared pair. Proven by
+  `test_divergence_flag_ownership.py` (every label the writer writes is declared; every such node is
+  of the family). `EXEC-OUT-01`, `-02`, `-04` and `-05` name the fields `contracts.execution`
+  carries (DRIFT-061) and stay 🟩, now also citing the required-field test. `EXEC-TYP-03`:
+  `CONTRACT.version` names the current schema (DRIFT-060). No behaviour change. One clause added
+  and proven: 38 / 64 → 39 / 65.

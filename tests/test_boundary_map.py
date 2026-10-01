@@ -46,10 +46,22 @@ def test_external_io_is_exclusive():
     assert not shared, f"external systems touched by >1 agent: {shared}"
 
 
+# The one declared exception to single-writer (DRIFT-094, S251): run-start
+# reconciliation writes the broker-position divergence family of these two labels.
+_DECLARED_SHARED = {
+    "Flag": {"execution", "supervisor"},
+    "FlagResolution": {"execution", "supervisor"},
+}
+
+
 def test_each_graph_label_has_one_writer():
+    """SUP-IDN-02 / EXEC-IDN-04: every graph label has one owning contract, except
+    the declared divergence-family pair, shared by exactly those two contracts."""
     owners = Counter(g for c in REG.values() for g in c.owns_graph)
-    shared = {g: n for g, n in owners.items() if n > 1}
-    assert not shared, f"graph labels written by >1 agent: {shared}"
+    shared = {g for g, n in owners.items() if n > 1}
+    assert shared == set(_DECLARED_SHARED), f"labels written by >1 agent: {shared}"
+    for label, writers in _DECLARED_SHARED.items():
+        assert {name for name, c in REG.items() if label in c.owns_graph} == writers
 
 
 @pytest.mark.parametrize("name", AGENT_MODULES)

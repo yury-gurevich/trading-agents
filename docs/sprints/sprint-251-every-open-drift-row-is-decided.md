@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 104
 **Branch:** `sprint-251-every-open-drift-row-is-decided`
-**Status:** SPEC
+**Status:** BUILT 2026-10-01: all 23 rows decided, 13 books amended (one commit a book), `make ci` exit 0 (3,810 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/compassionate-hamilton-g1wdjb` (the session's forced branch, cut from `main` `b050f706`); owed to the planner: the PATCH bump with `uv lock`, Windows `make ci`, `make gate-ran`, the merge, F1
 **Version:** *next available PATCH at merge*
 **Effort:** L
 **Decisions:** [DL-259](../design-log.md) (the planner's ruling on each of the 23 rows, with the
@@ -398,7 +398,29 @@ filed.
 
 | Row | Ruling | Clause(s) amended | Citing test | Final status | Commit |
 | --- | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | | |
+| 082 | A | `PROV-TRG-01` (🟩) | `test_graph_pull_trigger.py::test_a_recorded_run_request_is_ingested_with_no_bus_event` + the pub/sub test | CORRECTED | `d38be32` |
+| 084 | A | `PROV-OUT-07` (🟩) | `test_alpaca_raw_bars.py::test_the_bars_request_asks_for_no_price_adjustment` | CORRECTED | `d38be32` |
+| 040 | N | `PROV-OUT-04` (⬜ → 🟩) | `test_served_fact_provenance.py::test_a_served_fact_links_to_its_fetch_time_and_fallback_flag` | CORRECTED (gap = work-queue 105) | `d38be32` |
+| 085 | A | `SCAN-TRG-02` (🟩) | `test_scanner_poll.py` (3) + `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work` | CORRECTED | `2349da0` |
+| 086 | A | `PROV-TRG-02` (⬜ → 🟩), `SCAN-TRG-02`, `ANLZ-TRG-02`, `PM-TRG-02`, `MON-TRG-02`, `RPT-TRG-02` (🟩) | each agent's poll tests + `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work` | CORRECTED (monitor sync poll filed as DRIFT-097) | `d38be32`…`34f54c7` |
+| 074 | A | new `ANLZ-OUT-09` (🟩) | `tests/test_analyst_held_stop.py` (3 tests, 4 cases), `test_exit_authority.py` (4), `tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop` | CORRECTED | `fe590b7` |
+| 037 | A | `PM-OUT-03` (🟩) | `test_sector_cap.py::test_rejects_second_same_sector_order_over_cap`, `test_reward_risk.py::test_rejects_when_reward_risk_below_minimum` | CORRECTED | `7fb20b0` |
+| 065 | N | `PM-OBS-04` (🟩) | its five existing tests, unchanged | CORRECTED | `7fb20b0` |
+| 039 | N | `PM-OBS-01` (🟩), `PM-OUT-06` (⬜), `PM-STA-04` (⬜ → 🟩) | `test_pm_run_record.py::test_a_pm_run_carries_its_order_intent_set_and_no_portfolio_snapshot`, `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | CORRECTED (`PM-OUT-01`/`PM-TYP-03` → DRIFT-096) | `7fb20b0` |
+| 087 | A | `RPT-OUT-07` (🟩) | `test_benchmark_lineage.py` (2) + its six existing tests | CORRECTED | `34f54c7` |
+| 061 | A | `EXEC-OUT-01`, `-02`, `-04`, `-05` (🟩) | existing tests + `tests/test_contract_required_payload_fields.py::test_execution_payload_fields_required_by_law` | CORRECTED | `cfa989d` |
+| 060 | N | `SCAN-TYP-01`, `PM-TYP-03`, `EXEC-TYP-03` (🟩) | their existing required-field tests | CORRECTED | `2349da0`, `7fb20b0`, `cfa989d` |
+| 094 | A | new `EXEC-IDN-04` (🟩), `SUP-IDN-02` (🟩), execution CAP, `contracts/execution.py` `owns_graph` | `test_divergence_flag_ownership.py::test_every_label_the_divergence_writer_writes_is_declared`, `tests/test_boundary_map.py::test_each_graph_label_has_one_writer` | CORRECTED | `cfa989d`, `b0787b8` |
+| 076 | A | `SUP-OBS-02` (⬜ → 🟩) | `test_supervisor_health_sources.py::test_open_incidents_count_faults_and_pending_flags_count_critical_flags` + three health tests | CORRECTED | `b0787b8` |
+| 081 | A | `FORE-IDN-01`, `FORE-OBS-01` (both ⬜, partials named) | none whole (return leg uncovered) | CORRECTED | `288333e` |
+| 083 | N | `FORE-IDM-03` (⬜) | none (no repeatability test) | CORRECTED | `288333e` |
+| 059 | A | new `MST-FAIL-07` (🟩) + "outside the constitution" paragraph + `PARAM` rationale | `test_remediation_posture.py` (3) | CORRECTED | `f0a6a03` |
+| 077 | A | `DSP-IDN-03` (⬜), purpose line | none | CORRECTED | `1b39f73` |
+| 078 | N | `SRF-OUT-03` (🟩) | `test_chat_quick_asks.py::test_a_quick_ask_is_a_graph_read_that_writes_no_audit_fact` + the audited-answer test | CORRECTED | `cba7d09` |
+| 032 | A | new `DEP-BUS-05` (charter; no test-plan, the gate does not read it) | `tests/test_pytest_servicebus_guard.py` (3) + `conftest.py` fixture | CORRECTED | `697787f` |
+| 031 | W→DECIDED | none | n/a | DECIDED | `a075a35` |
+| 030 | W | none | n/a | DECIDED (owed with E20.3) | `a075a35` |
+| 034 | W | none | n/a | DECIDED (owed by `RecommendationOutcome`'s sprint) | `a075a35` |
 
 ---
 
@@ -406,9 +428,25 @@ filed.
 
 | Plan # | Final test name or check | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| D1 | script over every `\| DRIFT-` row: none of the 23 has a status cell starting `OPEN`/`PARTLY`; each names S251 and its ruling (output below) | `docs/laws/drift-register.md` | PASS (the only OPEN rows are DRIFT-096/097, filed by this sprint) | n/a |
+| D2 | `git diff --stat origin/main -- agents kernel orchestration surfaces contracts` minus `*/laws/*` and `*/tests/*` | (below) | PASS: only `contracts/execution.py`, +5 lines in `owns_graph` | n/a |
+| D3 | `scripts/check_law_coverage.py` exit 0 after every book; each reworded 🟩 row names a test whose docstring cites it and asserts the new wording | every `test-plan.md` | PASS | per row above |
+| D4 | `test_a_recorded_run_request_is_ingested_with_no_bus_event`, `test_an_idle_graph_asks_the_feed_for_nothing` | `agents/provider/tests/test_graph_pull_trigger.py` | PASS | `PROV-TRG-01`, `PROV-TRG-02` |
+| D5 | `test_the_bars_request_asks_for_no_price_adjustment[sip/iex]` | `agents/provider/tests/test_alpaca_raw_bars.py` | PASS | `PROV-OUT-07` |
+| D6 | `test_a_close_at_or_beyond_the_decided_stop_is_a_forced_stop_sell` (at 58.06; beyond at 57.60, still above the fallback stop 57.47), `test_a_close_above_the_decided_stop_is_no_stop_exit`, `test_a_position_with_a_live_broker_stop_is_left_to_that_stop` | `tests/test_analyst_held_stop.py` | PASS | `ANLZ-OUT-09` |
+| D7 | `test_every_label_the_divergence_writer_writes_is_declared`; `test_each_graph_label_has_one_writer` | `agents/execution/tests/test_divergence_flag_ownership.py`; `tests/test_boundary_map.py` | PASS (red before the `owns_graph` edit) | `EXEC-IDN-04`, `SUP-IDN-02` |
+| D8 | `test_automatic_remediation_refuses_a_master_that_cannot_remediate` (+2) | `agents/master/tests/test_remediation_posture.py` | PASS | `MST-FAIL-07` |
+| D9 | `test_pytest_guard_rejects_live_servicebus_send` (+2) | `tests/test_pytest_servicebus_guard.py` | PASS | `DEP-BUS-05` |
+| D10 | script comparing each book's `**status:** LOCKED vX` with its `ledger.md` and `INDEX.md` row; counts are the gate's (`_derived_counter`) | `docs/laws/ledger.md`, `docs/laws/INDEX.md` | PASS, 12 of 12 books | n/a |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `agents/provider/tests/test_served_fact_provenance.py` (`PROV-OUT-04`, clean and degraded);
+`agents/portfolio_manager/tests/test_pm_run_record.py` (`PM-STA-04`/`PM-OBS-01`);
+`agents/supervisor/tests/test_supervisor_health_sources.py` (`SUP-OBS-02`);
+`surfaces/tests/test_chat_quick_asks.py` (`SRF-OUT-03`, four asks).
+`agents/analyst/tests/test_analyst_poll_processed.py` is an existing test moved, unchanged, out of a
+file that reached 200 lines. Changed test assertions: one, in `tests/test_boundary_map.py::test_each_graph_label_has_one_writer`,
+which now allows exactly the declared `Flag`/`FlagResolution` pair shared by `execution` and
+`supervisor`, where before it allowed no shared label. Everything else is docstring citations.
 
 ---
 
@@ -416,32 +454,168 @@ filed.
 
 *(builder fills every field below; a field left as written here returns the handback)*
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, `/home/user/trading-agents`
+on branch `claude/compassionate-hamilton-g1wdjb` (the session forced this name instead of
+`sprint-251-every-open-drift-row-is-decided`). No `.env`. The `uv` environment was synced from the
+unchanged `uv.lock`.
 
-**Result:**
+**Result:** All 23 rows are CORRECTED (20) or DECIDED (3), and no runtime behaviour differs from
+`main`. Seven more clauses are green: four existing ones moved ⬜ → 🟩 (`PROV-TRG-02`, `PROV-OUT-04`,
+`PM-STA-04`, `SUP-OBS-02`), and three new clauses were added already proven (`ANLZ-OUT-09`,
+`EXEC-IDN-04`, `MST-FAIL-07`). Two new rows were filed OPEN, each a finding the row table did not cover: DRIFT-096 and
+DRIFT-097. Not done: live proof (F1, the planner's).
 
-**Files changed:**
+**Files changed:** 12 `laws.md` + their `test-plan.md`; `docs/laws/dependencies.md`,
+`drift-register.md`, `ledger.md`, `INDEX.md`; `contracts/execution.py` (`owns_graph`); nine new test
+files (listed under module line counts; one is a moved test); citation-only docstring edits in 20
+existing test modules and `conftest.py`; `tests/test_boundary_map.py` (one assertion); `docs/design-log.md`
+(DL-260); this file, `docs/sprints/README.md`, `docs/sprints/INDEX.md`.
 
-**Design decisions:**
+**Design decisions:** [DL-260](../design-log.md) (DL-258 stayed reserved; DL-260 was free on `main`
+at `b050f706`). Fifteen decisions, each with what was rejected. The main ones: each book's own `TRG-02`
+carries the bound. The monitor's bound covers `ExecutionRun` work only, so the sync poll is DRIFT-097.
+"Raw" goes in `PROV-OUT-07`. The DRIFT-094 exception is declared by family, and the boundary-map test
+allows exactly that pair. `DEP-BUS-05` says "sends", not "transacts". `PM-OUT-01`/`PM-TYP-03` are not
+reworded; they are DRIFT-096. The forecaster's three clauses stay ⬜.
 
 **Behaviour untouched — the diff proof:**
 
-**Guards planted:**
+```text
+$ git diff --stat origin/main -- agents kernel orchestration surfaces contracts ":(exclude)*/laws/*" ":(exclude)*/tests/*"
+ contracts/execution.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+$ git diff origin/main -- contracts
+@@ -118,6 +118,11 @@ CONTRACT = AgentContract(
+         "BrokerStopOrder",
++        # Shared with the supervisor for one family only: the run-start
++        # broker-position divergence Flags and the FlagResolutions that close them
++        # (EXEC-IDN-04, DRIFT-094).
++        "Flag",
++        "FlagResolution",
+     ),
+```
 
-**Versions and rollups, before and after:**
+`owns_graph` has no runtime reader (grep: `kernel/contract.py` declares it; only tests read it). The
+vocabulary pack's `owners` map is untouched. Outside those five trees, the only non-doc, non-test
+change is a `conftest.py` docstring.
 
-**Module line counts:**
+**Guards planted:** each was planted, watched fail, and restored with `git checkout`, and each
+restore was re-run green.
 
-**`make ci`:**
+(a) The new `ANLZ-OUT-09` row deleted from the analyst test-plan:
 
-**`pyproject.toml` and `uv.lock`:**
+```text
+[FAIL] docs/laws/ledger.md:40: analyst claims 27 / 50; derived 26 / 50
+[FAIL] docs/laws/INDEX.md:41: analyst claims 27 / 50; derived 26 / 50
+[FAIL] law coverage: 1 clause(s) have no test-plan row (assertion E)
+[FAIL] agents/analyst/laws/test-plan.md: 1 missing row(s): ANLZ-OUT-09
+exit=1
+```
 
-**Owed to the planner:**
+(b) `PROV-OUT-04` (reworded and now green) stripped from both its citing tests' docstrings, then the
+row demoted as the gate demands. The provider's derived rollup drops:
 
-**Rows left OPEN:**
+```text
+[FAIL] agents/provider/laws/test-plan.md:35: PROV-OUT-04 no resolved test docstring names PROV-OUT-04: agents/provider/tests/test_served_fact_provenance.py::test_a_served_fact_links_to_its_fetch_time_and_fallback_flag, agents/provider/tests/test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance
+exit=1
+--- row demoted to ⬜:
+[FAIL] docs/laws/ledger.md:38: provider claims 24 / 67; derived 23 / 67
+[FAIL] docs/laws/INDEX.md:40: provider claims 24 / 67; derived 23 / 67
+exit=1
+```
+
+(c) The provider ignores every `RunRequest` (`poll.find_pending` returns `[]`). D4 goes red and the
+idle half stays green:
+
+```text
+E   AssertionError: assert [] == [('ingest', 'run-request:r1')]
+E     Right contains one more item: ('ingest', 'run-request:r1')
+1 failed, 1 passed in 0.40s
+```
+
+(d) `"FlagResolution"` dropped from `owns_graph`. D7 goes red. It was also red before the edit was
+made, on both labels:
+
+```text
+E   AssertionError: assert {'BrokerPosit...agResolution'} <= {'BrokerOrder..., 'Flag', ...}
+E     Extra items in the left set:
+E     'FlagResolution'
+1 failed in 0.49s
+```
+
+**Versions and rollups, before and after** (the gate's `_derived_counter`, run on `origin/main` and on
+HEAD):
+
+| Book | Version before → after | Rollup before → after |
+| --- | --- | --- |
+| provider | v1.7 → v1.8 | 22 / 67 → 24 / 67 |
+| scanner | v1.3 → v1.4 | 18 / 41 → 18 / 41 |
+| analyst | v1.6 → v1.7 | 26 / 49 → 27 / 50 |
+| portfolio_manager | v1.10 → v1.11 | 32 / 51 → 33 / 51 |
+| monitor | v1.1 → v1.2 | 21 / 46 → 21 / 46 |
+| reporter | v1.3 (ledger and INDEX said v1.2) → v1.4 | 25 / 42 → 25 / 42 |
+| execution | v1.10 → v1.11 | 38 / 64 → 39 / 65 |
+| supervisor | v1.2 (ledger and INDEX said v1.1) → v1.3 | 22 / 48 → 23 / 48 |
+| forecaster | v1.8 → v1.9 | 25 / 52 → 25 / 52 |
+| master | v1.7 → v1.8 | 24 / 50 → 25 / 51 |
+| dispatcher | v1.1 → v1.2 | 32 / 36 → 32 / 36 |
+| surfaces | v1.2 → v1.3 | 29 / 36 → 29 / 36 |
+| `dependencies.md` (no version) | `DEP-BUS` 4 clauses (ledger said 3) → 5 | not read by the gate |
+
+**Module line counts:** every Python file touched is under 200. New files: `test_graph_pull_trigger.py` 51,
+`test_alpaca_raw_bars.py` 39, `test_served_fact_provenance.py` 82, `tests/test_analyst_held_stop.py` 128,
+`test_analyst_poll_processed.py` 20, `test_pm_run_record.py` 45, `test_divergence_flag_ownership.py` 56,
+`test_supervisor_health_sources.py` 43, `test_chat_quick_asks.py` 34. Edited files: `contracts/execution.py` 135,
+`conftest.py` 56, `test_analyst_poll.py` 192, `test_exit_authority.py` 185, `test_position_sync_poll_branches.py` 46,
+`test_monitor_poll.py` 173, `test_monitor_position_sync_work_items.py` 92, `test_pm_poll.py` 168, `test_pm_pubsub.py` 117,
+`test_reward_risk.py` 163, `test_sector_cap.py` 158, `test_barrier_history.py` 130, `test_provider_agent.py` 181,
+`test_reporter_poll.py` 55, `test_scanner_poll.py` 78, `test_supervisor_fault_incidents.py` 110,
+`test_supervisor_health_flags.py` 196, `test_remediation_posture.py` 63, `tests/test_boundary_map.py` 72,
+`tests/test_contract_required_payload_fields.py` 121, `tests/test_poll_payloads.py` 70,
+`tests/test_pytest_servicebus_guard.py` 63, `tests/test_stop_width.py` 143. (`test_analyst_poll.py`
+reached 200 at one point; the test that pushed it there was moved, not compressed.)
+
+**`make ci`:** `make ci > scratchpad/ci.txt 2>&1; echo $?` gave **exit 0**, with all 15 steps green:
+ruff, format, mypy, import-linter (5 kept, 0 broken), module size, module header, law coverage,
+PARAM/settings sync, sprint status, markdown links, version scheme, pytest **3,810 passed, 8 skipped,
+100.00 %** (baseline on `main`: 3,793 passed, 8 skipped), dependency audit ("No unaccepted
+vulnerabilities; 1 accepted advisory re-checked"), detect-secrets Passed, and untracked secrets
+("no untracked files to scan"). `pre-commit run --files <every changed file>`, markdownlint included,
+also passes.
+
+**`pyproject.toml` and `uv.lock`:** untouched. Both are owed to the planner: the PATCH bump and the
+`uv lock` that re-resolves it, which this container cannot reach (`download.pytorch.org`).
+`check_version_scheme` passed on the unchanged version.
+
+**Owed to the planner:** the PATCH bump + `uv lock`, Windows `make ci`, `make gate-ran` on the
+merged SHA, the merge, F1 (five amended clauses against the live graph or code), `docs/STATE.md`
+(not touched here), and DL number re-check at merge (DL-260 used).
+
+**Rows left OPEN:** none of the 23. Two new rows were filed OPEN by this sprint, each needing a
+decision or a code change outside its scope. **DRIFT-096**: `PM-OUT-01`/`PM-TYP-03` still list
+`portfolio_state_snapshot`, and the row table did not name them for that. **DRIFT-097**: the monitor's
+position-sync poll lists every `BrokerPositionSnapshot`, which needs a code change.
 
 ---
 
 ## Return notes
 
-*(builder fills)*
+- **Branch.** The session forced `claude/compassionate-hamilton-g1wdjb`; it was cut from `main`
+  `b050f706` and carries 17 commits, one a book.
+- **DRIFT-096 (new, OPEN).** `PM-OUT-01` and `PM-TYP-03` claim the same never-built
+  `portfolio_state_snapshot` that DRIFT-039 withdrew from three other clauses. `PM-TYP-03` is 🟩 with
+  that false conjunct, because its tests prove other fields. I did not reword them (DO NOT: a clause
+  the row table does not name). A one-line amendment closes it; nothing behaves differently.
+- **DRIFT-097 (new, OPEN).** The monitor's sync poll still downloads every `BrokerPositionSnapshot`
+  on each poll. `MON-TRG-02` states the bound for `ExecutionRun` work only, and says so.
+- **`PM-OBS-01`.** The clause now names the props `PMRun` really carries
+  (`order_intent_set, approved_count, rejected_count, source_analyst_run_id, created_at`). My first
+  test assumed `order_intent_set` alone and failed. The test now pins the measured set.
+- **`DEP-BUS-05` says "sends".** The guard does not cover a receive, so it says less than the
+  handover's "never transacts".
+- **Still gray, on purpose.** `PM-OUT-06`, `FORE-IDN-01`, `FORE-OBS-01`, `FORE-IDM-03` and
+  `DSP-IDN-03`. Each test-plan row names the partial proof, where one exists.
+- **The first baseline `make ci` exit 2.** Detect-secrets reported "files were modified" because I
+  was editing files while it ran. A clean re-run passed, and so did the final full run.
+- Spec hygiene: every fenced block in this file has a blank line before and after, and markdownlint
+  passes.

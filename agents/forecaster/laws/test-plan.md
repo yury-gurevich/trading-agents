@@ -2,7 +2,7 @@
 
 | Clause | Status | Test |
 | --- | --- | --- |
-| FORE-IDN-01 | ⬜ | — |
+| FORE-IDN-01 | ⬜ | four-leg purpose statement (sentiment, return, factor, barrier, each `shadow=True`); per-leg duties are proven by `FORE-OUT-01/02/07` and the factor test; no single boundary proof of the whole purpose; _tbd_ |
 | FORE-IDN-02 | 🟩 | `test_a_successful_call_writes_one_complete_claim`, `test_the_claim_passes_the_packs_vocabulary_guard`, `test_a_settlement_records_every_field_the_ledger_needs`, `test_the_settlement_passes_the_packs_vocabulary_guard` |
 | FORE-IN-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
 | FORE-IN-02 | ⬜ | Demoted S156: `test_forecast_return_persists_and_returns_a_shadow_prediction` proves a shadow prediction is returned and persisted, not that forecast_return ignores request features while fetching OHLCV via the provider bus. |
@@ -29,7 +29,7 @@
 | FORE-STA-02 | ⬜ | — |
 | FORE-IDM-01 | ⬜ | — |
 | FORE-IDM-02 | ⬜ | — |
-| FORE-IDM-03 | ⬜ | — |
+| FORE-IDM-03 | ⬜ | the three shadow scorecards read-only and repeatable over `ShadowPrediction` nodes; no test calls each twice on one graph state; _tbd_ |
 | FORE-IDM-04 | 🟩 | `test_the_same_bars_give_the_same_claim_merged_into_one_node`, `test_a_different_claim_for_the_same_last_bar_is_refused`, `test_the_seed_is_stable_across_processes` |
 | FORE-IDM-05 | 🟩 | `test_a_claim_is_settled_once`, `test_the_scorecard_is_read_only_and_repeatable` |
 | FORE-ORD-01 | ⬜ | — |
@@ -48,7 +48,7 @@
 | FORE-DEP-01 | ⬜ | — |
 | FORE-DEP-02 | ⬜ | — |
 | FORE-DEP-03 | ⬜ | — |
-| FORE-OBS-01 | ⬜ | — |
+| FORE-OBS-01 | ⬜ | Partial: one `ShadowPrediction` (+ `Model`) per sentiment and factor reading (`test_forecast_persists_and_returns_a_shadow_prediction`, `test_forecast_factor_enabled_writes_shadow_only_prediction`) and one `BarrierForecast`, no `ShadowPrediction`, per barrier claim (`test_a_successful_call_writes_one_complete_claim`); uncovered: the return leg's node; _tbd_ |
 | FORE-OBS-02 | ⬜ | — |
 | FORE-OBS-03 | ⬜ | — |
 | FORE-PERF-01 | ⬜ | — |

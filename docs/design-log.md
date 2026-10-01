@@ -10,6 +10,61 @@ and is marked CLOSED here.
 
 ---
 
+## DL-262 - a run's book metrics are read from the broker's fills in the run's window, not from the PM run's lineage - status: DECIDED (planner, 2026-10-02; work-queue 106, DRIFT-099, built as S253)
+
+**Question.** The reporter's snapshot has never counted an opened or closed position. What should its
+book metrics read, so that they are true when the snapshot is written and stay true when an old run
+is re-reported?
+
+**Measured before deciding (2026-10-02, on Neon).**
+
+- **0 of 86** `Snapshot`s carry a `positions_opened`, `positions_closed` or `execution_count` above
+  zero. The reporter reads its own PM run's lineage minutes after that run's orders are submitted
+  for the next open, so nothing in the lineage has filled. Exits are resting broker stops, in no PM
+  run's lineage; the monitor has written no `CloseDecision` since July (7, all July).
+- 129 `Fill`s read `broker_status` `filled` (85 buys, 31 resting-stop sells, 13 other sells). All 129
+  carry a readable `broker_status_refreshed_at`, and all 129 read `status: pending`.
+- Placed by that time into (previous `PMRun.created_at`, this `PMRun.created_at`], each of the 129
+  falls in exactly one run's window. The last four runs read 12 / 3, 1 / 1, 0 / 0 and 1 / 3.
+- Since `performance_inception` (2026-08-10): 31 exits, all stops, all losses, −146,279 cents.
+- `positions_held`, `execution_count`, `approval_execution_gap` and `dropped_decision_count` are read
+  by nothing outside the reporter and its tests.
+
+**Decided.**
+
+- **D1, the window.** A filled `Fill` belongs to the run whose window holds its
+  `broker_status_refreshed_at`: after the previous `PMRun`'s `created_at`, up to and including the
+  reported one's. It is the daily brief's rule for a fill's time (S234), bounded by upstream facts
+  only, so `RPT-ORD-01` holds and an old run re-reports identically.
+- **D2, the counts.** Opened = buy fills in the window; closed = sell fills in it; stops = those
+  `contracts.broker_lifecycle.is_resting_stop_fill` accepts.
+- **D3, held.** The holdings of the run's as-of position snapshot, the one `RPT-OUT-07` already reads.
+- **D4, the outcomes.** Profit factor, expectancy and the closed-trade count are cumulative, over
+  every exit fill with realised P&L from the inception to the run. A one-night profit factor over
+  three trades says nothing; the span matches the benchmark figures beside it.
+- **D5, three keys removed.** `execution_count`, `approval_execution_gap` and
+  `dropped_decision_count` describe the run's own orders, which cannot have filled when the snapshot
+  is written. Nothing reads them.
+
+**Road not taken.**
+
+- *Re-report a run once its orders resolve.* A `Snapshot` is append-only (`RPT-STA-02`), the stops
+  would still be in no lineage, and the count would arrive a day late.
+- *Start the window at the reporter's previous `Snapshot`.* `RPT-ORD-01` forbids depending on the
+  reporter's own output, and a `Snapshot` carries no time.
+- *Import the brief's `fills_between`.* An agent imports nothing from `orchestration`.
+- *Re-point the three keys at the previous run.* A fair metric and a new one; not this fix.
+- *Keep them and document the zero.* A number that can only be zero misleads the reader who does not
+  open the law book (work-queue 56).
+
+**Cost named.** One report lists `Fill` (0.35 MB) and `PMRun` (0.86 MB), once per run and only when
+a `MonitorRun` is pending. The poll that finds that work is already key-and-edge (DL-246).
+
+**Not decided here.** `close_trigger_target` and `close_trigger_time` still come from the lineage's
+`CloseDecision`s and stay 0 until an exit other than the stop exists (work-queue 92).
+
+---
+
 ## DL-260 - each ruled drift row becomes a clause the code already keeps, proven where a test can hold it, and what the code does less of the clause says less of - status: DECIDED (builder, 2026-10-01; S251, under DL-259)
 
 **Question.** DL-259 ruled the 23 rows. What does each amended clause say, which test proves it, and

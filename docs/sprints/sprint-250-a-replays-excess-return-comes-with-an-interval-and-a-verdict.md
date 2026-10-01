@@ -959,9 +959,11 @@ against the sessions up to the as-of), `PROV-STA-04` and `PROV-OUT-03` (stalenes
 `max_staleness_days` `PARAM` row ("three sessions"), and `PROV-OUT-08`/`barrier_history_sessions`,
 whose window is a calendar-day formula that does not read the table. **None names the table's range,
 so no clause changed and there was no law cycle.** The new tests cite `PROV-TRG-05` (with DL-10),
-the clause whose session-counted lookback they make true before 2024. Its test-plan row was not
-edited, because the ban covers every other file under `agents/`. The planner may add the two new
-citations to that row.
+the clause whose session-counted lookback they make true before 2024. *Follow-up, at the operator's
+"go for it":* the `PROV-TRG-05` test-plan row now cites
+`test_market_calendar_history.py::test_each_year_holds_nyses_sessions` and
+`tests/test_replay_history_calendar.py::test_every_sessions_declared_window_holds_the_required_bars`.
+That is a row edit only: the clause text, its status (🟩) and the rollup (24 / 67 on `main`) are unchanged.
 
 **Decision record:** DL-258 gains an amendment (repair (a) as built, measured). The rejected
 alternative is (b), cutting the harness window from the cache's sessions: it leaves the calendar

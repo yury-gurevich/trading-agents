@@ -120,6 +120,23 @@ point estimate falls below its own interval's lower bound. The code follows Appe
 binds it, and `verdict.json` records the point estimate beside the interval so a reader sees that
 case if it ever occurs.
 
+**Amendment, S250 return 1 (builder, 2026-10-01; the planner ruled repair (a)).** The provider's
+holiday table (`agents/provider/domain/market_calendar.py`) now lists NYSE's full-day closures from
+2016: the 74 dates of 2016-2023 and 2025-01-09, as measured in Return 1's table against the cache
+(2016-01-01 from the public record). No existing date changed, and `calendar_window_end()` still
+returns 2027-12-31. Sessions a year now count 252, 251, 251, 252, 253, 252, 251, 250, 252, 250 for
+2016-2025. On every one of the 2,446 sessions from 2017-01-03 to 2026-09-25, the window
+`declared_lookback_days` gives holds exactly 203 sessions, the analyst's 200 plus the 3-session
+staleness buffer (`tests/test_replay_history_calendar.py`, flipped from pinning the gap to asserting
+the repair; `agents/provider/tests/test_market_calendar_history.py`). Fleet effect: the declared
+lookback differs from the old table only for an as-of between 2025-01-09 and 2025-10-29 (measured
+over 2025-2027), so no run the fleet places today reads a different window. *Rejected:* **(b)**,
+cutting the harness window from the cache's own sessions. It leaves the calendar wrong for every
+pre-2024 replay that counts sessions with it, and makes the harness stop calling the fleet's own
+`declared_lookback_days`. It would also change rule-off output by design, so F1's byte-identity
+check would fail for a reason the repair does not need. The rule's threshold and Appendix P are
+unchanged. Not claimed: F1, F2 or GATE PROVEN.
+
 ---
 
 ## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250)

@@ -1,6 +1,6 @@
 # `Master` — Law Test-Plan
 
-**Prefix:** `MST` · **status:** LOCKED v1.7 · **aligned with:** laws.md LOCKED v1.7
+**Prefix:** `MST` · **status:** LOCKED v1.8 · **aligned with:** laws.md LOCKED v1.8
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -41,6 +41,7 @@
 | MST-ORD-03 | Master serves EHLOs concurrently so one slow activation holds no other, and its listen backlog (`ehlo_listen_backlog`) holds at least one whole wave (every grant-policy agent type at once) | `test_ehlo_server.py::test_an_activation_wave_is_served_in_parallel`; `test_the_listen_backlog_is_the_tunable`; `test_ehlo_server_routes.py::test_serve_builds_its_server_from_master_settings`; `test_ehlo_budgets.py::test_the_listen_backlog_holds_one_wave`; `test_activation_replay.py::test_concurrent_resends_of_one_boot_id_are_one_activation` | 🟩 |
 | MST-FAIL-01 | graph unavailable on activate is faulted and re-raised without acknowledging EHLO | _tbd_ | ⬜ |
 | MST-FAIL-02 | graph unavailable on drain is faulted and re-raised while the agent continues running | _tbd_ | ⬜ |
+| MST-FAIL-07 | Master refuses to start with `remediation_mode=automatic` when no remediation catalogue or model is wired: building the app raises before the agent exists, naming `MASTER_REMEDIATION_MODE=manual`; `manual` starts unchanged | `test_remediation_posture.py::test_automatic_remediation_refuses_a_master_that_cannot_remediate`; `test_the_refusal_names_the_setting_that_fixes_it`; `test_manual_remediation_is_unaffected` | 🟩 |
 | MST-FAIL-06 | An agent whose EHLO budget is spent (attempt cap or total time) exits non-zero with one line naming attempts, elapsed time and last cause; every failed attempt before it writes one stderr line; nothing swallowed | `tests/test_ehlo_budget.py::test_a_spent_attempt_budget_ends_loud`; `tests/test_ehlo_budget.py::test_the_budget_stops_resends_before_the_attempt_cap`; `tests/test_ehlo_budget.py::test_a_spent_budget_exits_the_process_non_zero` | 🟩 |
 | MST-FAIL-03 | single-point-of-failure mitigation is a risk charter: thin master, state in Postgres, and platform restart are architectural claims, not an agent-local observation | Charter: no single functional observation can prove the RISK-1 mitigation envelope; failures are covered by the narrower FAIL rows. | 📜 |
 | MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState carry the required fields and type assertions | `tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law`; `tests/test_substrate_handshake_wire.py::test_the_frozen_base_and_evidence_types_are_the_same_objects` | 🟩 |

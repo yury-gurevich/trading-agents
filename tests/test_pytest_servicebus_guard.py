@@ -24,7 +24,7 @@ def _fake_live_settings() -> AzureServiceBusSettings:
 
 
 def test_pytest_guard_rejects_live_servicebus_send() -> None:
-    """A3 / DEP-BUS-04: a resolved test send is blocked before Azure I/O."""
+    """A3 / DEP-BUS-04 / DEP-BUS-05: a resolved test send is blocked before any I/O."""
     topic = "deliberator-proponent.requests"
     bus = AzureServiceBusBus(settings=_fake_live_settings())
 
@@ -38,12 +38,12 @@ def test_pytest_guard_rejects_live_servicebus_send() -> None:
 
 
 def test_pytest_guard_is_autouse_for_servicebus_sends() -> None:
-    """A4 / DEP-BUS-04: the send-boundary patch is active in every test."""
+    """A4 / DEP-BUS-04 / DEP-BUS-05: the send-boundary patch is active in every test."""
     assert AzureServiceBusBus._azure_send is _pytest_blocked_azure_send
 
 
 def test_pytest_guard_is_not_swallowed_by_a_fault_boundary() -> None:
-    """DEP-BUS-04: a degraded-but-continue boundary must not eat the guard.
+    """DEP-BUS-04 / DEP-BUS-05: a degraded-but-continue boundary must not eat the guard.
 
     Plants the violation: the publish happens inside ``reraise=False``, which is
     the documented degraded-path idiom and catches bare ``Exception``. When the

@@ -26,6 +26,13 @@ contract — runnable in isolation and as the pre-flight of any real run.
 - `DEP-BUS-04` — production Service Bus access uses scoped entity-level SAS
   identities delivered as per-target secret-backed credentials; the shared
   namespace string is retained only as an operator rollback credential.
+- `DEP-BUS-05` — a local test run never **sends** a message to the production Service Bus. Under
+  pytest the Azure send boundary (`AzureServiceBusBus._azure_send`) is replaced, in every test, by a
+  guard that raises before any Azure I/O and names the topic and the local remedy. The guard derives
+  from `BaseException`, so a degraded-path fault boundary cannot swallow it into a `Fault`. It guards
+  sends only: a receive is not covered. *(DRIFT-032; `conftest.py`, S159. Proven by
+  `tests/test_pytest_servicebus_guard.py`. The coverage gate does not read this charter, so the
+  proof is the tests' clause citations and the ledger's Layer-0 row, not a test-plan row.)*
 
 ## DEP-FEED — external market-data feed(s)
 

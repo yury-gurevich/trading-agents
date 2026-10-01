@@ -46,7 +46,7 @@ def _pytest_blocked_azure_send(
 
 @pytest.fixture(autouse=True)
 def _block_azure_servicebus_sends(monkeypatch: pytest.MonkeyPatch) -> None:
-    """DEP-BUS-04 / DEP-CONFIG-02: pytest may not publish to live Service Bus."""
+    """DEP-BUS-04 / DEP-BUS-05 / DEP-CONFIG-02: pytest never sends to live Azure."""
     from kernel.bus_azure import AzureServiceBusBus
 
     monkeypatch.setattr(

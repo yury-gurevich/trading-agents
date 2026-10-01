@@ -10,6 +10,24 @@ and is marked CLOSED here.
 
 ---
 
+## DL-255 - the provider builds a run's window from the clock, not from the run's as-of - status: OPEN (planner, 2026-10-01; work-queue 103, S249)
+
+**Why.** The fleet test run `verify-2026-10-01-s248-a` was placed for as-of 2026-09-30, the session `sched-2026-09-30` had run on that morning. It read 202 bars a name where the scheduled run read 203, and bought TGT (0.61) where the scheduled run had rejected it (0.587).
+
+**Measured (2026-10-01).** `agents/provider/ingest.py:72-75` (`_today_window`) returns `today − lookback … today`; `ingest_once` (`:167`) and `ingest_chunked` (`ingest_chunked.py:136`) use it; `agents/provider/poll.py:90-99` never reads the request's as-of (`requested_at`). The regime is read as of `window.end`, and news and earnings anchor on `window.end` (`fundamentals.py:98`, `:139`), so all four follow the clock. Reproduced on `InMemoryGraphStore` with `FakeDataSource` and no `.env`: a request for 2026-09-30 ingested on 2026-10-01 writes `window_end` 2026-10-01 (script in the [S249 spec](sprints/sprint-249-a-runs-market-window-ends-on-its-as-of.md)). On Neon: all 81 `RunRequest`s carry `requested_at` as a 10-character date; **0 of 60** scheduled runs have a `window_end` different from their as-of, and **8 of 21** other runs do, each by one day. The two runs for 2026-09-30 hold the same newest bar and close; the test run's window slid one day and dropped the oldest bar. How much of the changed decision came from the bar shift and how much from five hours of newer headlines was not measured.
+
+**Direction (planner).** The provider reads the as-of from the `RunRequest` and builds the window from it; the coverage check uses the same date; an ingest with no run keeps today. The property gets a name in `contracts/provider.py`. New clause `PROV-TRG-05`, DRIFT-095. A fix, PATCH, image-only retag, built by a cloud session. Scheduled runs do not change.
+
+**Ruled out.**
+
+- *Derive the as-of from the run id* - test runs and resumes carry no date in their id, and they are the runs this hits.
+- *Have the dispatcher write the window on the request* - the lookback and the as-of are already there; a third field is a second copy of the same fact.
+- *Forbid past-as-of runs* - 8 of 21 non-scheduled runs already are, and a scheduled run the provider reaches after 00:00 UTC is one too.
+- *Fix every wall-clock date read at once* - 8 more sit in five other agents with five law books, and which of them run inside a graph-pull run is not measured. They stay in work-queue 103 as its second part.
+- *Move the barrier history window too* (`barrier_history.py:94`) - DL-241 and DL-243 tie a barrier claim to the run's creation date on purpose; whether a past-as-of run should make a claim at all is a separate design question.
+
+**Not claimed.** Point-in-time replay. Fundamentals and sectors come from sources that serve the latest value only, so a past-as-of run still reads today's.
+
 ## DL-254 - a divergence flag names its episode by the snapshot that first saw it, and severity is read from the open episode - status: DECIDED (builder, 2026-10-01; S248)
 
 **Why.** DL-253 (below) measured the defect and set the direction (the episode goes into the subject; readers unchanged).

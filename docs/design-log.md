@@ -10,6 +10,24 @@ and is marked CLOSED here.
 
 ---
 
+## DL-253 - a broker divergence's flag key has no episode, so a repeat ticker's first sighting is critical and its third is silent - status: OPEN (planner, 2026-10-01; work-queue 100, S248)
+
+**Why.** On `sched-2026-09-30` the run flagged `extra_graph_position:MDLZ` as `critical`, "Divergence survived a full run without adoption", at 22:32:22 UTC and resolved it at 22:39 as "divergence no longer present". It was a first sighting: the position had left the broker since the previous run, and the same run retired it. `extra_graph_position:BAC` did the same on `sched-2026-09-29`.
+
+**Measured (2026-10-01).** `agents/execution/reconciliation_flags.py:48` asks whether a `warn` Flag exists for the subject, not whether one is open. Flags are append-only (`EXEC-STA-03`) and keyed `flag:{subject_ref}:{severity}`; the subject is `broker-position-divergence:{kind}:{ticker}`, so each key is spent once per ticker. On Neon: 53 run-stable subjects, **40** with a spent `warn` (their next divergence is `critical` on sight) and **12** with both keys spent. For those 12 the code writes nothing: reproduced on `InMemoryGraphStore` with no `.env`, a third episode raises no Flag even after surviving two runs (the script and its output are in the [S248 spec](sprints/sprint-248-a-divergence-is-critical-only-when-it-survived-a-run.md)). All 112 divergence Flags have resolutions. Of the 10 `critical` divergence Flags since 09-01, 3 were checked and all 3 were first sightings; the other 7 were not checked. The behaviour S178 built is in no law clause: its tests cite `EXEC-TRG-07`, which covers only the snapshot.
+
+**Direction (planner).** Put the episode into the subject: kind, ticker, and a token from the snapshot that first saw the divergence. Severity then comes from the open episode's unresolved Flag. The readers (`agents/supervisor/domain/health.py`, `surfaces/queries/flags.py`) join on the props `(subject_ref, severity)` and need no change. New clause `EXEC-OBS-07`, DRIFT-093. A fix, PATCH, image-only retag, built by a cloud session.
+
+**Ruled out.**
+
+- *Change line 48 to "no unresolved `warn`"* - the key is spent: `merge_node` rewrites the old Flag (`ON CONFLICT (label, key) DO UPDATE`, `kernel/graph_postgres_queries.py:21`), which breaks `EXEC-STA-03`, and the old resolution still matches `(subject_ref, severity)`, so the new flag reads as already resolved. A false `critical` would become an invisible `warn`.
+- *Delete or supersede the old `FlagResolution` to re-open the flag* - deletion breaks append-only and loses history; a resolution of a resolution needs every reader changed.
+- *Put the episode in the resolution key and keep the subject stable* - readers in the supervisor and in `surfaces/` join on `(subject_ref, severity)`, so an execution defect would need changes in two other components.
+- *Drop `critical`, flag every divergence `warn`* - removes the one signal S178 built, that adoption failed.
+- *The planner builds it in-session* - the builder and the checker would be the same agent; the live replay on Neon is the planner's either way.
+
+**Open, for the builder (next free DL).** The episode token (recommended: the first-sight snapshot's key; not the run id, a clock, a uuid or a counter), the subject's exact format, how the open episode is found, and how an unresolved suffix-less Flag is treated at upgrade (recommended: as the open episode).
+
 ## DL-252 - each debater turn is a DSPy-rendered guided turn, reproduced without DSPy, parsed strictly, and recorded with its packet - status: DECIDED (builder, 2026-09-30; S246)
 
 **Why.** DL-250's amendment (the operator, 2026-09-30) asks for the *guided* reasoning, the structure

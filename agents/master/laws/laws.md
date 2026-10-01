@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -128,6 +128,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-FAIL-06** — An agent whose EHLO budget is spent (the attempt cap or the total time) exits
   non-zero with one line naming the attempts, the elapsed time and the last cause; every failed
   attempt before it writes one line to stderr. Nothing is swallowed.
+- **MST-FAIL-07** — Master **refuses to start in a remediation mode it cannot honour**. With
+  `remediation_mode="automatic"` and no remediation catalogue or model wired into its entrypoint
+  (today's image), building the app raises before the master agent is constructed. The error names
+  the setting that fixes it (`MASTER_REMEDIATION_MODE=manual`), so the switch is never silently
+  inert. `manual` starts unchanged. *(DRIFT-059; the guard is `agents/master/remediation_posture.py`,
+  S203.)*
+
+**Remediation is outside this constitution.** No clause governs *attempting* a remediation: what
+master may attempt, the one-shot bound, or what is recorded when an attempt fails. Those clauses are
+owed when DL-36 Pieces C and D are built (DL-144). Until then the start-up refusal above is the only
+governance remediation has, and the three remediation `PARAM` rows describe settings, not
+guarantees.
 
 ## Type contracts (`TYP`)
 
@@ -220,7 +232,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `secret_map_path` | `""` | `str` | YES | Filesystem path to the pack's secret-map JSON; empty = no agent type is entitled to any secret until a pack supplies the table |
 | `secret_map_b64` | `""` | `str` | YES | Base64 secret-map JSON injected at deploy time; wins over `secret_map_path` and keeps the master image pack-agnostic |
 | `secret_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a fetched Key Vault secret stays cached for repeated references; 0 = never expires |
-| `remediation_mode` | `"manual"` | `str` | YES | How a credential-test failure is handled (DL-36): `manual` refuses and escalates to a human; `automatic` allows one remediation shot, then forces manual |
+| `remediation_mode` | `"manual"` | `str` | YES | How a credential-test failure is handled (DL-36): `manual` refuses and escalates to a human; `automatic` is meant to allow one remediation shot and then force manual, but today's image cannot remediate, so master refuses to start with it (`MST-FAIL-07`) |
 | `auto_remediation_scope` | `"safe_only"` | `str` | YES | Which catalogue remediations may run automatically under `remediation_mode=automatic`: `safe_only` (non-destructive only) or `all` |
 | `max_auto_remediation_attempts` | `1` | `int ≥ 0 ≤ 3` | YES | Automatic remediation runs allowed per failure signature before human review is forced; one shot by default |
 
@@ -264,3 +276,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `handshake_timeout_1_seconds` and `handshake_max_retries` leave the table (the agent's side; the
   kernel's `EhloSettings` owns the envelope now), `handshake_timeout_2_seconds` is master's replay
   window, `ehlo_listen_backlog` is new.
+- v1.8 — S251 / DL-259, DL-260 / DRIFT-059 (2026-10-01): new `MST-FAIL-07` states the one remediation
+  guarantee that exists today. Master refuses to start with `remediation_mode="automatic"` when it
+  cannot remediate, naming the fix; `manual` is unaffected (S203's guard, now under a clause). A
+  paragraph says that attempting remediation is outside the constitution until DL-36 Pieces C and D
+  are built. The `remediation_mode` `PARAM` rationale no longer promises a remediation shot the image
+  cannot take. No remediation clause is written for the unbuilt pieces, which would be unfalsifiable
+  (DL-259). No behaviour change. One clause added and proven: 24 / 50 → 25 / 51.

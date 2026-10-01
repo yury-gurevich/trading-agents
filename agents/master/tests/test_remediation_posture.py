@@ -29,7 +29,7 @@ from kernel.crypto import generate_keypair
 
 
 def test_automatic_remediation_refuses_a_master_that_cannot_remediate() -> None:
-    """🎯 The silence becomes a refusal at construction, before any escalation."""
+    """MST-FAIL-07: the silence becomes a refusal at construction, before escalating."""
     private, _ = generate_keypair()
     settings = MasterSettings(remediation_mode="automatic")
 
@@ -38,7 +38,7 @@ def test_automatic_remediation_refuses_a_master_that_cannot_remediate() -> None:
 
 
 def test_the_refusal_names_the_setting_that_fixes_it() -> None:
-    """An operator reading the crash must know what to do next."""
+    """MST-FAIL-07: an operator reading the crash must know what to do next."""
     with pytest.raises(ValueError, match="MASTER_REMEDIATION_MODE=manual"):
         refuse_unwired_automatic_remediation(
             MasterSettings(remediation_mode="automatic")
@@ -46,7 +46,7 @@ def test_the_refusal_names_the_setting_that_fixes_it() -> None:
 
 
 def test_manual_remediation_is_unaffected() -> None:
-    """D2: the default posture starts exactly as it did before this sprint."""
+    """MST-FAIL-07 / D2: the default posture starts exactly as it did before."""
     private, _ = generate_keypair()
 
     agent, _pem = build_app(

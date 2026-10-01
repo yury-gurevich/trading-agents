@@ -83,7 +83,7 @@ def test_order_intent_result_node_in_graph() -> None:
 
 
 def test_order_intent_result_is_deserializable() -> None:
-    """PM-TYP-03: graph node deserialises to OrderIntentSet matching contract schema."""
+    """PM-TYP-03 / PM-STA-04: OrderIntentResult carries the run's OrderIntentSet."""
     bus, graph, event = _wire_with_recs(run_id="run-pm-3")
     received: list[dict[str, object]] = []
     bus.subscribe("portfolio.orders.ready", received.append)

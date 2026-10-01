@@ -101,6 +101,7 @@ def _seed_analyst_run(
 
 
 def test_find_pending_returns_unevaluated_analyst_run() -> None:
+    """PM-TRG-02 (graph-pull): an AnalystRun with no EVALUATED_BY edge is a request."""
     graph = InMemoryGraphStore()
     _seed_analyst_run(graph)
     assert len(find_pending(graph)) == 1
@@ -112,6 +113,7 @@ def test_find_pending_empty_when_no_analyst_run() -> None:
 
 
 def test_evaluate_analyst_node_sizes_orders_from_graph() -> None:
+    """PM-TRG-02 (graph-pull): the poll evaluates from the graph into a PMRun."""
     graph = InMemoryGraphStore()
     node = _seed_analyst_run(graph)
     evaluate_analyst_node(node, graph=graph, settings=_settings())
@@ -121,6 +123,7 @@ def test_evaluate_analyst_node_sizes_orders_from_graph() -> None:
 
 
 def test_evaluate_analyst_node_marks_node_processed() -> None:
+    """PM-TRG-02 (graph-pull): an evaluated AnalystRun is linked, never work again."""
     graph = InMemoryGraphStore()
     node = _seed_analyst_run(graph)
     evaluate_analyst_node(node, graph=graph, settings=_settings())

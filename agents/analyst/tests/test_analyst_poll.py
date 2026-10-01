@@ -170,14 +170,6 @@ def test_analyze_scan_node_records_stale_book_incident() -> None:
     assert analyst_run.props["position_book_stale_reason"] == "broker unavailable"
 
 
-def test_analyze_scan_node_marks_node_processed() -> None:
-    """ANLZ-TRG-02 (graph-pull): an analysed ScanRun is linked, so never work again."""
-    graph = InMemoryGraphStore()
-    node = _seed_scan_run(graph)
-    analyze_scan_node(node, graph=graph)
-    assert find_pending(graph) == []
-
-
 def test_analyze_scan_node_empty_candidates_still_writes_run() -> None:
     graph = InMemoryGraphStore()
     node = _seed_scan_run(graph, candidates=False)

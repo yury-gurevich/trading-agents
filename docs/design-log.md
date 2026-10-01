@@ -10,6 +10,70 @@ and is marked CLOSED here.
 
 ---
 
+## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250)
+
+**Question.** E17.5 owes a verdict on the price-only pipeline (DL-232): edge, no edge, or edge in one
+pillar. What exactly is scored, by what rule, and what must the harness stop doing first?
+
+**Measured (2026-10-01).**
+
+- **The one ten-year replay decides on history the fleet never has.** The cache's first bar is
+  2016-01-04 and the replay starts there, so **113 of its 552 buys** were decided on fewer than 200
+  bars: 103 in 2016, 10 on lines that had just joined the index, 57 on fewer than 50, the least on 11.
+  The analyst's own floor is `min_history_bars` = 2 (bounded at 60); `required_history_bars` is 200,
+  and a fleet run's names arrive with 203 bars.
+- **187 of 721 lines** have their first bar after 2016: the cache holds a line's bars from the day it
+  joined, not before.
+- Stocks and SPY both carry `adjustment=all`, so both sides are total return.
+- The drop-one ablation is one analyst setting: `relative_strength_weight` 0.0 or 1.0 (live 0.20).
+- A series rebuilt from resampled session pairs and passed through `calculate_performance` reproduces
+  the original to 3 × 10⁻¹⁴; one call over ten years costs 3.2 ms, so 10,000 resamples of five arms is
+  under three minutes without numpy, which the gate's environment does not have.
+
+**Decision.**
+
+1. **A history rule in the harness, off by default.** With it on, a line that is not held is offered
+   to the pipeline only when its visible window holds `required_history_bars(settings.analyst)` bars.
+   Held lines stay visible. The member-sessions removed are counted.
+2. **The scored window is 2017-01-03 → the cache's last session** (2,446 sessions). 2016 is history
+   only, so every line present since the cache began has 252 bars on the first scored day.
+3. **One statistic:** annualised excess over exposure-matched SPY, computed from
+   `calculate_performance`'s outputs.
+4. **One interval:** a stationary block bootstrap over session pairs (mean block 20, 10,000
+   resamples, seed 0), the same draws for every arm, each resampled series scored by
+   `calculate_performance`.
+5. **Calendar years are evaluation blocks.** Nothing is fitted, so there is no training window and
+   nothing to purge. The plan's phrase "purged, non-overlapping test windows" was written for a fitted
+   model; EXP-015 is the one that fits.
+6. **Five arms:** the fleet's settings at 5, 10 and 25 bps, and the two ablations at 25 bps.
+7. **The verdict is the plan's rule** (lower bound above 0 at 25 bps). An ablation counts only if it
+   also beats the full pipeline on the same resampled days.
+8. **The run waits for E17.4's PASS.** The tooling does not.
+9. **The split.** A cloud session builds the rule, the arms command and the scorer against synthetic
+   series ([S250](sprints/sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict.md)). The planner runs
+   [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md) on the licensed cache and writes the result.
+
+**Ruled out.**
+
+- *Fetch each late line's earlier bars.* The right repair, and the only one that keeps a joiner in the
+  universe from its first day. It is a cache rebuild over the network in a file at 199 lines. Holding
+  the line back and counting it gives a valid verdict now; revisit if the count is large.
+- *Raise `ANALYST_MIN_HISTORY_BARS`.* Bounded at 60, and a setting the fleet does not run.
+- *Start the replay on 2016-01-04 with the rule on.* Ten months of cash inside the scored window.
+- *Chain the daily ratios inside the bootstrap.* A second definition of return, the thing the plan's
+  one-metric rule forbids.
+- *An i.i.d. bootstrap.* Daily excess returns of a book that carries positions are not independent.
+- *A fresh replay per year.* Each starts in cash and spends weeks deploying; that is another strategy.
+- *A t-test on the ten yearly numbers.* Ten observations, the last one partial.
+- *Ablation arms at 10 bps too.* The bar is at 25; two more 84-minute runs would decide nothing.
+- *Score the existing smoke replay.* It predates five merged fixes and contains the short-history buys.
+- *Hold out the last two years.* No setting is chosen inside this experiment, so a holdout has nothing
+  to protect. The honest limit is stated instead: the pack's settings were chosen with this decade in
+  view, which biases toward finding an edge.
+
+**Not claimed.** Anything about the full pipeline (fundamentals, sentiment, the deliberator), or about
+the fleet's 99-name book at 22 % invested.
+
 ## DL-256 - a run's ingest reads its as-of once, as an exact ISO date no later than today, and one helper builds the window from it - status: DECIDED (builder, 2026-10-01; S249)
 
 **Why.** DL-255 (below) measured the defect and set the direction: the provider reads the

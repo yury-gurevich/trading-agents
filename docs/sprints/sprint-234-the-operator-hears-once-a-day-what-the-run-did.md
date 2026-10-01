@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.1**
 **Branch:** `sprint-234-the-operator-hears-once-a-day-what-the-run-did`
-**Status:** MERGED `76e226d5` · tag `v0.114.00` · deployed `s234` 2026-09-26 · first real brief owed
+**Status:** MERGED `76e226d5` · tag `v0.114.00` · deployed `s234` 2026-09-26 · first real brief sent on `sched-2026-09-28`, one a run since (checked 2026-10-01)
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-230](../design-log.md) (operator, 2026-09-26: the brief may carry P&L amounts) ·

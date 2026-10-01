@@ -40,8 +40,9 @@ Seen = list[tuple[date, tuple[str, ...], frozenset[str]]]
 WINDOW_SESSIONS = 203
 
 
-# NYSE's full-day closures of 2019. The provider's calendar lists 2024-2027 only and
-# counts every weekday before 2024 as a session (`market_calendar.py`).
+# NYSE's full-day closures of 2019. Since S250 return 1 the provider's calendar lists
+# them too (`market_calendar.py`, 2016-2027), so passing them is now a no-op kept for
+# the cache's own record of which weekdays it skips.
 NYSE_CLOSURES_2019 = frozenset(
     date(2019, month, day)
     for month, day in (
@@ -59,7 +60,7 @@ NYSE_CLOSURES_2019 = frozenset(
 
 
 def sessions_2019(closures: frozenset[date] = frozenset()) -> tuple[date, ...]:
-    """Every 2019 weekday (261: the calendar lists no 2019 closure), less `closures`."""
+    """Every 2019 session by the provider's calendar (252), less `closures`."""
     day, out = date(2019, 1, 1), []
     while day.year == 2019:
         if is_trading_session(day) and day not in closures:

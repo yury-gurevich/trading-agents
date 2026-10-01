@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -12,10 +12,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Identity & purpose (`IDN`)
 
-- **FORE-IDN-01** — The forecaster's single job is advisory ML signal production: run the
-  sentiment model (FinBERT-class) and the return model (LightGBM) on their respective inputs and
-  return `ShadowPrediction` objects whose `shadow=True` flag is always set. It produces evidence;
-  it never decides.
+- **FORE-IDN-01** — The forecaster's single job is advisory ML signal production over **four
+  legs**: the sentiment model (`forecast`, FinBERT-class), the return model (`forecast_return`,
+  LightGBM), the approved-factor shadow (`forecast_factor`), and the barrier model
+  (`forecast_barrier`, EXP-018's GARCH barrier claim, `FORE-OUT-07`). Each leg returns a
+  `ShadowPrediction` whose `shadow=True` flag is always set. It produces evidence; it never decides.
+  *(DRIFT-081; was: the sentiment and return models only.)*
 - **FORE-IDN-02** — The forecaster exclusively writes these graph labels (single-writer rule):
   `ShadowPrediction`, `Model`, `ForecasterRun`, `BarrierForecast`, `BarrierSettlement`,
   `BarrierSettlementPass`.
@@ -142,8 +144,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `ShadowPrediction` node (not idempotent at the graph level).
 - **FORE-IDM-02** — Return model output is deterministic given the same OHLCV bars. Price
   randomness is bounded by the provider fetch, stamped in the node's `fresh_as_of`.
-- **FORE-IDM-03** — Scorecard methods are read-only over `ShadowPrediction` nodes; calling twice
-  returns the same metrics (same graph state).
+- **FORE-IDM-03** — The three shadow scorecards (`scorecard`, `sentiment_scorecard`,
+  `return_scorecard`) are read-only over `ShadowPrediction` nodes; calling one twice returns the same
+  metrics (same graph state). `barrier_scorecard` reads the barrier ledger and is governed by
+  `FORE-IDM-05`. *(DRIFT-083; was: every scorecard method, over `ShadowPrediction` nodes.)*
 - **FORE-IDM-04** — A barrier claim is deterministic given the same bars and barriers: the
   simulation's seed is a stable hash of `(ticker, as_of)` (the first four bytes of sha-256 over
   `ticker:as_of`), never a per-process salted hash. The claim is keyed by model, ticker and last bar
@@ -229,8 +233,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Observability & audit (`OBS`)
 
-- **FORE-OBS-01** — A `ShadowPrediction` node is written per prediction; model lineage
-  (`Model` node) is reconstructable from the graph.
+- **FORE-OBS-01** — Each prediction is recorded as **one node**. A `forecast`, `forecast_return`
+  or `forecast_factor` reading is a `ShadowPrediction` node, with its model's lineage in a `Model`
+  node. A barrier claim is its `BarrierForecast` node, which carries its own `model_id` and
+  `model_version` (`FORE-OUT-07`) and writes no `ShadowPrediction` node. *(DRIFT-081; was: a
+  `ShadowPrediction` node per prediction.)*
 - **FORE-OBS-02** — Degraded paths (neutral reading, scoring failure) emit faults to the sink;
   never buried.
 - **FORE-OBS-03** — Scorecard metrics are deterministic given the graph state at call time;
@@ -312,9 +319,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | `IDN-02` CORRECTED in v1.7 (it lists `ForecasterRun`); `IDN-01` and `OBS-01` still OPEN: planner |
+| DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | CORRECTED: `IDN-02` in v1.7; `IDN-01` (four legs) and `OBS-01` (one node per prediction, by leg) in v1.9 |
 | DRIFT-089 | `FORE-FAIL-04`: every refusal *"records a fault"* | Every refusal was recorded at `error`, which `kernel/fault_incidents.py` counts as an open incident, so a designed "no claim" (TXN/COP, the provider's guard, `sched-2026-09-28`) read "Needs you: 2 open incidents" | CORRECTED in v1.8: a designed refusal is a `warning`, a missing or broken input an `error` |
-| DRIFT-083 | `FORE-IDM-03`: *"Scorecard methods are read-only over `ShadowPrediction` nodes"* | From v1.7 `barrier_scorecard` reads `BarrierForecast` and `BarrierSettlement` nodes, not `ShadowPrediction` ones; `FORE-IDM-05` governs it | OPEN: planner — narrow `IDM-03`'s subject to the three shadow scorecards, or widen it to name both ledgers |
+| DRIFT-083 | `FORE-IDM-03`: *"Scorecard methods are read-only over `ShadowPrediction` nodes"* | From v1.7 `barrier_scorecard` reads `BarrierForecast` and `BarrierSettlement` nodes, not `ShadowPrediction` ones; `FORE-IDM-05` governs it | CORRECTED in v1.9: `IDM-03` covers the three shadow scorecards; `IDM-05` keeps the barrier one |
 
 ## Changelog
 
@@ -384,3 +391,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   designed because the provider records the failed fetch's own `error`; the forecaster's echo counted
   one outage twice. The fault's `error_type` (`BarrierClaimRefusedError`) does not change. No clause
   added; 25 / 52 unchanged. `DRIFT-089` corrected.
+- v1.9 — S251 / DL-259, DL-260 (2026-10-01). `FORE-IDN-01` names the four legs the forecaster runs
+  (sentiment, return, approved factor, barrier). `FORE-OBS-01` says each prediction is one recorded
+  node: a `ShadowPrediction` for the three shadow legs, a `BarrierForecast` for a barrier claim
+  (DRIFT-081, now fully corrected). `FORE-IDM-03` covers the three shadow scorecards, and
+  `FORE-IDM-05` keeps the barrier one (DRIFT-083). All three stay ⬜: no test proves the return leg's
+  node, and `IDN-01` states a whole purpose. The partial proofs are named in their rows. No behaviour
+  change; 25 / 52 unchanged.

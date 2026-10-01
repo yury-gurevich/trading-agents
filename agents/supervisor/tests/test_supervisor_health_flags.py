@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def test_system_status_reports_empty_fault_flag_and_snapshot_states() -> None:
-    """SUP-IN-02 / SUP-OUT-02 / SUP-IDM-01: status derives health + incidents."""
+    """SUP-IN-02 / SUP-OUT-02 / SUP-IDM-01 / SUP-OBS-02: status derives health."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     empty = _status(bus)
@@ -51,6 +51,7 @@ def test_system_status_reports_empty_fault_flag_and_snapshot_states() -> None:
 
 
 def test_system_status_ignores_resolved_faults_and_warn_flags() -> None:
+    """SUP-OBS-02: resolved Faults, warn and resolved critical Flags never alarm."""
     graph = InMemoryGraphStore()
     graph.merge_node("Fault", "fault:resolved", {"status": "resolved"})
     graph.merge_node("Flag", "flag:warn", {"status": "pending", "severity": "warn"})

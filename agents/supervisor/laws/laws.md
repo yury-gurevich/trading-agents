@@ -1,6 +1,6 @@
 # `Supervisor` — Laws
 
-**Prefix:** `SUP` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `SUP` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Route messages between agents, enforce the capability matrix and hard-NO safety surface,
 > flag anomalies for human review, and produce the master health/decision report.
@@ -16,7 +16,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   raise flags, and report system health. It governs flow and safety; it never decides what to
   trade.
 - **SUP-IDN-02** — The supervisor exclusively writes these graph labels (single-writer rule):
-  `Message`, `Agent`, `Flag`, `Fault`, `FlagResolution`.
+  `Message`, `Agent`, `Flag`, `Fault`, `FlagResolution`, with **one declared exception**. The
+  broker-position divergence family (`Flag`s whose `subject_ref` begins
+  `broker-position-divergence:`, and the `FlagResolution`s that close them) is also written by the
+  broker boundary's run-start reconciliation. That role declares the two labels in its own contract,
+  and no other component shares either label. Every other `Flag` reaches the graph through
+  `flag_for_human`. *(DRIFT-094.)*
 
 ## Inputs (`IN`)
 
@@ -133,8 +138,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **SUP-OBS-01** — Every `dispatch_intent` call writes a node; the routing decision (accepted /
   refused + reason) is reconstructable from the graph.
-- **SUP-OBS-02** — `Flag` nodes are the alert queue for the human-review surface; `open_incidents`
-  and `pending_human_flags` in `MasterReport` are derived from them.
+- **SUP-OBS-02** — `Flag` nodes are the alert queue for the human-review surface. In
+  `MasterReport`, `pending_human_flags` counts the unresolved `critical` Flags (a Flag is resolved by
+  a `FlagResolution` with its `subject_ref` and severity; a `warn` Flag is not counted).
+  `open_incidents` counts **live `Fault` incidents** (the kernel's fault-incident predicate, DL-208)
+  and never a Flag. *(DRIFT-076; was: both derived from Flags.)*
 - **SUP-OBS-03** — `Fault` nodes from `report_fault` are the canonical fault log; queryable via
   the CLI `incidents` command.
 
@@ -180,3 +188,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   and `FlagRequest`. No contract shape changes.
 - v1.2 — DL-225: `SUP-OUT-02` states what `last_successful_run` names. It had ordered Snapshots by
   a `created_at` the reporter never writes, so the key sort named a three-week-old verify run.
+- v1.3 — S251 / DL-259, DL-260 (2026-10-01). `SUP-IDN-02` declares the one exception to its
+  single-writer rule: the broker-position divergence family of `Flag` and `FlagResolution`, written
+  by run-start reconciliation, which declares both labels (DRIFT-094; routing those writes through
+  `flag_for_human` was ruled out, DL-259). It stays 🟩, now also on the ownership and boundary-map
+  tests. `SUP-OBS-02` names the two sources it really has: `open_incidents` from live `Fault`
+  incidents, `pending_human_flags` from unresolved critical Flags (DRIFT-076). ⬜ → 🟩. No behaviour
+  change; 22 / 48 → 23 / 48.

@@ -42,6 +42,7 @@ def _seed_market_node(
 
 
 def test_find_pending_returns_unscanned_market_data() -> None:
+    """SCAN-TRG-02 (graph-pull): a MarketData with no SCANNED_BY edge is a request."""
     graph = InMemoryGraphStore()
     _seed_market_node(graph)
     assert len(find_pending(graph)) == 1
@@ -60,6 +61,7 @@ def test_scan_market_node_writes_scan_run() -> None:
 
 
 def test_scan_market_node_persists_candidate_set_payload() -> None:
+    """SCAN-TRG-02 (graph-pull): the poll writes a ScanRun carrying its CandidateSet."""
     graph = InMemoryGraphStore()
     node = _seed_market_node(graph)
     scan_market_node(node, graph=graph, settings=ScannerSettings())
@@ -69,6 +71,7 @@ def test_scan_market_node_persists_candidate_set_payload() -> None:
 
 
 def test_scan_market_node_marks_node_processed() -> None:
+    """SCAN-TRG-02 (graph-pull): a scanned MarketData is linked, so never work again."""
     graph = InMemoryGraphStore()
     node = _seed_market_node(graph)
     scan_market_node(node, graph=graph, settings=ScannerSettings())

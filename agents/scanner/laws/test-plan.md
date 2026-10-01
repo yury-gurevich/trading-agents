@@ -16,7 +16,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | SCAN-IN-02 | run.trigger event derives ScanRequest and invokes run_scan. | pub/sub | `test_scanner_pubsub.py::test_run_trigger_publishes_candidates_ready` | 🟩 |
 | SCAN-IN-03 | Empty universe → empty CandidateSet with explanation, no crash. | boundary | _tbd_ | ⬜ |
 | SCAN-TRG-01 | RPC run_scan returns a CandidateSet to the caller. | happy | `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` | 🟩 |
-| SCAN-TRG-02 | run.trigger → run_scan → scan.candidates.ready emitted with claim-check ref. | pub/sub | `test_scanner_pubsub.py::test_run_trigger_publishes_candidates_ready` | 🟩 |
+| SCAN-TRG-02 | run.trigger → run_scan → scan.candidates.ready emitted with claim-check ref; graph-pull: a MarketData with no SCANNED_BY edge is scanned from the graph into a ScanRun carrying its CandidateSet and linked so it is scanned once; pending work found by key and edge, props fetched for pending MarketData only. | pub/sub + graph-pull + payload bound | `test_scanner_pubsub.py::test_run_trigger_publishes_candidates_ready`; `test_scanner_poll.py::test_find_pending_returns_unscanned_market_data`; `test_scanner_poll.py::test_scan_market_node_persists_candidate_set_payload`; `test_scanner_poll.py::test_scan_market_node_marks_node_processed`; `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work` | 🟩 |
 | SCAN-TRG-03 | No trigger → zero provider calls, zero graph writes. | negative | _tbd_ | ⬜ |
 
 ## Outputs
@@ -71,7 +71,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| SCAN-TYP-01 | Scanner payloads carry the required CandidateSet, Candidate, FilterTrace, FilterVerdict, and CONTRACT.version fields. | schema | `tests/test_contract_required_fields.py::test_scanner_payload_fields_required_by_law`; `test_scanner_pubsub.py::test_scan_result_node_candidates_are_deserializable` | 🟩 |
+| SCAN-TYP-01 | Scanner payloads carry the required CandidateSet, Candidate, FilterTrace, FilterVerdict fields, and CONTRACT.version names the current schema (no promise that it moves with the shape). | schema | `tests/test_contract_required_fields.py::test_scanner_payload_fields_required_by_law`; `test_scanner_pubsub.py::test_scan_result_node_candidates_are_deserializable` | 🟩 |
 | SCAN-TYP-02 | Candidate.score is a dimensionless float; Candidate.rank is a positive int; FilterTrace counts are exact non-negative integers summing to universe_size. | schema | Demoted S156: `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` asserts rank and filter counts, but not Candidate.score's dimensionless float contract. | ⬜ |
 
 ## Security

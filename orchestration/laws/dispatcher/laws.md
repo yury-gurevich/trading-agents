@@ -1,8 +1,9 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
-> Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture.
+> Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
+> and brief the operator once on each run it placed.
 
 Each clause below has a stable ID (`DSP-CAT-NN`). IDs are append-only (conventions §2). A clause is
 green only when a functional test cites its ID (conventions §3). Tests + status live in
@@ -19,7 +20,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   owns or rewrites them.
 - **DSP-IDN-03** — `orchestration.dispatcher.Dispatcher` is outside this book: it is the older
   event-driven wrapper that publishes `run.trigger` once invoked and records the final snapshot. This
-  book governs `scheduled_dispatch*.py`, readiness gating, hold answers, and notices.
+  book governs `scheduled_dispatch*.py`, readiness gating, hold answers, notices, and the daily brief
+  (`orchestration/daily_brief*.py`, `DSP-IDN-04`). *(DRIFT-077.)*
 - **DSP-IDN-04** — The scheduled dispatcher sends one daily brief per scheduled run it placed
   (`orchestration/daily_brief*.py`): a plain-text report to the operator of what the run did. It
   reports and never decides: no brief changes a placement, a hold, a notice, or any fact another
@@ -201,3 +203,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   coverage gate reads every clause-shaped ID in it as this book's own. `DSP-IDN-03`'s scope sentence
   and the purpose line predate the brief (DRIFT-077). `DSP-SEC-01` is now proven across every port
   operation.
+- v1.2 — S251 (DL-259, DL-260; DRIFT-077): the purpose line and `DSP-IDN-03`'s scope sentence name the
+  daily brief, which `DSP-IDN-04` added in v1.1 without touching either. `DSP-IDN-03` stays ⬜. No
+  behaviour change; 32 / 36 unchanged.

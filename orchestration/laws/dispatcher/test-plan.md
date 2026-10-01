@@ -1,12 +1,12 @@
 # `Dispatcher` — Law Test-Plan
 
-**Prefix:** `DSP` · **status:** LOCKED v1.1 · **aligned with:** laws.md LOCKED v1.1
+**Prefix:** `DSP` · **status:** LOCKED v1.2 · **aligned with:** laws.md LOCKED v1.2
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
 | DSP-IDN-01 | The scheduled dispatcher decides one scheduled session outcome: place, skip, hold, or degraded placement; it does not sequence downstream trading stages. | `orchestration/tests/test_scheduled_dispatch.py::test_trading_day_places_day_keyed_run_request`; `orchestration/tests/test_scheduled_dispatch.py::test_weekend_and_holiday_skip_with_stated_reason` | 🟩 |
 | DSP-IDN-02 | The scheduled dispatcher owns `RunHold` and scheduled `RunRequest` placement, reads `FleetPreflight`, and never owns or rewrites preflight evidence. | `orchestration/tests/test_scheduled_dispatch_readiness.py::test_failing_fleet_holds_run_and_records_both_failures`; `orchestration/tests/test_scheduled_dispatch_readiness.py::test_readiness_reader_never_writes_master_owned_preflight` | 🟩 |
-| DSP-IDN-03 | `orchestration.dispatcher.Dispatcher` is out of scope; this book governs scheduled placement, readiness, hold answers, and notices. | _tbd_ | ⬜ |
+| DSP-IDN-03 | `orchestration.dispatcher.Dispatcher` is out of scope; this book governs scheduled placement, readiness, hold answers, notices, and the daily brief (`daily_brief*.py`). | _tbd_ | ⬜ |
 | DSP-IDN-04 | The dispatcher sends one daily brief per scheduled run it placed (`daily_brief*.py`); it reports and never decides: no brief changes a placement, hold, notice, or another component's fact. | `orchestration/tests/test_daily_brief_dispatch.py::test_a1_a_finished_run_gets_its_brief`; `orchestration/tests/test_daily_brief_boundaries.py::test_a4_the_brief_survives_the_windows_early_return`; `orchestration/tests/test_daily_brief_boundaries.py::test_a5_no_brief_for_a_skipped_or_a_never_placed_run` | 🟩 |
 | DSP-IN-01 | `as_of` must be in the known NYSE calendar; beyond-window raises and non-session days skip before side effects. | `orchestration/tests/test_scheduled_dispatch.py::test_calendar_window_exceeded_raises_explicit_error`; `orchestration/tests/test_scheduled_dispatch.py::test_weekend_and_holiday_skip_with_stated_reason` | 🟩 |
 | DSP-IN-02 | Normal and override placement require a non-empty configured universe. | `orchestration/tests/test_scheduled_dispatch.py::test_empty_configured_universe_is_an_error`; `orchestration/tests/test_scheduled_dispatch_human_edges.py::test_place_override_rejects_empty_universe` | 🟩 |

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from scripts.replay_counters import replay_day_counts, zero_absent_reasons
 from scripts.replay_day import ReplayDayInputs
+from scripts.replay_history import offer_lines, visible_window
 from scripts.replay_ledger import (
     next_session,
     queue_orders,
@@ -33,12 +34,10 @@ from scripts.replay_series import (
     held,
     held_stops,
     members_on,
-    window_bars,
 )
 from scripts.replay_session_helpers import position_values, progress_line
 
 from agents.execution.order_tolerance import OrderToleranceConfig
-from orchestration.history_window import declared_lookback_days
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -75,6 +74,7 @@ def run_replay_sessions(
     absent: dict[str, Any],
     day_runner: Callable[[ReplayDayInputs, ReplaySettings], ReplayDayResult],
     progress_every: int,
+    require_history: bool = False,
 ) -> ReplayLoopResult:
     """Run the replay sessions and return byte-stable output rows."""
     pending: list[PendingOrder] = []
@@ -111,11 +111,15 @@ def run_replay_sessions(
         absent["data_end_exits"] += exits.data_end_exits
         absent["membership_end_exits"] += exits.membership_end_exits
         members = fixed_lines or members_on(context.universe, session)
-        visible_bars = _visible_bars(settings, line_bars, members, session)
+        visible_bars = visible_window(settings, line_bars, members, session)
         if fixed_lines is not None:
             members = tuple(
                 line for line in members if has_line_bar(visible_bars, line)
             )
+        if require_history:
+            offered = offer_lines(settings, members, visible_bars, positions)
+            absent["member_sessions_below_required_history"] += offered.removed
+            members, visible_bars = offered.members, offered.bars
         vix = context.vix.get(session)
         absent["sessions_without_vix"] += int(vix is None)
         absent["member_sessions_without_sector"] += sum(
@@ -174,17 +178,3 @@ def run_replay_sessions(
     return ReplayLoopResult(
         absent, tuple(equity), tuple(fills), zero_absent_reasons(session_rows)
     )
-
-
-def _visible_bars(
-    settings: ReplaySettings,
-    line_bars: dict[str, tuple[BarRow, ...]],
-    members: tuple[str, ...],
-    session: date,
-) -> tuple[BarRow, ...]:
-    lookback_days = declared_lookback_days(
-        settings.analyst,
-        as_of=session,
-        staleness_buffer_sessions=settings.provider.max_staleness_days,
-    )
-    return window_bars(line_bars, members, session, lookback_days)

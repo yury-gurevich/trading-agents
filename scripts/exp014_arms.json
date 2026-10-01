@@ -1,0 +1,36 @@
+{
+  "arms": [
+    {
+      "name": "base-05",
+      "overrides": [],
+      "slippage_bps": 5
+    },
+    {
+      "name": "base-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "name": "base-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "name": "technical-only-25",
+      "overrides": [
+        "ANALYST_RELATIVE_STRENGTH_WEIGHT=0.0"
+      ],
+      "slippage_bps": 25
+    },
+    {
+      "name": "relative-strength-only-25",
+      "overrides": [
+        "ANALYST_RELATIVE_STRENGTH_WEIGHT=1.0"
+      ],
+      "slippage_bps": 25
+    }
+  ],
+  "experiment": "EXP-014",
+  "require_history": true,
+  "start": "2017-01-03"
+}

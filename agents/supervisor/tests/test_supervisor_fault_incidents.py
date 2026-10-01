@@ -14,7 +14,7 @@ from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 
 
 def test_system_status_scopes_fault_incidents_to_latest_run_day() -> None:
-    """SUP-OUT-02 / SUP-STA-02 / SUP-IDM-01: old Faults do not pin health."""
+    """SUP-OUT-02 / SUP-STA-02 / SUP-IDM-01 / SUP-OBS-02: only live Faults count."""
     graph = InMemoryGraphStore()
     graph.merge_node(
         "BrokerPositionSnapshot",

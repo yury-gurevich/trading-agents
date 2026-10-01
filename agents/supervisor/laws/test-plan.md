@@ -3,7 +3,7 @@
 | Clause | Status | Test |
 | --- | --- | --- |
 | SUP-IDN-01 | ⬜ | — |
-| SUP-IDN-02 | 🟩 | `test_approve_intent_resolves_matching_flag` |
+| SUP-IDN-02 | 🟩 | `test_approve_intent_resolves_matching_flag`, `agents/execution/tests/test_divergence_flag_ownership.py::test_every_label_the_divergence_writer_writes_is_declared`, `tests/test_boundary_map.py::test_each_graph_label_has_one_writer` |
 | SUP-IN-01 | 🟩 | `test_capability_matrix_routes_available_and_refuses_unavailable` |
 | SUP-IN-02 | 🟩 | `test_system_status_reports_empty_fault_flag_and_snapshot_states` |
 | SUP-IN-03 | 🟩 | `test_flag_for_human_writes_idempotent_pending_flag` |
@@ -46,10 +46,10 @@
 | SUP-DEP-01 | ⬜ | — |
 | SUP-DEP-02 | ⬜ | — |
 | SUP-OBS-01 | ⬜ | — |
-| SUP-OBS-02 | ⬜ | — |
+| SUP-OBS-02 | 🟩 | `test_supervisor_health_sources.py::test_open_incidents_count_faults_and_pending_flags_count_critical_flags`, `test_system_status_reports_empty_fault_flag_and_snapshot_states`, `test_system_status_ignores_resolved_faults_and_warn_flags`, `test_system_status_scopes_fault_incidents_to_latest_run_day` |
 | SUP-OBS-03 | 🟩 | `test_resolve_fault_appends_resolution_without_mutating_fault` |
 | SUP-PERF-01 | ⬜ | — |
 | SUP-PERF-02 | ⬜ | — |
 | SUP-CAP | ⬜ | — |
 
-**Green: 22 / 48**
+**Green: 23 / 48**

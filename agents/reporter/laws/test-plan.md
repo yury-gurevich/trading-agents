@@ -9,7 +9,7 @@
 | RPT-IN-03 | 🟩 | `test_decisions_ready_triggers_snapshot_ready` |
 | RPT-IN-04 | ⬜ | — |
 | RPT-TRG-01 | 🟩 | `test_report_and_narrative_return_payloads_and_write_graph_nodes` |
-| RPT-TRG-02 | 🟩 | `test_decisions_ready_triggers_snapshot_ready` |
+| RPT-TRG-02 | 🟩 | `test_decisions_ready_triggers_snapshot_ready`, `test_reporter_poll.py::test_find_pending_returns_unreported_monitor_run`, `test_reporter_poll.py::test_report_monitor_node_writes_snapshot_and_links`, `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work` |
 | RPT-TRG-03 | ⬜ | — |
 | RPT-TRG-04 | ⬜ | — |
 | RPT-OUT-01 | 🟩 | `test_report_and_narrative_return_payloads_and_write_graph_nodes`, `test_snapshot_names_too_little_data_without_raising` |
@@ -18,7 +18,7 @@
 | RPT-OUT-04 | 🟩 | `test_report_snapshot_result_node_in_graph`, `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-OUT-05 | 🟩 | `test_decisions_ready_triggers_snapshot_ready` |
 | RPT-OUT-06 | ⬜ | Demoted S156: `test_reporter_fault_boundary_returns_degraded_payloads` and the renamed degraded-snapshot test cover partial degraded payload behavior, not the full graph-fault/minimal-provenance/empty-metrics/fault-recorded clause. |
-| RPT-OUT-07 | 🟩 | `test_performance_worked_example`, `test_performance_inputs_exclude_pre_inception_margin_book`, `test_performance_skips_missing_benchmark_pair_then_continues`, `test_performance_rolling_metrics_use_only_last_configured_pairs`, `test_the_day_point_is_the_latest_fresh_snapshot_of_the_date`, `test_a_two_run_day_uses_the_post_close_sync_not_the_intraday_one` |
+| RPT-OUT-07 | 🟩 | `test_performance_worked_example`, `test_performance_inputs_exclude_pre_inception_margin_book`, `test_performance_skips_missing_benchmark_pair_then_continues`, `test_performance_rolling_metrics_use_only_last_configured_pairs`, `test_the_day_point_is_the_latest_fresh_snapshot_of_the_date`, `test_a_two_run_day_uses_the_post_close_sync_not_the_intraday_one`, `test_benchmark_lineage.py::test_a_run_benchmarks_on_its_own_market_data_by_lineage`, `test_benchmark_lineage.py::test_no_benchmark_on_the_runs_own_node_is_the_no_benchmark_path` |
 | RPT-NEV-01 | 🟩 | `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-NEV-02 | 🟩 | `test_reporter_does_not_import_other_agent_code` |
 | RPT-NEV-03 | 🟩 | `test_snapshot_reports_profit_factor_and_expectancy` |

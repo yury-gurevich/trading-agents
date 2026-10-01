@@ -1,6 +1,6 @@
 # `Reporter` — Laws
 
-**Prefix:** `RPT` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `RPT` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Stitch each completed run and each trade into durable, human-readable metrics and
 > narrative — the truth surface the dashboard and operator read.
@@ -31,7 +31,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Triggers (`TRG`)
 
 - **RPT-TRG-01** — `report` triggered by RPC request (dispatcher or any authorized caller).
-- **RPT-TRG-02** — `monitor.decisions.ready` event triggers `report` through the pub/sub path.
+- **RPT-TRG-02** — Event-driven, never a timer. **Pub/sub:** a `monitor.decisions.ready` event
+  triggers `report` through the pub/sub path. **Graph-pull** (DL-08/08b, the path the fleet runs): a
+  `MonitorRun` with no `REPORTED_BY` edge that is not a position-sync marker is a request. The poll
+  builds the snapshot of its source PM run from the graph alone, writes the `Snapshot`, and links
+  `MonitorRun -REPORTED_BY-> Snapshot`, so each `MonitorRun` is reported once. The poll finds its
+  pending work **by key and edge alone** and **fetches props only for `MonitorRun`s without that
+  edge** (DL-246). A position-sync marker never gains the edge, so each poll fetches every sync
+  marker and drops it. *(DRIFT-086; was: the pub/sub path only.)*
 - **RPT-TRG-03** — `narrative` triggered by RPC request only; no event path.
 - **RPT-TRG-04** — The reporter never self-triggers.
 
@@ -50,9 +57,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   provenance, empty metrics) is returned and the fault is recorded. Never a crash.
 - **RPT-OUT-07** — `report` returns `performance_metrics`: return on the book against the
   benchmark, from `performance_inception` to the run's as-of date. It is computed only from facts
-  other agents wrote: fresh `BrokerPositionSnapshot` equity and holdings, and benchmark bars on
-  `MarketData`. Each UTC date contributes one point: the **latest** fresh snapshot of that date,
-  the one nearest the close its benchmark bar measures.
+  other agents wrote: fresh `BrokerPositionSnapshot` equity and holdings, and the benchmark bars on
+  the run's **own** `MarketData`, reached by its lineage (`PMRun.source_analyst_run_id` →
+  `AnalystRun` ← `ScanRun` → `MarketData`, one node a hop, never a listing). A broken lineage, a
+  `MarketData` dated after the as-of, or one with no benchmark bars is the no-benchmark path
+  (`missing benchmark`). Another run's series is never read. Each UTC date contributes one point: the
+  **latest** fresh snapshot of that date, the one nearest the close its benchmark bar measures.
+  *(DRIFT-087, DL-246.)*
 
 ## Prohibitions (`NEV`)
 
@@ -184,3 +195,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.3 — work-queue 88 (DL-224): `RPT-OUT-07` names the day's point as its latest fresh snapshot, not
   the earliest, which on a two-run day was an intraday sync set against a closing bar; `RPT-IDM-03`
   bounds snapshots by `PMRun.created_at` itself, so the latest-per-date rule stays reproducible.
+- v1.4 — S251 / DL-259, DL-260 (2026-10-01). `RPT-OUT-07` says which `MarketData` the benchmark comes
+  from: the run's own, by lineage. A missing one is `missing benchmark`, never another run's series
+  (DRIFT-087). `RPT-TRG-02` names the graph-pull trigger and its key-and-edge bound, including the
+  sync markers it fetches and drops (DRIFT-086). Both stay 🟩, on S242's lineage tests and the
+  reporter's poll tests. No behaviour change; 25 / 42 unchanged.

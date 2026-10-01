@@ -26,6 +26,7 @@ def _seed_monitor_run(graph: GraphStore, *, with_pm_run: bool = True) -> Node:
 
 
 def test_find_pending_returns_unreported_monitor_run() -> None:
+    """RPT-TRG-02 (graph-pull): a MonitorRun with no REPORTED_BY edge is work."""
     graph = InMemoryGraphStore()
     _seed_monitor_run(graph)
     assert len(find_pending(graph)) == 1
@@ -36,6 +37,7 @@ def test_find_pending_empty_when_no_monitor_run() -> None:
 
 
 def test_report_monitor_node_writes_snapshot_and_links() -> None:
+    """RPT-TRG-02 (graph-pull): its Snapshot is written and linked, so done once."""
     graph = InMemoryGraphStore()
     node = _seed_monitor_run(graph)
     report_monitor_node(node, graph=graph)

@@ -60,6 +60,117 @@ named, because `OPEN` means a decision is owed.
   a book, rows independent so a blocked one does not hold the rest.
 
 **Not claimed.** That the amended books are now complete. This closes the rows that were filed.
+## DL-258 - the history rule filters in its own module and counts only when on; the scorer rebuilds each resample in integer cents and draws one stationary index stream for every arm - status: DECIDED (builder, 2026-10-01; S250)
+
+**Why.** DL-257 (below) fixed what EXP-014 scores and by what rule (its Appendix P is frozen). S250's spec left six
+implementation decisions to the builder. Each is recorded here before the code, with what was
+ruled out.
+
+**D1 - where the history rule lives.** A new `scripts/replay_history.py` holds both the window
+(`visible_window`, moved verbatim out of `replay_session.py`'s `_visible_bars`) and the filter
+(`offer_lines`): it counts each member's bars inside the declared window, keeps a line that is held
+or holds at least `required_history_bars(settings.analyst)` bars, and returns the kept members, their
+bars and the number removed. `replay_session.py` gains one keyword (`require_history`) and one call;
+moving the 13-line helper out pays for it, so the file shrinks. *Ruled out:* the filter inside
+`replay_series.py` (its helpers are settings-free, and the filter needs the analyst's settings and
+the book); inline in `replay_session.py` (190 lines; it crosses 200); filtering in the day runner
+(`replay_day.py` would then be told what "held" means twice, and the session row's `members` count
+would disagree with what the pipeline saw).
+
+**D2 - the counter exists only when the rule is on.** `replay_runner.run` adds
+`member_sessions_below_required_history: 0` to the absent-input set only when `require_history` is
+true. *Ruled out:* always present (0 when off). No existing test asserts the whole dict, so the
+constraint alone would allow it, but F1 requires the rule-off run to write byte-identical files to
+the commit before; a new key in `summary.json` breaks that. The key's presence is therefore itself a
+statement that the rule ran, and `arm.json` records the rule's state explicitly beside it.
+
+**D3 - the bootstrap's draw algorithm and percentiles.** One `random.Random(seed)` drives every
+draw. A resample of `n` session-pair indices: the first index is `rng.randrange(n)`; each next index
+is a fresh `rng.randrange(n)` when `rng.random() < 1 / mean_block`, else the previous index plus 1,
+modulo `n` (wrapping, Politis and Romano's stationary bootstrap). Resamples are drawn one at a time
+and each is applied to **every arm and the control before the next is drawn**, so the index stream
+does not depend on how many arms there are and is never held in memory whole (10,000 x 2,445 Python
+ints would be about a gigabyte). Percentiles by order statistics with integer arithmetic: sort the
+`B` draws ascending, `k = B * 25 // 1000`; the 2.5th percentile is `v[k]` and the 97.5th is
+`v[B - 1 - k]`. At `B` = 10,000 that is `v[250]` and `v[9749]`: exactly 250 draws lie below the lower
+bound and 250 above the upper. *Ruled out:* a fixed block length (the moving-block bootstrap; its
+resamples are not stationary, and Appendix P names the stationary one); interpolated percentiles
+(numpy's default; a float index, and nothing gained at 10,000 draws); drawing all indices up front
+(the memory); one generator per arm (the arms would no longer be compared on the same days, which
+Appendix P forbids, and plant (d) proves C9 catches it).
+
+**D4 - what `arm.json` records and what makes arms refusable.** `arm.json` holds the arm's name,
+slippage and overrides, the start, the first and last session and their count (read back from the
+`equity.csv` the replay wrote), `require_history`, the repo commit (`git rev-parse HEAD`), `dirty`
+(`git status --porcelain --untracked-files=no` non-empty) and a 12-hex SHA-256 prefix of each cache
+file the harness reads (`sp500_sessions`, `_membership`, `_bars`, `_benchmark`, `_vix`, `_sectors`
+`.csv.gz` and `sp500_coverage.json`; a missing optional file is recorded as `absent`). The arms
+command also writes `benchmark.csv` (date, SPY close) for the arm's sessions, so the scorer needs no
+cache and can check every arm scored against the same closes. `arm.json` is written last, so an
+interrupted replay leaves no `arm.json` and is refused as missing. **A dirty worktree refuses to start
+an arm** (an 84-minute run on code no commit names is not evidence), and the scorer refuses a
+`dirty: true` arm anyway. The scorer refuses, naming the arm and the reason, when: an arm directory
+or file is missing; an arm's name, slippage, overrides, start or rule state differ from the manifest;
+arms differ in commit, cache checksums, sessions (dates, not only counts) or benchmark closes;
+`equity.csv` disagrees with `arm.json`'s sessions; an arm has a gap session
+(`performance_gap_sessions > 0`); or the control fails. *Ruled out:* trusting a dirty run with its
+diff recorded (the scorer cannot replay a diff); checksumming the whole cache folder (other files
+there are not inputs); the scorer re-reading the cache for SPY (it would tie the scorer to the
+licensed folder and still not prove the arms used those closes).
+
+**D5 - how a resampled series is rebuilt.** Each arm's pairs are read once as
+`(E_prev, E_cur, L_prev, S_prev, S_cur)`. A resample is rebuilt on consecutive synthetic dates
+(ordinal day 1, 2, ...) starting at **10^14 integer cents**: each step's equity is
+`round(E' x E_cur / E_prev)` and its invested value `round(E' x L_prev / E_prev)`, both in integer
+arithmetic (round half up), and SPY starts at 1.0 and steps by `S_cur / S_prev`. The rebuilt points
+and closes go through `calculate_performance`, which alone yields `P`, `E` and `n`. The control's
+replica is built the same way from `base-25`'s pairs with its equity step replaced by
+`E_prev + L_prev x (S_cur / S_prev - 1)`: SPY earned at `base-25`'s exposure. It passes when `|A|` and
+both interval bounds are at most `1e-6` points (the rebuild's rounding is about 1e-14 a step).
+*Ruled out:* rebuilding from the original equity's scale (10^7 cents rounds to 1e-7 a step and
+drifts); float equity (the reporter types points as integer cents); real calendar dates (a resample
+has no calendar; `calculate_performance` only orders and pairs them).
+
+**D6 - the layout of `verdict.md`.** One page, in this order: the verdict and its reading in the
+title line; `base-25`'s `A` and interval with `n`, resamples, block and seed; the arms table
+(slippage, `A`, interval, portfolio, exposure-matched, SPY, average exposure, max drawdown); the
+paired differences from `base-25`; the control; the yearly `A` table (partial years marked, then the
+count of years with positive excess per arm); the two halves; provenance (commit, sessions, rule,
+cache checksums, the history rule's removed member-sessions). A refusal writes the same two files
+with `NO VERDICT` and the refusals in place of the tables, and the command exits 2. Numbers are
+rounded to 6 decimals in `verdict.json` (sorted keys, `-0.0` normalised) and to 2 in `verdict.md`.
+*Ruled out:* per-year intervals (ten more bootstraps of a partial year answer nothing Appendix P
+asks); a plot (not byte-stable without a pinned renderer, and the gate has none).
+
+**Found while building: the rule withholds every unheld line before 2024 (BLOCKS F1 and F2).**
+`declared_lookback_days` counts sessions with `agents/provider/domain/market_calendar.py`, whose
+holiday table covers **2024-2027 only** and treats every earlier weekday as a session. Before 2024
+the window it returns therefore holds 203 *weekdays*, of which 6-9 are NYSE closures the cache has
+no bar for. *[measured 2026-10-01, the builder's container, with NYSE's 2016-2023 closures written
+out and checked against EXP-014's own counts: 2,698 sessions from 2016-01-04 and 2,446 from
+2017-01-03 both reproduce once 2025-01-09, a closure the provider's table also lacks, is removed]*
+a line with a bar on every session holds **194-198 bars** in its window on **every** session from
+2017-01-03 to 2023-12-29 (1,760 of 1,760) and on 74 sessions of 2024; from 2025 on, 203. So with
+the rule on as specified, no unheld line clears `required_history_bars` (200) before 2024: EXP-014's
+arms would buy nothing for seven years. The same arithmetic means every replay so far, rule off,
+gave the analyst at most 198 bars before 2024, so SMA-200 distance was absent from every pre-2024
+replayed decision, the smoke run's included. The code does what the spec says and is proven on
+synthetic caches whose sessions follow the provider's calendar; the hazard is pinned by
+`tests/test_replay_history_calendar.py` (a 2019 cache that skips 2019's real closures: 197 bars on
+2019-12-31, withheld), which flips when the calendar is fixed. *Not done here, deliberately:* the
+repair is the provider's holiday table (an `agents/` file, out of S250's scope by the spec's own
+stop rule), or a harness window cut from the cache's sessions instead of the calendar (a change to
+what the analyst sees, with the rule off too, so F1's byte-identity fails by design). Both are the
+planner's call; the builder recommends the first, back to 2016 and with 2025-01-09 added, because
+it also gives the rule-off replay the 203 bars the fleet is given.
+
+**Found while deciding (recorded, not acted on).** EXP-014 section 2 states H1 as *"`A > 0` and the
+lower bound … above 0"*; Appendix P states EDGE as the lower bound alone. They differ only if the
+point estimate falls below its own interval's lower bound. The code follows Appendix P, as the spec
+binds it, and `verdict.json` records the point estimate beside the interval so a reader sees that
+case if it ever occurs.
+
+---
 
 ## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250)
 

@@ -45,6 +45,7 @@ def run(
     slippage_bps: int = DEFAULT_SLIPPAGE_BPS,
     universe_file: Path | None = None,
     progress_every: int = DEFAULT_PROGRESS_EVERY,
+    require_history: bool = False,
 ) -> dict[str, Any]:
     """Run a deterministic replay and write artifacts under the cache directory."""
     context = load_replay_cache(cache_dir)
@@ -54,6 +55,9 @@ def run(
     date_bars = bars_by_date(context.universe.bars)
     fixed_lines = read_universe_file(universe_file) if universe_file else None
     known_moves = load_known_moves()
+    absent = initial_absent_inputs()
+    if require_history:  # the key exists only when the rule ran (DL-258 D2)
+        absent["member_sessions_below_required_history"] = 0
     loop = run_replay_sessions(
         context=context,
         settings=settings,
@@ -63,9 +67,10 @@ def run(
         fixed_lines=fixed_lines,
         known_moves=known_moves,
         slippage_bps=slippage_bps,
-        absent=initial_absent_inputs(),
+        absent=absent,
         day_runner=run_replay_day,
         progress_every=progress_every,
+        require_history=require_history,
     )
     summary = {
         "performance": performance_summary(loop.equity, context.spy_closes),

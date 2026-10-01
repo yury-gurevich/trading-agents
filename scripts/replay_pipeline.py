@@ -35,6 +35,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--slippage-bps", type=int, default=DEFAULT_SLIPPAGE_BPS)
     parser.add_argument("--universe-file", type=Path)
     parser.add_argument("--progress-every", type=int, default=DEFAULT_PROGRESS_EVERY)
+    parser.add_argument(
+        "--require-history",
+        action="store_true",
+        help="withhold an unheld line until its window holds the analyst's bars",
+    )
     args = parser.parse_args(argv)
     run(
         cache_dir=args.cache,
@@ -45,6 +50,7 @@ def main(argv: list[str]) -> int:
         slippage_bps=args.slippage_bps,
         universe_file=args.universe_file,
         progress_every=args.progress_every,
+        require_history=args.require_history,
     )
     return 0
 

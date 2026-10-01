@@ -3,7 +3,7 @@
 
 **Phase:** Next leg P17, item E17.5 ([next-leg-plan.md](../next-leg-plan.md)) · work-queue 82
 **Branch:** `sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict`
-**Status:** SPEC
+**Status:** BUILT 2026-10-01 by a Claude cloud session on `claude/hopeful-davinci-oob51b` (cut from `main` `05ca2be`), not merged: C1–C16 green, `make ci` exit 0 (3,828 passed, 100.00 %); 🚨 F1/F2 blocked by a finding (Return notes 1: before 2024 the declared window holds 194–198 sessions, so the rule withholds every unheld line); owed: `uv lock` + MINOR, `make gate-ran`, Windows `make ci`, the repair decision, F1, F2
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-232](../design-log.md) (what the replay covers) · [DL-257](../design-log.md) (the
@@ -428,64 +428,369 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+All eight files were read whole on 2026-10-01, before the first code change: `agents/analyst/laws/laws.md`
+(LOCKED v1.6) + `test-plan.md`, `agents/provider/laws/laws.md` (LOCKED v1.7) + `test-plan.md`,
+`agents/reporter/laws/laws.md` (LOCKED v1.3) + `test-plan.md`, `docs/laws/conventions.md`,
+`docs/laws/drift-register.md`.
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| The history rule (`replay_history.py`, `replay_session.py`, `replay_runner.py`, `replay_pipeline.py`) | analyst laws + test-plan; provider laws + test-plan; conventions | Analyst `PARAM` `lookback_days` (260), `min_history_bars` (2, bounded ≤ 60), `sma_long_period` (200), the spans `required_history_bars` takes its maximum over; `PROV-TRG-05` 🟩 (a run's window ends on its as-of and starts the declared lookback before it) | Yes. `PROV-TRG-05` describes the window the harness already slices (`declared_lookback_days` from the session), so the rule counts bars **inside that window**, never the cache's whole history for the line, and takes its bar from `required_history_bars(settings.analyst)` itself: no literal anywhere in `scripts/` (C4 proves it follows `ANALYST_SMA_LONG_PERIOD`). Reading `scoring.py` against the PARAM rows showed the analyst scores anything with ≥ `min_history_bars` (2), so the 200 is the fleet's *declared supply*, not an analyst floor; the rule is a data-defect repair in the harness, and the tests cite `PROV-TRG-05`, not an analyst clause |
+| The scorer (`replay_verdict*.py`) | reporter laws + test-plan | `RPT-OUT-07` 🟩 (performance from equity, holdings and benchmark bars through the reporter's own calculation), the `PARAM` `performance_rolling_sessions` (20) | Yes. Every return in the scorer goes through one wrapper in `replay_verdict_stats.py` that calls `calculate_performance`, so one monkeypatch (C5) reaches the headline, every year, both halves and every bootstrap draw. The rolling window passed is the reporter's 20 |
+| The arms (`exp014_arms.json`, `replay_arms.py`) | analyst laws (`PARAM`) | `relative_strength_weight` (0.20, `float ≥ 0.0, ≤ 1.0`, tunable) | No. 0.0 and 1.0 are inside its declared bounds, and C14 resolves each override through `build_effective_settings` and reads the effective weight back |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **No.** Every
+file changed is under `scripts/`, `tests/` or `docs/`. No agent, contract, kernel, orchestration or
+surfaces file is edited; scripts import the analyst's `required_history_bars`, the reporter's
+`calculate_performance` and the provider's `is_trading_session` (the S235/S237 precedent) and nothing
+imports scripts. No clause is owed.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none. One looseness, not a contradiction: the
+spec's map cites `RPT-OUT-07` as *"a return is computed only by `calculate_performance`"*. The clause
+says the reporter computes `performance_metrics` *"only from facts other agents wrote"*; it governs the
+reporter's own snapshot and is silent on scripts. The one-metric rule binding this scorer is DL-257's
+and the plan's. The scorer obeys both; nothing in the law had to bend.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** one, filed as **DRIFT-096** (analyst section). No
+analyst clause says what the analyst does with a candidate whose window holds at least
+`min_history_bars` (2) and fewer than `required_history_bars` (200) bars: `scoring.py:64` scores it
+with whatever indicators the bars allow. The fleet never meets the case (its run declares a lookback
+that covers 203 sessions), the replay met it 113 times, and S250's rule exists because of that
+silence. Recorded, not resolved: the analyst book is LOCKED and read-only here.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none. The clauses cited (`PROV-TRG-05`, `RPT-OUT-07`)
+were already 🟩; the new tests add citing tests to them and move no count.
 
 ---
 
 ## Test plan results — fill at handback
 
+All in `tests/`; every row PASS in the final run (`35 passed in 5.27s`) and inside `make ci`.
+
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| C1 | `test_c1_a_line_under_the_required_history_is_not_offered` | `test_replay_history_rule.py` | PASS (red first) | `PROV-TRG-05` |
+| C2 | `test_c2_a_held_line_stays_visible_and_is_not_counted` | `test_replay_history_rule.py` | PASS | `PROV-TRG-05` |
+| C3 | `test_c3_the_rule_off_changes_nothing`, plus every existing replay test, unedited (`git diff --stat -- tests/` is empty) | `test_replay_history_rule.py` | PASS | `RPT-OUT-07` |
+| C4 | `test_c4_the_bar_is_the_analysts_own_number` | `test_replay_history_rule.py` | PASS | `PROV-TRG-05` |
+| C5 | `test_c5_every_return_comes_from_calculate_performance` | `test_replay_verdict_stats.py` | PASS (red first) | `RPT-OUT-07` |
+| C6 | `test_c6_a_planted_edge_is_found_and_a_planted_null_is_not` | `test_replay_verdict_edge.py` | PASS (red first) | `RPT-OUT-07` |
+| C7 | `test_c7_a_rebuilt_series_is_faithful` | `test_replay_verdict_stats.py` | PASS | `RPT-OUT-07` |
+| C8 | `test_c8_the_bootstrap_is_seeded_and_blocked`, `test_c8_the_percentiles_are_order_statistics` | `test_replay_verdict_stats.py` | PASS | none (no clause governs a bootstrap; cites `S250-C8`) |
+| C9 | `test_c9_arms_are_compared_on_the_same_days` | `test_replay_verdict_edge.py` | PASS | none (`S250-C9`) |
+| C10 | `test_c10_the_years_partition_the_window` | `test_replay_verdict_stats.py` | PASS | `RPT-OUT-07` |
+| C11 | `test_c11_the_verdict_rule[...]`, 10 cases | `test_replay_verdict_rule.py` | PASS | none (`S250-C11`) |
+| C12 | `test_c12_arms_that_do_not_belong_together_give_no_verdict[...]` (6 cases), `test_c12_a_gap_session_gives_no_verdict` | `test_replay_verdict_refusals.py` | PASS | `RPT-OUT-07` (the gap case) |
+| C13 | `test_c13_the_control_scores_zero_and_a_failing_control_refuses` | `test_replay_verdict_edge.py` | PASS | `RPT-OUT-07` |
+| C14 | `test_c14_the_manifest_is_appendix_p` | `test_replay_arms.py` | PASS | none (`S250-C14`) |
+| C15 | `test_c15_outputs_stay_out_of_the_repo_and_are_byte_stable` | `test_replay_verdict_refusals.py` | PASS | none (`S250-C15`) |
+| C16 | `test_c16_the_arms_command_records_what_it_ran`, `test_c16_an_unknown_arm_and_a_dirty_worktree_are_refused`, `test_c16_all_runs_every_arm_from_the_command_line` | `test_replay_arms.py` | PASS | none (`S250-C16`) |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_replay_history_calendar.py::test_before_2024_the_declared_window_holds_fewer_sessions_than_the_bar`
+(cites `PROV-TRG-05`). It pins the finding in Return notes: on a 2019 cache that skips 2019's real
+NYSE closures, a line with a bar on every session holds **197** bars in its declared window on
+2019-12-31 and the rule withholds it. It asserts today's behaviour so that it flips, and is
+re-written, the day the provider's calendar is extended (the S240 `..._yet` precedent).
 
 ---
 
 ## Closeout — evidence
 
-*(builder fills every field below; a field left as written here returns the handback)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container's checkout
+`/home/user/trading-agents`, on the session-forced branch **`claude/hopeful-davinci-oob51b`** (not
+`sprint-250-…`: the session fixed the name), cut from `main` `05ca2be`. **No `.env`**, no replay
+cache, no `gh`. Python deps from `uv sync --frozen` (no re-lock; `uv.lock` unchanged).
 
-**Tree the proofs ran in (and `.env` present?):**
-
-**Result:**
+**Result:** BUILT. The history rule, the arms command and the scorer exist and are proven on
+synthetic series: C1–C16 pass, C1/C5/C6 were red first, six DL-70 plants each went red and were
+restored, `make ci` exit 0 (3,828 passed, 8 skipped, 100.00 %). **One finding blocks F1 and F2 as
+specified** (Return notes 1): before 2024 the harness's declared window holds 194–198 sessions, so
+the rule, built exactly as the spec says, withholds every unheld line from 2017-01-03 to
+2023-12-29. EXP-014 must not run until the planner decides the repair.
 
 **Files changed:**
 
-**Design decisions:**
+- `scripts/replay_history.py` (new): `visible_window` (moved verbatim out of `replay_session.py`)
+  and `offer_lines`, the rule.
+- `scripts/replay_session.py`: `require_history` keyword, one call; the moved helper is gone
+  (190 → 180 lines).
+- `scripts/replay_runner.py`: `require_history=False`; the counter key exists only when on.
+- `scripts/replay_pipeline.py`: `--require-history`.
+- `scripts/exp014_arms.json` (new): Appendix P's five arms, start, rule on.
+- `scripts/replay_arms.py`, `scripts/replay_arms_record.py` (new): the arms command and what an arm
+  records (commit, dirty, cache checksums, sessions, SPY closes).
+- `scripts/replay_verdict.py`, `_load.py`, `_score.py`, `_stats.py`, `_windows.py`, `_rule.py`,
+  `_report.py`, `_markdown.py` (new): the scorer.
+- `tests/`: `test_replay_history_rule.py`, `test_replay_history_calendar.py`,
+  `test_replay_verdict_stats.py`, `test_replay_verdict_edge.py`, `test_replay_verdict_rule.py`,
+  `test_replay_verdict_refusals.py`, `test_replay_arms.py`; fixtures `replay_history_fixtures.py`,
+  `replay_verdict_fixtures.py`, `replay_arm_folders.py` (all synthetic).
+- `docs/design-log.md` (DL-258), `docs/laws/drift-register.md` (DRIFT-096), this file, its
+  `docs/sprints/README.md` row.
 
-**Proof — the red run first:**
+**Design decisions:** **DL-258** (DL-258 was free on `main` `05ca2be`; re-check at merge).
+
+1. Where the rule lives: `scripts/replay_history.py`. *Rejected:* in `replay_series.py` (settings-free
+   helpers), inline in `replay_session.py` (crosses 200), in the day runner (two meanings of "held").
+2. The counter exists only when the rule is on. *Rejected:* always present at 0 (breaks F1's
+   byte-identity with the rule off).
+3. One `random.Random(seed)`; first index `randrange(n)`, then a fresh `randrange(n)` with
+   probability `1/mean_block`, else previous + 1 mod `n`; resamples drawn one at a time and applied to
+   every arm and the control before the next. Percentiles: sort, `k = B × 25 // 1000`, interval
+   `v[k]`, `v[B − 1 − k]` (`v[250]`, `v[9749]` at 10,000). *Rejected:* fixed blocks, interpolated
+   percentiles, all indices up front (~1 GB), a generator per arm (Appendix P forbids it).
+4. `arm.json`: name, slippage, overrides, start, first/last session and count, rule state, commit,
+   `dirty`, a 12-hex SHA-256 prefix per cache file read (`absent` when missing), and a `benchmark.csv`
+   of the arm's SPY closes beside it; written last. A dirty worktree refuses to start an arm; the
+   scorer refuses missing files, manifest mismatches, a rule-off or dirty arm, commit / cache /
+   session / SPY differences, `equity.csv` ≠ `arm.json`, a gap session, a failed control.
+   *Rejected:* a dirty run with its diff recorded, checksumming the whole folder, the scorer reading
+   the cache.
+5. Rebuild at 10¹⁴ integer cents on consecutive ordinal dates, integer round-half-up steps; SPY from
+   1.0; scored by `calculate_performance`. The control's replica steps by `E + L × (S'/S − 1)`; it
+   passes within 1e-6 points. *Rejected:* the original scale (rounds at 1e-7), float equity, real
+   dates.
+6. `verdict.md`: verdict and base-25's interval first, then arms, differences, control, years
+   (partial marked, years with positive excess), halves, provenance; a refusal replaces the tables;
+   exit 2. *Rejected:* per-year intervals, a plot.
+
+**Proof — the red run first** (before any implementation; C5 and C6 could not import the scorer):
+
+```text
+$ uv run pytest --no-cov -q tests/test_replay_history_rule.py::test_c1_a_line_under_the_required_history_is_not_offered
+E   TypeError: run() got an unexpected keyword argument 'require_history'
+FAILED tests/test_replay_history_rule.py::test_c1_a_line_under_the_required_history_is_not_offered
+1 failed in 0.64s
+
+$ uv run pytest --no-cov -q tests/test_replay_verdict_stats.py::test_c5_every_return_comes_from_calculate_performance \
+    tests/test_replay_verdict_edge.py::test_c6_a_planted_edge_is_found_and_a_planted_null_is_not
+E   ModuleNotFoundError: No module named 'scripts.replay_verdict_score'
+E   ModuleNotFoundError: No module named 'scripts.replay_verdict_score'
+ERROR tests/test_replay_verdict_stats.py
+ERROR tests/test_replay_verdict_edge.py
+2 errors in 0.85s
+```
 
 **Proof — the green run:**
 
-**Guards planted:**
+```text
+$ uv run pytest --no-cov -v tests/test_replay_history_rule.py tests/test_replay_history_calendar.py \
+    tests/test_replay_verdict_stats.py tests/test_replay_verdict_edge.py tests/test_replay_verdict_rule.py \
+    tests/test_replay_verdict_refusals.py tests/test_replay_arms.py
+... (35 test ids, each PASSED; listed in the table above)
+============================== 35 passed in 5.27s ==============================
+```
 
-**The commands the planner runs:**
+**Guards planted:** each plant was applied by a script, the named test run, the file restored and its
+SHA-256 checked identical to the original.
 
-**A sample `verdict.md` from synthetic arms:**
+```text
+--- plant (a) skip the history filter: `if require_history and False:` in scripts/replay_session.py
+E   AssertionError: 205
+E     At index 0 diff: ('LONG', 'SHORT') != ('LONG',)
+FAILED tests/test_replay_history_rule.py::test_c1_a_line_under_the_required_history_is_not_offered
+restored scripts/replay_session.py (sha256 identical)
 
-**Module line counts:**
+--- plant (b) performance() chains the daily ratios itself instead of calling calculate_performance
+E   assert 0.09584999999998622 == 10.0
+FAILED tests/test_replay_verdict_stats.py::test_c5_every_return_comes_from_calculate_performance
+restored scripts/replay_verdict_stats.py (sha256 identical)
 
-**`make ci`:**
+--- plant (c) block length 1: `restart = 1.0` in stationary_draws
+E   assert 17.0 <= (100000 / 99816)
+FAILED tests/test_replay_verdict_stats.py::test_c8_the_bootstrap_is_seeded_and_blocked
+restored scripts/replay_verdict_stats.py (sha256 identical)
 
-**`pyproject.toml` and `uv.lock`:**
+--- plant (d) a fresh draw per arm inside the arms loop in scripts/replay_verdict_score.py
+E     {'interval': [-7.009611900285906, 6.026702508502446]} != {'interval': [0.0, 0.0]}
+FAILED tests/test_replay_verdict_edge.py::test_c9_arms_are_compared_on_the_same_days
+restored scripts/replay_verdict_score.py (sha256 identical)
 
-**Owed to the planner:**
+--- plant (e) EDGE IN A PILLAR without the paired condition in scripts/replay_verdict_rule.py
+E     {'verdict': 'EDGE IN A PILLAR'} != {'verdict': 'NO EDGE'}
+FAILED tests/test_replay_verdict_rule.py::test_c11_the_verdict_rule[own bound alone is no pillar]
+restored scripts/replay_verdict_rule.py (sha256 identical)
+
+--- plant (f) the arms-belong-together check switched off in scripts/replay_verdict_load.py
+E   AssertionError: assert {'verdict': 'NO EDGE', 'reading': 'indistinguishable', 'pillars': []} is None
+E   ValueError: arms differ in their number of session pairs
+FAILED tests/test_replay_verdict_refusals.py::test_c12_arms_that_do_not_belong_together_give_no_verdict[different cache]
+FAILED tests/test_replay_verdict_refusals.py::test_c12_arms_that_do_not_belong_together_give_no_verdict[different commit]
+FAILED tests/test_replay_verdict_refusals.py::test_c12_arms_that_do_not_belong_together_give_no_verdict[different sessions]
+restored scripts/replay_verdict_load.py (sha256 identical)
+```
+
+(Plant (b)'s first attempt went red for the wrong reason, an `UnboundLocalError` from a `del` in the
+plant itself; it was re-planted as a clean hand-chained return and the red above is the second run.)
+
+**The commands the planner runs** (from the proving worktree; `--cache` defaults to the replay
+dataset folder, `REPLAY_DATASET_DIR` or OneDrive `trading-agents-data`; `<OUT>` must be outside the
+worktree):
+
+```text
+# one arm
+uv run python scripts/replay_arms.py run --arm base-25 --out-root <OUT> --cache <CACHE>
+# all five, in manifest order (or run two at a time with --arm <name> in two shells)
+uv run python scripts/replay_arms.py run --arm all --out-root <OUT> --cache <CACHE>
+# the scorer: Appendix P's 10,000 resamples by default; exit 0 with a verdict, 2 with a refusal
+uv run python scripts/replay_verdict.py score --out-root <OUT>
+# F1's two runs (the rule on, then off), on the merged commit and on the commit before it
+uv run python scripts/replay_pipeline.py run --cache <CACHE> --out <OUT>/f1-on --start <D1> --end <D2> --slippage-bps 25 --require-history
+uv run python scripts/replay_pipeline.py run --cache <CACHE> --out <OUT>/f1-off --start <D1> --end <D2> --slippage-bps 25
+```
+
+Other flags: `--manifest` (both commands, default `scripts/exp014_arms.json`), `--progress-every`
+(arms), `--resamples` (scorer; anything but 10,000 is marked `NOT Appendix P's bootstrap` in the
+title and `appendix_p: false` in `verdict.json`). Measured here: 50 resamples of five 2,446-point
+arms plus the control took 1.3 s, so 10,000 is about **4.5 minutes**.
+
+**A sample `verdict.md` from synthetic arms** (five invented arms of 601 sessions from 2017-01-03,
+base-25 with a planted drift of 0.0004 a session, the ablations with none; 1,000 resamples, so the
+title says it is not Appendix P's bootstrap; the commit and checksum are low-entropy fixture
+placeholders):
+
+```markdown
+# EXP-014 verdict: EDGE, NOT Appendix P's bootstrap
+
+**base-25:** A = +11.94 pts a year, 95 % interval [+6.24, +18.21]; 600 session pairs, 1,000 resamples, mean block 20, seed 0.
+
+## Arms
+
+| Arm | Slippage (bps) | A (pts/yr) | 95 % interval | Portfolio % | Exposure-matched % | SPY % | Avg exposure % | Max drawdown % |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| base-05 | 5 | +11.89 | [+6.28, +18.94] | 70.23 | 34.19 | 43.55 | 80.00 | -17.02 |
+| base-10 | 10 | +11.95 | [+6.52, +17.36] | 70.43 | 34.19 | 43.55 | 80.00 | -16.55 |
+| base-25 | 25 | +11.94 | [+6.24, +18.21] | 70.40 | 34.19 | 43.55 | 80.00 | -16.99 |
+| technical-only-25 | 25 | -0.06 | [-4.14, +4.00] | 34.02 | 34.19 | 43.55 | 80.00 | -17.32 |
+| relative-strength-only-25 | 25 | -0.06 | [-4.12, +4.36] | 34.03 | 34.19 | 43.55 | 80.00 | -17.52 |
+
+## Paired differences from base-25
+
+| Arm | A(X) - A(base-25) | 95 % interval |
+| --- | ---: | --- |
+| technical-only-25 | -12.00 | [-18.39, -5.56] |
+| relative-strength-only-25 | -12.00 | [-18.57, -4.67] |
+
+## Control
+
+The replica of base-25 earning SPY at its exposure: A = +0.000000, interval [+0.000000, +0.000000] (tolerance 1e-06): PASS.
+
+## Years (A, pts a year)
+
+| Block | base-05 | base-10 | base-25 | technical-only-25 | relative-strength-only-25 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2017 (2017-01-03 → 2017-12-29), partial | +17.69 | +17.95 | +20.62 | -0.68 | -1.48 |
+| 2018 (2017-12-29 → 2018-12-31) | +5.19 | +6.94 | +4.88 | +0.27 | -1.62 |
+| 2019 (2018-12-31 → 2019-04-23), partial | +20.60 | +11.65 | +11.61 | +0.86 | +13.50 |
+| Years with positive excess | 3 | 3 | 3 | 2 | 1 |
+
+## Halves (A, pts a year)
+
+| Block | base-05 | base-10 | base-25 | technical-only-25 | relative-strength-only-25 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| first half (2017-01-03 → 2018-02-27) | +12.37 | +15.62 | +17.52 | +0.48 | -2.62 |
+| second half (2018-02-27 → 2019-04-23) | +11.35 | +8.08 | +6.15 | -0.64 | +2.81 |
+
+## Provenance
+
+- Commit: `cccccccccccccccccccccccccccccccccccccccc`
+- Sessions: 601, 2017-01-03 → 2019-04-23; history rule on
+- Cache (SHA-256 prefix): `sp500_bars.csv.gz` bbbbbbbbbbbb, `sp500_sectors.csv.gz` absent
+- Member-sessions withheld by the history rule: base-05 7, base-10 7, base-25 7, technical-only-25 7, relative-strength-only-25 7
+```
+
+**Module line counts** (all < 200; `replay_universe.py` and the fidelity scripts untouched):
+
+| File | Lines | File | Lines |
+| --- | ---: | --- | ---: |
+| `scripts/replay_session.py` | 180 (was 190) | `scripts/replay_verdict_score.py` | 168 |
+| `scripts/replay_runner.py` | 87 (was 82) | `scripts/replay_verdict_stats.py` | 119 |
+| `scripts/replay_pipeline.py` | 59 (was 53) | `scripts/replay_verdict_windows.py` | 65 |
+| `scripts/replay_history.py` | 68 | `scripts/replay_verdict_rule.py` | 47 |
+| `scripts/replay_arms.py` | 156 | `scripts/replay_verdict_report.py` | 99 |
+| `scripts/replay_arms_record.py` | 82 | `scripts/replay_verdict_markdown.py` | 140 |
+| `scripts/replay_verdict.py` | 66 | `scripts/replay_verdict_load.py` | 133 |
+| `tests/test_replay_history_rule.py` | 165 | `tests/test_replay_history_calendar.py` | 71 |
+| `tests/test_replay_verdict_stats.py` | 175 | `tests/test_replay_verdict_edge.py` | 103 |
+| `tests/test_replay_verdict_rule.py` | 79 | `tests/test_replay_verdict_refusals.py` | 135 |
+| `tests/test_replay_arms.py` | 189 | `tests/replay_history_fixtures.py` | 154 |
+| `tests/replay_verdict_fixtures.py` | 99 | `tests/replay_arm_folders.py` | 84 |
+
+`replay_counters.py` was not touched (the counter key is added by `replay_runner.py`). Six files sit
+between 150 and 200 (a warning, not a block). `exp014_arms.json` is 39 lines.
+
+**`make ci`:** `make ci > <scratchpad>/ci.txt 2>&1 ; echo $?` → **exit 0**, in the container above,
+no `.env`. Every step of the `ci:` target ran: ruff (clean), format (1,536 files formatted), mypy (no
+issues in 1,134 files; it does not read `scripts/`), import-linter (5 kept, 0 broken), module size,
+module header, law coverage, PARAM sync, sprint status, markdown links, version scheme, pytest
+**3,828 passed, 8 skipped, coverage 100.00 %** (it does not measure `scripts/`), dependency audit
+(*"No unaccepted vulnerabilities; 1 accepted advisory re-checked"*: PYSEC-2026-2447, DL-184),
+detect-secrets **Passed**, untracked secrets (*"scanning 22 new file(s)"*) **Passed**. The first run
+failed at the untracked-secrets step on two hex placeholders in `tests/replay_arm_folders.py`; they
+were replaced with low-entropy strings (no allowlist pragma) and the second run is the one quoted.
+`make ci` was then re-run on the finished tree (this handback, DL-258 and the README row included):
+**exit 0**, 3,828 passed, 8 skipped, 100.00 %, dependency audit and detect-secrets passed. The repo's
+pre-commit hooks (ruff, format, mypy, markdownlint, detect-secrets, module size, header) passed on
+every changed file.
+
+**`pyproject.toml` and `uv.lock`:** **untouched**, both. No version bump; no `uv lock` (the session
+cannot reach `download.pytorch.org`). `uv sync --frozen` installed from the existing lock.
+
+**Owed to the planner:** `uv lock` with the **MINOR** bump (next available at merge); Windows
+`make ci`; `make gate-ran` from the proving worktree (check the printed SHA against
+`git rev-parse HEAD`); the merge; post-merge CodeQL; **the repair decision in Return notes 1, before
+F1**; **F1** on the licensed cache (rule on: 0 buys on fewer than 200 bars and the removed
+member-sessions reported; rule off: byte-identical files on the merged commit and the commit before);
+**F2**, EXP-014 itself, once E17.4 reads PASS **and** Return notes 1 is resolved.
 
 **Not met / verified failing:**
+
+- **The rule as specified cannot serve EXP-014's scored window** (Return notes 1). The code meets the
+  spec and is proven; the experiment it was built for is blocked until the calendar (or the window)
+  is repaired. Not repaired here: the fix is in `agents/provider/domain/market_calendar.py`, which
+  the spec's stop rule puts out of scope.
+- **Branch name:** the session forced `claude/hopeful-davinci-oob51b`; no `sprint-250-…` branch was
+  created.
+- **Not run, by design:** EXP-014, F1, F2, `make gate-ran`, Windows `make ci`, any live proof. No
+  GATE PROVEN is claimed.
 
 ---
 
 ## Return notes
 
-*(builder fills)*
+1. 🚨 **Before 2024 the declared window holds 194–198 sessions, so the rule withholds every unheld
+   line; F1 and F2 are blocked until the planner picks a repair.** `declared_lookback_days` counts
+   sessions with the provider's calendar, whose holiday table covers 2024–2027 only (every earlier
+   weekday counts as a session). *[measured in this container: NYSE's 2016–2023 closures written out
+   and checked against EXP-014's counts, 2,698 sessions from 2016-01-04 and 2,446 from 2017-01-03,
+   both reproduced once 2025-01-09 (also missing from the provider's table) is removed]* A line with
+   a bar on every session holds 194–198 bars in its window on **1,760 of 1,760** sessions from
+   2017-01-03 to 2023-12-29 and on 74 sessions of 2024; 203 from 2025. With `--require-history`, no
+   unheld line reaches `required_history_bars` (200) before 2024, so every arm would sit in cash for
+   seven years. The same arithmetic says every replay so far gave the analyst at most 198 bars before
+   2024, so SMA-200 distance was absent from every pre-2024 replayed decision, the smoke run's
+   included: a fidelity gap in the harness independent of this sprint. Repairs, the planner's call
+   (DL-258 records both): **(a, recommended)** extend `_NYSE_HOLIDAYS` back to 2016 and add
+   2025-01-09, a provider data change the fleet never reads for a date it trades, after which the
+   window holds 203 sessions and both the rule and the rule-off replay match the fleet; **(b)** cut the
+   harness window from the cache's own sessions (scripts only, but it changes rule-off output too, so
+   F1's byte-identity fails by design). `tests/test_replay_history_calendar.py` flips under (a).
+2. **EXP-014 section 2 and Appendix P differ in one corner.** H1 says *"`A > 0` and the lower bound
+   above 0"*; Appendix P says the lower bound alone. The code follows Appendix P (the spec binds it);
+   `verdict.json` carries the point estimate beside the interval, so the case is visible if it occurs.
+3. **2017 is labelled partial.** A pair belongs to the year of its later session, so the pair arriving
+   on 2017-01-03 (from 2016-12-30) is outside the scored window and 2017 holds one pair fewer than the
+   year. The flag uses no calendar for a start year; for an end year it asks the provider's calendar
+   only for the year's last session (31 December or the weekday before, which the pre-2024 fallback
+   gets right).
+4. **Two justified suppressions, both with repo precedent:** `# noqa: S311` once, on the scorer's
+   single `random.Random(seed)` (`seeded()` in `replay_verdict_stats.py`; precedent
+   `scripts/exp013_regime_sizing.py`), and `# noqa: E402` on the two CLIs' imports after the
+   `sys.path` insert (precedent `replay_pipeline.py`). The git calls reuse `replay_fidelity_git._git`
+   (imported, not edited) rather than add another `# noqa: S603`.
+5. **Reported, not computed:** buys a year and exits by reason (EXP-014 §5.9) are not in the
+   verdict; they are in each arm's `fills.csv`. Every absent-input counter is copied into
+   `verdict.json` (`absent_inputs`), and the withheld member-sessions are in `verdict.md`'s
+   provenance.
+6. **DRIFT-096 filed** (analyst book silent on a candidate under `required_history_bars`); no
+   `laws.md` edited; no clause moved (law-cycle answer: No).

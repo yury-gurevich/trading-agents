@@ -88,7 +88,7 @@ which clauses stay ⬜?
    carries, and name execution's `BrokerPositionSnapshot` (by label, not by agent) as the record of the
    pre-trade book. `PM-OUT-06` and `PM-STA-04` stay ⬜, because nothing tests that the PM reads no live
    broker. `PM-OUT-01` and `PM-TYP-03`, which carry the same false field, are not named by the row
-   table. They are filed as DRIFT-096 and **not reworded**.
+   table. They are filed as DRIFT-098 and **not reworded**.
 10. **Supervisor `SUP-OBS-02` (DRIFT-076)** turns 🟩. `open_incidents` counts live `Fault` incidents and
     never a `Flag`; `pending_human_flags` counts unresolved `critical` Flags. Proof: a new test that
     keeps the two sources apart, plus the existing health tests.

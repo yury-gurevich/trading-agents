@@ -361,7 +361,7 @@ books below. Also read the gate itself (`scripts/check_law_coverage.py`, `law_co
 | provider | `agents/provider/laws/laws.md` v1.7, `test-plan.md` | `PROV-TRG-01/02`, `PROV-OUT-04`, `PROV-OUT-07` | Yes. `PROV-TRG-02` already names a `RunRequest` (v1.5), so DRIFT-082 is `TRG-01` only. The only live OHLCV source is Alpaca (`composite.py`), so "raw" goes in `PROV-OUT-07`, the clause that describes a bar. `PROV-OUT-04` can turn green: the `MarketSnapshot` does carry `created_at` and `used_fallback` |
 | scanner | `agents/scanner/laws/laws.md` v1.3, `test-plan.md` | `SCAN-TRG-02`, `SCAN-TYP-01` | `SCAN-TRG-02` called pub/sub "the primary production trigger path", which is false. It is amended with the graph-pull trigger. `SCAN-TYP-01` carries DRIFT-060's sentence |
 | analyst | `agents/analyst/laws/laws.md` v1.6, `test-plan.md` | `ANLZ-TRG-02`, new `ANLZ-OUT-09` | Yes. The held-stop check (`domain/analyze.py::_stop_breached`) skips a position whose broker stop is live, and a book with no readable stop inputs is a fault and an empty result. Both go in the clause, because the code does them. ADR-0017's four `test_exit_authority.py` tests cited no clause |
-| portfolio_manager | `agents/portfolio_manager/laws/laws.md` v1.10, `test-plan.md` | `PM-TRG-02`, `PM-OUT-03`, `PM-OUT-06`, `PM-OBS-01`, `PM-OBS-04`, `PM-STA-04`, `PM-TYP-03` | Yes. `PM-OUT-01` and `PM-TYP-03` also list `portfolio_state_snapshot` as an `OrderIntentSet` field, which the contract does not carry. Neither is named for that by the row table, so I filed it as **DRIFT-096** and did not reword them |
+| portfolio_manager | `agents/portfolio_manager/laws/laws.md` v1.10, `test-plan.md` | `PM-TRG-02`, `PM-OUT-03`, `PM-OUT-06`, `PM-OBS-01`, `PM-OBS-04`, `PM-STA-04`, `PM-TYP-03` | Yes. `PM-OUT-01` and `PM-TYP-03` also list `portfolio_state_snapshot` as an `OrderIntentSet` field, which the contract does not carry. Neither is named for that by the row table, so I filed it as **DRIFT-098** and did not reword them |
 | monitor | `agents/monitor/laws/laws.md` v1.1, `test-plan.md` | `MON-TRG-02` | Yes. The end-of-run poll finds work by key and edge. Its second work kind, position sync (`position_sync.py::find_pending_position_sync`), lists every `BrokerPositionSnapshot` with props and walks each one's edges. So the bound is stated for `ExecutionRun` work only, and the sync poll is filed as **DRIFT-097** |
 | reporter | `agents/reporter/laws/laws.md` v1.3, `test-plan.md` | `RPT-TRG-02`, `RPT-OUT-07`, `RPT-IDM-03` | The ledger says v1.2 while the book says v1.3. The reporter's poll fetches every position-sync `MonitorRun` and then drops it (they never gain `REPORTED_BY`), so the clause says so |
 | execution | `agents/execution/laws/laws.md` v1.10, `test-plan.md`; `contracts/execution.py` | `EXEC-OUT-01/02/04/05`, `EXEC-TYP-03`, CAP; new `EXEC-IDN-04` | Yes. `tests/test_boundary_map.py::test_each_graph_label_has_one_writer` fails when two contracts own one label. Adding the two labels to `owns_graph` needs that test changed to name the one declared exception. `owns_graph` has no runtime reader (grep: only `kernel/contract.py` and tests), so adding labels changes no behaviour |
@@ -379,7 +379,7 @@ books. `contracts/execution.py`'s `owns_graph` gains `Flag` and `FlagResolution`
 
 **Contradictions found between a law and this spec:** (1) The spec's DRIFT-039 ruling names
 `PM-OBS-01`, `PM-OUT-06` and `PM-STA-04`. `PM-OUT-01` and `PM-TYP-03` make the same false field claim,
-and `PM-TYP-03` is 🟩 on it. They are left as they are and filed as DRIFT-096. (2) The handover says
+and `PM-TYP-03` is 🟩 on it. They are left as they are and filed as DRIFT-098. (2) The handover says
 "a test run never transacts with the production Service Bus". The guard covers sends only, so
 `DEP-BUS-05` says "sends". (3) Execution's book comment says Flag keys are "supervisor-owned", and the
 contract test forbade a shared label. Both are resolved by the declared exception (DRIFT-094).
@@ -407,7 +407,7 @@ filed.
 | 074 | A | new `ANLZ-OUT-09` (🟩) | `tests/test_analyst_held_stop.py` (3 tests, 4 cases), `test_exit_authority.py` (4), `tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop` | CORRECTED | `fe590b7` |
 | 037 | A | `PM-OUT-03` (🟩) | `test_sector_cap.py::test_rejects_second_same_sector_order_over_cap`, `test_reward_risk.py::test_rejects_when_reward_risk_below_minimum` | CORRECTED | `7fb20b0` |
 | 065 | N | `PM-OBS-04` (🟩) | its five existing tests, unchanged | CORRECTED | `7fb20b0` |
-| 039 | N | `PM-OBS-01` (🟩), `PM-OUT-06` (⬜), `PM-STA-04` (⬜ → 🟩) | `test_pm_run_record.py::test_a_pm_run_carries_its_order_intent_set_and_no_portfolio_snapshot`, `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | CORRECTED (`PM-OUT-01`/`PM-TYP-03` → DRIFT-096) | `7fb20b0` |
+| 039 | N | `PM-OBS-01` (🟩), `PM-OUT-06` (⬜), `PM-STA-04` (⬜ → 🟩) | `test_pm_run_record.py::test_a_pm_run_carries_its_order_intent_set_and_no_portfolio_snapshot`, `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | CORRECTED (`PM-OUT-01`/`PM-TYP-03` → DRIFT-098) | `7fb20b0` |
 | 087 | A | `RPT-OUT-07` (🟩) | `test_benchmark_lineage.py` (2) + its six existing tests | CORRECTED | `34f54c7` |
 | 061 | A | `EXEC-OUT-01`, `-02`, `-04`, `-05` (🟩) | existing tests + `tests/test_contract_required_payload_fields.py::test_execution_payload_fields_required_by_law` | CORRECTED | `cfa989d` |
 | 060 | N | `SCAN-TYP-01`, `PM-TYP-03`, `EXEC-TYP-03` (🟩) | their existing required-field tests | CORRECTED | `2349da0`, `7fb20b0`, `cfa989d` |
@@ -429,7 +429,7 @@ filed.
 
 | Plan # | Final test name or check | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| D1 | script over every `\| DRIFT-` row: none of the 23 has a status cell starting `OPEN`/`PARTLY`; each names S251 and its ruling (output below) | `docs/laws/drift-register.md` | PASS (the only OPEN rows are DRIFT-096/097, filed by this sprint) | n/a |
+| D1 | script over every `\| DRIFT-` row: none of the 23 has a status cell starting `OPEN`/`PARTLY`; each names S251 and its ruling (output below) | `docs/laws/drift-register.md` | PASS (the only OPEN rows are DRIFT-098/097, filed by this sprint) | n/a |
 | D2 | `git diff --stat origin/main -- agents kernel orchestration surfaces contracts` minus `*/laws/*` and `*/tests/*` | (below) | PASS: only `contracts/execution.py`, +5 lines in `owns_graph` | n/a |
 | D3 | `scripts/check_law_coverage.py` exit 0 after every book; each reworded 🟩 row names a test whose docstring cites it and asserts the new wording | every `test-plan.md` | PASS | per row above |
 | D4 | `test_a_recorded_run_request_is_ingested_with_no_bus_event`, `test_an_idle_graph_asks_the_feed_for_nothing` | `agents/provider/tests/test_graph_pull_trigger.py` | PASS | `PROV-TRG-01`, `PROV-TRG-02` |
@@ -463,7 +463,7 @@ unchanged `uv.lock`.
 **Result:** All 23 rows are CORRECTED (20) or DECIDED (3), and no runtime behaviour differs from
 `main`. Seven more clauses are green: four existing ones moved ⬜ → 🟩 (`PROV-TRG-02`, `PROV-OUT-04`,
 `PM-STA-04`, `SUP-OBS-02`), and three new clauses were added already proven (`ANLZ-OUT-09`,
-`EXEC-IDN-04`, `MST-FAIL-07`). Two new rows were filed OPEN, each a finding the row table did not cover: DRIFT-096 and
+`EXEC-IDN-04`, `MST-FAIL-07`). Two new rows were filed OPEN, each a finding the row table did not cover: DRIFT-098 and
 DRIFT-097. Not done: live proof (F1, the planner's).
 
 **Files changed:** 12 `laws.md` + their `test-plan.md`; `docs/laws/dependencies.md`,
@@ -477,7 +477,7 @@ at `b050f706`). Fifteen decisions, each with what was rejected. The main ones: e
 carries the bound. The monitor's bound covers `ExecutionRun` work only, so the sync poll is DRIFT-097.
 "Raw" goes in `PROV-OUT-07`. The DRIFT-094 exception is declared by family, and the boundary-map test
 allows exactly that pair. `DEP-BUS-05` says "sends", not "transacts". `PM-OUT-01`/`PM-TYP-03` are not
-reworded; they are DRIFT-096. The forecaster's three clauses stay ⬜.
+reworded; they are DRIFT-098. The forecaster's three clauses stay ⬜.
 
 **Behaviour untouched — the diff proof:**
 
@@ -593,7 +593,7 @@ merged SHA, the merge, F1 (five amended clauses against the live graph or code),
 (not touched here), and DL number re-check at merge (DL-260 used).
 
 **Rows left OPEN:** none of the 23. Two new rows were filed OPEN by this sprint, each needing a
-decision or a code change outside its scope. **DRIFT-096**: `PM-OUT-01`/`PM-TYP-03` still list
+decision or a code change outside its scope. **DRIFT-098**: `PM-OUT-01`/`PM-TYP-03` still list
 `portfolio_state_snapshot`, and the row table did not name them for that. **DRIFT-097**: the monitor's
 position-sync poll lists every `BrokerPositionSnapshot`, which needs a code change.
 
@@ -603,7 +603,7 @@ position-sync poll lists every `BrokerPositionSnapshot`, which needs a code chan
 
 - **Branch.** The session forced `claude/compassionate-hamilton-g1wdjb`; it was cut from `main`
   `b050f706` and carries 17 commits, one a book.
-- **DRIFT-096 (new, OPEN).** `PM-OUT-01` and `PM-TYP-03` claim the same never-built
+- **DRIFT-098 (new, OPEN).** `PM-OUT-01` and `PM-TYP-03` claim the same never-built
   `portfolio_state_snapshot` that DRIFT-039 withdrew from three other clauses. `PM-TYP-03` is 🟩 with
   that false conjunct, because its tests prove other fields. I did not reword them (DO NOT: a clause
   the row table does not name). A one-line amendment closes it; nothing behaves differently.

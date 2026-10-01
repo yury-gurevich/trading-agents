@@ -72,8 +72,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Outputs (`OUT`)
 
 - **PM-OUT-01** — `evaluate_orders` always returns an `OrderIntentSet`: `run_id`, `approved`
-  (tuple of `OrderIntent`), `rejected` (tuple of `RejectedOrder`), `portfolio_state_snapshot`,
-  `explanation`, `provenance`. Every recommendation is accounted for in one of the two tuples
+  (tuple of `OrderIntent`), `rejected` (tuple of `RejectedOrder`), `explanation`, `provenance`. Every recommendation is accounted for in one of the two tuples
   (or in the empty-result path).
 - **PM-OUT-02** — Each approved `OrderIntent` carries: `ticker`, `action`, `quantity ≥ 1`
   (whole shares), `est_price` (Decimal — exact money type), `stop_pct`, `target_pct`,
@@ -205,7 +204,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   They are *defined* in `contracts/portfolio_manager.py`, but **the clause, not the file, is the
   authority on what must be present** — "matches the file" is unfalsifiable, because the file would
   then be both the claim and the oracle. `OrderIntentSet` carries `run_id`, `approved`, `rejected`,
-  `portfolio_state_snapshot`, `explanation`, `provenance` (`PM-OUT-01`). `OrderIntent` carries
+  `explanation`, `provenance` (`PM-OUT-01`). `OrderIntent` carries
   `ticker`, `action`, `quantity`, `est_price`, `stop_pct`, `target_pct`, `pm_run_id`, `provenance`,
   and `gate_report` (`PM-OUT-02`). `RejectedOrder` carries the originating recommendation, a
   `reason`, and `gate_report` (`PM-OUT-03`). `GateOutcome` carries the gate name, the value, the
@@ -462,6 +461,6 @@ classes of one issuer to one key; absence means single-class, which is the commo
   withdrawn, and the run's pre-trade book is its `BrokerPositionSnapshot` (DRIFT-039). `PM-STA-04`
   ⬜ → 🟩 on `test_pm_run_record.py` and the pub/sub deserialisation test. `PM-TRG-02` names the
   graph-pull trigger and its key-and-edge bound (DRIFT-086). `PM-TYP-03`: `CONTRACT.version` names the
-  current schema (DRIFT-060). 🪤 `PM-OUT-01` and `PM-TYP-03` still list `portfolio_state_snapshot` as
-  an `OrderIntentSet` field. The row table did not name them for that, so they are filed as
-  DRIFT-096 and not reworded here. 32 / 51 → 33 / 51.
+  current schema (DRIFT-060). `PM-OUT-01` and `PM-TYP-03` no longer list `portfolio_state_snapshot` as
+  an `OrderIntentSet` field: the contract never had it (DRIFT-098, found by the builder's law
+  reading and closed by the planner at merge). 32 / 51 → 33 / 51.

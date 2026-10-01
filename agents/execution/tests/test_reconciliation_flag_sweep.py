@@ -60,7 +60,7 @@ def test_the_sweep_retires_legacy_flags_once_and_only_legacy_ones() -> None:
 
     assert first == (_LEGACY,)
     assert second == ()
-    warn_key = f"flag:{subject_ref_for(_PFE)}:warn"
+    warn_key = f"flag:{subject_ref_for(_PFE, 's1')}:warn"
     assert graph.get_node("Flag", warn_key) is not None
     assert graph.get_node("FlagResolution", f"resolution:{warn_key}") is None
 

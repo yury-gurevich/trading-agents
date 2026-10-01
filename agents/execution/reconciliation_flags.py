@@ -1,16 +1,24 @@
-"""Divergence-flag lifecycle: severity follows persistence, not first sight.
+"""Divergence-flag lifecycle: one episode per occurrence, severity by persistence.
 
 Agent: execution
-Role: raise the DL-44 divergence Flag at `warn`, escalate to `critical` only when
-      the same divergence survives to the next run (adoption failed), and retire
-      a flag once its divergence is gone.
-External I/O: GraphStore writes via the injected backend.
+Role: open a DL-44 divergence episode at `warn` under the snapshot that first saw
+      it, escalate it to `critical` only when it survives to the next run start
+      (adoption failed), and retire it once its divergence is gone (EXEC-OBS-07).
+External I/O: GraphStore reads and writes via the injected backend.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
+
+from agents.execution.divergence_episodes import (
+    LEGACY_PREFIX,
+    PREFIX,
+    Episode,
+    flag_join,
+    open_episodes,
+)
 
 if TYPE_CHECKING:
     from agents.execution.reconciliation_store import Divergence
@@ -19,39 +27,39 @@ if TYPE_CHECKING:
 # Flag/FlagResolution keys are supervisor-owned; we never import that module.
 # Replicated from agents/supervisor/store.py (_flag_key / _resolution_key):
 #   flag:{subject_ref}:{severity}  ·  resolution:flag:{subject_ref}:{severity}
-_PREFIX = "broker-position-divergence:"
-# Flags written before S178 keyed their subject on the per-run snapshot, so each
-# run minted a unique one. They cannot match a live divergence and are retired by
-# scripts/sweep_divergence_flags.py, never by a run.
-_LEGACY_PREFIX = f"{_PREFIX}broker-position-snapshot:"
+_SUPERSEDED = "superseded by critical"
+_GONE = "divergence no longer present"
 
 
-def subject_ref_for(divergence: Divergence) -> str:
-    """Return the run-stable subject_ref identifying one divergence."""
-    return f"{_PREFIX}{divergence.kind}:{divergence.ticker}"
+def subject_ref_for(divergence: Divergence, episode: str) -> str:
+    """Return the subject_ref of one divergence episode (DL-254 D1/D2).
+
+    `episode` is the key of the snapshot that first saw the divergence. Flags
+    from S178 to S248 carry no episode; they parse to the same (kind, ticker).
+    """
+    return f"{PREFIX}{divergence.kind}:{divergence.ticker}:{episode}"
 
 
 def record_divergences(
     graph: GraphStore, *, snapshot: Node, divergences: tuple[Divergence, ...]
 ) -> None:
-    """Write the DL-44 flags for one run-start snapshot.
+    """Write the DL-44 flags for one run-start snapshot (EXEC-OBS-07).
 
-    First sight of a divergence is a `warn`: reconciliation is *about to* adopt it,
-    so it describes normal operation and must not pin `healthy` to false. A
-    divergence still present at the next run start was **not** adopted, and is
-    escalated to `critical`. One whose divergence is gone is retired.
+    A divergence with no open episode opens one at `warn`: reconciliation is
+    *about to* adopt it, so it must not pin `healthy` to false, whatever the
+    ticker's history. An open `warn` still present at a later snapshot was **not**
+    adopted and escalates to `critical` on its own subject. An open episode whose
+    divergence is gone is retired. Flag and FlagResolution are each read once.
     """
-    live: set[str] = set()
+    flags = graph.list_nodes("Flag")
+    episodes = open_episodes(flags, graph.list_nodes("FlagResolution"))
+    written = {node.key for node in flags}
     for divergence in divergences:
-        subject_ref = subject_ref_for(divergence)
-        live.add(subject_ref)
-        if _flag(graph, subject_ref, "warn") is None:
-            _write_flag(graph, subject_ref, "warn", snapshot, divergence)
-            continue
-        if _flag(graph, subject_ref, "critical") is None:
-            _write_flag(graph, subject_ref, "critical", snapshot, divergence)
-        _resolve(graph, subject_ref, "warn", snapshot, "superseded by critical")
-    _retire_absent(graph, snapshot, live)
+        episode = episodes.pop((divergence.kind, divergence.ticker), {})
+        _advance(graph, written, snapshot, divergence, episode)
+    for episode in episodes.values():
+        for flag in episode.values():
+            _close(graph, flag, snapshot, _GONE)
 
 
 def resolve_legacy_flags(graph: GraphStore, *, reason: str) -> tuple[str, ...]:
@@ -59,39 +67,59 @@ def resolve_legacy_flags(graph: GraphStore, *, reason: str) -> tuple[str, ...]:
     resolved: list[str] = []
     for flag in graph.list_nodes("Flag"):
         subject_ref = str(flag.props.get("subject_ref", ""))
-        if not subject_ref.startswith(_LEGACY_PREFIX):
+        if not subject_ref.startswith(LEGACY_PREFIX):
             continue
         severity = str(flag.props.get("severity", "critical"))
-        if _resolve(graph, subject_ref, severity, None, reason):
+        if _resolve(graph, subject_ref, severity, reason):
             resolved.append(subject_ref)
     return tuple(resolved)
 
 
-def _retire_absent(graph: GraphStore, snapshot: Node, live: set[str]) -> None:
-    for flag in graph.list_nodes("Flag"):
-        subject_ref = str(flag.props.get("subject_ref", ""))
-        if not subject_ref.startswith(_PREFIX):
-            continue
-        if subject_ref in live or subject_ref.startswith(_LEGACY_PREFIX):
-            continue
-        severity = str(flag.props.get("severity", "critical"))
-        _resolve(graph, subject_ref, severity, snapshot, "divergence no longer present")
+def _advance(
+    graph: GraphStore,
+    written: set[str],
+    snapshot: Node,
+    divergence: Divergence,
+    episode: Episode,
+) -> None:
+    warn, critical = episode.get("warn"), episode.get("critical")
+    if warn is None:
+        if critical is None:
+            subject_ref = subject_ref_for(divergence, snapshot.key)
+            _write_flag(graph, written, subject_ref, "warn", snapshot, divergence)
+        return
+    if critical is None and not _escalate(graph, written, snapshot, divergence, warn):
+        return
+    _close(graph, warn, snapshot, _SUPERSEDED)
 
 
-def _flag(graph: GraphStore, subject_ref: str, severity: str) -> Node | None:
-    return graph.get_node("Flag", f"flag:{subject_ref}:{severity}")
+def _escalate(
+    graph: GraphStore,
+    written: set[str],
+    snapshot: Node,
+    divergence: Divergence,
+    warn: Node,
+) -> bool:
+    subject_ref = str(warn.props["subject_ref"])
+    if subject_ref == subject_ref_for(divergence, snapshot.key):
+        return False  # the snapshot that opened the episode is no survived run
+    return _write_flag(graph, written, subject_ref, "critical", snapshot, divergence)
 
 
 def _write_flag(
     graph: GraphStore,
+    written: set[str],
     subject_ref: str,
     severity: str,
     snapshot: Node,
     divergence: Divergence,
-) -> None:
+) -> bool:
+    key = f"flag:{subject_ref}:{severity}"
+    if key in written:
+        return False  # EXEC-STA-03: a spent key is never rewritten
     graph.merge_node(
         "Flag",
-        f"flag:{subject_ref}:{severity}",
+        key,
         {
             "subject_ref": subject_ref,
             "severity": severity,
@@ -100,22 +128,34 @@ def _write_flag(
             "created_at": datetime.now(tz=UTC).isoformat(),
         },
     )
+    written.add(key)
+    return True
 
 
-def _resolve(
+def _close(graph: GraphStore, flag: Node, snapshot: Node, reason: str) -> None:
+    subject_ref, severity = flag_join(flag)
+    _append_resolution(graph, flag, subject_ref, severity, snapshot, reason)
+
+
+def _resolve(graph: GraphStore, subject_ref: str, severity: str, reason: str) -> bool:
+    flag = graph.get_node("Flag", f"flag:{subject_ref}:{severity}")
+    if flag is None:
+        return False
+    if graph.get_node("FlagResolution", f"resolution:{flag.key}") is not None:
+        return False
+    _append_resolution(graph, flag, subject_ref, severity, None, reason)
+    return True
+
+
+def _append_resolution(
     graph: GraphStore,
+    flag: Node,
     subject_ref: str,
     severity: str,
     snapshot: Node | None,
     reason: str,
-) -> bool:
+) -> None:
     """Append a FlagResolution (EXEC-STA-03: append-only; never mutate the Flag)."""
-    flag = _flag(graph, subject_ref, severity)
-    if flag is None:
-        return False
-    key = f"resolution:flag:{subject_ref}:{severity}"
-    if graph.get_node("FlagResolution", key) is not None:
-        return False
     props: dict[str, object] = {
         "subject_ref": subject_ref,
         "severity": severity,
@@ -125,9 +165,10 @@ def _resolve(
     }
     if snapshot is not None:
         props["resolving_snapshot_key"] = snapshot.key
-    resolution = graph.merge_node("FlagResolution", key, props)
+    resolution = graph.merge_node(
+        "FlagResolution", f"resolution:flag:{subject_ref}:{severity}", props
+    )
     graph.add_edge(resolution, flag, "RESOLVES")
-    return True
 
 
 def _reason(snapshot: Node, severity: str, divergence: Divergence) -> str:

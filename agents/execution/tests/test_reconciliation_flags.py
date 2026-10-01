@@ -61,23 +61,23 @@ def _unresolved(graph: GraphStore, severity: str) -> list[str]:
 
 
 def test_first_sight_of_a_divergence_is_warn_not_critical() -> None:
-    """EXEC-TRG-07: a divergence reconciliation is about to adopt is not critical."""
+    """EXEC-OBS-07: a divergence reconciliation is about to adopt is not critical."""
     graph = InMemoryGraphStore()
 
     record_divergences(graph, snapshot=_snapshot(graph, "s1"), divergences=(_PFE,))
 
-    assert _unresolved(graph, "warn") == [subject_ref_for(_PFE)]
+    assert _unresolved(graph, "warn") == [subject_ref_for(_PFE, "s1")]
     assert _unresolved(graph, "critical") == []
 
 
 def test_a_divergence_surviving_a_run_escalates_to_critical() -> None:
-    """EXEC-TRG-07: adoption failed, so the flag becomes a real critical."""
+    """EXEC-OBS-07: adoption failed, so the episode becomes a real critical."""
     graph = InMemoryGraphStore()
     record_divergences(graph, snapshot=_snapshot(graph, "s1"), divergences=(_PFE,))
 
     record_divergences(graph, snapshot=_snapshot(graph, "s2"), divergences=(_PFE,))
 
-    subject = subject_ref_for(_PFE)
+    subject = subject_ref_for(_PFE, "s1")
     assert _unresolved(graph, "critical") == [subject]
     assert _unresolved(graph, "warn") == []
     critical = graph.get_node("Flag", f"flag:{subject}:critical")
@@ -86,7 +86,7 @@ def test_a_divergence_surviving_a_run_escalates_to_critical() -> None:
 
 
 def test_repeating_a_divergence_never_mints_a_second_unresolvable_flag() -> None:
-    """EXEC-TRG-07: the run-stable subject_ref makes the dedupe guard fire."""
+    """EXEC-OBS-07: inside one episode, four runs write two Flags, one open."""
     graph = InMemoryGraphStore()
     for run in range(4):
         record_divergences(
@@ -98,13 +98,13 @@ def test_repeating_a_divergence_never_mints_a_second_unresolvable_flag() -> None
 
 
 def test_an_adopted_divergence_is_retired_on_the_next_run() -> None:
-    """EXEC-STA-03: retirement appends a FlagResolution, never mutates the Flag."""
+    """EXEC-OBS-07 / EXEC-STA-03: retirement appends a FlagResolution only."""
     graph = InMemoryGraphStore()
     record_divergences(graph, snapshot=_snapshot(graph, "s1"), divergences=(_PFE,))
 
     record_divergences(graph, snapshot=_snapshot(graph, "s2"), divergences=())
 
-    subject = subject_ref_for(_PFE)
+    subject = subject_ref_for(_PFE, "s1")
     assert _unresolved(graph, "warn") == []
     resolution = graph.get_node("FlagResolution", f"resolution:flag:{subject}:warn")
     assert resolution is not None

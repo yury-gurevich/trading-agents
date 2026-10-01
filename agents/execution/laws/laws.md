@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -289,6 +289,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the old stop left live, when the broker order is not `new`, when the decided stop is at or above the
   current price, or when the broker refuses it; a refused or failed replacement is retried on the
   next run. *(Declares capability decided in S230 / DL-223; closes the defect DL-222 measured.)*
+- **EXEC-OBS-07** — A broker-position divergence found by run-start reconciliation is flagged
+  **per episode**. An episode opens with a `warn` Flag at the run-start reconciliation that first
+  sees the divergence, under a subject that names the episode: the divergence's kind and ticker and
+  that first-sight snapshot. It becomes `critical` only when the same divergence is still present at
+  the **next** run-start reconciliation, and its `warn` is then closed as superseded. It closes, by an
+  appended `FlagResolution` and never by changing or deleting a Flag, when the divergence is no longer
+  present. A divergence seen again after its episode closed opens a **new** episode at `warn`,
+  whatever that ticker's history. A live divergence always has exactly one unresolved Flag, and an
+  absent one has none. *(Declares the behaviour S178 built and never declared; repaired by S248 /
+  DL-254 after DL-253 measured each ticker's keys spent once, for ever.)*
 
 ---
 
@@ -457,3 +467,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   are unchanged. *Why:* DL-222 measured all 25 live stops at the 5 % fallback while the PM had decided
   3.90–7.29 % for every buy since 2026-09-05; recorded as DRIFT-073. No `Fill` vocabulary property
   added.
+- **v1.10 — S248 a divergence is critical only when it survived a run (2026-10-01).** Adds
+  `EXEC-OBS-07`: a broker-position divergence is flagged per episode — `warn` at first sight, under a
+  subject naming the first-sight snapshot; `critical` only if still present at the next run-start
+  reconciliation; closed by an appended `FlagResolution`; a new episode at `warn` whatever the
+  ticker's history; exactly one unresolved Flag per live divergence. *Why:* S178 built "severity
+  follows persistence" with no clause, and its tests cited `EXEC-TRG-07`, which is about the
+  snapshot. The subject had no episode, so each ticker's `warn` and `critical` keys could be used
+  once: DL-253 measured 40 tickers whose next divergence would be `critical` on sight (MDLZ 09-30
+  and BAC 09-29 were) and 12 whose next would raise nothing. Recorded as DRIFT-093; the
+  contradiction with the supervisor book's single-writer rule for `Flag` found on the way is
+  DRIFT-094 and is not decided here. No `contracts/`, label or property change; `EXEC-TRG-07` is
+  unchanged.

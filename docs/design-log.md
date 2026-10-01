@@ -10,6 +10,88 @@ and is marked CLOSED here.
 
 ---
 
+## DL-254 - a divergence flag names its episode by the snapshot that first saw it, and severity is read from the open episode - status: DECIDED (builder, 2026-10-01; S248)
+
+**Why.** DL-253 (below) measured the defect and set the direction (the episode goes into the subject; readers unchanged).
+[S248](sprints/sprint-248-a-divergence-is-critical-only-when-it-survived-a-run.md) left four decisions
+to the builder; two more came up while building. The planner's recommendations were taken for D1, D3
+and D4.
+
+**D1 — the episode token is the key of the `BrokerPositionSnapshot` that first saw the divergence.**
+It is unique per run-start reconciliation (`broker-position-snapshot:{run_id}:{created_at}`), already
+in hand when the flags are written, the same on every read of that snapshot, and it ties the flag to
+the snapshot that raised it. *Rejected:* (a) **the run id** — a resumed or re-fired run repeats it, so
+two episodes could share a subject; (b) **a clock or a uuid** — not reproducible, so no test could pin
+a subject and A8 would mean nothing (the `created_at` *inside* the snapshot key is fine: it is read
+from the node, never from `datetime.now` at flag time); (c) **a per-ticker counter** — a
+read-modify-write across runs, and the count is history the subject does not need.
+
+**D2 — the subject is `broker-position-divergence:{kind}:{ticker}:{snapshot key}`.** The family
+prefix stays first and the kind and ticker stay in front, so the legacy test
+(`startswith("broker-position-divergence:broker-position-snapshot:")`) can never match a new subject
+(no kind is named `broker-position-snapshot`), and `scripts/sweep_divergence_flags.py` never sees one.
+`:` is the separator the family already uses; kind and ticker contain none, so `(kind, ticker)` is
+the first two fields after the prefix whatever the token holds (the snapshot key has colons of its
+own). Today's suffix-less subject parses to the same `(kind, ticker)` with no token. *Rejected:* (a)
+**a distinct separator such as `@`** — buys nothing a fixed field order does not, and gives the family
+two grammars; (b) **the token first** (`…:{token}:{kind}:{ticker}`) — the token starts with
+`broker-position-snapshot:`, so the subject would start with the legacy prefix and the sweep would
+retire live flags; (c) **a hash of the snapshot key** — shorter, but a reader could no longer go from
+a flag to the snapshot that raised it.
+
+**D3 — the open episode is found in memory, from one read of `Flag` and one of `FlagResolution`.**
+A Flag is open when no `FlagResolution` carries its `(subject_ref, severity)`, the join every reader
+uses (`agents/supervisor/domain/health.py`, `surfaces/queries/flags.py`). Open family Flags are grouped
+by `(kind, ticker)`. Per live divergence: none open → a new episode at `warn` under this snapshot's
+subject; an open `critical` → nothing (an open `warn` beside it, which only a crash between the two
+writes could leave, is resolved "superseded by critical"); an open `warn` → `critical` on that
+episode's subject and the `warn` resolved "superseded by critical" — **unless this snapshot is the one
+that opened the episode**, because a second call for the same run-start reconciliation is not a
+survived run. Every open family Flag whose `(kind, ticker)` is not live gets one resolution,
+"divergence no longer present". The writer never writes a key it has already read (`EXEC-STA-03`).
+*Rejected:* (a) **a `get_node` per divergence and severity** (today's shape) — it cannot find an
+episode it does not already know the subject of, and N divergences cost 2N+ round trips; (b) **a
+query on a `subject_ref` prefix** — a new kernel port for ~112 nodes and about two a night; (c)
+**escalate on any open `warn`** (the spec's rule taken literally) — a repeated call with one snapshot
+would read as a survived run.
+
+**D4 — an open suffix-less Flag is the open episode.** It escalates on its own (suffix-less) subject
+or retires exactly as it would have before this change, so a deploy landing between two runs neither
+loses nor downgrades anything. All 112 live Flags are resolved today, so this path is for safety.
+*Rejected:* **retire it and open a new-format episode** — a real `critical` would drop to `warn` for a
+night, and a `warn` that survived the deploy would restart its clock. **Accepted limit:** a
+suffix-less `warn` whose `critical` key is already spent (only two crashes in a row could leave that)
+is not escalated, because the writer refuses a spent key; it stays the one open `warn` of its
+divergence and is retired when the divergence goes.
+
+**D5 — proceed although `SUP-IDN-02` makes the supervisor the single writer of `Flag` and
+`FlagResolution`.** Execution has written both since S120/S178 and its CAP says
+`write_own_labels_only`; nothing recorded it. This sprint adds no writer, label or kind of write, so
+the contradiction is the same size after it as before. Recorded as DRIFT-094 (OPEN) with the forced
+decision. *Rejected:* **stop the sprint** (the spec's MUST RULE step 6, read literally) — the measured
+defect stays live while an independent ownership question waits; the planner can still return it.
+*Rejected:* **route the writes through the supervisor's `flag_for_human`** — a cross-agent change,
+out of scope, and `FlagResolution` has no supervisor capability to route to.
+
+**D6 — the sweep test changes by one argument.** `test_reconciliation_flag_sweep.py` asserts that a
+run's own `warn` survives the legacy sweep, and finds it by `subject_ref_for(_PFE)`, the suffix-less
+subject. A subject that names its episode cannot be computed from the divergence alone, so that call
+becomes `subject_ref_for(_PFE, "s1")`; the assertion and every other line are unchanged. The spec's
+A10 ("passes with no edit") is therefore **not met as written**; the edit-free run's failure is in the
+handback. *Rejected:* **keep `subject_ref_for(divergence)` returning the suffix-less subject and use it
+for a ticker's first episode** — two subject grammars for new flags, and A8's "different first-sight
+snapshots give different subjects" would be false.
+
+**Measured while building — a correction to DL-253's first road not taken.** `merge_node` to a spent
+key does not silently rewrite the old Flag. On Postgres the `ON CONFLICT … DO UPDATE` carries a
+`WHERE NOT EXISTS` that skips the update when any incoming prop differs from the stored one, and
+`_raise_merge_conflict` then raises `ValueError: property '…' cannot be overwritten`
+(`kernel/graph_postgres.py:99`, `kernel/graph_support.py:87`); `InMemoryGraphStore` raises the same.
+A new Flag always differs (`created_at`, and `reason` names the snapshot), so the one-line fix would
+have **raised inside `reconcile_run_start` after the snapshot was written**: the run's flags lost, not
+an invisible `warn`. Still rejected, for a different reason. The writer's spent-key guard (D3) keeps
+that raise unreachable.
+
 ## DL-253 - a broker divergence's flag key has no episode, so a repeat ticker's first sighting is critical and its third is silent - status: OPEN (planner, 2026-10-01; work-queue 100, S248)
 
 **Why.** On `sched-2026-09-30` the run flagged `extra_graph_position:MDLZ` as `critical`, "Divergence survived a full run without adoption", at 22:32:22 UTC and resolved it at 22:39 as "divergence no longer present". It was a first sighting: the position had left the broker since the previous run, and the same run retired it. `extra_graph_position:BAC` did the same on `sched-2026-09-29`.

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 100 (live defect)
 **Branch:** `sprint-248-a-divergence-is-critical-only-when-it-survived-a-run`
-**Status:** SPEC
+**Status:** BUILT 2026-10-01 — by a Claude cloud session on branch `claude/upbeat-fermi-wva7zm` (the session forced that name; cut from `main` `f1192239`); `make ci` exit 0 locally (3,775 passed, 8 skipped, 100.00 %); A1–A10 green (A10 with a one-argument edit, see Return notes); four DL-70 plants red and restored; DL-254; execution laws v1.10 (38 / 64); DRIFT-093 corrected, DRIFT-094 opened. Owed to the planner: `uv lock` + PATCH bump, `make gate-ran`, Windows `make ci`, F1, retag, F2
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-253](../design-log.md) (the defect, measured, and the direction) · the builder's
@@ -454,17 +454,49 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-10-01 before the first code change, in the cloud session's checkout of `main` @
+`f1192239`. All four files read whole: `agents/execution/laws/laws.md` (v1.9, 459 lines),
+`agents/execution/laws/test-plan.md` (123), `docs/laws/conventions.md` (160),
+`docs/laws/drift-register.md` (196). Also read for the finding below: `agents/supervisor/laws/laws.md`
+`SUP-IDN-02`, `contracts/execution.py` `owns_graph`, `contracts/supervisor.py` `owns_graph`.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `agents/execution/reconciliation_flags.py` | execution `laws.md` + `test-plan.md`; `conventions.md`; `drift-register.md` | `EXEC-STA-03` 🟩 (all graph writes append-only; its cited test proves a `Fill` only, so for `Flag`/`FlagResolution` this sprint's A7 is the first proof); `EXEC-TRG-07` 🟩 (the snapshot, written before the flags; nothing here may prevent it, so the flag code still runs after `write_snapshot` and raises nothing new); new `EXEC-OBS-07` | Yes, twice. (1) `EXEC-STA-03` makes "never write to an existing `Flag` key" a guard in the writer, not only a property of the subject format (A7). (2) The single-writer finding below made me word `EXEC-OBS-07` in the passive ("is flagged") so the new clause claims no label ownership the supervisor book forbids |
+| `agents/execution/tests/test_reconciliation_flag_episodes.py` (new), `test_reconciliation_flags.py` | same | conventions §3/§7: a clause ID in every docstring | Severity tests re-cited from `EXEC-TRG-07` to `EXEC-OBS-07`; the snapshot test keeps `EXEC-TRG-07` |
+| `agents/execution/laws/laws.md`, `test-plan.md` | `conventions.md` §2 (IDs append-only: `OBS-07` is next free), §4 (version + Changelog with the *why*), §7a (the test-plan summary mirrors every conjunct) | — | The test-plan row restates all six conjuncts of `EXEC-OBS-07`, not a subset |
+| `docs/laws/drift-register.md` | itself | conventions §9 | DRIFT-093 (the silence) and DRIFT-094 (the ownership contradiction) |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** `contracts/` is
+untouched. It **declares** a guarantee S178 built and no clause held: **YES, law cycle owed and done
+in this unit of work** — `EXEC-OBS-07`, v1.9 → v1.10, test-plan row, DRIFT-093, both rollups.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** 🚨 **One, pre-existing, and I proceeded rather
+than stopping — the planner should weigh that call.** `SUP-IDN-02` (supervisor `laws.md:18`):
+*"The supervisor exclusively writes these graph labels (single-writer rule): `Message`, `Agent`,
+`Flag`, `Fault`, `FlagResolution`."* Execution's CAP block says `"access": "write_own_labels_only"`
+and lists neither label; `contracts/execution.py` `owns_graph` lists neither; `contracts/supervisor.py`
+`owns_graph` lists both. Yet execution has written divergence `Flag`s since S120 (DRIFT-020) and
+`FlagResolution`s since S178, and `reconciliation_flags.py:19` says so in a comment ("keys are
+supervisor-owned; we never import that module"). No drift row recorded it. This spec tells execution
+to keep writing both labels, so read literally it contradicts `SUP-IDN-02`. **Why I did not stop:**
+the contradiction is in `main` today and this sprint neither adds a writer nor a label nor a new kind
+of write; stopping would leave the measured defect (false `critical`s, 12 tickers blind) live while
+an ownership question that is independent of it waits. **What I did instead:** DRIFT-094 (OPEN, forced
+decision named), `EXEC-OBS-07` worded so it asserts what is flagged and when, not who owns the label,
+and DL-254 D5 records the call and the rejected alternative (stop).
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** (1) The whole divergence-flag lifecycle: no clause
+said when a divergence is `warn`, when `critical`, or how a flag closes; S178's tests cited
+`EXEC-TRG-07`, which is about the snapshot. That silence is how the code drifted from S178's intent
+(DRIFT-093, closed by `EXEC-OBS-07`). (2) No clause says what a second `record_divergences` call with
+the **same** snapshot does. The spec's rule ("an unresolved `warn` → `critical`") would escalate on
+it although no run has passed. I decided an episode is never escalated by the snapshot that opened it
+(DL-254 D3) and wrote it into `EXEC-OBS-07` ("at the **next** run-start reconciliation").
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none were ⬜. `EXEC-OBS-07` is new and proven in this
+sprint (⬜ → 🟩 at birth). `EXEC-STA-03` was already 🟩; A7 adds the first test of it on
+`Flag`/`FlagResolution`.
 
 ---
 
@@ -472,44 +504,233 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_a_second_episodes_first_sighting_is_warn` | `agents/execution/tests/test_reconciliation_flag_episodes.py` | PASS (red on `main` first) | `EXEC-OBS-07` |
+| A2 | `test_a_third_episode_is_flagged_and_escalates_when_it_survives` | `agents/execution/tests/test_reconciliation_flag_episodes.py` | PASS (red on `main` first) | `EXEC-OBS-07` |
+| A3 | `test_a_live_divergence_always_has_exactly_one_open_flag` (10 runs, MDLZ episodes of 1, 2, 4 runs and BAC of 4, 1; after every call the open set equals one Flag per live divergence, `warn` on its first run and `critical` after) | `agents/execution/tests/test_reconciliation_flag_episodes.py` | PASS | `EXEC-OBS-07` |
+| A4 | `test_repeating_a_divergence_never_mints_a_second_unresolvable_flag` (the existing test is exactly A4: four runs present, two Flags, one open `critical`; re-cited, body unchanged) | `agents/execution/tests/test_reconciliation_flags.py` | PASS | `EXEC-OBS-07` (was `EXEC-TRG-07`) |
+| A5 | `test_an_open_suffixless_flag_is_the_open_episode` (live MDLZ `warn` → `critical` on its own suffix-less subject, 3 Flags in total so no second `warn`; absent BAC `warn` resolved "divergence no longer present") | `agents/execution/tests/test_reconciliation_flag_upgrade.py` | PASS | `EXEC-OBS-07` |
+| A6 | `test_spent_suffixless_keys_do_not_touch_a_new_episode` | `agents/execution/tests/test_reconciliation_flag_upgrade.py` | PASS | `EXEC-OBS-07` |
+| A7 | `test_nothing_already_written_is_rewritten` (A3's schedule; props of every earlier `Flag` and `FlagResolution` identical after every later call) | `agents/execution/tests/test_reconciliation_flag_episodes.py` | PASS | `EXEC-STA-03` / `EXEC-OBS-07` |
+| A8 | `test_the_subject_is_deterministic_and_well_formed` (a live-shaped snapshot key twice → same subject, a second key → different; family prefix, never the legacy prefix, parses to `(kind, ticker)`) | `agents/execution/tests/test_reconciliation_flag_upgrade.py` | PASS | `EXEC-OBS-07` |
+| A9 | `test_each_call_reads_flag_and_resolution_once` (30 live divergences; first sight, escalation and retirement calls each read exactly `Flag` ×1 and `FlagResolution` ×1, and make **no** `get_node` call) | `agents/execution/tests/test_reconciliation_flag_upgrade.py` | PASS | `EXEC-OBS-07` |
+| A10 | the three tests of `test_reconciliation_flag_sweep.py` | `agents/execution/tests/test_reconciliation_flag_sweep.py` | PASS **with a one-argument edit** — *not met as written* ("no edit"); see Return notes | unchanged (`EXEC-TRG-07`, `EXEC-STA-03` ×2) |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** (1) `test_a_repeated_call_for_one_snapshot_is_not_a_survived_run`
+(DL-254 D3: the snapshot that opened an episode never escalates it), (2)
+`test_an_open_critical_supersedes_a_stray_open_warn` (a live divergence keeps exactly one open Flag),
+(3) `test_a_spent_critical_key_is_never_rewritten` (DL-254 D4's accepted limit; `EXEC-STA-03` /
+`EXEC-OBS-07`) — all in `test_reconciliation_flag_upgrade.py`. **Re-cited, bodies changed only to pass
+the episode:** `test_first_sight_of_a_divergence_is_warn_not_critical` and
+`test_a_divergence_surviving_a_run_escalates_to_critical` (`EXEC-TRG-07` → `EXEC-OBS-07`),
+`test_an_adopted_divergence_is_retired_on_the_next_run` (`EXEC-STA-03` → `EXEC-OBS-07 / EXEC-STA-03`).
+`test_run_start_reconciliation_records_an_agreeing_book_without_flags` keeps `EXEC-TRG-07`. New shared
+fixture module: `agents/execution/tests/flag_episode_helpers.py`.
 
 ---
 
 ## Closeout — evidence
 
-*(builder fills every field below; a field left as written here returns the handback)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud session's checkout
+`/home/user/trading-agents`, branch `claude/upbeat-fermi-wva7zm` cut from `main` `f1192239`.
+**No `.env`.** Dependencies installed with `uv sync --frozen` (as CI does; the forecaster extra needs
+`download.pytorch.org`, which this session cannot reach, and CI does not install it either). Every
+proof is a unit test on `InMemoryGraphStore`; nothing ran against Neon, Alpaca or Azure.
 
-**Tree the proofs ran in (and `.env` present?):**
-
-**Result:**
+**Result:** BUILT. Each occurrence of a divergence is its own episode; severity is read from the open
+episode, never from a ticker's spent keys. Unit-proven only; F1 and F2 are the planner's.
 
 **Files changed:**
 
-**Design decisions:**
+- `agents/execution/reconciliation_flags.py` — the episode subject (`subject_ref_for(divergence,
+  episode)`), the open-episode state machine, the spent-key guard; the legacy sweep path unchanged.
+- `agents/execution/divergence_episodes.py` (**new**) — pure read side: `flag_join`, `identity`,
+  `open_episodes` and the two prefixes. Split out because the flags module reached 208 lines.
+- `agents/execution/tests/flag_episode_helpers.py` (**new**), `test_reconciliation_flag_episodes.py`
+  (**new**), `test_reconciliation_flag_upgrade.py` (**new**).
+- `agents/execution/tests/test_reconciliation_flags.py` — four docstrings re-cited, three calls pass
+  the episode.
+- `agents/execution/tests/test_reconciliation_flag_sweep.py` — **one argument** (Return notes).
+- `agents/execution/laws/laws.md` (v1.10, `EXEC-OBS-07`, Changelog), `test-plan.md` (one row);
+  `docs/laws/ledger.md`, `docs/laws/INDEX.md` (38 / 64); `docs/laws/drift-register.md` (DRIFT-093,
+  DRIFT-094); `docs/design-log.md` (DL-254); this file and its `docs/sprints/README.md` row.
+- **Not touched:** `agents/supervisor/`, `surfaces/`, `scripts/sweep_divergence_flags.py`,
+  `scripts/_audit_broker_graph_impl.py`, `contracts/`, `reconciliation_store.py`
+  (`position_divergences`), `reconciliation.py`, `pyproject.toml`, `uv.lock`.
 
-**Proof — the red run first:**
+**Design decisions:** [DL-254](../design-log.md). D1 token = the first-sight snapshot's key (rejected:
+run id, clock/uuid, counter). D2 subject = `broker-position-divergence:{kind}:{ticker}:{snapshot key}`
+(rejected: an `@` separator, token first — it would start with the legacy prefix — and a hash). D3 one
+read of `Flag` and one of `FlagResolution`, open = no resolution on `(subject_ref, severity)`, grouped
+by `(kind, ticker)`; the snapshot that opened an episode never escalates it; the writer refuses a key it
+has read (rejected: a `get_node` per divergence, a prefix-query port, escalating on any open `warn`).
+D4 an open suffix-less Flag is the open episode (rejected: retire-and-reopen). D5 proceed despite the
+`SUP-IDN-02` contradiction (rejected: stop; route through the supervisor). D6 the sweep test changes by
+one argument (rejected: a suffix-less subject for a ticker's first episode).
+
+**Proof — the red run first** (A1, A2 written before any code change, on `f1192239`):
+
+```text
+FF                                                                       [100%]
+agents/execution/tests/test_reconciliation_flag_episodes.py:24: in test_a_second_episodes_first_sighting_is_warn
+E   AssertionError: assert ['critical'] == ['warn']
+E     At index 0 diff: 'critical' != 'warn'
+agents/execution/tests/test_reconciliation_flag_episodes.py:34: in test_a_third_episode_is_flagged_and_escalates_when_it_survives
+E   AssertionError: assert [] == ['warn']
+E     Right contains one more item: 'warn'
+FAILED agents/execution/tests/test_reconciliation_flag_episodes.py::test_a_second_episodes_first_sighting_is_warn
+FAILED agents/execution/tests/test_reconciliation_flag_episodes.py::test_a_third_episode_is_flagged_and_escalates_when_it_survives
+2 failed in 0.57s
+```
 
 **Proof — the green run:**
 
-**The reproduction after the fix:**
+```text
+test_reconciliation_flag_episodes.py::test_a_second_episodes_first_sighting_is_warn PASSED
+test_reconciliation_flag_episodes.py::test_a_third_episode_is_flagged_and_escalates_when_it_survives PASSED
+test_reconciliation_flag_episodes.py::test_a_live_divergence_always_has_exactly_one_open_flag PASSED
+test_reconciliation_flag_episodes.py::test_nothing_already_written_is_rewritten PASSED
+test_reconciliation_flag_upgrade.py::test_an_open_suffixless_flag_is_the_open_episode PASSED
+test_reconciliation_flag_upgrade.py::test_spent_suffixless_keys_do_not_touch_a_new_episode PASSED
+test_reconciliation_flag_upgrade.py::test_the_subject_is_deterministic_and_well_formed PASSED
+test_reconciliation_flag_upgrade.py::test_a_repeated_call_for_one_snapshot_is_not_a_survived_run PASSED
+test_reconciliation_flag_upgrade.py::test_an_open_critical_supersedes_a_stray_open_warn PASSED
+test_reconciliation_flag_upgrade.py::test_a_spent_critical_key_is_never_rewritten PASSED
+test_reconciliation_flag_upgrade.py::test_each_call_reads_flag_and_resolution_once PASSED
+test_reconciliation_flags.py::test_first_sight_of_a_divergence_is_warn_not_critical PASSED
+test_reconciliation_flags.py::test_a_divergence_surviving_a_run_escalates_to_critical PASSED
+test_reconciliation_flags.py::test_repeating_a_divergence_never_mints_a_second_unresolvable_flag PASSED
+test_reconciliation_flags.py::test_an_adopted_divergence_is_retired_on_the_next_run PASSED
+test_reconciliation_flags.py::test_run_start_reconciliation_records_an_agreeing_book_without_flags PASSED
+test_reconciliation_flags.py::test_a_flag_whose_key_contradicts_its_severity_prop_is_not_resolved PASSED
+test_reconciliation_flag_sweep.py::test_a_run_leaves_legacy_and_foreign_flags_alone PASSED
+test_reconciliation_flag_sweep.py::test_the_sweep_retires_legacy_flags_once_and_only_legacy_ones PASSED
+test_reconciliation_flag_sweep.py::test_legacy_flag_without_a_severity_prop_defaults_to_critical PASSED
+20 passed in 0.45s
+```
 
-**Guards planted:**
+**The reproduction after the fix** (the spec's script, unchanged, `PYTHONPATH=.`, no `.env`):
 
-**Module line counts:**
+```text
+episode 1, first sight           flags=1 resolutions=0 unresolved=['warn']
+episode 1, gone                  flags=1 resolutions=1 unresolved=[]
+episode 2, FIRST sight           flags=2 resolutions=1 unresolved=['warn']
+episode 2, gone                  flags=2 resolutions=2 unresolved=[]
+episode 3, first sight           flags=3 resolutions=2 unresolved=['warn']
+episode 3, SURVIVED a run        flags=4 resolutions=3 unresolved=['critical']
+episode 3, survived two          flags=4 resolutions=3 unresolved=['critical']
+```
 
-**`make ci`:**
+Lines 3 and 5 `['warn']`, 6 and 7 `['critical']`. Before the fix, on `f1192239`, it printed the spec's
+output byte for byte (`['critical']`, then `[]` ×3).
 
-**`pyproject.toml` and `uv.lock`:**
+**Guards planted** (each applied to the working tree, run, then the saved file copied back and
+`cmp`-verified identical; no plant was committed):
 
-**Owed to the planner:**
+1. **Restore line 48's existence check — A1 red.** With no open episode, a first sighting went to
+   `critical` whenever a `warn` key had ever been written for that kind and ticker (resolved or not):
+   ```text
+   E   AssertionError: assert ['critical'] == ['warn']
+   FAILED …/test_reconciliation_flag_episodes.py::test_a_second_episodes_first_sighting_is_warn
+   ```
+   *(A first, cruder plant — counting resolved Flags as open in `open_episodes` — also went red, but by
+   the store refusing to re-resolve: `ValueError: property 'resolved_at' cannot be overwritten`. The
+   faithful plant above is the one that reproduces the live symptom.)*
+2. **Drop the episode token from the subject — A2 red.** `subject_ref_for` returned
+   `…:{kind}:{ticker}`; the third episode's keys are spent, the writer refuses them, nothing is flagged:
+   ```text
+   test_reconciliation_flag_episodes.py:40: in test_a_third_episode_is_flagged_and_escalates_when_it_survives
+   E   AssertionError: assert [] == ['warn']
+   1 failed in 0.43s
+   ```
+3. **Retire an open suffix-less Flag unconditionally — A5 red.** Every open subject with no token was
+   closed "divergence no longer present" before the divergences were walked:
+   ```text
+   test_reconciliation_flag_upgrade.py:56: in test_an_open_suffixless_flag_is_the_open_episode
+   E   AssertionError: assert ['broker-posi...tion:MDLZ:s9'] == ['broker-posi...osition:MDLZ']
+   E     At index 0 diff: 'broker-position-divergence:extra_graph_position:MDLZ:s9' != 'broker-position-divergence:extra_graph_position:MDLZ'
+   1 failed in 0.57s
+   ```
+4. **Write a new flag to a spent key — A7 red.** Token dropped **and** the spent-key guard removed (the
+   one-line fix's shape). On `InMemoryGraphStore` the store itself refuses inside the call:
+   `ValueError: property 'reason' cannot be overwritten` → A7 FAILED. To show A7's **own** comparison
+   is not vacuous, the same plant was re-run with the store's `_append_props` monkeypatched to overwrite
+   silently (a temporary `conftest.py`, removed):
+   ```text
+   E   AssertionError: ('s3', 'flag:broker-position-divergence:extra_graph_position:MDLZ:warn')
+   E     Differing items:
+   E     {'reason': 'Broker position divergence at run start (s3):\n- extra_graph_position MDLZ graph_qty=16'} != {'reason': 'Broker position divergence at run start (s1):\n- extra_graph_position MDLZ graph_qty=16'}
+   E     {'created_at': '2026-10-01T02:46:58.548893+00:00'} != {'created_at': '2026-10-01T02:46:58.548712+00:00'}
+   ```
 
-**Not met / verified failing:**
+**Module line counts:** `reconciliation_flags.py` **179** (was 138); `divergence_episodes.py` **56**
+(new); `tests/flag_episode_helpers.py` **60** (new); `tests/test_reconciliation_flag_episodes.py`
+**93** (new); `tests/test_reconciliation_flag_upgrade.py` **160** (new);
+`tests/test_reconciliation_flags.py` **150** (unchanged count); `tests/test_reconciliation_flag_sweep.py`
+**75** (unchanged count). All < 200; three sit in the 150 warn band and are printed as `[WARN]` by the
+gate (179, 160, 150).
+
+**`make ci`:** `make ci > scratchpad/ci.txt 2>&1 ; echo $?` → **exit 0**, run on the full working tree
+before this handback was written, and re-run after it (see Return notes). All 15 steps: ruff, format
+(1,511 files), mypy (1,130 files, no issues), import-linter (5 kept, 0 broken), module size (warnings
+only), module header, law coverage, PARAM/settings sync (two pre-existing envelope warnings), sprint
+status, markdown links, version scheme, pytest **3,775 passed, 8 skipped**, coverage **100.00 %**
+(`divergence_episodes.py` and `reconciliation_flags.py` both 100.00 %), dependency audit "No unaccepted
+vulnerabilities; 1 accepted advisory re-checked" (PYSEC-2026-2447, diskcache, DL-184), detect-secrets
+**Passed**, untracked-secrets scan of the 4 new files **Passed**.
+
+**`pyproject.toml` and `uv.lock`:** **untouched** — the version stays `0.120.01` and the lock is
+byte-identical to `main`. `uv sync --frozen` read the lock and wrote nothing to it. The PATCH bump and
+the `uv lock` that must follow it are owed to the planner (this session cannot re-resolve: no route to
+`download.pytorch.org`).
+
+**Owed to the planner:** `uv lock` with the PATCH bump (next available at merge); `make gate-ran` from
+the proving worktree (no `gh` here); Windows `make ci`; **F1** (read-only replay of the 53 live
+subjects on Neon in memory); the image-only retag; **F2** (the first run in which a position enters or
+leaves the book). Nothing in this handback is `GATE PROVEN` or a live proof.
+
+**Not met / verified failing:** **A10 as written** — "`test_reconciliation_flag_sweep.py` passes with
+no edit" is not met; it passes with a one-argument edit (Return notes, item 1). Everything else in the
+success factors is met.
 
 ---
 
 ## Return notes
 
-*(builder fills)*
+1. **A10 could not be met as written, and I edited one argument rather than stop.** The sweep test's
+   `test_the_sweep_retires_legacy_flags_once_and_only_legacy_ones` finds the run's own `warn` by
+   `subject_ref_for(_PFE)` — the suffix-less subject — to show the sweep leaves it alone. The spec makes
+   the subject name its episode (Scope 2), which cannot be computed from the divergence alone, so no
+   one-argument form can name the Flag the run wrote. Measured, edit-free: `TypeError:
+   subject_ref_for() missing 1 required positional argument: 'episode'`; and with a one-argument form
+   kept, the suffix-less key is simply absent (`suffix-less key present: False`; the run wrote
+   `flag:broker-position-divergence:missing_graph_position:PFE:s1:warn`). The edit is
+   `subject_ref_for(_PFE)` → `subject_ref_for(_PFE, 's1')`; the assertion, the legacy fixtures, the
+   other two tests and `scripts/sweep_divergence_flags.py` are untouched, and the sweep's behaviour is
+   unchanged. DL-254 D6.
+2. **The law contradicted the spec, and I did not stop (MUST RULE step 6) — please weigh it.**
+   `SUP-IDN-02` makes the supervisor the single writer of `Flag` and `FlagResolution`; execution has
+   written both since S120/S178, unrecorded. This sprint changes neither who writes nor which labels.
+   DRIFT-094 (OPEN) carries the forced decision; DL-254 D5 the call. If the planner holds that step 6
+   should have stopped the sprint, the branch can be returned as it stands — the contradiction is the
+   same with or without it. Nothing enforces it at runtime: the vocabulary pack's `owners` map is
+   empty on purpose.
+3. **A correction to DL-253 and this spec's first road not taken.** `merge_node` to a spent key does not
+   silently rewrite the old Flag on Postgres: the `ON CONFLICT … DO UPDATE` has a `WHERE NOT EXISTS`
+   that skips a changed prop, and `_raise_merge_conflict` raises `ValueError … cannot be overwritten`
+   (`kernel/graph_postgres.py:99`), exactly as `InMemoryGraphStore` does. So the one-line fix would have
+   raised inside `reconcile_run_start` after the snapshot was written. Still rejected; recorded in
+   DL-254, DL-253 itself left as the planner wrote it.
+4. **One decision the spec did not ask for:** a second call with the **same** snapshot does not escalate
+   (DL-254 D3; `test_a_repeated_call_for_one_snapshot_is_not_a_survived_run`), so `EXEC-OBS-07` reads
+   "at the **next** run-start reconciliation". `reconcile_run_start` writes one snapshot per run today
+   (`EXEC-TRG-07`), so nothing live depends on it.
+5. **Accepted limit (DL-254 D4):** an open suffix-less `warn` whose `critical` key is already spent is
+   not escalated (the writer refuses spent keys); it stays the one open `warn` and retires when the
+   divergence goes. Only two crashes in a row between the old code's writes could produce it, and all
+   112 live Flags are resolved.
+6. **Rollback note, unchanged from the spec:** the old code's `_retire_absent` resolves any open
+   new-format Flag as "divergence no longer present" and re-raises under the old keys.
+7. `docs/STATE.md` was not edited: it is the planner's live tracker and the spec's handback list names
+   only this file and its README row.
+8. **Branch:** the session forced `claude/upbeat-fermi-wva7zm`; the spec's
+   `sprint-248-a-divergence-is-critical-only-when-it-survived-a-run` was not created.

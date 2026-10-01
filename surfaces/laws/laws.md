@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -42,8 +42,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   documented log behaviour.
 - **SRF-OUT-02** — "Open incidents" has one definition across surfaces and health: the same live
   incident predicate the supervisor health count uses.
-- **SRF-OUT-03** — Dashboard chat answers are grounded in the selected run and record auditable
-  `CommandAudit`, `LLMCall`, and `Intent` facts for priced/operator review.
+- **SRF-OUT-03** — Dashboard chat answers that the operator model composes are grounded in the
+  selected run and record auditable `CommandAudit`, `LLMCall`, and `Intent` facts for priced/operator
+  review. The four deterministic **quick asks** (`system status`, `open incidents`, `vs the market`,
+  `running unattended`) are graph reads. They make no model call and write none of those facts.
+  `status`, `incidents` and `scorecard` are not scoped by the selected run (`performance` is,
+  `SRF-OUT-07`). *(DRIFT-078; was: every chat answer.)*
 - **SRF-OUT-04** — Operator-facing dashboard time labels are Melbourne local time in 24-hour format;
   the page receives `Australia/Melbourne` as its rendering zone.
 - **SRF-OUT-05** — Operator-facing dashboard text and API display strings do not expose sprint ids,
@@ -204,10 +208,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | ID | Law says | PRD / mission / code says | Decision needed |
 | --- | --- | --- | --- |
 | — | No new S229 surfaces divergence found. | DRIFT-022 is already corrected; S229 cites it as proof for selected-run scoping rather than reopening it. | Not applicable. |
-| DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | Open: narrow `SRF-OUT-03` to operator-mediated answers, or audit the quick asks. |
+| DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
 
+- v1.3 — S251 (DL-259, DL-260; DRIFT-078): `SRF-OUT-03` covers the answers the operator model
+  composes, and names the four quick asks as graph reads that make no model call and write no audit
+  fact, with which of them the selected run scopes. It stays 🟩, now also on
+  `test_chat_quick_asks.py`. No behaviour change; 29 / 36 unchanged.
 - v1.2 — S236: `SRF-TRG-02` lists the `scorecard` tool; `SRF-OUT-08` added for the unattended vital
   and the `scorecard` answer (G1, G3 and two clocks, from the acceptance gate's verdict and the records
   human actions leave); `PARAM` gains `scorecard_window_days`, `scorecard_g1_target`,

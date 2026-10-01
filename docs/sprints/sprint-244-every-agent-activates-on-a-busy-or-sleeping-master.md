@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 95 (live defect)
 **Branch:** `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master`
-**Status:** MERGED 2026-09-29 — `0.119.03`, fast-forwarded to `a6fbae1e`, tag `v0.119.03`, GATE PROVEN `a6fbae1e`, Windows `make ci` 3,687 passed / 100.00 %; built by a cloud session on `claude/loving-gates-f8vfsd`; **deployed `s244`** (image-only retag, 16 / 16 + dispatcher, DeployRecord); **F1 PASS** (0 EHLO tracebacks, 2 resends, 15 activations, 0 orphans); F2 (the 22:30 UTC wave) owed
+**Status:** MERGED 2026-09-29 — `0.119.03`, fast-forwarded to `a6fbae1e`, tag `v0.119.03`, GATE PROVEN `a6fbae1e`, Windows `make ci` 3,687 passed / 100.00 %; built by a cloud session on `claude/loving-gates-f8vfsd`; **deployed `s244`** (image-only retag, 16 / 16 + dispatcher, DeployRecord); **F1 PASS** (0 EHLO tracebacks, 2 resends, 15 activations, 0 orphans); **F2 measured 2026-10-01** on `sched-2026-09-30`: 0 EHLO tracebacks, 0 resends, 15 activations, each 2–8 s after its own container started; 3 of 15 started ~2 min late waiting for an Azure node, so "all within ~60 s" is not met as written; work-queue 95 closed
 **Version:** `0.119.03` (PATCH)
 **Effort:** M
 **Decisions:** [DL-248](../design-log.md) (the defect, measured, and the direction) · R004

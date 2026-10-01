@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-246-every-debate-turn-records-how-it-read-the-evidence` (built on `claude/focused-bardeen-3975ju`: the cloud session forces that name)
-**Status:** MERGED 2026-09-30 — `0.120.00`, fast-forwarded to `0ac9f96b`, tag `v0.120.00`, GATE PROVEN `0ac9f96b` (CI, CodeQL, Security Findings, attempt 1); Windows `make ci` exit 0 (3,764 passed, 8 skipped, 100.00 %); golden regenerated with real DSPy 3.3.1 byte-identical to the committed one; built by a cloud session on `claude/focused-bardeen-3975ju` (cut from `main` `61068bc`). **Not deployed — the fleet runs `s245`.** Owed: the 20-call replay check, the image-only retag, F1
+**Status:** MERGED 2026-09-30 — `0.120.00`, fast-forwarded to `0ac9f96b`, tag `v0.120.00`, GATE PROVEN `0ac9f96b` (CI, CodeQL, Security Findings, attempt 1); Windows `make ci` exit 0 (3,764 passed, 8 skipped, 100.00 %); golden regenerated with real DSPy 3.3.1 byte-identical to the committed one; built by a cloud session on `claude/focused-bardeen-3975ju` (cut from `main` `61068bc`). Replay at production effort passed 2026-09-30 (parse 19 / 20, 0 `max_tokens` stops, challenger 32.4–50.4 s, $1.92); **deployed `s246`** 2026-09-30 (image-only retag). F1 owed: `sched-2026-09-30` approved no order, so nothing was debated
 **Version:** *next available MINOR at merge*
 **Effort:** L
 **Decisions:** [DL-250](../design-log.md) and its amendment (the operator's direction) · work-queue **97 (a)** · ADR-0010 (DSPy behind a port) · DL-184 (no image installs `dspy`)

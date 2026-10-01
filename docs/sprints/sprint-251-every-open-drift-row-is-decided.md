@@ -116,6 +116,7 @@ Rulings are the planner's ([DL-259](../design-log.md)). **A** = amend the clause
 | 031 | — | W→DECIDED | The four test-plan layouts stay; the gate parses all four since S204 and every clause has a row. The reporter mismatch is already fixed. No file changes but the row |
 | 030 | — | W | No kernel law book exists to hold a retry and quarantine envelope. `DECIDED`: owed when a substrate book is authored (next-leg E20.3). Do not create the book here |
 | 034 | — | W | `RecommendationOutcome` does not exist. `DECIDED`: the sprint that builds it owns its law cycle |
+| 096 | analyst | A | Filed by S250 (2026-10-01), after this table was written. State what the code does with a candidate whose bars cover fewer sessions than `required_history_bars`: it is scored, each indicator that lacks history is absent and visible as a `*_missing_bars` metric, and only fewer than `min_history_bars` rejects. Cite an existing analyst test of that path |
 
 Also in scope: the two ledger versions that disagree with their books (measured above), and every
 version this sprint bumps, in `ledger.md` and `INDEX.md`.

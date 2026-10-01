@@ -3,7 +3,7 @@
 
 **Phase:** Next leg P17, item E17.5 ([next-leg-plan.md](../next-leg-plan.md)) · work-queue 82
 **Branch:** `sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict`
-**Status:** BUILT 2026-10-01 by a Claude cloud session on `claude/hopeful-davinci-oob51b` (cut from `main` `05ca2be`), not merged: C1–C16 green, `make ci` exit 0 (3,828 passed, 100.00 %); 🚨 F1/F2 blocked by a finding (Return notes 1: before 2024 the declared window holds 194–198 sessions, so the rule withholds every unheld line); owed: `uv lock` + MINOR, `make gate-ran`, Windows `make ci`, the repair decision, F1, F2
+**Status:** MERGED 2026-10-01 — `0.121.00`, fast-forwarded to `96b03d52`, tag `v0.121.00`, GATE PROVEN `96b03d52` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,915 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/hopeful-davinci-oob51b`, returned once for the holiday-table repair its own handback found; **F1 PASS** (three months on the licensed cache with the history rule on: 54 buys, 0 decided on fewer than 200 bars, least 217, 1,199 member-sessions withheld); the provider's NYSE table now holds every closure from 2016, so the harness window is 203 sessions on all 2,446 scored sessions (194–198 before 2024 until now); no deploy; owed: F2, EXP-014 itself, once E17.4's fidelity verdict reads PASS
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-232](../design-log.md) (what the replay covers) · [DL-257](../design-log.md) (the
@@ -993,3 +993,15 @@ untracked secrets (1 new file) **Passed**.
 threshold and Appendix P are unchanged. No other file under `agents/`, `contracts/`, `kernel/`,
 `orchestration/` or `surfaces/` was touched. Owed to the planner, as before: `uv lock` with the MINOR
 bump, Windows `make ci`, `make gate-ran`, the merge, then F1 and F2.
+
+### Planner, at merge (2026-10-01)
+
+- **Scope held.** The first handback touches `scripts/`, `tests/` and docs only; the return touches `agents/provider/domain/market_calendar.py` and its tests, as Return 1 allowed. No existing test's expected value changed except `tests/test_replay_history_calendar.py`, which pinned the defect.
+- **Proven.** Windows `make ci` exit 0 (3,915 passed, 8 skipped, 100.00 %); `GATE PROVEN` for `96b03d52` from the proving worktree, printed SHA equal to `HEAD`; fast-forwarded after a rebase onto `main`; the branch's open CodeQL alerts equal the last merged branch's (131, 0 added); the lock's package set is unchanged.
+- **Read and re-proved by the planner.** `exp014_arms.json` equals Appendix P; the verdict rule and the bootstrap read correct; two plants of the planner's own (the paired condition dropped; resampling without blocks) each turned a test red and were restored.
+- **The repaired calendar, measured on the cache.** It equals the cache's sessions on every day from 2016-01-04 to 2026-09-25 (0 differences), and the declared window holds 203 sessions on all 2,446 scored sessions.
+- **F1 PASS** ([functionality-checks](../laws/functionality-checks.md)). The byte-identity limb written in this spec no longer applies: the calendar repair changes rule-off replays too, by design.
+- **The spec's miss, recorded in DL-257's amendment:** the rule was specified against a window the planner assumed held about 203 sessions and did not measure by year. The builder measured it and stopped, which is what the handover asked for.
+- **Carried forward:** every earlier replay on this harness gave the analyst at most 198 bars before 2024. S235's smoke result and anything scored on it predate the repair.
+- **Return note 2** (H1's wording against Appendix P): Appendix P binds, as coded. **DRIFT-096** (the analyst's book is silent on a candidate under `required_history_bars`) is added to S251's table.
+- **Owed:** F2, EXP-014 itself, after the fidelity re-run reads PASS.

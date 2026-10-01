@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 100 (live defect)
 **Branch:** `sprint-248-a-divergence-is-critical-only-when-it-survived-a-run`
-**Status:** BUILT 2026-10-01 — by a Claude cloud session on branch `claude/upbeat-fermi-wva7zm` (the session forced that name; cut from `main` `f1192239`); `make ci` exit 0 locally (3,775 passed, 8 skipped, 100.00 %); A1–A10 green (A10 with a one-argument edit, see Return notes); four DL-70 plants red and restored; DL-254; execution laws v1.10 (38 / 64); DRIFT-093 corrected, DRIFT-094 opened. Owed to the planner: `uv lock` + PATCH bump, `make gate-ran`, Windows `make ci`, F1, retag, F2
+**Status:** MERGED 2026-10-01 — `0.120.02`, fast-forwarded to `09699ad0`, tag `v0.120.02`, GATE PROVEN `09699ad0` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,775 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/upbeat-fermi-wva7zm` (cut from `main` `f1192239`); **F1 PASS** (the 53 live subjects replayed in memory through the merged code: first sighting 53 `warn` and 0 `critical`, the next run 53 `critical`, all gone 0 open, a new episode 53 `warn`; 0 of 224 copied nodes rewritten); A10 met with a one-argument edit to the sweep test, accepted (DL-254 D6); DRIFT-094 opened and filed as work-queue 102; **not deployed — the fleet runs `s246`**; owed: the image-only retag, then F2
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-253](../design-log.md) (the defect, measured, and the direction) · the builder's
@@ -124,7 +124,7 @@ cries wolf on some tickers and has gone blind on others.
 | MDLZ on `sched-2026-09-30` | `critical` 22:32:22 UTC, resolved 22:39 | *[measured, Neon]* reason "divergence no longer present"; the `warn` key was spent on 09-08 |
 | Books after that run | 34 / 34 positions, 34 / 34 stops, 0 failures | *[measured]* `scripts/audit_broker_graph.py` |
 | Readers join a resolution to a flag on the props `(subject_ref, severity)` | 2 readers | *[measured, read]* `agents/supervisor/domain/health.py:46` and `:90`; `surfaces/queries/flags.py:39` and `:61` |
-| Writing to an existing key rewrites the node | yes | *[measured, read]* `kernel/graph_postgres_queries.py:21`, `ON CONFLICT (label, key) DO UPDATE` |
+| ~~Writing to an existing key rewrites the node~~ **Wrong — corrected at merge.** It raises: the `ON CONFLICT … DO UPDATE` carries a `WHERE NOT EXISTS` that skips the update when an incoming prop differs, and `_raise_merge_conflict` then raises `property '…' cannot be overwritten` (`kernel/graph_postgres.py:99`); the in-memory store does the same. The planner read line 21 of the SQL and not the guard under it; measured by the builder (DL-254) | ~~yes~~ no | ~~*[measured, read]*~~ *[was a misreading]* `kernel/graph_postgres_queries.py:21`, `ON CONFLICT (label, key) DO UPDATE` |
 | No reader parses the kind or ticker out of `subject_ref` | 0 | *[measured]* a search of `agents kernel contracts orchestration surfaces scripts` for the prefix and both kind names finds only `reconciliation_store.py`, `reconciliation_flags.py`, the sweep script and tests |
 | The false `critical` set `healthy=false` for those seven minutes | unknown | *[ASSUMED — not measured]* `compute_health` counts unresolved `critical` Flags, so it would if a report was computed in that window. No report was located. Nothing in this sprint depends on it |
 
@@ -628,33 +628,40 @@ output byte for byte (`['critical']`, then `[]` ×3).
 
 1. **Restore line 48's existence check — A1 red.** With no open episode, a first sighting went to
    `critical` whenever a `warn` key had ever been written for that kind and ticker (resolved or not):
+
    ```text
    E   AssertionError: assert ['critical'] == ['warn']
    FAILED …/test_reconciliation_flag_episodes.py::test_a_second_episodes_first_sighting_is_warn
    ```
+
    *(A first, cruder plant — counting resolved Flags as open in `open_episodes` — also went red, but by
    the store refusing to re-resolve: `ValueError: property 'resolved_at' cannot be overwritten`. The
    faithful plant above is the one that reproduces the live symptom.)*
 2. **Drop the episode token from the subject — A2 red.** `subject_ref_for` returned
    `…:{kind}:{ticker}`; the third episode's keys are spent, the writer refuses them, nothing is flagged:
+
    ```text
    test_reconciliation_flag_episodes.py:40: in test_a_third_episode_is_flagged_and_escalates_when_it_survives
    E   AssertionError: assert [] == ['warn']
    1 failed in 0.43s
    ```
+
 3. **Retire an open suffix-less Flag unconditionally — A5 red.** Every open subject with no token was
    closed "divergence no longer present" before the divergences were walked:
+
    ```text
    test_reconciliation_flag_upgrade.py:56: in test_an_open_suffixless_flag_is_the_open_episode
    E   AssertionError: assert ['broker-posi...tion:MDLZ:s9'] == ['broker-posi...osition:MDLZ']
    E     At index 0 diff: 'broker-position-divergence:extra_graph_position:MDLZ:s9' != 'broker-position-divergence:extra_graph_position:MDLZ'
    1 failed in 0.57s
    ```
+
 4. **Write a new flag to a spent key — A7 red.** Token dropped **and** the spent-key guard removed (the
    one-line fix's shape). On `InMemoryGraphStore` the store itself refuses inside the call:
    `ValueError: property 'reason' cannot be overwritten` → A7 FAILED. To show A7's **own** comparison
    is not vacuous, the same plant was re-run with the store's `_append_props` monkeypatched to overwrite
    silently (a temporary `conftest.py`, removed):
+
    ```text
    E   AssertionError: ('s3', 'flag:broker-position-divergence:extra_graph_position:MDLZ:warn')
    E     Differing items:
@@ -734,3 +741,14 @@ success factors is met.
    only this file and its README row.
 8. **Branch:** the session forced `claude/upbeat-fermi-wva7zm`; the spec's
    `sprint-248-a-divergence-is-critical-only-when-it-survived-a-run` was not created.
+
+### Planner, at merge (2026-10-01)
+
+- **Scope held.** The diff touches execution, its law book and docs only; no supervisor, `surfaces/`, `scripts/`, `contracts/` or `kernel/` file.
+- **Proven.** Windows `make ci` exit 0 (3,775 passed, 8 skipped, 100.00 %); `GATE PROVEN` for `09699ad0` from the proving worktree, printed SHA equal to `HEAD`; fast-forwarded, so the merged SHA is the gated SHA; the branch's open CodeQL alerts equal the last merged branch's (0 added).
+- **F1 PASS** ([functionality-checks](../laws/functionality-checks.md)). Live: 112 family Flags (65 run-stable, 47 legacy snapshot-keyed) and 112 resolutions; 53 subjects, 40 with a spent `warn`, 12 with both, and 1 old hash-keyed `critical`.
+- **A10** as written was the spec's mistake: `subject_ref_for` had to gain the episode, so a test that names the flag by its subject had to pass it. Accepted.
+- **DRIFT-094** is real and older than this sprint. Proceeding was right: stopping would have left a live defect to protect a rule nothing enforces. Filed as work-queue 102.
+- **The spec's first road not taken was rejected for a wrong reason** (see the corrected Measured row). The one-line fix would have raised inside `reconcile_run_start`, not hidden a `warn`. Still rejected.
+- **Accepted limit (DL-254 D4):** an open suffix-less `warn` whose `critical` key is already spent is not escalated. No live subject has that shape today: 0 Flags are open, and the one subject with a `critical` and no `warn` is the old hash-keyed one, which matches no ticker.
+- **Owed:** the image-only retag (operator's call; rollback `s246`), then F2.

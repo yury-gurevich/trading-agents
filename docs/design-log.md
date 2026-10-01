@@ -92,7 +92,7 @@ have **raised inside `reconcile_run_start` after the snapshot was written**: the
 an invisible `warn`. Still rejected, for a different reason. The writer's spent-key guard (D3) keeps
 that raise unreachable.
 
-## DL-253 - a broker divergence's flag key has no episode, so a repeat ticker's first sighting is critical and its third is silent - status: OPEN (planner, 2026-10-01; work-queue 100, S248)
+## DL-253 - a broker divergence's flag key has no episode, so a repeat ticker's first sighting is critical and its third is silent - status: DECIDED (planner, 2026-10-01; work-queue 100, built as S248, DL-254)
 
 **Why.** On `sched-2026-09-30` the run flagged `extra_graph_position:MDLZ` as `critical`, "Divergence survived a full run without adoption", at 22:32:22 UTC and resolved it at 22:39 as "divergence no longer present". It was a first sighting: the position had left the broker since the previous run, and the same run retired it. `extra_graph_position:BAC` did the same on `sched-2026-09-29`.
 
@@ -107,6 +107,8 @@ that raise unreachable.
 - *Put the episode in the resolution key and keep the subject stable* - readers in the supervisor and in `surfaces/` join on `(subject_ref, severity)`, so an execution defect would need changes in two other components.
 - *Drop `critical`, flag every divergence `warn`* - removes the one signal S178 built, that adoption failed.
 - *The planner builds it in-session* - the builder and the checker would be the same agent; the live replay on Neon is the planner's either way.
+
+**Correction (2026-10-01, measured by the S248 builder, DL-254).** The first item under *Ruled out* is rejected for a wrong reason. `merge_node` to a spent key does not rewrite the Flag: the `ON CONFLICT … DO UPDATE` carries a `WHERE NOT EXISTS` guard and the store raises `property '…' cannot be overwritten` (`kernel/graph_postgres.py:99`). The planner read line 21 of the SQL and not the guard under it. The one-line fix would have raised inside `reconcile_run_start` after the snapshot was written. It stays rejected. Also: of the 53 subjects, 52 are kind-and-ticker subjects and 1 is an old hash-keyed `critical`. **Built and merged as S248 (`0.120.02`); F1 passed.**
 
 **Open, for the builder (next free DL).** The episode token (recommended: the first-sight snapshot's key; not the run id, a clock, a uuid or a counter), the subject's exact format, how the open episode is found, and how an unresolved suffix-less Flag is treated at upgrade (recommended: as the open episode).
 

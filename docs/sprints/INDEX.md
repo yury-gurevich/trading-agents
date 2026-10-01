@@ -160,7 +160,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | [sprint-244](sprint-244-every-agent-activates-on-a-busy-or-sleeping-master.md) | 🔴 **Every agent activates, whether master is busy or asleep, and a retried EHLO is one activation** — work-queue 95 ([DL-248](../design-log.md)) | **MERGED 2026-09-29** `0.119.03`, tag `v0.119.03`, GATE PROVEN `a6fbae1e`; deployed `s244`; F1 passed; F2 measured 2026-10-01 |
 | [sprint-245](sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code.md) | 🔴 **Every fact the referee is told about our code is pinned to the code** — work-queue 96 ([DL-250](../design-log.md)) | **MERGED 2026-09-30** `0.119.05`, tag `v0.119.05`; deployed `s245`; F1 owed |
 | [sprint-246](sprint-246-every-debate-turn-records-how-it-read-the-evidence.md) | 🔴 **Every debate turn records how it read the evidence, before it argued** — work-queue 97 (a) ([DL-250](../design-log.md)) | **MERGED 2026-09-30** `0.120.00`, tag `v0.120.00`, GATE PROVEN `0ac9f96b`; replay passed, deployed `s246`; F1 owed |
-| [sprint-248](sprint-248-a-divergence-is-critical-only-when-it-survived-a-run.md) | 🔴 **A broker divergence is flagged critical only when it survived a run, however often that ticker has diverged before** — work-queue 100 ([DL-253](../design-log.md)) | **SPEC 2026-10-01** for a cloud session; image-only retag |
+| [sprint-248](sprint-248-a-divergence-is-critical-only-when-it-survived-a-run.md) | 🔴 **A broker divergence is flagged critical only when it survived a run, however often that ticker has diverged before** — work-queue 100 ([DL-253](../design-log.md)) | **MERGED 2026-10-01** `0.120.02`, tag `v0.120.02`, GATE PROVEN `09699ad0`; F1 passed; retag and F2 owed |
 
 ---
 

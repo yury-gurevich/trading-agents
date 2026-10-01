@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 104
 **Branch:** `sprint-251-every-open-drift-row-is-decided`
-**Status:** BUILT 2026-10-01: all 23 rows decided, 13 books amended (one commit a book), `make ci` exit 0 (3,810 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/compassionate-hamilton-g1wdjb` (the session's forced branch, cut from `main` `b050f706`); owed to the planner: the PATCH bump with `uv lock`, Windows `make ci`, `make gate-ran`, the merge, F1
+**Status:** MERGED 2026-10-02 — `0.121.01`, fast-forwarded to `d526faf4`, tag `v0.121.01`, GATE PROVEN `d526faf4` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,932 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/compassionate-hamilton-g1wdjb`, one commit a law book; all 23 ruled rows decided across 13 books, no behaviour change (the only code edit is execution's `owns_graph`); DRIFT-098 closed by the planner at merge; **two rows remain open**, both filed during the sprint: DRIFT-096 and DRIFT-097 (work-queue 106); no deploy of its own
 **Version:** *next available PATCH at merge*
 **Effort:** L
 **Decisions:** [DL-259](../design-log.md) (the planner's ruling on each of the 23 rows, with the
@@ -620,3 +620,13 @@ position-sync poll lists every `BrokerPositionSnapshot`, which needs a code chan
   was editing files while it ran. A clean re-run passed, and so did the final full run.
 - Spec hygiene: every fenced block in this file has a blank line before and after, and markdownlint
   passes.
+
+### Planner, at merge (2026-10-02)
+
+- **Behaviour untouched, measured.** Under `agents/`, `kernel/`, `orchestration/`, `surfaces/` and `contracts/`, the only change outside law books and tests is the `owns_graph` declaration in `contracts/execution.py`.
+- **Proven.** Windows `make ci` exit 0 (3,932 passed, 8 skipped, 100.00 %); `GATE PROVEN` for `d526faf4` from the proving worktree, printed SHA equal to `HEAD`; fast-forwarded after a rebase onto `main`; open CodeQL alerts equal the last merged branch's (131, 0 added); the lock's package set is unchanged.
+- **Re-read by the planner (F1).** `PROV-TRG-01`, `SUP-OBS-02`, `ANLZ-OUT-09`, `MST-FAIL-07` and `EXEC-IDN-04` against the code and their cited tests; the law coverage gate passes; each amended book's version agrees in `laws.md`, `ledger.md` and `INDEX.md`.
+- **The rebase.** S250 merged first. Its rows in the sprint README and INDEX were restored to their merged text, and the builder's new PM row was renumbered DRIFT-096 → **DRIFT-098** because S250 had taken 096.
+- **DRIFT-098 closed here.** `PM-OUT-01` and `PM-TYP-03` listed a field the contract never had; the builder rightly left them, as the table did not name them. The two field lists now match `OrderIntentSet`.
+- **Not zero.** Two rows are open, both filed while this sprint ran: **DRIFT-097** (the monitor's position-sync poll downloads every broker snapshot on each poll; a code change) and **DRIFT-096** (the analyst's book on a candidate with short history; filed by S250 after this sprint's session began, so row 096 of the table above was never seen by the builder). Both are work-queue 106.
+- **Accepted as built:** `DEP-BUS-05` says "sends", which is what the guard covers; five clauses stay ⬜ with their partial proofs named.

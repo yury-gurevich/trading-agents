@@ -118,6 +118,11 @@ CONTRACT = AgentContract(
         "BrokerPositionSnapshot",
         "BrokerOrderStatus",
         "BrokerStopOrder",
+        # Shared with the supervisor for one family only: the run-start
+        # broker-position divergence Flags and the FlagResolutions that close them
+        # (EXEC-IDN-04, DRIFT-094).
+        "Flag",
+        "FlagResolution",
     ),
     external_io=("alpaca_broker",),
     depends_on=("portfolio_manager", "supervisor"),

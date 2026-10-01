@@ -80,7 +80,8 @@ def test_deliberator_bus_payload_fields_required_by_law() -> None:
 
 
 def test_execution_payload_fields_required_by_law() -> None:
-    """EXEC-TYP-03: execution payload types carry the fields its clauses require."""
+    """EXEC-TYP-03 / EXEC-OUT-01 / EXEC-OUT-02 / EXEC-OUT-04 / EXEC-OUT-05: execution
+    payload types carry exactly the fields its clauses require."""
     assert execution.CONTRACT.version == "0.4.0"
     _assert_fields(
         execution.ExecutionResult,

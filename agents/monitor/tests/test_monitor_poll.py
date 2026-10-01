@@ -64,6 +64,7 @@ def _seed(
 
 
 def test_find_pending_returns_unmonitored_execution_run() -> None:
+    """MON-TRG-02 (graph-pull): an ExecutionRun with no MONITORED_BY edge is work."""
     graph = InMemoryGraphStore()
     _seed(graph)
     assert len(find_pending(graph)) == 1
@@ -74,6 +75,7 @@ def test_find_pending_empty_when_no_execution_run() -> None:
 
 
 def test_monitor_pm_node_checks_positions_from_graph() -> None:
+    """MON-TRG-02 (graph-pull): evaluated from the graph, linked, never work again."""
     graph = InMemoryGraphStore()
     node = _seed(graph)
     monitor_pm_node(node, graph=graph)

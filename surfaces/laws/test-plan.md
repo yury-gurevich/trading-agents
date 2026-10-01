@@ -1,6 +1,6 @@
 # `Surfaces` — Law Test-Plan
 
-**Prefix:** `SRF` · **status:** LOCKED v1.2 · **aligned with:** laws.md LOCKED v1.2
+**Prefix:** `SRF` · **status:** LOCKED v1.3 · **aligned with:** laws.md LOCKED v1.3
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@
 | SRF-TRG-02 | MCP requests are limited to `command`, `status`, `runs`, `incidents`, `explain`, `performance`, and `scorecard`. | `surfaces/tests/test_mcp_server.py::test_error_paths_and_tool_catalog`; `surfaces/tests/test_mcp_server.py::test_tool_request_handlers_are_registered_on_the_server`; `surfaces/tests/test_entry_imports.py::test_entry_module_imports_first`; `surfaces/tests/test_scorecard_chat.py::test_a11_mcp_chat_and_tile_give_one_answer_with_no_model_call` | 🟩 |
 | SRF-OUT-01 | Selected run scopes contextual panels and log windows; unknown log run falls back only with explicit latest scope. | `surfaces/tests/test_dashboard_app.py::test_container_logs_route_scopes_to_selected_run`; `surfaces/tests/test_dashboard_app.py::test_master_verdict_route_uses_run_query`; `surfaces/tests/test_dashboard_bundle_azure.py::test_container_logs_run_day_scopes_window_and_bad_day_falls_back` | 🟩 |
 | SRF-OUT-02 | Open incidents share the exact predicate used by health and supervisor health. | `surfaces/tests/test_faults.py::test_open_faults_lists_only_live_incidents_newest_first`; `surfaces/tests/test_health_incidents.py::test_system_health_agrees_with_supervisor_fault_incident_scope` | 🟩 |
-| SRF-OUT-03 | Dashboard chat answers are selected-run grounded and record auditable command, LLM, and intent facts. | `surfaces/tests/test_dashboard_chat.py::test_chat_answer_is_run_grounded_and_writes_priced_ledger_nodes` | 🟩 |
+| SRF-OUT-03 | Model-composed chat answers are selected-run grounded and record auditable command, LLM, and intent facts; the four quick asks are graph reads with no model call and no audit fact (status, incidents and scorecard not run-scoped). | `surfaces/tests/test_dashboard_chat.py::test_chat_answer_is_run_grounded_and_writes_priced_ledger_nodes`; `surfaces/tests/test_chat_quick_asks.py::test_a_quick_ask_is_a_graph_read_that_writes_no_audit_fact` | 🟩 |
 | SRF-OUT-04 | Dashboard operator time labels are Melbourne 24-hour time and the page receives the Melbourne zone. | `surfaces/tests/test_dashboard_local_time.py::test_scale_windows_render_in_melbourne_time_across_daylight_saving`; `surfaces/tests/test_dashboard_local_time.py::test_the_page_is_told_which_zone_to_render` | 🟩 |
 | SRF-OUT-05 | Dashboard display strings and static assets do not leak sprint/design/drift/law identifiers as product language. | `surfaces/tests/test_dashboard_jargon.py::test_static_assets_contain_no_internal_identifiers`; `surfaces/tests/test_dashboard_jargon.py::test_api_display_strings_contain_no_internal_identifiers`; `surfaces/tests/test_dashboard_hold_answers.py::test_c18_operator_message_and_dashboard_labels_contain_no_internal_ids` | 🟩 |
 | SRF-OUT-06 | Active controls are wired: hold-answer controls appear only for active unanswered holds, and chat/resume assets expose the wired state. | `surfaces/tests/test_dashboard_hold_answers.py::test_c16_dashboard_actions_exist_only_for_an_unanswered_active_hold`; `surfaces/tests/test_dashboard_app.py::test_index_and_assets_serve` | 🟩 |

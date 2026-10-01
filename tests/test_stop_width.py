@@ -46,7 +46,7 @@ def test_the_resolver_returns_the_width_the_pm_decided() -> None:
 
 
 def test_all_three_readers_agree_on_the_decided_stop() -> None:
-    """EXEC-OBS-06: A4 - analyst, execution and monitor read one resolver.
+    """EXEC-OBS-06 / ANLZ-OUT-09: A4 - analyst, execution and monitor read one resolver.
 
     The analyst's held-stop inputs, execution's placement threshold and the
     monitor's watchdog each report the same width and the same 5806-cent stop.

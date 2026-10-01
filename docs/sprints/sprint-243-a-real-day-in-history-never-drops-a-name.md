@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 94 (live defect)
 **Branch:** `sprint-243-a-real-day-in-history-never-drops-a-name`
-**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 owed
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 passed 2026-10-02 (four runs since the deploy)
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-245](../design-log.md) (the defect, measured, and the direction) · DRIFT-014 / DRIFT-012 (why the guard exists) · the builder's decisions go to the **next free DL** (`DL-247` at spec time)
@@ -379,7 +379,7 @@ prefix table says `FCST` for the forecaster while its book uses `FORE`.
 
 ## Closeout — evidence
 
-**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 owed
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; DEPLOYED `s243` (image-only retag, 2026-09-29 16:34 AEST); F2 passed 2026-10-02 (four runs since the deploy)
 
 **Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container, `/home/user/trading-agents` on branch `claude/zealous-bell-91iycb` (the session forced this name instead of `sprint-243-a-real-day-in-history-never-drops-a-name`), cut from `main` `0bb2292a`. **No `.env`**; `uv run --frozen` against the existing `uv.lock`; no network in any test.
 
@@ -500,3 +500,5 @@ the cloud branch's `5d609810`; F1 ran with the main checkout's `.env`.
 **Deployed** `s243` 2026-09-29 (image-only retag, operator: *"retag"*; 16 / 16 apps + `dispatcher-cron`, `DeployRecord` recorded; rollback `s242`). **Owed:** **F2** on the next scheduled run
 (CHTR scanned; no barrier drop for a history day; the brief's incident count unchanged by a designed
 refusal) and ack the two TXN / COP Faults from `sched-2026-09-28`.
+
+**F2 passed, 2026-10-02** ([functionality-checks](../laws/functionality-checks.md)). On all four runs since the deploy (`sched-2026-09-29`, `-09-30`, `-10-01` and the test run `verify-2026-10-01-s248-a`) CHTR is in the provider's tickers and the scanner's filter trace; the three `BarrierHistory` nodes are `ok` with nothing dropped, for 9 forecasts; 0 Faults since the deploy. Not exercised: TXN and COP were not among the buys, and no designed refusal occurred. The two 09-28 Faults needed no ack: incidents are scoped to the latest run day, and `sweep_fault_incidents.py --dry-run` reads 0 live.

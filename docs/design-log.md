@@ -1918,6 +1918,18 @@ distribution model on the replay cache, pre-registered and calibrated out of sam
 → exits and holding profiles chosen by that distribution in replay → build in increments → PM sizing over
 distributions last.
 
+**Amendment — a name stopped out is often bought again the same night (measured 2026-10-02).** On
+`sched-2026-10-01` the stops on JNJ, C and DE had filled in the session (−$107.05 realised), and the
+same run approved and submitted a buy for each at the same quantity. Over the record, **11 of 31**
+filled stops were followed by a buy order for the same name in the run that first saw the stop (the
+stop `Fill`'s `broker_status_refreshed_at` date equal to the buy's `submitted_at` date). Of the 8
+before tonight, 6 filled and are still held with no second stop, and 2 expired unfilled. Nothing in
+the scanner, the analyst or the PM reads a recent stop-out, so this is the pipeline behaving as
+written, not a defect, and the six that held say it has not cost money so far. It belongs to this
+entry's question (what the book does with a name after an exit). The replay harness runs the same
+code, so EXP-014's arms include the behaviour. **No decision taken:** a re-entry rule is trading
+policy, the operator's to set, and the place to test one is the exit experiment this entry plans.
+
 ## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
 
 **Context.** [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) flips the provider's
@@ -2225,6 +2237,47 @@ agreement is taken over judged recommendations (`buy`, `sell`) with its own floo
 are counted beside it. The per-stage rules and floors are in S237's returned item R5. *Rejected:* a
 hand-kept allow-list of decision-neutral `contracts/` files (a judgement the tool cannot check);
 lowering the analyst floor to keep the earlier date.
+
+**Amendment — the re-run after `sched-2026-10-01` reads INSUFFICIENT, and the plan for four clean sessions was never measured (planner, 2026-10-02).**
+The status below said the verdict would be re-run *"when four clean sessions exist"*, and the review
+above put the first of them at `sched-2026-09-28`. That assumed the fleet's decision code would stand
+still for four sessions. It did not, and I did not check a deploy against the decision paths before
+making it.
+
+*Measured 2026-10-02* (export of 60 sessions, replay from `main` at `684441d7`; outputs in OneDrive
+`fidelity/live-2026-10-02/`):
+
+- Verdict INSUFFICIENT, **0 clean sessions**, 0 unexplained differences.
+- Layer 1 agrees on every judged row of the ten latest sessions (09-18 → 10-01). On the four since
+  09-28: scanner 100 / 100, analyst 468 / 468, PM 88 / 88.
+- Decision-path files that differ between a session's deployed commit and the deployed `f3956bac`
+  (`s249`): 09-28 **7** (S242's three polls, S243's `integrity.py`, three `contracts/` modules), 09-29
+  **2**, 09-30 **1** (`contracts/provider.py`, S249), 10-01 **0**.
+- Against `main` every session differs by 18 or more: S250 changed
+  `agents/provider/domain/market_calendar.py`, S251 changed `contracts/execution.py`, and the rule counts
+  each agent's `laws/` and `tests/` folders, which S251 touched.
+
+So one session is clean today, and only when the replay runs from the deployed commit.
+
+**Decided.** (1) The rule stands as written (DL-238 D7). It is not narrowed to make this run pass: the
+agreement above is evidence, and the bar EXP-014's frozen Appendix P names is a PASS. (2) The replay
+runs from a worktree pinned at the fleet's deployed commit, so a merge to `main` no longer resets the
+count. (3) The fleet's decision code is held still for four sessions, and EXP-014 runs from the same
+pinned commit, so the code the gate certifies is the code the experiment runs. (4) Before any deploy
+inside that window, diff it against the decision paths first.
+
+**Road not taken.** *Count the four matching sessions as clean.* A bar that admits a session because
+it matched passes by construction. *Drop `laws/` and `tests/` from the decision paths.* Neither can
+move a decision, so the change is fair, but made today it would be a rule edited after reading its
+result, and it would not give a PASS: `market_calendar.py` and `contracts/` still differ. Left for a
+sprint that touches the tool. *Replay each session from its own deployed commit.* Four runs of one
+session each, and none can meet a four-session floor.
+
+**Open, the operator's call: which commit the four sessions run on.** Staying on `s249` gives a verdict
+after `sched-2026-10-06` (three more sessions) and certifies `f3956bac`; EXP-014 would then run on a
+commit that differs from it in two decision-path code files. Retagging to `main` first gives a verdict
+after `sched-2026-10-07` (four sessions) and certifies exactly the commit EXP-014 runs from.
+Recommended: the retag.
 
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 

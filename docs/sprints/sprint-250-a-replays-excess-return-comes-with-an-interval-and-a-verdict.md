@@ -880,3 +880,116 @@ Handback, appended under Return 1 in the same spec file:
 [ ] pyproject.toml and uv.lock untouched, stated;
 [ ] Status stays BUILT; the README row gains "return 1: holiday table repaired".
 ```
+
+### Return 1 — handback (builder, 2026-10-01)
+
+**Tree:** a claude.ai cloud container, `/home/user/trading-agents`, on branch
+`claude/hopeful-davinci-oob51b` from `9c9fc67` (the planner's Return 1 commit). No `.env`, no `gh`,
+no cache. Status stays **BUILT**.
+
+**What was built.** `agents/provider/domain/market_calendar.py`: `_NYSE_HOLIDAYS` gains Return 1's
+74 closures for 2016-2023 and 2025-01-09, in date order, with a reason comment on the two national
+days of mourning (2018-12-05 and 2025-01-09). No existing date changed: the diff removes only three
+module-docstring lines, which are rewrapped to say the table now spans 2016-2027. The table stayed in
+the module at 178 lines, so no split was needed, and the public functions are untouched.
+`calendar_window_end()` still returns 2027-12-31, asserted by the new test.
+
+**The red run, then the green run** (`agents/provider/tests/test_market_calendar_history.py`, written
+first, against the old table):
+
+```text
+FAILED test_each_year_holds_nyses_sessions[2016-252]   E   assert 261 == 252
+FAILED test_each_year_holds_nyses_sessions[2017-251]   E   assert 260 == 251
+FAILED test_each_year_holds_nyses_sessions[2018-251]   E   assert 261 == 251
+FAILED test_each_year_holds_nyses_sessions[2019-252]   E   assert 261 == 252
+FAILED test_each_year_holds_nyses_sessions[2020-253]   E   assert 262 == 253
+FAILED test_each_year_holds_nyses_sessions[2021-252]   E   assert 261 == 252
+FAILED test_each_year_holds_nyses_sessions[2022-251]   E   assert 260 == 251
+FAILED test_each_year_holds_nyses_sessions[2023-250]   E   assert 260 == 250
+FAILED test_each_year_holds_nyses_sessions[2025-250]   E   assert 251 == 250
+FAILED test_each_measured_closure_is_not_a_session[2016-01-01] ... [2025-01-09]   (75 of 75, E   assert True is False)
+84 failed, 2 passed in 0.60s          (2024 and test_the_table_still_ends_where_it_did passed)
+```
+
+After the repair:
+
+```text
+agents/provider/tests/test_market_calendar_history.py + test_market_calendar.py
+90 passed in 0.42s
+```
+
+**Harness consequence (step 3).** `tests/test_replay_history_calendar.py` **flipped**. It was
+rewritten to assert the repaired behaviour, and its module docstring says so.
+`test_every_sessions_declared_window_holds_the_required_bars` walks the calendar itself (no cache)
+over every session from 2017-01-03 to 2026-09-25, **2,446 sessions** (EXP-014's own count). On each
+one, the window `declared_lookback_days(AnalystSettings(), as_of, staleness_buffer_sessions=3)` gives
+holds at least `required_history_bars` (200), and in fact exactly 203. `test_a_full_line_is_offered_on_2019_12_31`
+replaces the pinned hazard: the 2019 cache's full line now holds 203 bars in the window and is
+offered, with 0 withheld. Against the old table both tests are red (`assert 2511 == 2446`: weekdays
+counted as sessions; `assert 197 == 203`), so neither is vacuous. **Fleet effect, measured:** over
+2025-2027 the declared lookback differs from the old table only for an as-of between 2025-01-09 and
+2025-10-29. Today's (2026-10-01) is 295 days under both, so no run the fleet places now reads a
+different window.
+
+**The two plants**, each red and restored (`cmp` against the saved file: identical):
+
+```text
+(a) removed date(2018, 12, 5):
+FAILED test_each_measured_closure_is_not_a_session[2018-12-05]   E   assert True is False
+FAILED test_each_year_holds_nyses_sessions[2018-251]             E   assert 252 == 251
+2 failed, 84 passed in 0.49s
+(b) removed date(2025, 1, 9):
+FAILED test_each_measured_closure_is_not_a_session[2025-01-09]   E   assert True is False
+FAILED test_each_year_holds_nyses_sessions[2025-250]             E   assert 251 == 250
+2 failed, 84 passed in 0.44s
+restored: 86 passed in 0.40s
+```
+
+**Existing tests whose expected value changed:** one, `tests/test_replay_history_calendar.py`. Its
+single test pinned the old fallback (a 2019 window of 203 weekdays, 197 bars, the line withheld) and
+was replaced by the two tests above, as step 3 required. **No other expected value changed.** With
+only the table edited, the full suite had exactly one failure, that test. In
+`tests/replay_history_fixtures.py` only two comments changed: they said the calendar lists no 2019
+closure. `sessions_2019()` now yields 252 sessions without `closures`; no assertion depends on 261.
+
+**Law reading, provider book (step 4).** I read `agents/provider/laws/laws.md` (v1.7 on this branch)
+and `test-plan.md` again for every mention of calendar, session, holiday, staleness, lookback and the
+years. The clauses that depend on session counting are `PROV-TRG-05` (the declared lookback checked
+against the sessions up to the as-of), `PROV-STA-04` and `PROV-OUT-03` (staleness flagged), the
+`max_staleness_days` `PARAM` row ("three sessions"), and `PROV-OUT-08`/`barrier_history_sessions`,
+whose window is a calendar-day formula that does not read the table. **None names the table's range,
+so no clause changed and there was no law cycle.** The new tests cite `PROV-TRG-05` (with DL-10),
+the clause whose session-counted lookback they make true before 2024. Its test-plan row was not
+edited, because the ban covers every other file under `agents/`. The planner may add the two new
+citations to that row.
+
+**Decision record:** DL-258 gains an amendment (repair (a) as built, measured). The rejected
+alternative is (b), cutting the harness window from the cache's sessions: it leaves the calendar
+wrong, stops calling `declared_lookback_days`, and would break F1's rule-off byte-identity by design.
+
+**Line counts of every file touched:**
+
+| File | Lines |
+| --- | ---: |
+| `agents/provider/domain/market_calendar.py` | 178 (was 93; above the 150 warning, under the 200 block) |
+| `agents/provider/tests/test_market_calendar_history.py` | 75 (new) |
+| `tests/test_replay_history_calendar.py` | 103 (was 71) |
+| `tests/replay_history_fixtures.py` | 155 (was 154; comments only) |
+| `docs/design-log.md` | DL-258 amendment |
+| `docs/sprints/README.md` | S250 row |
+| this file | this section |
+
+**`make ci`:** `make ci > <scratchpad>/ci-r1.txt 2>&1; echo $?` gave **exit 0**, with every step of
+the `ci:` target green: ruff, format (1,537 files), mypy (no issues in 1,135 files), import-linter
+(5 kept, 0 broken), module size (`market_calendar.py` warns at 178), module header, law coverage,
+PARAM sync, sprint status, markdown links, version scheme, pytest **3,915 passed, 8 skipped,
+coverage 100.00 %** (it reads `agents/`; `market_calendar.py` is 100.00 %), dependency audit
+(*"No unaccepted vulnerabilities; 1 accepted advisory re-checked"*), detect-secrets **Passed**, and
+untracked secrets (1 new file) **Passed**.
+
+**`pyproject.toml` and `uv.lock`:** **untouched**, both.
+
+**Not done, by design:** F1, F2 and EXP-014 were not run; no GATE PROVEN is claimed; the rule's
+threshold and Appendix P are unchanged. No other file under `agents/`, `contracts/`, `kernel/`,
+`orchestration/` or `surfaces/` was touched. Owed to the planner, as before: `uv lock` with the MINOR
+bump, Windows `make ci`, `make gate-ran`, the merge, then F1 and F2.

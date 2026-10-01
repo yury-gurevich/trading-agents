@@ -10,6 +10,112 @@ and is marked CLOSED here.
 
 ---
 
+## DL-260 - each ruled drift row becomes a clause the code already keeps, proven where a test can hold it, and what the code does less of the clause says less of - status: DECIDED (builder, 2026-10-01; S251, under DL-259)
+
+**Question.** DL-259 ruled the 23 rows. What does each amended clause say, which test proves it, and
+which clauses stay ⬜?
+
+**Measured before writing (2026-10-01).**
+
+- The coverage gate reads `agents/*/laws`, `orchestration/laws/*` and `surfaces/laws` only
+  (`law_coverage_docs._law_book_paths`). It **never reads `docs/laws/dependencies.md`**. Every
+  clause-shaped ID in a book counts as that book's own clause, so no book may name another book's IDs.
+- `owns_graph` has no runtime reader: only `kernel/contract.py` declares it, and only tests read it.
+  One test, `tests/test_boundary_map.py::test_each_graph_label_has_one_writer`, fails on any label
+  that two contracts own.
+- The only live OHLCV source is `AlpacaDataSource` (`composite.market_source_from_settings`).
+  `alpaca_request.bars_page_query` sends `symbols, timeframe, start, end, feed, limit` and never an
+  `adjustment`. Alpaca's default is `raw`.
+- The monitor's end-of-run poll uses `kernel.graph_pending`. Its position-sync poll
+  (`position_sync.find_pending_position_sync`) lists every `BrokerPositionSnapshot` with props.
+- The pytest guard (`conftest.py`) replaces `AzureServiceBusBus._azure_send` only. It blocks a send;
+  a receive is not guarded.
+- `PMRun` carries `order_intent_set` = `run_id, approved, rejected, explanation, provenance`.
+  `PM-OUT-01` and `PM-TYP-03` also list `portfolio_state_snapshot`, and the contract has no such field.
+
+**Decisions.**
+
+1. **Graph-pull triggers (DRIFT-082, 085, 086).** Each book names its own work in its `TRG-02`: the
+   label, the edge whose absence makes an item pending, and any wait condition. Then one sentence
+   states the bound: pending work is found by key and edge, and props are fetched only for nodes that
+   lack the edge. `PROV-TRG-01` is widened to the three recorded needs. Proof: each agent's poll tests
+   (find, process, marked) plus `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work`,
+   whose docstring now names every amended `TRG-02`. New `agents/provider/tests/test_graph_pull_trigger.py`
+   is D4: a `RunRequest` with no bus event is ingested, and an empty graph is never fetched.
+   *Rejected:* a new `TRG` clause per book, which would leave the false "primary production trigger
+   path" in place; and putting the bound in a system book, which DL-259 already ruled out.
+2. **The monitor's bound covers `ExecutionRun` work only.** The sync poll does not meet it, so the
+   clause does not claim it does. That poll is filed as DRIFT-097 (code gap, OPEN). *Rejected:* fixing
+   the sync poll here, which is a behaviour change, and stating the bound for "every poll", which would
+   be false.
+3. **Raw bars (DRIFT-084) go into `PROV-OUT-07`**, the clause that already describes a bar. Proof:
+   new `test_alpaca_raw_bars.py`, which checks that the source's own request names no adjustment.
+   *Rejected:* a new `OUT` clause, which splits the one bar description in two.
+4. **`PROV-OUT-04` (DRIFT-040)** now promises a recorded `MarketSnapshot` with `created_at` and
+   `used_fallback`, mirrored in `market_data_degraded`. It says outright that it records neither the
+   source nor a transformation (work-queue 105). It turns 🟩 on a new test of exactly that.
+   *Rejected:* staying ⬜ "for safety". The narrowed clause is fully provable, so leaving it gray
+   would under-report.
+5. **The analyst's held-stop check (DRIFT-074) is `ANLZ-OUT-09`.** Its inputs come from the shared
+   stop-width resolver. A held ticker whose latest close is at or below
+   `opened_price_cents × (1 − stop_pct)` is a `sell` with `exit_trigger="stop"`, whatever its
+   confidence. A position whose broker stop is live is left to that stop. A book whose stop inputs
+   cannot be read is a fault and an empty result, never a guessed stop. Proof: new
+   `tests/test_analyst_held_stop.py` (D6), placed in `tests/` because it uses execution's stop
+   fixtures, plus the four ADR-0017 tests in `test_exit_authority.py` and the shared-resolver test.
+   *Rejected:* an `OBS` clause, because the check produces an output and not only evidence.
+6. **The divergence exception (DRIFT-094)** is declared by the family it covers: `subject_ref`
+   beginning `broker-position-divergence:`. `SUP-IDN-02` says its single-writer rule has that one
+   exception, written by the broker boundary's run-start reconciliation, and it names no agent
+   (conventions §5). New `EXEC-IDN-04` says execution writes that family and no other `Flag` or
+   `FlagResolution`. `owns_graph` and the CAP list gain both labels. `test_each_graph_label_has_one_writer`
+   now allows exactly that pair, shared by exactly those two contracts. Proof (D7): new
+   `agents/execution/tests/test_divergence_flag_ownership.py` records every label the writer touches
+   and every subject it writes. *Rejected:* letting the boundary-map test skip shared labels, which
+   would let any future share pass silently.
+7. **Execution's output clauses (DRIFT-061)** name the contract's fields. `EXEC-OUT-01` drops
+   `pm_run_id` and adds `dropped`/`skipped`. `EXEC-OUT-02` keeps the six `Fill` fields and says that
+   `client_order_id` is the broker call's key, not a `Fill` field. `EXEC-OUT-04` drops `run_id`.
+   `EXEC-OUT-05` names `accepted, previous_stage, current_stage, reason, provenance`, and says a
+   dry run is `confirmed=False` with nothing written. The already-green rows stay green on
+   `tests/test_contract_required_payload_fields.py::test_execution_payload_fields_required_by_law`, and
+   the gray ones stay gray. *Rejected:* adding the old fields to the contract, a behaviour change.
+8. **Contract version (DRIFT-060).** `SCAN-TYP-01`, `EXEC-TYP-03` and `PM-TYP-03` say that
+   `CONTRACT.version` names the current schema, and that no clause promises the version moves when a
+   field is added, removed or renamed. No gate is added.
+9. **PM (DRIFT-037, 039, 065).** `PM-OUT-03` uses the emitted reason strings. `PM-OBS-04` is per
+   evaluated candidate. `PM-OBS-01`, `PM-OUT-06` and `PM-STA-04` claim only what `PMRun.order_intent_set`
+   carries, and name execution's `BrokerPositionSnapshot` (by label, not by agent) as the record of the
+   pre-trade book. `PM-OUT-06` and `PM-STA-04` stay ⬜, because nothing tests that the PM reads no live
+   broker. `PM-OUT-01` and `PM-TYP-03`, which carry the same false field, are not named by the row
+   table. They are filed as DRIFT-096 and **not reworded**.
+10. **Supervisor `SUP-OBS-02` (DRIFT-076)** turns 🟩. `open_incidents` counts live `Fault` incidents and
+    never a `Flag`; `pending_human_flags` counts unresolved `critical` Flags. Proof: a new test that
+    keeps the two sources apart, plus the existing health tests.
+11. **Forecaster (DRIFT-081, 083).** `FORE-IDN-01` names the four legs. `FORE-OBS-01` names the recorded
+    node per leg. `FORE-IDM-03` covers the three shadow scorecards. All three stay ⬜: no test covers the
+    return leg's node, and `IDN-01` is a whole-purpose statement. The partials are named in their rows.
+12. **Master (DRIFT-059)** gets `MST-FAIL-07`, the start-up refusal, proven by
+    `test_remediation_posture.py`. A plain paragraph (no clause) states that attempting remediation is
+    outside the constitution until DL-36 Pieces C and D are built. The `remediation_mode` `PARAM`
+    rationale now says that `automatic` is refused today. *Rejected:* writing remediation clauses now
+    (DL-259).
+13. **`DEP-BUS-05` (DRIFT-032)** reads: a local test run never **sends** to the production Service Bus.
+    No test-plan row exists, because the gate does not read the charter and no charter test-plan
+    exists. The guard's three tests cite the clause, and the ledger's Layer-0 `DEP-BUS` row is
+    recounted (it said 3 clauses; there are 5). *Rejected:* a charter test-plan file, which would be a
+    new layout that no gate reads.
+14. **Surfaces `SRF-OUT-03` (DRIFT-078).** An answer the model composes is grounded and audited. The
+    four graph-read quick asks write no audit fact and make no model call; `status`, `incidents` and
+    `scorecard` are not scoped by the selected run. Proof: a new test of the four quick asks, plus the
+    existing audited-answer test.
+15. **Rows with no file change (DRIFT-030, 031, 034)** become `DECIDED` with the feature they wait for.
+
+**Ruled out, generally.** Writing a clause for something the code does not do; making a gray clause
+green on a partial test (§7a); creating a charter test-plan or a kernel book.
+
+**Not claimed.** Live proof of any amended clause (the planner's F1), or that the books are complete.
+
 ## DL-259 - the 23 open drift rows are ruled in one pass: the law follows the code, a claim the code does not meet is narrowed, and a row that waits for a feature says which - status: DECIDED (planner, 2026-10-01; work-queue 104, S251)
 
 **Question.** The drift register holds 22 `OPEN` rows and one `PARTLY CORRECTED`, the oldest from

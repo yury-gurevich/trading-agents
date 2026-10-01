@@ -350,17 +350,47 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+Read whole, 2026-10-01, before the first edit: `docs/laws/conventions.md`, `drift-register.md`,
+`_TEMPLATE.md`, `dependencies.md`, `ledger.md`, `INDEX.md`, and `laws.md` + `test-plan.md` of the 12
+books below. Also read the gate itself (`scripts/check_law_coverage.py`, `law_coverage_docs.py`,
+`law_coverage_tests.py`, `law_coverage_status.py`) and the code each row describes.
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| provider | `agents/provider/laws/laws.md` v1.7, `test-plan.md` | `PROV-TRG-01/02`, `PROV-OUT-04`, `PROV-OUT-07` | Yes. `PROV-TRG-02` already names a `RunRequest` (v1.5), so DRIFT-082 is `TRG-01` only. The only live OHLCV source is Alpaca (`composite.py`), so "raw" goes in `PROV-OUT-07`, the clause that describes a bar. `PROV-OUT-04` can turn green: the `MarketSnapshot` does carry `created_at` and `used_fallback` |
+| scanner | `agents/scanner/laws/laws.md` v1.3, `test-plan.md` | `SCAN-TRG-02`, `SCAN-TYP-01` | `SCAN-TRG-02` called pub/sub "the primary production trigger path", which is false. It is amended with the graph-pull trigger. `SCAN-TYP-01` carries DRIFT-060's sentence |
+| analyst | `agents/analyst/laws/laws.md` v1.6, `test-plan.md` | `ANLZ-TRG-02`, new `ANLZ-OUT-09` | Yes. The held-stop check (`domain/analyze.py::_stop_breached`) skips a position whose broker stop is live, and a book with no readable stop inputs is a fault and an empty result. Both go in the clause, because the code does them. ADR-0017's four `test_exit_authority.py` tests cited no clause |
+| portfolio_manager | `agents/portfolio_manager/laws/laws.md` v1.10, `test-plan.md` | `PM-TRG-02`, `PM-OUT-03`, `PM-OUT-06`, `PM-OBS-01`, `PM-OBS-04`, `PM-STA-04`, `PM-TYP-03` | Yes. `PM-OUT-01` and `PM-TYP-03` also list `portfolio_state_snapshot` as an `OrderIntentSet` field, which the contract does not carry. Neither is named for that by the row table, so I filed it as **DRIFT-096** and did not reword them |
+| monitor | `agents/monitor/laws/laws.md` v1.1, `test-plan.md` | `MON-TRG-02` | Yes. The end-of-run poll finds work by key and edge. Its second work kind, position sync (`position_sync.py::find_pending_position_sync`), lists every `BrokerPositionSnapshot` with props and walks each one's edges. So the bound is stated for `ExecutionRun` work only, and the sync poll is filed as **DRIFT-097** |
+| reporter | `agents/reporter/laws/laws.md` v1.3, `test-plan.md` | `RPT-TRG-02`, `RPT-OUT-07`, `RPT-IDM-03` | The ledger says v1.2 while the book says v1.3. The reporter's poll fetches every position-sync `MonitorRun` and then drops it (they never gain `REPORTED_BY`), so the clause says so |
+| execution | `agents/execution/laws/laws.md` v1.10, `test-plan.md`; `contracts/execution.py` | `EXEC-OUT-01/02/04/05`, `EXEC-TYP-03`, CAP; new `EXEC-IDN-04` | Yes. `tests/test_boundary_map.py::test_each_graph_label_has_one_writer` fails when two contracts own one label. Adding the two labels to `owns_graph` needs that test changed to name the one declared exception. `owns_graph` has no runtime reader (grep: only `kernel/contract.py` and tests), so adding labels changes no behaviour |
+| supervisor | `agents/supervisor/laws/laws.md` v1.2, `test-plan.md` | `SUP-IDN-02`, `SUP-OBS-02` | The ledger says v1.1 while the book says v1.2. Independence rule (conventions §5): the clause names the divergence *family* and a role, never another agent |
+| forecaster | `agents/forecaster/laws/laws.md` v1.8, `test-plan.md` | `FORE-IDN-01`, `FORE-OBS-01`, `FORE-IDM-03` | No test covers the return leg's node, so `FORE-OBS-01` stays ⬜ with the partial named |
+| master | `agents/master/laws/laws.md` v1.7, `test-plan.md` | new `MST-FAIL-07`; `PARAM` `remediation_mode` | The `PARAM` rationale promised "one remediation shot" under `automatic`, which the code refuses. Corrected as part of DRIFT-059 |
+| dispatcher | `orchestration/laws/dispatcher/laws.md` v1.1, `test-plan.md` | `DSP-IDN-03`, purpose line | No |
+| surfaces | `surfaces/laws/laws.md` v1.2, `test-plan.md` | `SRF-OUT-03` | Yes. "explain this run" is a quick ask too, but the model composes it, so it stays inside the audited half |
+| dependencies | `docs/laws/dependencies.md` | new `DEP-BUS-05` | Yes. The gate never reads this file: `_law_book_paths` globs `agents/*/laws`, `orchestration/laws/*` and `surfaces/laws` only. The guard (`conftest.py`) blocks **sends** only, so the clause says send, not "transact" |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, for 13
+books. `contracts/execution.py`'s `owns_graph` gains `Flag` and `FlagResolution`, and nothing else in
+`contracts/` moves. Three new clauses are added: `ANLZ-OUT-09`, `EXEC-IDN-04` and `MST-FAIL-07`, plus
+`DEP-BUS-05` in the charter. Each one states a guarantee the code already keeps.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** (1) The spec's DRIFT-039 ruling names
+`PM-OBS-01`, `PM-OUT-06` and `PM-STA-04`. `PM-OUT-01` and `PM-TYP-03` make the same false field claim,
+and `PM-TYP-03` is 🟩 on it. They are left as they are and filed as DRIFT-096. (2) The handover says
+"a test run never transacts with the production Service Bus". The guard covers sends only, so
+`DEP-BUS-05` says "sends". (3) Execution's book comment says Flag keys are "supervisor-owned", and the
+contract test forbade a shared label. Both are resolved by the declared exception (DRIFT-094).
 
-**Rows found stale, and what was done:** *(builder fills)*
+**Rows found stale, and what was done:** DRIFT-031's reporter half is stale: `RPT-TYP-03` has its row,
+so only the layout question remains, and it is DECIDED. DRIFT-081's `IDN-02` third was already
+corrected in S241, so only `IDN-01` and `OBS-01` were amended. DRIFT-086's provider half was mostly
+done: `PROV-TRG-02` v1.5 names the `RunRequest`, and S251 adds the poll's bound. No row was false as
+filed.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** `PROV-TRG-02`, `PROV-OUT-04`, `SUP-OBS-02`, and the new
+`ANLZ-OUT-09`, `EXEC-IDN-04` and `MST-FAIL-07`. The test-plan results below give the citing tests.
 
 ---
 

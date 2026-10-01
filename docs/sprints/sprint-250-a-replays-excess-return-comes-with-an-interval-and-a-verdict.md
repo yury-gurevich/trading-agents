@@ -794,3 +794,89 @@ member-sessions reported; rule off: byte-identical files on the merged commit an
    provenance.
 6. **DRIFT-096 filed** (analyst book silent on a candidate under `required_history_bars`); no
    `laws.md` edited; no clause moved (law-cycle answer: No).
+
+---
+
+## Return 1 — the planner's ruling on Return note 1, and the follow-up handover (2026-10-01)
+
+**The finding is confirmed and accepted.** *[measured by the planner on the licensed cache]* The
+harness window holds **194–198** sessions on every session of 2017–2023 (1,760 of 1,760 under 200),
+**196–203** in 2024 (74 of 252 under 200), and 202–203 from 2025. The cause is the one the builder
+named: `agents/provider/domain/market_calendar.py` lists NYSE closures for 2024–2027 only. The spec's
+rule was written against a window the planner assumed held about 203 sessions and did not measure by
+year; that is the spec's miss, not the builder's.
+
+**Ruling: repair (a).** Extend the holiday table back to 2016 and add 2025-01-09. Ruled out: (b)
+cutting the harness window from the cache's own sessions, which leaves the calendar wrong and makes
+the harness stop calling the fleet's own `declared_lookback_days`.
+
+**What the rest of the handback gets:** accepted as built, pending the planner's own verification.
+Return note 2 stands as coded (Appendix P binds). Notes 3 to 6 are accepted.
+
+**The closures to add** *[measured: every weekday from 2016-01-04 to 2026-09-25 that is not a session
+in the cache; public NYSE record]*. Sessions a year must then count 252, 251, 251, 252, 253, 252,
+251, 250, 252, 250 for 2016–2025.
+
+| Year | Closures (MM-DD) |
+| --- | --- |
+| 2016 | 01-01, 01-18, 02-15, 03-25, 05-30, 07-04, 09-05, 11-24, 12-26 |
+| 2017 | 01-02, 01-16, 02-20, 04-14, 05-29, 07-04, 09-04, 11-23, 12-25 |
+| 2018 | 01-01, 01-15, 02-19, 03-30, 05-28, 07-04, 09-03, 11-22, 12-05, 12-25 |
+| 2019 | 01-01, 01-21, 02-18, 04-19, 05-27, 07-04, 09-02, 11-28, 12-25 |
+| 2020 | 01-01, 01-20, 02-17, 04-10, 05-25, 07-03, 09-07, 11-26, 12-25 |
+| 2021 | 01-01, 01-18, 02-15, 04-02, 05-31, 07-05, 09-06, 11-25, 12-24 |
+| 2022 | 01-17, 02-21, 04-15, 05-30, 06-20, 07-04, 09-05, 11-24, 12-26 |
+| 2023 | 01-02, 01-16, 02-20, 04-07, 05-29, 06-19, 07-04, 09-04, 11-23, 12-25 |
+| 2025 | 01-09 (added to the ten already listed) |
+
+2016-01-01 precedes the cache and is from the public record, not measured. The 40 dates already in
+the table are all correct: none is a session in the cache.
+
+### Follow-up handover — paste this to the Claude cloud session
+
+```text
+Sprint 250, return 1. Continue on the branch that holds your S250 work (the planner pushed one
+commit to it: this section). Read "Return 1" at the bottom of
+docs/sprints/sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict.md, whole.
+Same constraints as before: no .env, no gh, no cache, nobody will answer follow-ups.
+
+Your Return note 1 is confirmed and the planner chose repair (a). This lifts the earlier ban for
+exactly one file: agents/provider/domain/market_calendar.py (93 lines) and its tests.
+
+Build:
+1. Failing test first: per-year session counts 2016-2025 from trading_sessions_between equal
+   252, 251, 251, 252, 253, 252, 251, 250, 252, 250, and each closure in the Return 1 table is not a
+   trading session. Red on the current table for 2016-2023 and 2025. Paste it.
+2. Add the closures of the Return 1 table to _NYSE_HOLIDAYS (74 dates for 2016-2023, plus
+   2025-01-09). Do not change a date already there. calendar_window_end() must return what it
+   returns today. Keep the module under 200 lines; if the table needs its own module, split it and
+   keep the public functions where they are.
+3. Prove the harness consequence: for every weekday-session as-of from 2017-01-03 to 2026-09-25
+   (use the calendar itself, no cache), the window declared_lookback_days gives holds at least
+   required_history_bars(AnalystSettings()) sessions. Your tests/test_replay_history_calendar.py
+   flips: rewrite it to assert the repaired behaviour and say so.
+4. Read agents/provider/laws/laws.md and test-plan.md again for any clause that depends on the
+   calendar's coverage (staleness in sessions, the declared lookback of PROV-TRG-05). Expected: no
+   clause changes, because the guarantee is unchanged and the table is data. If a clause names the
+   table's range, do the law cycle for it and say so. Cite the clause the new test proves, if one.
+5. An existing test that pinned the old fallback (a pre-2024 weekday holiday counted as a session)
+   may change its expected value. Name each such test and why in the handback. No other expected
+   value changes.
+6. DL-70 plants, each red, pasted, restored: (a) drop one added closure (for example 2018-12-05):
+   the count test red; (b) drop 2025-01-09: red.
+7. Record the repair under your DL-258 as an amendment, with (b) as the rejected alternative.
+8. make ci redirected to a file, exit 0, 100.00 %. Coverage DOES read agents/.
+
+DO NOT touch any other file under agents/, contracts/, kernel/, orchestration/ or surfaces/; change
+the rule's threshold or Appendix P; or run or claim F1, F2 or GATE PROVEN.
+
+Handback, appended under Return 1 in the same spec file:
+[ ] the red run, then the green run;
+[ ] the two plants, red output, restored;
+[ ] every existing test whose expected value changed, with the reason, or "none";
+[ ] the law reading for the provider book: clauses read, whether any changed;
+[ ] line counts of every file touched;
+[ ] make ci: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets;
+[ ] pyproject.toml and uv.lock untouched, stated;
+[ ] Status stays BUILT; the README row gains "return 1: holiday table repaired".
+```

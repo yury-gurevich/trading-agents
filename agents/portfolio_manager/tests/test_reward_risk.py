@@ -41,7 +41,7 @@ def _evaluate(
 
 
 def test_rejects_when_reward_risk_below_minimum() -> None:
-    """PM-NEV-04: min_reward_risk_ratio gate rejects thin R/R setups."""
+    """PM-NEV-04 / PM-OUT-03: thin R/R rejects with "reward_risk_below_min"."""
     approved, rejected = _evaluate(stop_pct=0.10, target_pct=0.10)  # ratio 1.0 < 1.5
 
     assert approved == ()

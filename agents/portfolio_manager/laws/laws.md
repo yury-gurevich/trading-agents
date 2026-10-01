@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -55,9 +55,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **PM-TRG-01** — RPC capability `evaluate_orders`: invoked on demand by any caller in
   `allowed_callers`. Pull mode; returns an `OrderIntentSet` synchronously.
-- **PM-TRG-02** — Pub/sub: `analysis.recommendations.ready` event auto-invokes
-  `evaluate_orders`; the result is written via claim-check and `portfolio.orders.ready` is
-  published. This is the primary production trigger path.
+- **PM-TRG-02** — Two event-driven paths, neither one a timer. **Pub/sub:** an
+  `analysis.recommendations.ready` event auto-invokes `evaluate_orders`; the result is written via
+  claim-check and `portfolio.orders.ready` is published. **Graph-pull** (DL-08/08b, the path the
+  fleet runs): an `AnalystRun` with no `EVALUATED_BY` edge is a request. The poll evaluates it from
+  the graph alone, with no bus call, reading its `RecommendationSet` and the `MarketData` and
+  `RegimeContext` of its lineage. It writes the `PMRun` and links
+  `AnalystRun -EVALUATED_BY-> PMRun`, so each `AnalystRun` is evaluated once. The poll finds its
+  pending work **by key and edge alone** and **fetches props only for `AnalystRun`s without that
+  edge** (DL-246). *(DRIFT-086; was: pub/sub only, called "the primary production trigger path".)*
 - **PM-TRG-03** — The PM never self-triggers. Idle (no inbound request or event) → zero
   provider calls, zero graph writes.
 
@@ -73,15 +79,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (whole shares), `est_price` (Decimal — exact money type), `stop_pct`, `target_pct`,
   `pm_run_id`, and `provenance`.
 - **PM-OUT-03** — Each `RejectedOrder` carries the original recommendation plus a `reason`
-  string that names the gate that blocked it (`"max_positions"`, `"sector_cap"`,
-  `"reward_risk_below_floor"`, `"provider_degraded"`, etc.). Silence is always attributed.
+  string that names the gate that blocked it (`"max_positions"`, `"sector_concentration"`,
+  `"sector_name_count"`, `"reward_risk_below_min"`, `"provider_degraded"`, etc.). The list is
+  illustrative; these are the strings the PM emits. Silence is always attributed. *(DRIFT-037.)*
 - **PM-OUT-04** — If the provider is unavailable, all recommendations are rejected with reason
   `"provider_unavailable"` and a fault is recorded. An empty `OrderIntentSet` is returned.
 - **PM-OUT-05** — In pub/sub mode the outbound `portfolio.orders.ready` event carries only a
   claim-check reference; the `OrderIntentSet` payload lives in the graph.
-- **PM-OUT-06** — `portfolio_state_snapshot` in the result captures the post-evaluation cash,
-  open positions, and sector weights at the moment the intents were computed. This snapshot
-  is the inputs for the next PM run's reconciliation; it is never a live broker query.
+- **PM-OUT-06** — The PM records **no portfolio-state snapshot** of its own. A run's output is its
+  `OrderIntentSet`. The cash and positions it was checked against are read from the run's
+  `BrokerPositionSnapshot` (`PM-IN-05`), never from a live broker query. *(DRIFT-039; was: a
+  `portfolio_state_snapshot` of post-evaluation cash, positions and sector weights, which was never
+  built.)*
 
 ---
 
@@ -145,8 +154,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   tentatively approved intents (so position cap and sector cap are enforced across candidates
   within the same run). The mutation is not visible to concurrent requests; the PM is
   single-tenant within a container.
-- **PM-STA-04** — The graph write of an `OrderIntentResult` node captures the final
-  `portfolio_state_snapshot` after the run completes.
+- **PM-STA-04** — A run's final record is its `OrderIntentSet`. The pub/sub path writes it on an
+  `OrderIntentResult` node (`orders`), and the graph-pull path writes it on its `PMRun`
+  (`order_intent_set`). Neither records a portfolio-state snapshot. *(DRIFT-039; was: the
+  `OrderIntentResult` captures the final `portfolio_state_snapshot`.)*
 
 ---
 
@@ -200,8 +211,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `reason`, and `gate_report` (`PM-OUT-03`). `GateOutcome` carries the gate name, the value, the
   threshold, the detail, and an outcome that can express **passed, failed, and not-evaluated as
   three distinct values** (`PM-NEV-09`) — a two-state boolean cannot satisfy this clause.
-  `CONTRACT.version` is the authoritative version string; `gate_report` is additive and defaults to
-  empty for older payloads.
+  `CONTRACT.version` names the current schema. No clause promises that it moves when a payload
+  field is added, removed or renamed (DRIFT-060). `gate_report` is additive and defaults to empty
+  for older payloads.
 
 ---
 
@@ -232,11 +244,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Observability & audit (`OBS`)
 
-- **PM-OBS-01** — Every `PMRun` node in the graph is fully reconstructable: input
-  recommendations, per-recommendation `gate_report` outcomes (gate name, value,
-  threshold, pass/fail, detail), reason strings, estimated prices used, and the final
-  `OrderIntentSet`. The `portfolio_state_snapshot` captures pre- and post-run state on
-  the `OrderIntentResult` node.
+- **PM-OBS-01** — Every graph-pull `PMRun` is reconstructable from the graph. It carries the run's
+  whole `OrderIntentSet` as `order_intent_set`: each approved intent with its estimated price and
+  `gate_report` outcomes (gate name, value, threshold, pass/fail, detail), each rejected order with
+  its originating recommendation, `reason` and `gate_report`, and the explanation and provenance.
+  Beside it are `approved_count`, `rejected_count`, `source_analyst_run_id` and `created_at`. Each
+  rejected recommendation is also a `Rejection` node with its `gate_report`. The PM writes **no**
+  pre- or post-run portfolio snapshot: the book a run was weighed against is the run's
+  `BrokerPositionSnapshot` (`PM-IN-05`). *(DRIFT-039.)*
 - **PM-OBS-02** — Faults (provider degradation, per-evaluation errors) are routed to the
   central fault channel. Every rejection has an attributed reason; no silence, no mystery.
 - **PM-OBS-03** — A concentration gate that *did* evaluate reports the size of the comparison
@@ -247,8 +262,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   evaluated* from *passed*; this clause separates *evaluated and found nothing* from *evaluated
   nothing*, which is the pair a cluster of one collapses without it. The census is evidence, not a
   summary: it is rendered into the same `detail` that reaches the deliberator.
-- **PM-OBS-04** — Every evaluated PM gate that renders a `PASSED` or `FAILED` verdict discloses
-  whether the opposite verdict was reachable from the evidence it had. A gate whose verdict is
+- **PM-OBS-04** — Every evaluated PM gate that renders a `PASSED` or `FAILED` verdict discloses,
+  **for the candidate it evaluated**, whether the opposite verdict was reachable from the evidence
+  that candidate's gate had. The disclosure is per candidate: the clause does not claim that a gate
+  can render the opposite verdict for some candidate in its population (DRIFT-065). A gate whose verdict is
   structurally fixed by the input stop/target policy percentages says so in `detail`, names the
   base percentages and applied mode, and remains a tripwire if those inputs change. A data-varying
   gate must not be labelled structurally fixed; it keeps its measured value, threshold, and
@@ -437,3 +454,14 @@ classes of one issuer to one key; absence means single-class, which is the commo
   `::test_the_sector_cap_decides_on_the_snapshot_mark`, `test_resumed_book.py` (six tests),
   `tests/test_pm_resumed_book.py::test_a_child_placed_by_resume_run_reads_its_sources_snapshot`, and
   `tests/test_replay_fidelity_book.py::test_drift_079_the_pm_reads_a_held_name_at_the_runs_snapshot_mark`.
+- v1.11 — amendment (S251 / DL-259, DL-260, 2026-10-01). Clauses say what the code does; no behaviour
+  change. `PM-OUT-03`'s examples are the strings the PM emits: `sector_concentration` and
+  `reward_risk_below_min`, not `sector_cap` and `reward_risk_below_floor` (DRIFT-037). `PM-OBS-04`
+  is per evaluated candidate (DRIFT-065). `PM-OBS-01`, `PM-OUT-06` and `PM-STA-04` claim only what
+  `PMRun` and `OrderIntentResult` carry; the never-built `portfolio_state_snapshot` promise is
+  withdrawn, and the run's pre-trade book is its `BrokerPositionSnapshot` (DRIFT-039). `PM-STA-04`
+  ⬜ → 🟩 on `test_pm_run_record.py` and the pub/sub deserialisation test. `PM-TRG-02` names the
+  graph-pull trigger and its key-and-edge bound (DRIFT-086). `PM-TYP-03`: `CONTRACT.version` names the
+  current schema (DRIFT-060). 🪤 `PM-OUT-01` and `PM-TYP-03` still list `portfolio_state_snapshot` as
+  an `OrderIntentSet` field. The row table did not name them for that, so they are filed as
+  DRIFT-096 and not reworded here. 32 / 51 → 33 / 51.

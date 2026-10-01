@@ -66,7 +66,7 @@ def _two_tech_buys(
 
 
 def test_rejects_second_same_sector_order_over_cap() -> None:
-    """PM-NEV-04: max_sector_pct gate rejects second same-sector order over cap."""
+    """PM-NEV-04 / PM-OUT-03: max_sector_pct rejects with "sector_concentration"."""
     # Each order deploys $1,000; the 0.15 cap allows $1,500 of "Tech".
     approved, rejected = _two_tech_buys(
         {"AAPL": "Tech", "MSFT": "Tech"}, Decimal("0.15")

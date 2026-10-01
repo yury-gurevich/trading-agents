@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 103
 **Branch:** `sprint-249-a-runs-market-window-ends-on-its-as-of`
-**Status:** BUILT 2026-10-01 — by a Claude cloud session on `claude/vibrant-pasteur-4x99vq` (the name the session forces; cut from `main` `a9fff56`); `make ci` exit 0 (3,793 passed, 8 skipped, 100.00 %); DL-256, provider laws v1.7 (22 / 67), DRIFT-095 corrected; owed to the planner: `uv lock` + PATCH bump, `make gate-ran`, Windows `make ci`, F1, retag
+**Status:** MERGED 2026-10-01 — `0.120.03`, fast-forwarded to `f3956bac`, tag `v0.120.03`, GATE PROVEN `f3956bac` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,793 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/vibrant-pasteur-4x99vq` (cut from `main` `a9fff56`); **F1 PASS** (the merged provider on the live sources, a request for as-of 2026-09-30 ingested on 2026-10-01: `window_end` 2026-09-30, 203 bars a name, 10 of 10 names identical to `sched-2026-09-30`, on the single and the chunked path); DL-256, provider laws v1.7 (22 / 67), DRIFT-095 corrected; **not deployed — the fleet runs `s248`**; owed: the image-only retag
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-255](../design-log.md) (the defect, measured, and the direction) · the builder's
@@ -715,3 +715,15 @@ as `GATE PROVEN`.
   owes a little more pressing. Not touched.
 - **Partial proofs not counted.** B7 proves a slice of `PROV-TRG-03` and B2 a slice of `PROV-IN-02`;
   both rows stay ⬜ (conventions §7a).
+
+### Planner, at merge (2026-10-01)
+
+- **Scope held.** The diff touches the provider, one constant in `contracts/provider.py`, `orchestration/start.py`, the provider's law book and docs; no `surfaces/`, `orchestration/resume.py`, `barrier_history.py` or other agent.
+- **Proven.** Windows `make ci` exit 0 (3,793 passed, 8 skipped, 100.00 %); `GATE PROVEN` for `f3956bac` from the proving worktree, printed SHA equal to `HEAD`; fast-forwarded, so the merged SHA is the gated SHA. The reproduction above re-run by the planner: 2026-09-30 on the branch, 2026-10-01 on `main` `a9fff56f`.
+- **F1 PASS** ([functionality-checks](../laws/functionality-checks.md)). The branch's provider on the live sources over an in-memory graph, a request for as-of 2026-09-30 ingested at 05:08 UTC on 2026-10-01: `window_end` 2026-09-30 on `MarketData` and `RegimeContext`, 203 bars a name (2025-12-09 → 2026-09-30), 10 of 10 names identical in dates and closes to `market-data:sched-2026-09-30`. The same with `ingest_chunk_size=5`, the chunked path the fleet's 99 names take. On `main` the same script read 202 bars and 0 of 10.
+- **The lock diff is 52 lines, not the version line alone.** Dependabot's uv (`5b44d973`) had dropped dependency markers and ten `greenlet` wheel entries that the planner's uv 0.8.14 writes back. The package set is identical (180 = 180); only `trading-agents` moves, `0.120.2` → `0.120.3`. The same lines will move again whenever the other uv writes the lock.
+- **CodeQL: 131 open on the branch against 130 on the last merged branch; 0 error-level on both.** The one added is alert 279, `py/cyclic-import` (note), `ingest_chunked.py:20`: the `ingest` ↔ `ingest_chunked` pairing that alert 61 dismissed on 2026-07-04 as intended (the import in `ingest.py` is inside the function). This sprint changed one name in that import statement, so CodeQL filed it again. Left open, beside the ten `py/cyclic-import` notes already open on `main`; the gate fails on error-level only. `ingest.py` is at 191 lines, so its next change forces a split, and that split is where the pairing can go.
+- **Decisions 2 and 4 (DL-256) accepted.** Refusing a datetime and a future as-of is stricter than the spec asked. A refusal is loud: `kernel/work_loop.py` records the failure and backs off, as it does for a bad lookback. One consequence for a planner-fired test run: the as-of is a **UTC** date, so a run placed from Melbourne before 10:00 AEST (11:00 AEDT) with the local date is refused as after today.
+- **The three test helpers that gained an as-of** carry an input only; no expected value moved. `test_barrier_history.py`'s `TODAY` is `datetime.now(tz=UTC).date()`, so that run is the run it was.
+- **Left as the spec ruled.** The barrier history window still follows the clock, so a past-as-of run that is still current writes a `BarrierHistory` ending today beside a `MarketData` ending on its as-of. With the eight reads in five other agents it is part two of work-queue 103. DRIFT-082 stays open.
+- **Owed:** the image-only retag (operator's call; rollback `s248`).

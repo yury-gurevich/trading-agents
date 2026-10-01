@@ -72,7 +72,14 @@ as-of, the same date `declared_lookback_days` declared the lookback against
 in five other agents (DL-255, out of scope); the value `"requested_at"`; `surfaces/` and
 `orchestration/resume.py`.
 
-## DL-255 - the provider builds a run's window from the clock, not from the run's as-of - status: OPEN (planner, 2026-10-01; work-queue 103, S249)
+**Accepted by the planner at merge (2026-10-01).** D2 and D4 are stricter than the spec asked and stand: a refusal is loud (the work loop records the failure and backs off), and the dispatcher writes neither form. One consequence: the as-of is a UTC date, so a test run placed from Melbourne before 10:00 AEST (11:00 AEDT) with the local date is refused as after today.
+
+Two things found at merge and left alone:
+
+- *The `uv lock` diff is 52 lines.* Dependabot's uv (`5b44d973`) had dropped dependency markers and ten `greenlet` wheel entries that uv 0.8.14 writes back. The package set is identical, 180 = 180. Ruled out: hand-editing the version line to keep the diff small; the lock is uv's file.
+- *CodeQL filed the `ingest` and `ingest_chunked` pairing again, as alert 279 (note).* The import statement changed by one name; alert 61 dismissed the same pairing on 2026-07-04. Left open beside ten identical notes on `main`. Ruled out: dismissing it, the step the operator overturned on alert 263; removing the pairing here, a module split outside a merged sprint. `ingest.py` is at 191 lines, so its next change forces that split.
+
+## DL-255 - the provider builds a run's window from the clock, not from the run's as-of - status: DECIDED (planner, 2026-10-01; work-queue 103, built as S249, DL-256)
 
 **Why.** The fleet test run `verify-2026-10-01-s248-a` was placed for as-of 2026-09-30, the session `sched-2026-09-30` had run on that morning. It read 202 bars a name where the scheduled run read 203, and bought TGT (0.61) where the scheduled run had rejected it (0.587).
 
@@ -89,6 +96,8 @@ in five other agents (DL-255, out of scope); the value `"requested_at"`; `surfac
 - *Move the barrier history window too* (`barrier_history.py:94`) - DL-241 and DL-243 tie a barrier claim to the run's creation date on purpose; whether a past-as-of run should make a claim at all is a separate design question.
 
 **Not claimed.** Point-in-time replay. Fundamentals and sectors come from sources that serve the latest value only, so a past-as-of run still reads today's.
+
+**Built and merged as S249 (`0.120.03`); F1 passed.** The merged provider on the live sources, given a request for 2026-09-30 a day late, reads `sched-2026-09-30`'s window exactly: 203 bars a name, 10 of 10 names identical. The second part stays open in work-queue 103.
 
 ## DL-254 - a divergence flag names its episode by the snapshot that first saw it, and severity is read from the open episode - status: DECIDED (builder, 2026-10-01; S248)
 

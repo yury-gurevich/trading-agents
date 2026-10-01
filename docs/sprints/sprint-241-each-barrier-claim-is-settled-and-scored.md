@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 92 (the book as a distribution), sprint B of the ledger
 **Branch:** `sprint-241-each-barrier-claim-is-settled-and-scored` (built on `claude/loving-meitner-qeoxgm`, the name the cloud session forced)
-**Status:** BUILT 2026-09-29 by the cloud session on `claude/loving-meitner-qeoxgm` (cut from `main` `60400a5`), not merged: C1–C9 green, `make ci` exit 0 in the container (3,592 passed, 100.00 %); owed to the planner: `uv lock`, `make gate-ran`, Windows `make ci`, F1–F3, then a full `up` and F4
+**Status:** MERGED 2026-09-29 — `e6891411`, tag `v0.119.00`, on `main`; deployed with S242's full `up` (corrected 2026-10-01; the line read: BUILT 2026-09-29 by the cloud session on `claude/loving-meitner-qeoxgm` (cut from `main` `60400a5`), not merged: C1–C9 green, `make ci` exit 0 in the container (3,592 passed, 100.00 %); owed to the planner: `uv lock`, `make gate-ran`, Windows `make ci`, F1–F3, then a full `up` and F4)
 **Version:** *next available MINOR at merge* (`0.119.00` on the branch)
 **Effort:** M
 **Decisions:** [DL-240](../design-log.md) (nothing sizes or exits on a probability until a ledger shows it comes true) · [DL-241](../design-log.md) (the claim: D1–D11) · [EXP-018](../research/experiments/EXP-018-garch-history-depth.md) (the outcome rule and the baseline) · the builder's design decisions go to the **next free DL** (`DL-243` at spec time)

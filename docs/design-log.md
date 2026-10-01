@@ -10,6 +10,57 @@ and is marked CLOSED here.
 
 ---
 
+## DL-259 - the 23 open drift rows are ruled in one pass: the law follows the code, a claim the code does not meet is narrowed, and a row that waits for a feature says which - status: DECIDED (planner, 2026-10-01; work-queue 104, S251)
+
+**Question.** The drift register holds 22 `OPEN` rows and one `PARTLY CORRECTED`, the oldest from
+2026-08-06. Each needs a forced decision. What is it, for each, and is it one sprint?
+
+**Measured (2026-10-01).** Every row was read; the stale-prone ones were re-measured:
+`portfolio_state_snapshot` and `RecommendationOutcome` still have 0 hits in the code; the PM still
+emits `sector_concentration` and `reward_risk_below_min`; `contracts/execution.py` still lacks the
+fields four `EXEC-OUT` clauses name; four test-plan layouts still exist, and the gate has parsed all
+of them since S204. Two ledger versions lag their books (reporter v1.3, supervisor v1.2).
+
+**The rule applied.** No row is closed by changing behaviour. Where the code is right and the clause
+is old, the clause is amended. Where a clause promises what was never built, it is narrowed to what
+is true, and if the missing thing still matters it becomes a queue item instead of a silent
+promise. Where a row waits for a feature that does not exist, it becomes `DECIDED` with the feature
+named, because `OPEN` means a decision is owed.
+
+**Rulings.**
+
+- **Amend to the code (14):** DRIFT-082, 084, 085, 086, 077, 087, 076, 081, 037, 074, 061, 094, 059, 032.
+- **Narrow (6):** 078 (`SRF-OUT-03` covers operator-mediated answers), 083 (`FORE-IDM-03`'s subject),
+  065 (`PM-OBS-04` is per candidate), 039 (the PM claims what `PMRun` carries), 060 (a contract
+  version is the current schema's identity), 040 (`PROV-OUT-04` promises fetch time and the fallback
+  flag).
+- **Decided, waits (3):** 031 (the four layouts stay), 030 (owed when a substrate law book is
+  authored, next-leg E20.3), 034 (`RecommendationOutcome`'s builder owns its cycle).
+
+**Ruled out, per row where it was a real choice.**
+
+- *DRIFT-094: route execution's flag writes through a supervisor capability.* Run-start
+  reconciliation would wait on another agent, and `EXEC-TRG-07` says nothing alongside the snapshot may
+  prevent it. Declared as an exception instead.
+- *DRIFT-039: build the PM's pre and post snapshot.* Execution's `BrokerPositionSnapshot` already
+  records the pre-trade book each run; a second copy on the PM's node is a feature nobody has asked for.
+- *DRIFT-040: record the serving vendor now.* It is a real gap (ADR-0006 has three possible OHLCV
+  sources and the graph cannot say which answered), and it is a behaviour change: a contract field and
+  a write. Filed as work-queue 105 so it is ranked, and the clause stops promising it meanwhile.
+- *DRIFT-060: add a contract shape and version gate.* A new CI gate, against the next leg's process
+  freeze, for a failure that has not happened.
+- *DRIFT-059: write remediation clauses now.* DL-36 Pieces C and D are not built; a clause for them
+  would be unfalsifiable. One clause states the refusal that exists.
+- *DRIFT-086: put the poll's download bound in a system book.* No such book exists (DRIFT-030); the
+  bound goes in each agent's trigger clause, where its test already is.
+- *DRIFT-030: author a kernel law book here.* A full law cycle from the template, and E20.3 needs it
+  shaped by the second pack.
+- *DRIFT-031: one layout for all fourteen test-plans.* Churn with no proof gained.
+- *One sprint per book, or per kind of ruling.* Thirteen gate cycles for text. One sprint, one commit
+  a book, rows independent so a blocked one does not hold the rest.
+
+**Not claimed.** That the amended books are now complete. This closes the rows that were filed.
+
 ## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250)
 
 **Question.** E17.5 owes a verdict on the price-only pipeline (DL-232): edge, no edge, or edge in one

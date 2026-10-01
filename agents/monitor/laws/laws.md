@@ -1,6 +1,6 @@
 # `Monitor` — Laws
 
-**Prefix:** `MON` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `MON` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Watch open positions and decide when to exit under policy (stop, target, time, regime)
 > — then hand every close to execution and explain every hold.
@@ -32,8 +32,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **MON-TRG-01** — `check_positions` is triggered by RPC request from the dispatcher or any
   authorized caller.
-- **MON-TRG-02** — `execution.fills.ready` event triggers `check_positions` through the pub/sub
-  path. No manual step required.
+- **MON-TRG-02** — Event-driven, never a timer. **Pub/sub:** an `execution.fills.ready` event
+  triggers `check_positions` through the pub/sub path, with no manual step. **Graph-pull**
+  (DL-08/08b, the path the fleet runs) has two work kinds, and sync comes first. (1) Run-start
+  position sync: a `BrokerPositionSnapshot` whose run has a `RunRequest` and no sync marker yet is
+  adopted into `Position` nodes and the run is marked synced. (2) End-of-run evaluation: an
+  `ExecutionRun` with no `MONITORED_BY` edge is evaluated from the graph alone (the PM run's
+  positions; prices from its `MarketData` lineage) into a `MonitorRun`, linked
+  `ExecutionRun -MONITORED_BY-> MonitorRun`, so each `ExecutionRun` is monitored once. The
+  `ExecutionRun` work is found **by key and edge alone**, with **props fetched only for `ExecutionRun`s
+  without that edge** (DL-246). The position-sync work is **not** bounded this way: it lists every
+  `BrokerPositionSnapshot` with its props (DRIFT-097). *(DRIFT-086; was: the pub/sub path only.)*
 - **MON-TRG-03** — `explain_hold` is triggered by RPC only; no event trigger.
 - **MON-TRG-04** — The monitor never self-triggers.
 
@@ -183,7 +192,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| — | — | — | no known drift |
+| DRIFT-097 | `MON-TRG-02`'s key-and-edge bound covers end-of-run work | `position_sync.find_pending_position_sync` lists every `BrokerPositionSnapshot` with props and walks each one's sync edge on every poll | OPEN: a code change for a later sprint (bring the sync poll under `kernel.graph_pending`) |
 
 ## Changelog
 
@@ -192,3 +201,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   required fields for `CloseDecisionSet` and `CloseDecision`, and aligns `MON-OUT-02` with the
   contract-visible close-decision quantity and reference-price fields. `MON-TYP-02` remains a
   separate graph serialization-shape clause. No contract shape changes.
+- v1.2 — S251 / DL-259, DL-260 (2026-10-01). `MON-TRG-02` names the graph-pull triggers the fleet
+  runs: run-start position sync first, then end-of-run evaluation of an `ExecutionRun` with no
+  `MONITORED_BY` edge. It states the key-and-edge bound for the `ExecutionRun` work only, because
+  the position-sync poll still lists every `BrokerPositionSnapshot`. That gap is filed as DRIFT-097,
+  not claimed away (DRIFT-086). It stays 🟩. No behaviour change; 21 / 46 unchanged.

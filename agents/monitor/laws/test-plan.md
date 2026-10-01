@@ -8,7 +8,7 @@
 | MON-IN-02 | 🟩 | `test_explain_hold_returns_non_empty_explanation`, `test_explain_hold_without_position_returns_explanation` |
 | MON-IN-03 | 🟩 | `test_fills_ready_triggers_decisions_ready` |
 | MON-TRG-01 | 🟩 | `test_check_positions_opens_position_idempotently` |
-| MON-TRG-02 | 🟩 | `test_fills_ready_triggers_decisions_ready` |
+| MON-TRG-02 | 🟩 | `test_fills_ready_triggers_decisions_ready`, `test_monitor_poll.py::test_find_pending_returns_unmonitored_execution_run`, `test_monitor_poll.py::test_monitor_pm_node_checks_positions_from_graph`, `test_monitor_position_sync_work_items.py::test_work_items_prioritize_sync_before_tail_evaluation`, `test_monitor_position_sync_work_items.py::test_process_work_item_dispatches_both_kinds`, `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work` (the `ExecutionRun` bound; the sync poll is DRIFT-097) |
 | MON-TRG-03 | 🟩 | `test_explain_hold_returns_non_empty_explanation` |
 | MON-TRG-04 | ⬜ | — |
 | MON-OUT-01 | 🟩 | `test_check_positions_opens_position_idempotently` |

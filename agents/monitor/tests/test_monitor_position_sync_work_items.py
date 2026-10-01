@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def test_work_items_prioritize_sync_before_tail_evaluation() -> None:
-    """MON-TRG-04 / MON-STA-02: sync work is before tail monitor work."""
+    """MON-TRG-02 / MON-TRG-04 / MON-STA-02: sync work is before tail monitor work."""
     graph = InMemoryGraphStore()
     sync = snapshot(graph, "mixed", holdings=())
     tail = graph.merge_node("ExecutionRun", "execution-run:mixed", {})
@@ -38,7 +38,7 @@ def test_work_items_prioritize_sync_before_tail_evaluation() -> None:
 def test_process_work_item_dispatches_both_kinds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """MON-TRG-04 / MON-STA-02: planted work items hit both dispatch arms."""
+    """MON-TRG-02 / MON-TRG-04 / MON-STA-02: work items hit both dispatch arms."""
     graph = InMemoryGraphStore()
     sync = snapshot(graph, "dispatch", holdings=())
     tail = graph.merge_node("ExecutionRun", "execution-run:dispatch", {})

@@ -60,6 +60,7 @@ named, because `OPEN` means a decision is owed.
   a book, rows independent so a blocked one does not hold the rest.
 
 **Not claimed.** That the amended books are now complete. This closes the rows that were filed.
+
 ## DL-258 - the history rule filters in its own module and counts only when on; the scorer rebuilds each resample in integer cents and draws one stationary index stream for every arm - status: DECIDED (builder, 2026-10-01; S250)
 
 **Why.** DL-257 (below) fixed what EXP-014 scores and by what rule (its Appendix P is frozen). S250's spec left six
@@ -252,6 +253,19 @@ pillar. What exactly is scored, by what rule, and what must the harness stop doi
 
 **Not claimed.** Anything about the full pipeline (fundamentals, sentiment, the deliberator), or about
 the fleet's 99-name book at 22 % invested.
+
+**Amendment (planner, 2026-10-01, at S250's first return).** Decision 1 was written against a window
+the planner assumed held about 203 sessions and never measured by year. The builder measured it: the
+provider's holiday table covered 2024–2027 only, so before 2024 every weekday counted as a session
+and the declared lookback came out about a week short. *[verified on the cache]* The window held
+194–198 sessions on all 1,760 sessions of 2017–2023, so the rule as specified would have kept every
+arm in cash until 2024, and every earlier replay on this harness (S235's smoke run included) gave the
+analyst at most 198 bars before 2024, with no 200-day average. **Repair:** the table now holds every
+NYSE closure from 2016 and 2025-01-09 (DL-258's amendment); the calendar equals the cache's sessions
+on every day from 2016-01-04 to 2026-09-25, and the window holds 203 on all 2,446 scored sessions.
+*Ruled out:* cutting the harness window from the cache's own sessions, which leaves the calendar
+wrong and stops the harness calling the fleet's own function. The live fleet's lookback is unchanged
+for any as-of after 2025-10-29. Appendix P is untouched: it says only that the rule is on.
 
 ## DL-256 - a run's ingest reads its as-of once, as an exact ISO date no later than today, and one helper builds the window from it - status: DECIDED (builder, 2026-10-01; S249)
 

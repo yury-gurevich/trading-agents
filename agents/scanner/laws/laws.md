@@ -1,6 +1,6 @@
 # `Scanner` — Laws
 
-**Prefix:** `SCAN` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `SCAN` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Reduce the full tradable universe to a small, ranked, explained set of candidates
 > worth deeper analysis — nothing more.
@@ -40,9 +40,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **SCAN-TRG-01** — RPC capability `run_scan`: invoked on demand by any caller in
   `allowed_callers` (see CAP). Pull mode; returns a `CandidateSet` synchronously.
-- **SCAN-TRG-02** — Pub/sub: `run.trigger` event auto-invokes `run_scan` and emits a
-  `scan.candidates.ready` claim-check event to the bus. This is the primary production
-  trigger path.
+- **SCAN-TRG-02** — Two event-driven paths, neither one a timer. **Pub/sub:** a `run.trigger`
+  event auto-invokes `run_scan` and emits a `scan.candidates.ready` claim-check event to the bus.
+  **Graph-pull** (DL-08/08b, the path the fleet runs): a provider `MarketData` with no `SCANNED_BY`
+  edge is a request. The poll scans it from the graph alone, with no bus call, writes the `ScanRun`
+  carrying its `CandidateSet`, and links `MarketData -SCANNED_BY-> ScanRun`, so each `MarketData` is
+  scanned once. The poll finds its pending work **by key and edge alone** and **fetches props only
+  for `MarketData` without that edge**, so a poll with no work downloads no payload (DL-246).
+  *(DRIFT-085, DRIFT-086; was: pub/sub only, called "the primary production trigger path".)*
 - **SCAN-TRG-03** — The scanner never self-triggers. Idle (no inbound request or event) →
   zero provider calls, zero graph writes.
 
@@ -145,9 +150,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `FilterTrace` carries `universe_size`, `evaluated`, `dropped_by_filter`, and `verdicts`
   (`SCAN-OUT-02`). `FilterVerdict` carries `ticker`, `decision`, `filter_fired`,
   `skipped_filters`, `features`, and `bypassed` (`SCAN-OUT-02`/`SCAN-OUT-06`/`SCAN-OUT-07`).
-  `contracts.scanner.CONTRACT.version` is the authoritative version string for current schema
-  identity; DRIFT-060 tracks the missing gate that would require the version to move when payload
-  shape changes.
+  `contracts.scanner.CONTRACT.version` names the current schema. No clause promises that it moves
+  when a payload field is added, removed or renamed (DRIFT-060).
 - **SCAN-TYP-02** — `Candidate.score` is a dimensionless `float`; `Candidate.rank` is a
   positive `int ≥ 1`. Neither carries a currency unit. `FilterTrace` counts are exact
   non-negative integers summing to `universe_size`.
@@ -266,3 +270,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   now names both `skipped_filters` fields and closes DRIFT-047. No contract shape changes.
 - v1.3 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares `bypass_scanner_filter`,
   the DL-09 counterfactual switch. No clause moves.
+- v1.4 — S251 / DL-259, DL-260 (2026-10-01). `SCAN-TRG-02` names the graph-pull trigger the fleet
+  runs: a `MarketData` with no `SCANNED_BY` edge is a request, found by key and edge with props
+  fetched for pending items only. It had called pub/sub "the primary production trigger path"
+  (DRIFT-085, DRIFT-086). It stays 🟩, now also proven on the poll. `SCAN-TYP-01` says
+  `CONTRACT.version` names the current schema, and that no clause promises the version moves with
+  the shape (DRIFT-060). No behaviour, contract or vocabulary change; 18 / 41 unchanged.

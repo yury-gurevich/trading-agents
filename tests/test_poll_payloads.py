@@ -42,9 +42,10 @@ FINDERS: dict[str, Callable[[GraphStore], list[Node]]] = {
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case.name)
 def test_no_poll_downloads_a_payload_to_find_its_work(case: PollCase) -> None:
-    """PROV-TRG-02 / PROV-TRG-04 / SCAN-TRG-03 / ANLZ-TRG-03 / PM-TRG-03 /
-    MON-TRG-04 / RPT-TRG-04 (DL-246): a poll finds its pending work by key and edge;
-    it fetches only the nodes that lack its processed edge, in list order."""
+    """PROV-TRG-02 / PROV-TRG-04 / SCAN-TRG-02 / ANLZ-TRG-02 / PM-TRG-02 / MON-TRG-02 /
+    RPT-TRG-02 (DL-246, S251): a poll finds its pending work by key and edge; it
+    fetches only the nodes that lack its processed edge, in list order. (Also cited
+    before S251 as SCAN-TRG-03 / ANLZ-TRG-03 / PM-TRG-03 / MON-TRG-04 / RPT-TRG-04.)"""
     graph = PayloadSpy()
     case.seed(graph)
     graph.arm(case.label, case.edge)

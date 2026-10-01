@@ -56,8 +56,8 @@ def test_no_poll_downloads_a_payload_to_find_its_work(case: PollCase) -> None:
 
 
 def test_the_barrier_backlog_is_never_fetched() -> None:
-    """PROV-TRG-04 (DL-241 D11, DL-246 D2): 71 stale runs with no BarrierHistory
-    and one current run: only the current run's node is ever read."""
+    """PROV-TRG-04 / PROV-TRG-02 (DL-241 D11, DL-246 D2): 71 stale runs with no
+    BarrierHistory and one current run: only the current run's node is ever read."""
     case = next(case for case in CASES if case.name == "barrier_history")
     graph = PayloadSpy()
     case.seed(graph)

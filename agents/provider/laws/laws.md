@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -42,12 +42,19 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Triggers (`TRG`)
 
-- `PROV-TRG-01` — **Event-driven**: it acts only on a **data-request event** consumed from its
-  subscribed topic (pub/sub, ADR-0005) — never a point-to-point call, never self-initiated.
+- `PROV-TRG-01` — **Request-driven**: it acts only on a **recorded data need**. That is a data
+  request on the bus (a data-request event consumed from its subscribed topic, ADR-0005, or a
+  capability request from an authorised caller, `PROV-SEC-07`), an unconsumed **`RunRequest`** on
+  the graph (DL-08, `PROV-TRG-05`), or an **`AnalystRun`'s qualifying buys** with no `BarrierHistory`
+  yet (`PROV-TRG-04`). A `RunRequest` needs no bus event to be acted on. It is never self-initiated
+  (`PROV-TRG-02`). *(DRIFT-082; was: only a data-request event from its subscribed topic.)*
 - `PROV-TRG-02` — It **never self-triggers** — no timer, no scheduled fetch, no speculative
   prefetch absent a request. A data need another stage recorded in the graph (a `RunRequest`, DL-08;
   an `AnalystRun`'s qualifying buys, `PROV-TRG-04`) is a request: finding it unconsumed is a
-  trigger, not a self-trigger, and a poll that finds none fetches nothing.
+  trigger, not a self-trigger, and a poll that finds none fetches nothing. The poll finds its
+  pending work **by key and edge alone**: a `RunRequest` with no `INGESTED_BY` edge, and a current
+  `AnalystRun` with no `BARRIER_HISTORY_BY` edge. It **fetches props only for those nodes**, so a poll
+  with no work downloads no payload (DL-246, DRIFT-086).
 - `PROV-TRG-03` — Precondition to fetch is a **valid** request; otherwise it rejects and does not
   fetch.
 - `PROV-TRG-04` — An `AnalystRun` holding at least one **buy with both a suggested stop and a
@@ -81,8 +88,11 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   missing — a *valid* response with the shortfall flagged, never silently empty), **FAULT** (the
   boundary itself failed → a typed error, recorded). A stale/missing regime input is DEGRADED warning
   evidence on the regime context, not a run-halting incident ref; exactly one of these states exists.
-- `PROV-OUT-04` — Every served fact carries **provenance** (source, fetch-time, transformation) so any
-  downstream output is reconstructable.
+- `PROV-OUT-04` — Every served market fact carries **provenance** whose `graph_node_id` names one
+  recorded `MarketSnapshot`. That snapshot holds the batch's **fetch time** (`created_at`) and whether
+  it **used a fallback** (`used_fallback`, mirrored on the response as the `market_data_degraded`
+  incident ref). It records **neither which source served the fact nor any transformation**: that
+  gap is work-queue 105, not a promise. *(DRIFT-040; was: source, fetch-time and transformation.)*
 - `PROV-OUT-05` — Graph effects are **append-only**: a new market-fact/regime record per request; it
   never overwrites or mutates a prior record.
 - `PROV-OUT-06` — On degradation, **in addition to** the quality record on the response (pull), the
@@ -91,7 +101,10 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-OUT-07` — An OHLCV bar's **volume is the consolidated tape's** volume across every venue,
   never one venue's share. A request asks its source **only for what the source's entitlement
   serves**; a refused request **fails loud** per `PROV-FAIL-01` — never as an empty success, and never
-  as a silent switch to a one-venue feed. *(DRIFT-080 — S238, DL-233, DL-239.)*
+  as a silent switch to a one-venue feed. A bar's **prices are raw**: the bars request names no
+  price adjustment, so the source serves its default, unadjusted series, and a split or a dividend
+  appears as it traded and is never back-adjusted. A change of adjustment is a change of this
+  clause. *(DRIFT-080 — S238, DL-233, DL-239; DRIFT-084 — S251.)*
 - `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
   through its own fetch path (the source's feed and end rule, then validation and the extreme-move
   guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers,
@@ -386,10 +399,13 @@ status:
 - **CORRECTED (S243, planner)** — DRIFT-090 (a pooled z-score over *n* moves cannot exceed √(n−1), so
   at 8 σ the guard cannot fire on a session of 65 names or fewer, which is every barrier-history fetch;
   accepted, and `PROV-OUT-08` now says the barrier path leans on the daily request's guard, DL-247 D4).
-- **OPEN (S239)** — DRIFT-082 (`PROV-TRG-01` still says the provider acts *only* on a request event
-  from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and now
-  `AnalystRun`s (`PROV-TRG-04`) from the graph; `TRG-02` was reconciled in v1.5, `TRG-01` is 🟩 on a
-  pub/sub test and is left for the planner).
+- **CORRECTED (S251)**: DRIFT-082 (`PROV-TRG-01` said the provider acts *only* on a request
+  event from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and
+  `AnalystRun`s (`PROV-TRG-04`) from the graph. It now names all three recorded needs and is
+  re-proven on the graph-pull path). DRIFT-084 (which price adjustment a bar carries, now raw, in
+  `PROV-OUT-07`). DRIFT-040 (`PROV-OUT-04` narrowed to fetch time and the fallback flag; the
+  serving vendor is work-queue 105). DRIFT-086's provider half (`PROV-TRG-02` states the poll's
+  key-and-edge bound).
 - **CORRECTED (S249)** — DRIFT-095 (no clause said which dates a run's ingest serves, and the code
   built every run's window from the clock, so a run the provider reached after its as-of read a
   shifted window, regime, news and earnings → new `PROV-TRG-05`).
@@ -473,3 +489,13 @@ status:
   rejected (DL-255, DRIFT-095). `contracts/provider.py` names the property
   (`RUN_REQUEST_REQUESTED_AT_PROP = "requested_at"`, value unchanged); no type, field, label,
   tunable or contract version moves. One clause added and proven: 21 / 66 → 22 / 67.
+- **v1.8 — S251 / DL-259, DL-260 (2026-10-01).** Four clauses amended to say what the code already
+  does; no behaviour, tunable, contract or vocabulary change. `PROV-TRG-01` (DRIFT-082): the
+  provider acts on a recorded data need, which is a bus request, an unconsumed `RunRequest`, or an
+  `AnalystRun`'s qualifying buys. It said only a subscribed-topic event, while the fleet has pulled
+  `RunRequest`s since DL-08. It stays 🟩 and is now also proven with no bus event at all
+  (`test_graph_pull_trigger.py`). `PROV-TRG-02` (DRIFT-086): the poll's key-and-edge bound (DL-246);
+  ⬜ → 🟩. `PROV-OUT-07` (DRIFT-084): served bars are raw, because the request names no adjustment.
+  `PROV-OUT-04` (DRIFT-040): narrowed to the `MarketSnapshot`'s fetch time and fallback flag, with
+  the serving vendor and any transformation named as not recorded (work-queue 105); ⬜ → 🟩. No
+  clause added: 22 / 67 → 24 / 67.

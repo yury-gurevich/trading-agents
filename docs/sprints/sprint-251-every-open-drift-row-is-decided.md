@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 104
 **Branch:** `sprint-251-every-open-drift-row-is-decided`
-**Status:** MERGED 2026-10-02 — `0.121.01`, fast-forwarded to `d526faf4`, tag `v0.121.01`, GATE PROVEN `d526faf4` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,932 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/compassionate-hamilton-g1wdjb`, one commit a law book; all 23 ruled rows decided across 13 books, no behaviour change (the only code edit is execution's `owns_graph`); DRIFT-098 closed by the planner at merge; **two rows remain open**, both filed during the sprint: DRIFT-096 and DRIFT-097 (work-queue 106); no deploy of its own
+**Status:** MERGED 2026-10-02 — `0.121.01`, fast-forwarded to `d526faf4`, tag `v0.121.01`, GATE PROVEN `d526faf4` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,932 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/compassionate-hamilton-g1wdjb`, one commit a law book; all 23 ruled rows decided across 13 books, no behaviour change (the only code edit is execution's `owns_graph`); DRIFT-098 closed by the planner at merge; **two rows remain open**, both filed during the sprint: DRIFT-096 and DRIFT-097 (work-queue 106); deployed with `s251` 2026-10-02
 **Version:** *next available PATCH at merge*
 **Effort:** L
 **Decisions:** [DL-259](../design-log.md) (the planner's ruling on each of the 23 rows, with the

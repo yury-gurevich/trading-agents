@@ -2334,6 +2334,13 @@ commit that differs from it in two decision-path code files. Retagging to `main`
 after `sched-2026-10-07` (four sessions) and certifies exactly the commit EXP-014 runs from.
 Recommended: the retag.
 
+**Resolved, 2026-10-02 10:38 AEST: the operator chose the retag** (*"retag"*). The fleet runs
+`s251`, built from `d526faf4` (`v0.121.01`), since 00:38 UTC. The four sessions are
+`sched-2026-10-02`, `-10-05`, `-10-06` and `-10-07`; the verdict is read on the morning of
+2026-10-08 from a worktree pinned at `d526faf4`, and EXP-014 runs from the same worktree. Until
+then there is no retag unless a live defect forces one, and any build is diffed against the
+decision paths first. At the retag `main` differed from `d526faf4` in 0 decision-path files.
+
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 
 ---

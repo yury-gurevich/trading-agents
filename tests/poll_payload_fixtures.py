@@ -11,7 +11,6 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from tests.poll_payload_support import NOW as NOW
-from tests.poll_payload_support import PayloadSpy as PayloadSpy
 from tests.poll_payload_support import PollCase as PollCase
 from tests.poll_payload_support import seed_chain
 

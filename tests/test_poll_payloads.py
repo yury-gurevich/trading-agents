@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 from tests.poll_payload_fixtures import CASES as ORIGINAL_CASES
-from tests.poll_payload_fixtures import NOW, PayloadSpy
+from tests.poll_payload_fixtures import NOW
 from tests.poll_payload_remaining import REMAINING_CASES
-from tests.poll_payload_support import FrozenDatetime
+from tests.poll_payload_support import FrozenDatetime, PayloadSpy
 
 from agents.analyst import poll as analyst_poll
 from agents.deliberator.store import find_pending as find_pending_deliberation

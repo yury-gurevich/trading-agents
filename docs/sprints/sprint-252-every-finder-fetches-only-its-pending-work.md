@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 101 and 106 (DRIFT-097)
 **Branch:** `sprint-252-every-finder-fetches-only-its-pending-work`
-**Status:** BUILT — offline unit proof; dependency audit NOT RUN; planner release and live proof owed.
+**Status:** MERGED 2026-10-02 — `0.121.03`, fast-forwarded to `dd22b348`, tag `v0.121.03`, GATE PROVEN `dd22b348` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,966 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s252`, rebased over S253 and merged with the planner's mypy fix to the test clock; forecaster laws v1.10 (25 / 52), deliberator v1.12 (27 / 59), execution v1.12 (40 / 66), monitor v1.3 (21 / 46); DRIFT-097 and DRIFT-100 `CORRECTED`; **F1 PASS** (old and new finders on the live graph: 44 comparisons, every pending set equal and in the same order; one idle poll of the six reads 18.7 MB before and only a key query after); **not deployed**: the image-only retag waits for the fidelity verdict (after `sched-2026-10-07`); owed: the retag, F2
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-246](../design-log.md) (the method, decided and built in S242) · the builder's decisions go to **DL-261**, reserved for this sprint · DRIFT-097 (closed here) · **DRIFT-100**, reserved for the execution book's silence on its graph-pull submit
@@ -940,3 +940,62 @@ all configured hook checks stay enabled. The shared hook, Git configuration and 
   re-lock, full release CI, remote gate/CodeQL, F1 on Neon, merge, retag after the fidelity verdict,
   then F2. The final handback commit SHA is reported with the delivered branch handback; it is
   resolved by `git -C ../ta-s252 rev-parse HEAD` after this evidence is committed.
+
+---
+
+## Planner's closeout — 2026-10-02
+
+**Result: MERGED.** `main` was fast-forwarded to `dd22b348`, so the merged SHA is the gated SHA; tag
+`v0.121.03`. Not deployed: the retag waits for the fidelity verdict.
+
+- **Handback:** complete against the thirteen-item checklist, with the one step the sandbox could
+  not run named as not run. Scope held: the five finder modules change discovery only; nothing
+  under `kernel/`, `contracts/`, or the analyst, reporter, scanner, PM and provider agents;
+  `PayloadSpy` is byte-identical to S242's after the fixture split.
+- **Rebase.** The branch was cut at `ae54cf35` and S253 merged while it was built. Rebased onto
+  `d8949a32`: six shared docs conflicted (design log, both law rollups, both sprint tables,
+  `STATE.md`). The tables were merged row by row, each row taken from the side that changed it;
+  DL-261 sits between DL-262 and DL-260; `STATE.md` was taken from `main`. No code conflicted.
+- **🔴 The handback's `mypy` PASS did not reproduce.** `uv run mypy` fails on the handback's own
+  commit `f7ffb756`, in the same venv, with one error: `tests/poll_payload_support.py`,
+  `FrozenDatetime.now` returned `datetime` where `datetime.now` returns `Self`. The builder's
+  evidence file shows `Success: no issues found in 1147 source files`; why it passed there was not
+  established. It would have failed the remote gate. Fixed at merge (the clock builds an instance of
+  its own class from the pinned instant; the file is 100 lines), not returned: two lines in a test
+  helper.
+- **Rollup rows.** The four rows the sprint touched in `docs/laws/INDEX.md` named the previous
+  sprint beside the new version, and in `ledger.md` put the sprint's sentence before the proven
+  count; both now follow the other rows.
+- **Bump and lock:** `0.121.02` → `0.121.03`; `uv lock` changed one line, the project's version.
+- **Windows `make ci`:** redirected to a file, exit 0, all fifteen steps: 3,966 passed, 8 skipped,
+  coverage 100.00 %, the dependency audit run with the network (clean, one accepted advisory),
+  detect-secrets passed.
+- **`make gate-ran`:** from the worktree at the branch's `HEAD`; `GATE PROVEN` for `dd22b348`
+  (CI, CodeQL, Security Findings), the printed SHA equal to `git rev-parse HEAD`.
+- **CodeQL:** the first push (`376ede39`, itself `GATE PROVEN`) showed 132 open alerts against 131
+  on the last merged branch (`sprint-253-a-runs-snapshot-counts-what-the-broker-filled`): one new
+  note, `py/unused-import`, a `PayloadSpy` re-export the fixture split left in
+  `tests/poll_payload_fixtures.py` for a single importer. The gate cannot see it (it reads `main`'s
+  alerts). Fixed, not dismissed: the test imports the spy from the module that defines it. The
+  merged commit's alerts are the same 131, compared as sets.
+- **F1 PASS**, before the merge ([functionality-checks](../laws/functionality-checks.md)). The six
+  finders from `main` and from the branch, each run against the live graph through a store that
+  counts every payload it returns and raises on a write:
+
+  | Scenario | Comparisons | Pending sets | One idle poll reads, before → after |
+  | --- | --- | --- | --- |
+  | One idle poll now, six finders | 6 | 0 = 0, all six | forecaster 12.47 MB → 0; deliberator 4.72 MB → 0; execution 1.08 MB → 0; monitor 0.42 MB → 0 |
+  | The forecaster's two finders at five real past instants, at one instant exactly 24 h after a run, and with no clock | 14 | equal, same order (up to 73 and 77 runs pending) | with a clock, only the runs inside the 24 h are fetched |
+  | Deliberator and execution submit: each of the last five `PMRun`s made pending again, then all five | 12 | equal, same order | deliberator 4.5–4.7 MB → 4–41 KB a run |
+  | Execution sync and monitor sync: five past `RunRequest`s made pending again, then all five | 12 | equal, same order | monitor 0.42 MB → 3–4 KB a run |
+
+  "After" excludes the key query itself (a list of keys, empty when idle). The four finders that
+  take no clock have no past instant to ask for, so a past state was made by hiding one run's
+  processed edge from the store's answers. 0 live writes.
+- **Where this spec was wrong.** (1) F1 asked for "five past instants" of all six finders; four take
+  no clock, and the spec did not say how a past state would be produced. (2) The CodeQL baseline
+  named `sprint-251-…`; the last merged branch at merge time was S253's.
+- **Owed:** the image-only retag, not before `sched-2026-10-07` has run and the fidelity verdict is
+  read; then **F2** on the first scheduled run after it (8 / 8, and `RxBytes` for forecaster,
+  deliberator-manager, execution and monitor down by at least a factor of ten from 2,295, 1,021, 403
+  and 143 MB).

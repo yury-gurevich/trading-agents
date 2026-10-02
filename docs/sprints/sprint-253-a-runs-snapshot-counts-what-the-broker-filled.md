@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 106 (DRIFT-099, DRIFT-096)
 **Branch:** `sprint-253-a-runs-snapshot-counts-what-the-broker-filled`
-**Status:** BUILT 2026-10-02 — by a Claude cloud session on `claude/magical-archimedes-c24l8w` (the session's forced branch name, not `sprint-253-…`); `make ci` exit 0 in the cloud tree (3,944 passed, 8 skipped, 100.00 %); reporter laws v1.5 (26 / 43), analyst laws v1.8 (28 / 51); DRIFT-099, DRIFT-096 and DRIFT-101 `CORRECTED`; owed to the planner: PATCH bump and `uv lock`, Windows `make ci`, `make gate-ran`, the CodeQL diff, F1, the retag after the fidelity verdict, F2
+**Status:** MERGED 2026-10-02 — `0.121.02`, fast-forwarded to `4152ebd2`, tag `v0.121.02`, GATE PROVEN `4152ebd2` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (3,945 passed, 8 skipped, 100.00 %); built by a Claude cloud session on `claude/magical-archimedes-c24l8w`, merged from `sprint-253-a-runs-snapshot-counts-what-the-broker-filled` with the planner's resumed-run sentence and test; reporter laws v1.5 (26 / 43), analyst laws v1.8 (28 / 51); DRIFT-099, DRIFT-096 and DRIFT-101 `CORRECTED`; **F1 PASS** (the merged reporter over the live graph, its writes captured in memory: 12 / 3, 1 / 1, 0 / 0 and 1 / 3 opened / closed on the four measured runs, 31 exits at −146,279 cents, 129 of 129 filled fills in exactly one window); **not deployed**: the image-only retag waits for the fidelity verdict (after `sched-2026-10-07`); owed: the retag, F2
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-262](../design-log.md) (the planner's design: the window, the counts, the outcomes, the three keys removed) · the builder's decisions go to **DL-263**, reserved for this sprint · DRIFT-099 and DRIFT-096 (both closed here) · **DRIFT-101**, reserved for `RPT-NEV-03` against the code
@@ -656,3 +656,48 @@ F1 and F2 (no Neon), `make gate-ran` (no `gh`), Windows `make ci`, the CodeQL di
   fills in one window); the image-only retag after the fidelity verdict (not before `sched-2026-10-07`);
   **F2** on the first scheduled run after it. Whichever of S252 and S253 returns second is rebased
   (shared docs only).
+
+---
+
+## Planner's closeout — 2026-10-02
+
+**Result: MERGED.** `main` was fast-forwarded to `4152ebd2`, so the merged SHA is the gated SHA; tag
+`v0.121.02`. Not deployed: the retag waits for the fidelity verdict.
+
+- **Handback:** complete against the fifteen-item checklist; no `builder fills` left. Scope held:
+  nothing under `contracts/`, `kernel/`, or the forecaster, deliberator, execution and monitor agents;
+  under `agents/analyst/` only the two law files and one test file.
+- **Bump and lock:** `0.121.01` → `0.121.02`; `uv lock` changed one line, the project's version.
+- **Windows `make ci`:** redirected to a file, exit 0: 3,945 passed, 8 skipped, coverage 100.00 %,
+  dependency audit clean (one accepted advisory), detect-secrets passed.
+- **`make gate-ran`:** run from the worktree at the branch's `HEAD`; `GATE PROVEN` for `4152ebd2`
+  (CI, CodeQL, Security Findings, attempt 1 each), the printed SHA equal to `git rev-parse HEAD`.
+- **CodeQL:** the branch's open alerts are the same 131 as on
+  `sprint-251-every-open-drift-row-is-decided` (117 notes, 14 warnings), compared as sets.
+- **F1 PASS**, before the merge ([functionality-checks](../laws/functionality-checks.md)). The
+  branch's `build_snapshot` over the live graph, every write captured in memory:
+
+  | Run | Opened / closed (stops) | Live snapshot said | `positions_held` | Exits since the inception |
+  | --- | --- | --- | --- | --- |
+  | `sched-2026-09-29` | 12 / 3 (3) | 0 / 0 | 34 | 27 |
+  | `sched-2026-09-30` | 1 / 1 (1) | 0 / 0 | 34 | 28 |
+  | `verify-2026-10-01-s248-a` | 0 / 0 (0) | 0 / 0 | 34 | 28 |
+  | `sched-2026-10-01` | 1 / 3 (3) | 0 / 0 | 32 | 31 at −146,279 cents, profit factor 0.0, expectancy −4,718.68 |
+
+  129 of 129 filled fills fall in exactly one run's window, none in two, none after the last run. The
+  signal, regime and performance groups equal the live snapshots' on all four runs; 0 faults; 0 live
+  writes. A raw recount without the branch's code gives the same 31 exits and the same 32 holdings.
+- **What the planner changed at merge (`4152ebd2`).** *[measured]* A resumed run's `PMRun` is a clone
+  carrying its source's `created_at` (`orchestration/resume.py` copies the props; one such pair is on
+  the graph, from 2026-07-13). The handback's law reading took it to have its own. The behaviour is
+  right (the clone reports its source's window and is never the start of it), and unstated:
+  `RPT-IDM-04` gained the sentence, `test_book_window_edges.py::test_a_resumed_run_reports_its_sources_window`
+  holds it (planted with the start made inclusive: red, restored), and DL-263 carries the note. That
+  file is now 150 lines.
+- **Where this spec was wrong.** (1) The DRIFT-096 sentence said every indicator short of history
+  shows a `*_missing_bars` metric; that was not measured, and only the five core indicators do. The
+  builder wrote the true clause (`ANLZ-IN-05`). (2) F1 names the runs by their scheduling ids; a
+  `PMRun` is keyed `pm-run-…` and carries no run id, so the four were found by `created_at`.
+- **Owed:** the image-only retag, not before `sched-2026-10-07` has run and the fidelity verdict is
+  read; then **F2** on the first scheduled run after it (the snapshot's headline agrees with that
+  run's daily brief *Filled* line).

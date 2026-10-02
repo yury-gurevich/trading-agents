@@ -11,7 +11,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-IN-02 | Peers accept only manager `DebateTurnRequest`. | functional | _tbd_ | ⬜ |
 | DLIB-IN-03 | Manager verdict accepts only manager caller. | functional | _tbd_ | ⬜ |
 | DLIB-IN-04 | Malformed input records fault and avoids execution mutation. | functional | _tbd_ | ⬜ |
-| DLIB-TRG-01 | Manager pulls PMRun nodes lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
+| DLIB-TRG-01 | Manager pulls PMRun nodes lacking `DELIBERATED_BY`, found by key and edge; props only for candidates, order-property filter retained, completed transcripts unread. | functional | `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work`; `test_deliberator_pending_payloads.py::test_an_orderless_pm_run_is_fetched_but_never_returned`; `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
 | DLIB-TRG-02 | Peers serve request/reply. | functional | _tbd_ | ⬜ |
 | DLIB-TRG-03 | No self-trigger or external feed polling. | functional | _tbd_ | ⬜ |
 | DLIB-OUT-01 | Exactly one append-only `DeliberationRun` per processed PMRun, linked by `PMRun -DELIBERATED_BY-> DeliberationRun`. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |

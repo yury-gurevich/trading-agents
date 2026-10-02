@@ -10,6 +10,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from kernel.graph_pending import pending_nodes
+
 if TYPE_CHECKING:
     from contracts.portfolio_manager import OrderIntentSet
     from kernel import GraphStore, Node
@@ -23,14 +25,11 @@ PRODUCED_BY_EDGE = "PRODUCED_BY"
 
 def find_pending(graph: GraphStore) -> list[Node]:
     """Return order-carrying PMRun nodes with no DeliberationRun marker yet."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(PM_RUN_LABEL):
-        if "order_intent_set" not in node.props:
-            continue
-        done = list(graph.descendants(node, max_depth=1, edge_types={DELIBERATED_EDGE}))
-        if not done:
-            pending.append(node)
-    return pending
+    return [
+        node
+        for node in pending_nodes(graph, PM_RUN_LABEL, DELIBERATED_EDGE)
+        if "order_intent_set" in node.props
+    ]
 
 
 def write_deliberation_run(

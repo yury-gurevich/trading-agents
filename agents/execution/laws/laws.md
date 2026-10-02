@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -72,7 +72,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the execution agent reconciles holdings against the broker and writes exactly one
   `BrokerPositionSnapshot` for the run **before** downstream scoring is released. The snapshot
   is the run's foundation: any cleanup performed alongside it is separately contained and may
-  never prevent it (DL-79). *(Declares capability decided in DL-44; see changelog v1.1.)*
+  never prevent it (DL-79). Unconsumed `RunRequest`s are found **by key and edge alone**
+  (no outgoing `REFRESHES` edge), with **props fetched only for those requests**.
+  *(Declares capability decided in DL-44; see changelog v1.1.)*
+- **EXEC-TRG-08** — Graph-pull `submit`: a `PMRun` with no outgoing `EXECUTED_BY` edge that
+  is not waiting for its deliberation (`deliberation_grace_seconds`) is submitted from the graph,
+  once, and linked to its `ExecutionRun`. Pending `PMRun`s are found **by key and edge alone**,
+  with **props fetched only for those nodes**; the existing deliberation-wait predicate decides
+  readiness on those candidates. Exits and degraded buy holds keep `EXEC-NEV-06/07`'s immediate
+  handling. *(Declares the deployed trigger absent from this book; DRIFT-100, DL-261.)*
 
 ---
 
@@ -402,7 +410,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | PRD / code says | Decision needed |
 | --- | --- | --- | --- |
-| — | — | — | No divergences at DRAFT v0 |
+| DRIFT-100 | No clause named graph-pull submit; `EXEC-TRG-02` called pub/sub primary | The deployed loop selects unexecuted PMRun nodes and applies the existing deliberation grace predicate | CORRECTED (S252, DL-261): new `EXEC-TRG-08` declares the trigger and candidate payload bound; the out-of-scope pub/sub qualifier is unchanged |
 
 ---
 
@@ -504,3 +512,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   carries (DRIFT-061) and stay 🟩, now also citing the required-field test. `EXEC-TYP-03`:
   `CONTRACT.version` names the current schema (DRIFT-060). No behaviour change. One clause added
   and proven: 38 / 64 → 39 / 65.
+- **v1.12 — S252 / DL-261 (2026-10-02).** `EXEC-TRG-07` finds unconsumed `RunRequest`s
+  by key and missing `REFRESHES` edge, fetching candidate props only. New `EXEC-TRG-08` names
+  graph-pull submit, which the whole v1.11 book did not name: unexecuted PM runs, existing grace
+  wait, graph submit once and its `ExecutionRun` edge, candidate props only. Why: both idle
+  finders listed their entire labels and the submit trigger was constitutional silence (DRIFT-100,
+  corrected). Payload/grace tests and the existing submit-anchor test prove the new clause;
+  39 / 65 -> 40 / 66. No broker, posture, grace, exit or protective-stop policy changes.

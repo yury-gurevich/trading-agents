@@ -53,6 +53,7 @@ def test_find_pending_empty_when_no_pm_run() -> None:
 
 
 def test_execute_pm_node_submits_and_anchors() -> None:
+    """EXEC-TRG-08: graph-pull submit writes its anchor and leaves no pending work."""
     graph = InMemoryGraphStore()
     node = _seed_pm_run(graph, order_set(order("AAPL")))
     execute_pm_node(node, graph=graph, broker=PaperBroker(), settings=_ADVISORY)

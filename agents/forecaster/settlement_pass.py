@@ -21,9 +21,10 @@ from agents.forecaster.barrier_store import BARRIER_LABEL
 from agents.forecaster.domain.barrier_settlement import VOID, settle
 from agents.forecaster.settlement_store import settled_claim_keys, write_settlement
 from agents.forecaster.settling_bars import bars_by_ticker, settling_market
-from contracts.barrier_history import is_current_run
+from contracts.barrier_history import CLAIM_RUN_MAX_AGE, is_current_run
 from kernel import CollectingFaultSink
 from kernel.errors import fault_boundary
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.forecaster.domain.barrier_settlement import SettlingBar
@@ -45,16 +46,14 @@ def find_pending_settlement(
     graph: GraphStore, *, now: datetime | None = None
 ) -> list[Node]:
     """AnalystRuns with no pass yet; with ``now``, current runs only (D11)."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(ANALYST_RUN_LABEL):
-        if now is not None and not is_current_run(node.props, now):
-            continue
-        marked = graph.descendants(
-            node, max_depth=1, edge_types={SETTLEMENT_MARKER_EDGE}
+    since = None if now is None else now - CLAIM_RUN_MAX_AGE
+    return [
+        node
+        for node in pending_nodes(
+            graph, ANALYST_RUN_LABEL, SETTLEMENT_MARKER_EDGE, created_at_from=since
         )
-        if not list(marked):
-            pending.append(node)
-    return pending
+        if now is None or is_current_run(node.props, now)
+    ]
 
 
 def settle_analyst_node(

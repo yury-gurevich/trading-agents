@@ -142,6 +142,89 @@ a `MonitorRun` is pending. The poll that finds that work is already key-and-edge
 
 ---
 
+## DL-261 - every remaining pending-work finder fetches only its candidates - status: DECIDED (builder, 2026-10-02; S252)
+
+**Scope and evidence.** Clean worktree `../ta-s252`, branch
+`sprint-252-every-finder-fetches-only-its-pending-work`, based on local `main` and
+`origin/main` at `ae54cf3591bc3312d6f7056cfd79a4a888675613`. The whole four law books,
+their test plans, conventions and drift register were read before code. The planner's
+live measurements in S252 are context, not measurements made by this builder.
+All builder proof is offline unit proof; no `.env`, push, version/lock edit, gate,
+merge, deploy or live check is authorised.
+
+**D1 - both forecaster finders.** Use `pending_nodes` on `AnalystRun` with the
+respective `FORECAST_BY` or `BARRIER_SETTLEMENT_BY` edge and
+`created_at_from=None if now is None else now - CLAIM_RUN_MAX_AGE`. Keep
+`is_current_run` and forecast's history-readiness check on candidates only.
+Missing/non-string creation stamps are excluded by a bounded key query; malformed
+or zone-less strings it over-includes are still rejected by `is_current_run`.
+Without `now`, there is no recency bound. The accepted timestamp-format limit is
+DL-246 D2: fleet writers stamp UTC, and arbitrary negative offsets are not a new
+supported query format. Rejected: only filter fetched props (downloads the stale
+backlog), new SQL casts (one malformed stamp can break a poll), or a new tunable.
+
+**D2 - pending PM runs.** Deliberator uses `DELIBERATED_BY`, execution submit uses
+`EXECUTED_BY`; retain presence of `order_intent_set` and the existing `is_waiting`
+predicate respectively. Accept fetching an orderless PM run on each idle poll,
+and fetching one waiting through its bounded grace. Tests pin both accepted costs.
+Rejected: adding a property query/filter to the kernel port, or changing review,
+posture, grace, submission or exit policy. The processed-edge check must never walk
+to a completed deliberation's transcript.
+
+**D3 - monitor sync.** Find `RunRequest`s without `POSITION_SYNCED_BY`, then read
+each request's one `linked_snapshot`; return snapshot nodes in request order. A
+request awaiting its snapshot returns nothing. The only decided set differences
+are: do not adopt a second snapshot for an already-synced request; do reselect a
+snapshot whose own marker edge exists but whose request edge is missing. The
+unchanged marker-exists branch completes both edges with the same one marker.
+Rejected: start at snapshots (106 PM-keyed snapshots in the planner's measurement
+never receive a sync marker), or put a 24 h window on them (loses delayed adoption).
+The old snapshot-side suggestion in DRIFT-097 is superseded by this decision.
+
+**D4 - execution sync.** Use `pending_nodes` on `RunRequest` with `REFRESHES`.
+The request-side edge is the completed-snapshot fact. Rejected: walking each
+request's edge just to discover completion, or widening any graph vocabulary.
+
+**D5 - payload fixture split.** Move the unchanged PayloadSpy and PollCase into a
+small support module, retain the seven seeders/cases, and put the six new seeders
+and cases in a separate module. Share only synthetic fixture construction.
+Rejected: weaken the spy, grow the existing 166-line module past 200, or raise a
+module-size baseline. Each case pins fetched and returned keys in order.
+Full-CI refinement, recorded before the fixture correction: S242's same-work
+oracle also consumes the original `CASES` export. Keep that seven-case export
+stable and join the six S252 cases in the payload suite only. Rejected: add new
+cases to the old seven-case oracle or edit its expected values; monitor's decided
+set differences require their own proofs, and all thirteen payload cases remain.
+
+**D6 - completeness.** Read `agents/**/*.py` with AST and collect module-level
+sync/async functions named `find_pending` or `find_pending_*`, except
+`find_pending_work` aggregators. Compare exact `(module, function)` identities to
+the case-to-callable registry, including wrapped forecaster calls, and require each
+case once. Prove omission and an uncovered fourteenth finder fail. Rejected:
+import every module (side effects and optional dependencies), a bare count (an
+omission and duplicate can cancel), or a manually fixed discovery list.
+
+**Law cycle.** Amend the four named trigger clauses and add `EXEC-TRG-08` after the
+whole execution book confirms its silence. DRIFT-100 records that missing trigger;
+`EXEC-TRG-02`'s stale primary-path qualifier is reported and left untouched. No
+other clause changes. Dependencies in the ledger are historical context; this
+builder does not refresh them. `DLIB-TRG-03` and `DLIB-IDM-01` remain gray.
+
+**Proof owed.** Red A1/A4/A8 before implementation, A1-A8 green, four red-and-restored
+DL-70 plants, redirected `make ci` with every unavailable step named. PATCH bump,
+re-lock, remote gate/CodeQL, F1, retag after the fidelity verdict, and F2 stay with
+the planner. No byte saving is inferred from the in-memory spy.
+
+**Builder proof result.** A1-A8 and all four plants proven; 43 final focused checks
+(including 14 unchanged S242 comparisons) pass. Final full pytest: 3,953 passed,
+8 skipped, 100.00 %; `make ci` exits 2 only because the offline guard refuses the
+advisory lookup. Dependency audit NOT RUN to completion; the other fourteen
+checks pass, with secret checks run separately. No release or live claim.
+Main advanced independently through S253 to `d8949a32` (`0.121.02`); this proof
+stays on the declared `ae54cf35` base. Planner integration must preserve that parallel work.
+
+---
+
 ## DL-260 - each ruled drift row becomes a clause the code already keeps, proven where a test can hold it, and what the code does less of the clause says less of - status: DECIDED (builder, 2026-10-01; S251, under DL-259)
 
 **Question.** DL-259 ruled the 23 rows. What does each amended clause say, which test proves it, and

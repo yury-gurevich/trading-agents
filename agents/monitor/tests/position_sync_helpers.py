@@ -9,7 +9,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from contracts.position_sync import RUN_REQUEST_LABEL, SNAPSHOT_LABEL, run_request_key
+from contracts.position_sync import (
+    RUN_REQUEST_LABEL,
+    SNAPSHOT_LABEL,
+    SNAPSHOT_REFRESH_EDGE,
+    run_request_key,
+)
 from kernel import InMemoryGraphStore
 
 if TYPE_CHECKING:
@@ -25,12 +30,12 @@ def snapshot(
     status: str = "fresh",
     holdings: tuple[object, ...],
 ) -> Node:
-    graph.merge_node(
+    request = graph.merge_node(
         RUN_REQUEST_LABEL,
         run_request_key(run_id),
         {"run_id": run_id, "tickers": ("AAPL",)},
     )
-    return graph.merge_node(
+    node = graph.merge_node(
         SNAPSHOT_LABEL,
         f"snapshot:{run_id}",
         {
@@ -41,6 +46,8 @@ def snapshot(
             "holdings": list(holdings),
         },
     )
+    graph.add_edge(request, node, SNAPSHOT_REFRESH_EDGE)
+    return node
 
 
 def position(

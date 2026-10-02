@@ -1,6 +1,6 @@
 # `Monitor` — Laws
 
-**Prefix:** `MON` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `MON` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Watch open positions and decide when to exit under policy (stop, target, time, regime)
 > — then hand every close to execution and explain every hold.
@@ -35,14 +35,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MON-TRG-02** — Event-driven, never a timer. **Pub/sub:** an `execution.fills.ready` event
   triggers `check_positions` through the pub/sub path, with no manual step. **Graph-pull**
   (DL-08/08b, the path the fleet runs) has two work kinds, and sync comes first. (1) Run-start
-  position sync: a `BrokerPositionSnapshot` whose run has a `RunRequest` and no sync marker yet is
-  adopted into `Position` nodes and the run is marked synced. (2) End-of-run evaluation: an
+  position sync: a `RunRequest` with no `POSITION_SYNCED_BY` edge reads its one linked
+  `BrokerPositionSnapshot`, if written, adopts it into `Position` nodes and marks the run synced.
+  A request whose snapshot is not yet written yields no work. (2) End-of-run evaluation: an
   `ExecutionRun` with no `MONITORED_BY` edge is evaluated from the graph alone (the PM run's
   positions; prices from its `MarketData` lineage) into a `MonitorRun`, linked
   `ExecutionRun -MONITORED_BY-> MonitorRun`, so each `ExecutionRun` is monitored once. The
-  `ExecutionRun` work is found **by key and edge alone**, with **props fetched only for `ExecutionRun`s
-  without that edge** (DL-246). The position-sync work is **not** bounded this way: it lists every
-  `BrokerPositionSnapshot` with its props (DRIFT-097). *(DRIFT-086; was: the pub/sub path only.)*
+  two work kinds are found **by key and edge alone**, with **props fetched only for the pending
+  `RunRequest`s (each with its one linked snapshot) and `ExecutionRun`s** (DL-246, DL-261).
+  An already-synced request never adopts a later snapshot; a snapshot marker missing only the
+  request's sync edge is pending again, and the existing marker is linked to both nodes once. *(DRIFT-086; was: the pub/sub path only.)*
 - **MON-TRG-03** — `explain_hold` is triggered by RPC only; no event trigger.
 - **MON-TRG-04** — The monitor never self-triggers.
 
@@ -192,7 +194,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| DRIFT-097 | `MON-TRG-02`'s key-and-edge bound covers end-of-run work | `position_sync.find_pending_position_sync` lists every `BrokerPositionSnapshot` with props and walks each one's sync edge on every poll | OPEN: a code change for a later sprint (bring the sync poll under `kernel.graph_pending`) |
+| DRIFT-097 | `MON-TRG-02` now bounds both graph-pull work kinds | Sync discovery formerly listed every snapshot; S252 queries pending `RunRequest`s and reads only their linked snapshots | CORRECTED (S252, DL-261): request-side `pending_nodes`; 106 orphan snapshots stay unread; a half-written marker completes both edges |
 
 ## Changelog
 
@@ -206,3 +208,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `MONITORED_BY` edge. It states the key-and-edge bound for the `ExecutionRun` work only, because
   the position-sync poll still lists every `BrokerPositionSnapshot`. That gap is filed as DRIFT-097,
   not claimed away (DRIFT-086). It stays 🟩. No behaviour change; 21 / 46 unchanged.
+- v1.3 — S252 / DL-261 (2026-10-02). `MON-TRG-02` extends the key-and-edge payload bound
+  to run-start sync, found from `RunRequest`s without `POSITION_SYNCED_BY`, each with its one
+  linked snapshot. Why: snapshot-side discovery downloaded snapshots that never become sync work.
+  The existing work and marker writer are unchanged; a later snapshot for a synced request is
+  excluded and a half-written marker is repaired. DRIFT-097 corrected; 21 / 46 unchanged.

@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -34,7 +34,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 ## Triggers (`TRG`)
 
 + **DLIB-TRG-01** -- The manager is graph-pull: it processes `PMRun` nodes with
-  no outgoing `DELIBERATED_BY` edge.
+  no outgoing `DELIBERATED_BY` edge. Pending `PMRun`s are found **by key and edge alone**, with
+  **props fetched only for those nodes**; only a candidate carrying `order_intent_set` is returned
+  as review work. Completed deliberation transcripts are never read to discover pending work.
 + **DLIB-TRG-02** -- The proponent and opponent are served request/reply
   instances.
 + **DLIB-TRG-03** -- The deliberator never self-triggers and never polls external
@@ -290,3 +292,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   tunable's own ceiling. The judge's prompt, message and parse are unchanged.
   Two clauses added and proven; `DLIB-TYP-01` stays proven with its
   required-fields test widened.
++ v1.12 -- S252 / DL-261 (2026-10-02). `DLIB-TRG-01` states the pending PM-run payload
+  bound: key and edge alone, candidate props only, then the existing order-property filter.
+  Why: the idle finder downloaded completed `DeliberationRun` transcripts through per-run walks.
+  The payload case and orderless-candidate test prove the bound; existing manager tests prove the
+  graph trigger. `TRG-01` moves gray to green, 26 / 59 -> 27 / 59; no other clause changes.

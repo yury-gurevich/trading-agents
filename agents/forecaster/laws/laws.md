@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -62,7 +62,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   run's lineage (`AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→ MarketData`: one node, never a
   listing of them), settles or voids each open claim (`FORE-OUT-08`, `FORE-FAIL-05`) and records the
   pass (`FORE-IDM-05`). The pass is the loop's own work, fired by the run it reads, not a capability;
-  it sends nothing on the bus, and the in-process pipeline runs the same pass.
+  it sends nothing on the bus, and the in-process pipeline runs the same pass. Both loop works
+  are found **by key and edge alone**: `AnalystRun`s without `FORECAST_BY` for forecasting, and
+  without `BARRIER_SETTLEMENT_BY` for settlement. The deployed loop supplies the shared 24 h
+  `created_at` bound before fetching props and still applies the current-run rule; without `now`
+  the in-process pipeline supplies no recency bound. **Props are fetched only for those keys**;
+  history readiness is checked only on the forecasting candidates.
 - **FORE-TRG-02** — The forecaster never self-triggers: no timer, schedule or idle loop starts work.
   An unconsumed `AnalystRun` is an artifact another stage wrote, and finding one is a trigger, not a
   self-trigger; a poll that finds none requests nothing.
@@ -398,3 +403,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `FORE-IDM-05` keeps the barrier one (DRIFT-083). All three stay ⬜: no test proves the return leg's
   node, and `IDN-01` states a whole purpose. The partial proofs are named in their rows. No behaviour
   change; 25 / 52 unchanged.
+- v1.10 — S252 / DL-261 (2026-10-02). `FORE-TRG-01` bounds both graph-pull finders
+  by key and processed edge, passing the shared 24 h creation bound before the deployed loop reads
+  candidate props. The existing current-run and history-readiness predicates remain; a local call
+  without `now` stays unbounded. Why: the two idle polls downloaded every `AnalystRun` separately.
+  Payload, backlog, bad-stamp and existing loop tests re-prove the clause; 25 / 52 unchanged.

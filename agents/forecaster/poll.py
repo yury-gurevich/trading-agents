@@ -18,12 +18,14 @@ from typing import TYPE_CHECKING
 from contracts.analyst import RecommendationSet
 from contracts.barrier_history import (
     BARRIER_HISTORY_LABEL,
+    CLAIM_RUN_MAX_AGE,
     barrier_buys,
     barrier_history_key,
     is_current_run,
 )
 from contracts.forecaster import ForecastRequest
 from kernel import AgentMessage
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -52,14 +54,15 @@ def find_pending(graph: GraphStore, *, now: datetime | None = None) -> list[Node
     BarrierHistory (DL-241 D10); a run with no such buy never waits. With ``now``
     (the deployed loop), only a current run counts (DL-241 D11).
     """
-    pending: list[Node] = []
-    for node in graph.list_nodes(ANALYST_RUN_LABEL):
-        if now is not None and not is_current_run(node.props, now):
-            continue
-        done = list(graph.descendants(node, max_depth=1, edge_types={FORECAST_EDGE}))
-        if not done and _history_ready(graph, node):
-            pending.append(node)
-    return pending
+    since = None if now is None else now - CLAIM_RUN_MAX_AGE
+    return [
+        node
+        for node in pending_nodes(
+            graph, ANALYST_RUN_LABEL, FORECAST_EDGE, created_at_from=since
+        )
+        if (now is None or is_current_run(node.props, now))
+        and _history_ready(graph, node)
+    ]
 
 
 def _history_ready(graph: GraphStore, node: Node) -> bool:

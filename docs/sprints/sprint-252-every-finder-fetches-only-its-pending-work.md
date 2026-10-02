@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 101 and 106 (DRIFT-097)
 **Branch:** `sprint-252-every-finder-fetches-only-its-pending-work`
-**Status:** SPEC
+**Status:** BUILT — offline unit proof; dependency audit NOT RUN; planner release and live proof owed.
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-246](../design-log.md) (the method, decided and built in S242) · the builder's decisions go to **DL-261**, reserved for this sprint · DRIFT-097 (closed here) · **DRIFT-100**, reserved for the execution book's silence on its graph-pull submit
@@ -244,13 +244,13 @@ snapshot label instead, A4 (d) red; (4) one finder removed from the cases, A8 re
 
 ## Success factors
 
-- [ ] All six finders pass the payload spy (A1) with the pending sets they had before (A2), bar the two named differences (A4 e, and the second-snapshot case).
-- [ ] The completeness guard counts thirteen finders and fails on a fourteenth with no case (A8, plant 4).
-- [ ] No file under `kernel/`, `contracts/`, or the analyst, reporter, scanner, PM or provider agents changed.
-- [ ] Law cycle done: `MON-TRG-02`, `FORE-TRG-01`, `DLIB-TRG-01`, `EXEC-TRG-07` amended, `EXEC-TRG-08` added (or the existing clause amended, stated), four Changelog lines, test-plan rows, both rollups, DRIFT-097 `CORRECTED`, DRIFT-100 filed `CORRECTED`.
-- [ ] DL-261 written with the decisions and their rejected alternatives.
-- [ ] Each of the four plants red, pasted, restored.
-- [ ] Every touched module < 200 lines; the fixtures file split.
+- [x] All six finders pass the payload spy (A1) with the pending sets they had before (A2), bar the two named differences (A4 e, and the second-snapshot case).
+- [x] The completeness guard counts thirteen finders and fails on a fourteenth with no case (A8, plant 4).
+- [x] No file under `kernel/`, `contracts/`, or the analyst, reporter, scanner, PM or provider agents changed.
+- [x] Law cycle done: `MON-TRG-02`, `FORE-TRG-01`, `DLIB-TRG-01`, `EXEC-TRG-07` amended, `EXEC-TRG-08` added (or the existing clause amended, stated), four Changelog lines, test-plan rows, both rollups, DRIFT-097 `CORRECTED`, DRIFT-100 filed `CORRECTED`.
+- [x] DL-261 written with the decisions and their rejected alternatives.
+- [x] Each of the four plants red, pasted, restored.
+- [x] Every touched module < 200 lines; the fixtures file split.
 - [ ] `make ci` exit 0, 100.00 % coverage; any step the sandbox could not run is named as not run.
 - [ ] **Owed to the planner, not the builder:** the PATCH bump and `uv lock`, Windows `make ci`,
       `make gate-ran`, the CodeQL diff, **F1** (before merge, read-only on Neon: each of the six old
@@ -416,15 +416,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *builder fills* | *builder fills* | *builder fills* | *builder fills* |
+| Forecaster forecast + settlement finders | `agents/forecaster/laws/laws.md` v1.9 and whole `test-plan.md` | `FORE-TRG-01`, `FORE-TRG-02`, `FORE-IDM-05`, `FORE-IN-07` | Yes: retain the existing current-run and history-readiness predicates; pass the shared 24 h bound into the key query, with no bound without `now`. |
+| Deliberator pending finder | `agents/deliberator/laws/laws.md` v1.11 and whole `test-plan.md` | `DLIB-TRG-01`, `DLIB-TRG-03`, `DLIB-IDM-01` | `TRG-01`, `TRG-03` and `IDM-01` are gray before this sprint. Prove and amend `TRG-01` only; keep the order-property filter and retry semantics. |
+| Execution submit + position-sync finders | `agents/execution/laws/laws.md` v1.11 and whole `test-plan.md` | `EXEC-TRG-07`, `EXEC-IDM-01`, `EXEC-NEV-06`, `EXEC-NEV-07` | Whole-book check found no graph-pull submit trigger. Add `EXEC-TRG-08`, file DRIFT-100, and retain the existing grace/posture predicate. |
+| Monitor position-sync finder | `agents/monitor/laws/laws.md` v1.2 and whole `test-plan.md` | `MON-TRG-02`, `MON-IDM-02`, `MON-STA-02` | Yes: find requests lacking `POSITION_SYNCED_BY`, read each linked snapshot, and preserve the existing marker-repair branch. Reject snapshot-side discovery as DRIFT-097's old suggestion is unbounded. |
+| Payload cases and completeness guard | Whole `docs/laws/conventions.md` and `docs/laws/drift-register.md`; DL-246; read-only `kernel/graph_pending.py` and shared contracts | conventions sections 2, 3, 4, 7, 7a, 9; the five trigger clauses | Keep PayloadSpy's refusal checks unchanged; split fixtures and discover module-level finders by AST without importing the fleet. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *builder fills*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** YES: no contract changes, but four books gain a payload bound. Amend only `FORE-TRG-01`, `DLIB-TRG-01`, `MON-TRG-02`, `EXEC-TRG-07`; add `EXEC-TRG-08`. Required versions, four Changelog entries, test-plan rows/citations, both rollups, DRIFT-097 and DRIFT-100 are owed in this branch.
 
-**Contradictions found between a law and this spec:** *builder fills*
+**Contradictions found between a law and this spec:** No blocking behavioural contradiction. `EXEC-TRG-02` still calls pub/sub the primary production path; it does not forbid the additional graph-pull path, and this out-of-scope phrase is reported rather than edited. The named amendments are explicitly authorised despite the general locked-law rule. CLAUDE.md takes precedence over AGENTS.md's stale 14-step count and merge permission wording; the brief overrides push/merge and version closeout.
 
-**Laws found silent where a decision was needed:** *builder fills*
+**Laws found silent where a decision was needed:** No existing execution clause states the graph-pull submit trigger; DRIFT-100 will record it and `EXEC-TRG-08` will declare it. The payload bounds absent from these four books are the guarantees authorised by this spec. No other silence requires a new decision to implement the six conversions.
 
-**Clauses that were ⬜ and are now proven:** *builder fills*
+**Clauses that were ⬜ and are now proven:** `DLIB-TRG-01` gray -> green; new `EXEC-TRG-08` declared and proven green. `FORE-TRG-01`, `MON-TRG-02` and `EXEC-TRG-07` are amended and re-proven green. `DLIB-TRG-03` and `DLIB-IDM-01` stay gray. Derived counters: forecaster 25 / 52, monitor 21 / 46, deliberator 27 / 59, execution 40 / 66; both rollups and law-coverage check agree.
 
 ---
 
@@ -432,50 +436,507 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *builder fills* | *builder fills* | *builder fills* | *builder fills* |
+| A1 | `test_no_poll_downloads_a_payload_to_find_its_work` (six new parameters: forecaster, settlement, deliberator, execution, execution_sync, monitor_sync; thirteen total) | `tests/test_poll_payloads.py` | PASS | `FORE-TRG-01`, `DLIB-TRG-01`, `EXEC-TRG-07`, `EXEC-TRG-08`, `MON-TRG-02`; original six trigger IDs retained |
+| A2 | Existing suites in all four affected agents: 609 passed, one optional SciPy oracle skipped; `test_the_memory_store_finds_the_old_pending_set_in_order` and `test_the_postgres_store_finds_the_old_pending_set_in_order` (seven each) also pass unchanged | `agents/{forecaster,deliberator,execution,monitor}/tests/`; `tests/test_poll_same_work.py` | PASS; one named optional skip | Existing citations retained; submit-anchor test also cites `EXEC-TRG-08` |
+| A3 | `test_each_forecaster_finder_fetches_only_its_current_backlog` (forecast/settlement x deployed/local); `test_both_finders_keep_the_shared_current_run_predicate` | `agents/forecaster/tests/test_forecaster_pending_payloads.py` | PASS | `FORE-TRG-01`, `FORE-IDM-05` |
+| A4 | `test_monitor_sync_fetches_only_linked_snapshots_in_request_order`; `test_a_half_written_sync_marker_is_reselected_and_completed_once`; `test_a_second_snapshot_of_an_already_synced_request_is_not_picked_up` | `agents/monitor/tests/test_monitor_pending_payloads.py` | PASS | `MON-TRG-02`, `MON-STA-02` |
+| A5 | `test_an_orderless_pm_run_is_fetched_but_never_returned` | `agents/deliberator/tests/test_deliberator_pending_payloads.py` | PASS | `DLIB-TRG-01` |
+| A6 | `test_a_waiting_pm_run_is_fetched_until_its_grace_expires` | `agents/execution/tests/test_execution_pending_payloads.py` | PASS | `EXEC-TRG-08`, `EXEC-NEV-06` |
+| A7 | `test_position_sync_fetches_only_requests_without_a_snapshot_edge` | `agents/execution/tests/test_execution_pending_payloads.py` | PASS | `EXEC-TRG-07` |
+| A8 | `test_the_payload_cases_cover_every_finder`; `test_an_uncovered_fourteenth_finder_is_rejected`; `test_discovery_excludes_methods_nested_functions_and_work_aggregators` | `tests/test_poll_payloads.py` | PASS | `FORE-TRG-01`, `DLIB-TRG-01`, `EXEC-TRG-07/08`, `MON-TRG-02` |
 
-**Tests added beyond the plan:** *builder fills*
+**Tests added beyond the plan:** The shared-boundary/missing/non-string/malformed/naive timestamp cases; the synthetic fourteenth-finder and discovery-rule tests; explicit second-snapshot exclusion. They pin the existing fail-closed recency predicate, non-vacuous completeness rule and the second difference decision 3 authorises.
 
-**Existing tests edited, and why:** *builder fills*
+**Existing tests edited, and why:**
+
+- `tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work`: six parameters,
+  five clause citations and a fixed execution clock added. The seven original cases' expected
+  fetched/returned keys and all PayloadSpy refusal methods are unchanged.
+- `agents/execution/tests/test_execution_poll.py::test_execute_pm_node_submits_and_anchors`:
+  `EXEC-TRG-08` docstring only, proving graph submit writes the anchor and is no longer pending.
+- Fixture-only edit: `agents/monitor/tests/position_sync_helpers.py::snapshot` now links the
+  synthetic `RunRequest` to the synthetic snapshot with the existing `REFRESHES` edge, as
+  production already does. The work-item ordering, position adoption, stale sync and repeat-sync
+  tests keep every expected value unchanged. No other existing test function was edited.
+- Fixture compatibility: keep the original seven-case `CASES` export stable for the S242
+  same-work oracle; join the six new cases in `tests/test_poll_payloads.py` only. DL-261 records
+  the full-CI finding and rejects changing the legacy oracle or its expected values.
+- The barrier-history registry wrapper became `functools.partial` with the same `now=NOW`, so
+  AST completeness can inspect its real function identity. This changes no test expectation.
+- New local test files have unique agent-prefixed names: an initial shared basename caused pytest
+  collection collisions; renaming fixed collection without changing behaviour or expected values.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *builder fills*
+**Status:** BUILT — branch-only, offline unit proof.
 
-**Tree the proofs ran in (and `.env` present?):** *builder fills*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s252`, branch `sprint-252-every-finder-fetches-only-its-pending-work`, clean start at `ae54cf3591bc3312d6f7056cfd79a4a888675613` (local main = origin/main). `.env` absent. Own venv created with `uv --offline sync --locked`; main's venv untouched. No external network proof.
 
-**Result:** *builder fills*
+**Result:** All six finders use `pending_nodes`; thirteen executable payload cases cover every discovered source finder. A1-A8 pass, both monitor differences are pinned, and all four guard plants fail and are restored. Five-clause law cycle complete; DRIFT-097/100 CORRECTED. Final pytest and fourteen available local checks pass; the offline dependency audit is NOT RUN to completion and `make ci` exits 2. Release/gate/F1/F2 are not done by this builder.
 
-**Files changed:** *builder fills*
+**Files changed:** The five finder modules; the split payload support/original/remaining fixture modules and payload test; four new agent-local test modules; the monitor snapshot fixture and one execution test docstring; four law books and test plans; both rollups, drift register, DL-261; this sprint handover, its README/INDEX rows and the single STATE tracker. Exact module paths and counts are below; the committed diff lists all 31 intended paths.
 
-**Design decisions:** *builder fills*
+**Design decisions:** DL-261 D1-D6, recorded before implementation: recency in both forecaster key queries; PM filters retained; monitor from request side and its two decided differences; execution sync by REFRESHES; fixture split without weakening the spy; AST completeness by exact module/function identity. Rejected alternatives and accepted orderless/waiting-candidate costs are recorded there.
 
 **Proof — the red run first:**
 
 ```text
-builder fills
+A8, before the six new cases were added; product source unchanged.
+uv run pytest tests/test_poll_payloads.py::test_the_payload_cases_cover_every_finder --no-cov -q
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________________ test_the_payload_cases_cover_every_finder __________________
+tests\test_poll_payloads.py:106: in test_the_payload_cases_cover_every_finder
+    _assert_finder_cases(_finder_functions(Path(__file__).resolve().parents[1] / "agents"))
+tests\test_poll_payloads.py:99: in _assert_finder_cases
+    assert discovered == covered, f"finders missing cases: {sorted(discovered - covered)}"
+E   AssertionError: finders missing cases: [('agents.deliberator.store', 'find_pending'), ('agents.execution.poll', 'find_pending'), ('agents.execution.poll', 'find_pending_position_sync'), ('agents.forecaster.poll', 'find_pending'), ('agents.forecaster.settlement_pass', 'find_pending_settlement'), ('agents.monitor.position_sync', 'find_pending_position_sync')]
+E   assert {('agents.ana...lement'), ...} == {('agents.ana...ending'), ...}
+E
+E     Extra items in the left set:
+E     ('agents.forecaster.poll', 'find_pending')
+E     ('agents.forecaster.settlement_pass', 'find_pending_settlement')
+E     ('agents.monitor.position_sync', 'find_pending_position_sync')
+E     ('agents.execution.poll', 'find_pending_position_sync')
+E     ('agents.execution.poll', 'find_pending')
+E     ('agents.deliberator.store', 'find_pending')
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_poll_payloads.py::test_the_payload_cases_cover_every_finder
+1 failed in 2.79s
+
+EXIT_CODE=1
+
+A1/A4, all six new cases added; product source still unchanged.
+uv run pytest tests/test_poll_payloads.py agents/monitor/tests/test_pending_payloads.py --no-cov -q
+.......FFFFFF....FFF                                                     [100%]
+================================== FAILURES ===================================
+________ test_no_poll_downloads_a_payload_to_find_its_work[forecaster] ________
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\forecaster\poll.py:56: in find_pending
+    for node in graph.list_nodes(ANALYST_RUN_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every AnalystRun with its props
+________ test_no_poll_downloads_a_payload_to_find_its_work[settlement] ________
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\forecaster\settlement_pass.py:49: in find_pending_settlement
+    for node in graph.list_nodes(ANALYST_RUN_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every AnalystRun with its props
+_______ test_no_poll_downloads_a_payload_to_find_its_work[deliberator] ________
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\store.py:27: in find_pending
+    for node in graph.list_nodes(PM_RUN_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every PMRun with its props
+________ test_no_poll_downloads_a_payload_to_find_its_work[execution] _________
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\execution\poll.py:67: in find_pending
+    for node in graph.list_nodes(PM_RUN_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every PMRun with its props
+______ test_no_poll_downloads_a_payload_to_find_its_work[execution_sync] ______
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\execution\poll.py:49: in find_pending_position_sync
+    for node in graph.list_nodes(RUN_REQUEST_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every RunRequest with its props
+_______ test_no_poll_downloads_a_payload_to_find_its_work[monitor_sync] _______
+tests\test_poll_payloads.py:74: in test_no_poll_downloads_a_payload_to_find_its_work
+    assert tuple(node.key for node in found) == case.pending
+E   AssertionError: assert ('snapshot:a', 'snapshot:c') == ('snapshot:c'...napshot:half')
+E
+E     At index 0 diff: 'snapshot:a' != 'snapshot:c'
+E     Right contains one more item: 'snapshot:half'
+E     Use -v to get more diff
+_ test_monitor_sync_reads_only_pending_requests_linked_snapshots_in_request_order _
+agents\monitor\tests\test_pending_payloads.py:69: in test_monitor_sync_reads_only_pending_requests_linked_snapshots_in_request_order
+    found = find_pending_position_sync(graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\monitor\position_sync.py:33: in find_pending_position_sync
+    for node in graph.list_nodes(SNAPSHOT_LABEL):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\monitor\tests\test_pending_payloads.py:42: in list_nodes
+    assert label != SNAPSHOT_LABEL, "sync poll listed every snapshot with props"
+E   AssertionError: sync poll listed every snapshot with props
+E   assert 'BrokerPositionSnapshot' != 'BrokerPositionSnapshot'
+______ test_a_half_written_sync_marker_is_reselected_and_completed_once _______
+agents\monitor\tests\test_pending_payloads.py:99: in test_a_half_written_sync_marker_is_reselected_and_completed_once
+    assert find_pending_position_sync(graph) == [snapshot]
+E   AssertionError: assert [] == [Node(label='...ma_version=1)]
+E
+E     Right contains one more item: Node(label='BrokerPositionSnapshot', key='snapshot:half', props=mappingproxy({'run_id': 'half', 'status': 'stale'}), schema_version=1)
+E     Use -v to get more diff
+____ test_a_second_snapshot_of_an_already_synced_request_is_not_picked_up _____
+agents\monitor\tests\test_pending_payloads.py:128: in test_a_second_snapshot_of_an_already_synced_request_is_not_picked_up
+    assert find_pending_position_sync(graph) == []
+E   AssertionError: assert [Node(label='...ma_version=1)] == []
+E
+E     Left contains one more item: Node(label='BrokerPositionSnapshot', key='snapshot:second', props=mappingproxy({'run_id': 'done', 'status': 'stale'}), schema_version=1)
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[forecaster]
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[settlement]
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[deliberator]
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[execution]
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[execution_sync]
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[monitor_sync]
+FAILED agents/monitor/tests/test_pending_payloads.py::test_monitor_sync_reads_only_pending_requests_linked_snapshots_in_request_order
+FAILED agents/monitor/tests/test_pending_payloads.py::test_a_half_written_sync_marker_is_reselected_and_completed_once
+FAILED agents/monitor/tests/test_pending_payloads.py::test_a_second_snapshot_of_an_already_synced_request_is_not_picked_up
+9 failed, 11 passed in 6.03s
+
+EXIT_CODE=1
 ```
 
 **Proof — the green run:**
 
 ```text
-builder fills
+uv run pytest tests/test_poll_payloads.py agents/forecaster/tests/test_forecaster_pending_payloads.py agents/deliberator/tests/test_deliberator_pending_payloads.py agents/execution/tests/test_execution_pending_payloads.py agents/monitor/tests/test_monitor_pending_payloads.py --no-cov -q
+.............................                                            [100%]
+29 passed in 4.81s
+
+EXIT_CODE=0
+
+uv run pytest agents/forecaster/tests agents/deliberator/tests agents/execution/tests agents/monitor/tests --no-cov -q
+..........................s............................................. [ 11%]
+........................................................................ [ 23%]
+........................................................................ [ 35%]
+........................................................................ [ 47%]
+........................................................................ [ 59%]
+........................................................................ [ 70%]
+........................................................................ [ 82%]
+........................................................................ [ 94%]
+..................................                                       [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+609 passed, 1 skipped in 20.16s
+
+EXIT_CODE=0
 ```
 
-**Guards planted:** *builder fills*
+**Guards planted:** All four DL-70 regressions went red (exit 1) and were restored byte-for-byte.
 
-**Module line counts:** *builder fills*
+1. Deliberator finder back on `list_nodes(PMRun)`; A1.
 
-**`make ci`:** *builder fills*
+```text
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______ test_no_poll_downloads_a_payload_to_find_its_work[deliberator] ________
+tests\test_poll_payloads.py:72: in test_no_poll_downloads_a_payload_to_find_its_work
+    found = FINDERS[case.name](graph)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\store.py:30: in find_pending
+    for node in graph.list_nodes(PM_RUN_LABEL)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\poll_payload_support.py:41: in list_nodes
+    assert label != self.label, f"poll listed every {label} with its props"
+           ^^^^^^^^^^^^^^^^^^^
+E   AssertionError: poll listed every PMRun with its props
+=========================== short test summary info ===========================
+FAILED tests/test_poll_payloads.py::test_no_poll_downloads_a_payload_to_find_its_work[deliberator]
+1 failed in 1.94s
+EXIT_CODE=1
+RESTORED byte-for-byte
+```
+
+2. Forecast finder drops `created_at_from`; deployed A3 fetches 71 stale props.
+
+```text
+F.                                                                       [100%]
+================================== FAILURES ===================================
+_ test_each_forecaster_finder_fetches_only_its_current_backlog[deployed-find_pending-FORECAST_BY] _
+agents\forecaster\tests\test_forecaster_pending_payloads.py:46: in test_each_forecaster_finder_fetches_only_its_current_backlog
+    assert graph.fetched == expected
+E   AssertionError: assert ['stale-00', ...tale-05', ...] == ['current']
+E
+E     At index 0 diff: 'stale-00' != 'current'
+E     Left contains 71 more items, first extra item: 'stale-01'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED agents/forecaster/tests/test_forecaster_pending_payloads.py::test_each_forecaster_finder_fetches_only_its_current_backlog[deployed-find_pending-FORECAST_BY]
+1 failed, 1 passed, 2 deselected in 1.57s
+EXIT_CODE=1
+RESTORED byte-for-byte
+```
+
+3. Monitor finder starts from unmarked snapshots; A4(d) fetches orphan snapshots.
+
+```text
+F                                                                        [100%]
+================================== FAILURES ===================================
+______ test_monitor_sync_fetches_only_linked_snapshots_in_request_order _______
+agents\monitor\tests\test_monitor_pending_payloads.py:72: in test_monitor_sync_fetches_only_linked_snapshots_in_request_order
+    assert graph.snapshots == ["snapshot:c", "snapshot:a", "snapshot:half"]
+E   AssertionError: assert ['snapshot:a'...:pm-003', ...] == ['snapshot:c'...napshot:half']
+E
+E     At index 0 diff: 'snapshot:a' != 'snapshot:c'
+E     Left contains 105 more items, first extra item: 'snapshot:pm-001'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED agents/monitor/tests/test_monitor_pending_payloads.py::test_monitor_sync_fetches_only_linked_snapshots_in_request_order
+1 failed in 1.33s
+EXIT_CODE=1
+RESTORED byte-for-byte
+```
+
+4. Forecaster case and its matching callable entry removed; A8 finds the missing source finder (12 cases for 13 functions).
+
+```text
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________________ test_the_payload_cases_cover_every_finder __________________
+tests\test_poll_payloads.py:128: in test_the_payload_cases_cover_every_finder
+    _assert_finder_cases(
+tests\test_poll_payloads.py:119: in _assert_finder_cases
+    assert discovered == covered, (
+E   AssertionError: finders missing cases: [('agents.forecaster.poll', 'find_pending')]
+E   assert {('agents.ana...lement'), ...} == {('agents.ana...ending'), ...}
+E
+E     Extra items in the left set:
+E     ('agents.forecaster.poll', 'find_pending')
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_poll_payloads.py::test_the_payload_cases_cover_every_finder
+1 failed in 3.36s
+EXIT_CODE=1
+RESTORED byte-for-byte
+```
+
+**Module line counts:** All 15 touched Python modules are below 200 lines (largest: 196). Markdown handover/law documents follow their existing format.
+
+| Module | Lines |
+| --- | ---: |
+| `agents/deliberator/store.py` | 87 |
+| `agents/deliberator/tests/test_deliberator_pending_payloads.py` | 28 |
+| `agents/execution/poll.py` | 126 |
+| `agents/execution/tests/test_execution_pending_payloads.py` | 62 |
+| `agents/execution/tests/test_execution_poll.py` | 196 |
+| `agents/forecaster/poll.py` | 154 |
+| `agents/forecaster/settlement_pass.py` | 138 |
+| `agents/forecaster/tests/test_forecaster_pending_payloads.py` | 74 |
+| `agents/monitor/position_sync.py` | 93 |
+| `agents/monitor/tests/position_sync_helpers.py` | 105 |
+| `agents/monitor/tests/test_monitor_pending_payloads.py` | 134 |
+| `tests/poll_payload_fixtures.py` | 95 |
+| `tests/poll_payload_remaining.py` | 157 |
+| `tests/poll_payload_support.py` | 98 |
+| `tests/test_poll_payloads.py` | 165 |
+
+**`make ci`:** Run in `C:\Users\yury_\Downloads\project\ta-s252`, redirected to
+`C:\Users\yury_\Downloads\project\s252-evidence\make-ci.txt`; **exit 2**, because the dependency
+advisory lookup was refused before network I/O. The final source has **3,953 passed, 8 skipped,
+100.00 % coverage**. **Full `make ci` exit 0: not done.** No remote gate is claimed.
+
+`UV_OFFLINE=1` was set, dotenv loading disabled, external DNS/connect refused by a
+`sitecustomize.py` outside the worktree, and optional network/database test variables removed.
+The guard was probed and refused external DNS before I/O. Loopback-only unit servers were allowed.
+No `.env` or product setting was added. Earlier gate attempts are retained as
+`make-ci-attempt-1.txt` (new test annotation omitted the `now` keyword) and
+`make-ci-attempt-2.txt` (shared fixture export accidentally fed six new cases to the legacy oracle).
+Both were corrected within scope before this final run; no existing expected value changed.
+
+| Step | Check | Result |
+| --- | --- | --- |
+| 1 | ruff | PASS in `make ci` |
+| 2 | format | PASS in `make ci` |
+| 3 | mypy | PASS in `make ci`, 1,147 files |
+| 4 | import-linter | PASS in `make ci` |
+| 5 | module size | PASS in `make ci` |
+| 6 | module header | PASS in `make ci` |
+| 7 | law coverage | PASS in `make ci` |
+| 8 | PARAM/settings sync | PASS in `make ci` |
+| 9 | sprint status | PASS in `make ci` |
+| 10 | markdown links | PASS in `make ci` |
+| 11 | version scheme | PASS in `make ci` |
+| 12 | pytest / 100.00 % coverage | PASS in `make ci`, 3,953 passed, 8 skipped |
+| 13 | dependency audit | **NOT RUN** to completion: invoked, external lookup blocked by the offline guard |
+| 14 | detect-secrets | PASS, exact command run separately after `make ci` stopped |
+| 15 | untracked secrets | PASS, exact command run separately; six new files scanned |
+
+Pasted output excerpt (command lines, final coverage/skip/summary, and the complete audit refusal;
+full output is in the named file):
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1552 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1147 source files
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           19898      0   4216      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 3953 passed, 8 skipped, 2470 warnings in 351.41s (0:05:51) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Scripts\pip-audit.exe\__main__.py", line 10, in <module>
+    sys.exit(audit())
+             ~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\pip_audit\_cli.py", line 554, in audit
+    for spec, vulns in auditor.audit(source):
+                       ~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\pip_audit\_audit.py", line 68, in audit
+    for dep, vulns in self._service.query_all(specs):
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\pip_audit\_service\interface.py", line 180, in query_all
+    yield self.query(spec)
+          ~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\pip_audit\_service\pypi.py", line 64, in query
+    response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\cachecontrol\adapter.py", line 76, in send
+    resp = super().send(request, stream, timeout, verify, cert, proxies)
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\connectionpool.py", line 470, in _make_request
+    self._validate_conn(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1125, in _validate_conn
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s252\.venv\Lib\site-packages\urllib3\util\connection.py", line 60, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\s252-evidence\offline\sitecustomize.py", line 32, in getaddrinfo
+    require_local(host)
+    ~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\s252-evidence\offline\sitecustomize.py", line 22, in require_local
+    raise ExternalNetworkBlocked("S252 offline proof: external network forbidden")
+sitecustomize.ExternalNetworkBlocked: S252 offline proof: external network forbidden
+make: *** [Makefile:59: ci] Error 1
+```
+
+**Step 14:** `uv run pre-commit run detect-secrets --all-files`, redirected to
+`C:\Users\yury_\Downloads\project\s252-evidence\ci-step-14.txt`; exit **0**.
+
+```text
+Detect secrets...........................................................Passed
+```
+
+**Step 15:** `uv run python scripts/check_untracked_secrets.py`, redirected to
+`C:\Users\yury_\Downloads\project\s252-evidence\ci-step-15.txt`; exit **0**.
+
+```text
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+```
+
+**Final fixture compatibility proof:** The original seven-case `CASES` export is unchanged;
+only the payload suite joins the six S252 cases. No edit to `tests/test_poll_same_work.py`.
+`uv run pytest --no-cov -q tests/test_poll_same_work.py tests/test_poll_payloads.py` plus the four
+new agent-local test modules, redirected to `s252-evidence/green-a2-shared.txt`; exit **0**:
+
+```text
+...........................................                              [100%]
+43 passed in 8.91s
+```
+
+**Commit hook isolation:** The shared hook points at main's venv. Its copy in
+`s252-evidence/hooks/` changes only `INSTALL_PYTHON` to this worktree's interpreter.
+The commit uses `git -c core.hooksPath=C:/Users/yury_/Downloads/project/s252-evidence/hooks commit`;
+all configured hook checks stay enabled. The shared hook, Git configuration and main venv are untouched.
 
 **`make gate-ran`:** owed to the planner.
 
-**Not met / verified failing:** *builder fills*
+**Not met / verified failing:** Not done: PATCH bump, `uv lock`, push, remote gate, CodeQL diff, merge, deployment, F1/F2 and any byte measurement. They are explicitly the planner's. `pyproject.toml`'s version and `uv.lock` are untouched. Dependency audit: NOT RUN to completion (offline lookup refused); full `make ci` exit 0 is not done. Steps 14/15 passed separately after the gate stopped.
 
 ---
 
 ## Return notes
 
-- *builder fills*
+- Scope held: only discovery changes in the five source modules; forecast, settle, review, execute,
+  broker sync and snapshot adoption code unchanged. The unused snapshot-side marker predicate was
+  removed with that discovery path. No forbidden path, graph vocabulary, env key or tunable moved.
+- Reading changed the monitor plan's old drift suggestion: snapshot-side discovery still fetches
+  permanently unconsumed snapshots. Use the RunRequest side; retry the existing half-marker branch.
+  The request-order result is explicitly pinned even when snapshot insertion order differs.
+- Whole execution book confirmed the submit-trigger silence; DRIFT-100 records it. The old
+  `EXEC-TRG-02` primary-pub/sub qualifier is reported and left unamended, as required by scope.
+- Follow-up whole-label reads: forecaster settlement's claim/settlement ledger per work item,
+  execution's fill/stop reads in `filled_entry_stops.py`, `fill_attempts.py` and
+  `reconciliation_store.py`, and the monitor's `reconcile.py` position-book reads. They run with
+  work; measure their cadence and payload before scheduling another conversion. The other
+  paths the spec names (analyst outcome backfill, PM snapshot, reporter performance inputs) are
+  untouched and should be reviewed separately with their owning laws.
+- Parallel-main movement: S253 advanced local main independently to
+  `d8949a320751967f8f42b0b8dfc7219ad6cc809c` (`0.121.02`) during this build.
+  This branch and its proof remain based on `ae54cf3591bc3312d6f7056cfd79a4a888675613`
+  (`0.121.01`). The main checkout is clean; this builder made no main commit or merge.
+  Planner integration must preserve S253 and reconcile shared documentation before release CI.
+- No live proof or transfer saving is inferred from the memory-store spy. Planner owns PATCH,
+  re-lock, full release CI, remote gate/CodeQL, F1 on Neon, merge, retag after the fidelity verdict,
+  then F2. The final handback commit SHA is reported with the delivered branch handback; it is
+  resolved by `git -C ../ta-s252 rev-parse HEAD` after this evidence is committed.

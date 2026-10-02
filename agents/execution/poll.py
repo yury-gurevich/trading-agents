@@ -22,11 +22,11 @@ from agents.execution.settings import ExecutionSettings
 from contracts.position_sync import (
     RUN_REQUEST_LABEL,
     SNAPSHOT_REFRESH_EDGE,
-    linked_snapshot,
     run_request_id,
 )
 from kernel import CollectingFaultSink, fault_boundary
 from kernel.fault_graph import GraphFaultSink
+from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
@@ -45,11 +45,7 @@ class ExecutionWorkItem:
 
 def find_pending_position_sync(graph: GraphStore) -> list[Node]:
     """Return RunRequest nodes with no execution-authored broker snapshot."""
-    pending: list[Node] = []
-    for node in graph.list_nodes(RUN_REQUEST_LABEL):
-        if linked_snapshot(graph, node) is None:
-            pending.append(node)
-    return pending
+    return pending_nodes(graph, RUN_REQUEST_LABEL, SNAPSHOT_REFRESH_EDGE)
 
 
 def find_pending(
@@ -63,17 +59,11 @@ def find_pending(
     """
     active = settings or ExecutionSettings()
     now = datetime.now(tz=UTC)
-    pending: list[Node] = []
-    for node in graph.list_nodes(PM_RUN_LABEL):
-        executed = list(
-            graph.descendants(node, max_depth=1, edge_types={EXECUTED_EDGE})
-        )
-        if executed:
-            continue
-        if is_waiting(graph, node, now=now, settings=active):
-            continue
-        pending.append(node)
-    return pending
+    return [
+        node
+        for node in pending_nodes(graph, PM_RUN_LABEL, EXECUTED_EDGE)
+        if not is_waiting(graph, node, now=now, settings=active)
+    ]
 
 
 def find_pending_work(graph: GraphStore) -> list[ExecutionWorkItem]:

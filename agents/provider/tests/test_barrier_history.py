@@ -11,7 +11,10 @@ External I/O: none (a fake source; the graph is in memory).
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, time, timedelta
+from typing import TYPE_CHECKING
 
+from agents.provider import barrier_history
 from agents.provider.barrier_history import (
     find_pending_barrier_history,
     write_barrier_history,
@@ -33,12 +36,35 @@ from kernel import InMemoryGraphStore
 from kernel.graph_guarded import GuardedGraphStore
 from kernel.graph_vocabulary import Vocabulary
 
+if TYPE_CHECKING:
+    from datetime import tzinfo
 
-def test_only_buys_with_both_barriers_get_a_history_from_one_fetch() -> None:
+    import pytest
+
+#: The UTC day after the one the fixtures were built on.
+TOMORROW = TODAY + timedelta(days=1)
+
+
+class _PastMidnight(datetime):
+    """A clock thirty seconds into the UTC day after the fixtures were built."""
+
+    @classmethod
+    def now(cls, tz: tzinfo | None = None) -> datetime:  # type: ignore[override]
+        return datetime.combine(TOMORROW, time(0, 0, 30), tzinfo=UTC)
+
+
+def test_only_buys_with_both_barriers_get_a_history_from_one_fetch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """PROV-TRG-04 / PROV-OUT-08 / PROV-TRG-01: one batched OHLCV request for exactly
     the buys with a stop and a target (not the sell, the hold, or the buy missing a
     target), over 1,125 calendar days ending today; one node, linked from the
-    AnalystRun, holding the last 760 bars per ticker."""
+    AnalystRun, holding the last 760 bars per ticker.
+
+    The clock is pinned past the midnight after the fixtures were built: the window
+    ends on the clock's UTC date at the call, not on the date this module was
+    imported. Unpinned, the test failed whenever the suite straddled 00:00 UTC."""
+    monkeypatch.setattr(barrier_history, "datetime", _PastMidnight)
     graph = InMemoryGraphStore()
     run = analyst_run(graph, *MIXED)
     everyone = tuple(
@@ -51,7 +77,7 @@ def test_only_buys_with_both_barriers_get_a_history_from_one_fetch() -> None:
 
     [(tickers, window)] = source.asks
     assert tickers == ("AAPL", "GOOG")
-    assert (window.end, (window.end - window.start).days) == (TODAY, 1125)
+    assert (window.end, (window.end - window.start).days) == (TOMORROW, 1125)
     history = read_history(graph)
     assert (history.status, history.reason, history.dropped) == ("ok", None, {})
     assert history.requested == ("AAPL", "GOOG")

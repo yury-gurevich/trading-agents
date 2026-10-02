@@ -27,16 +27,17 @@ def test_metrics_collect_counts_averages_and_regime_context() -> None:
         Node("Recommendation", "a", {"confidence": 0.8, "technical_score": 0.7}),
         Node("Recommendation", "b", {"confidence": 0.6, "technical_score": 0.5}),
     )
-    portfolio = collect_portfolio_metrics(
-        pm_run, (Node("Position", "a"), Node("Position", "b")), closes
-    )
+    portfolio = collect_portfolio_metrics(pm_run, closes)
     signal = collect_signal_metrics(recommendations, rejection_count=3)
     regime = collect_regime_attribution(
         (Node("ScanRun", "scan"),),
         (Node("MarketSnapshot", "market", {"bar_count": 5}),),
     )
-    assert portfolio["positions_closed"] == 3.0
-    assert portfolio["positions_held"] == 0.0
+    # The book counts and the stop trigger come from the broker's fills (S253).
+    assert "positions_closed" not in portfolio
+    assert "close_trigger_stop" not in portfolio
+    assert portfolio["close_trigger_target"] == 1.0
+    assert portfolio["close_trigger_time"] == 1.0
     assert portfolio["approval_rate"] == 2 / 3
     assert signal["avg_confidence"] == 0.7
     assert signal["rejection_count"] == 3.0
@@ -47,30 +48,30 @@ def test_metrics_handle_empty_and_bad_numeric_values() -> None:
     signal = collect_signal_metrics(
         (Node("Recommendation", "bad", {"confidence": "bad"}),)
     )
-    assert collect_portfolio_metrics(None, (), ())["approval_rate"] == 0.0
+    assert collect_portfolio_metrics(None, ())["approval_rate"] == 0.0
     assert signal["avg_confidence"] == 0.0
     assert collect_regime_attribution((), ()) == {}
 
 
-def test_dropped_decision_is_visible_but_not_rejected() -> None:
-    """RPT-IDN-01 / RPT-NEV-01 / RPT-TYP-02: dropped stays out of rejections."""
-    pm_run = Node("PMRun", "pm", {"approved_count": 3, "rejected_count": 1})
-    fills = (
-        Node("Fill", "filled", {"status": "filled"}),
-        Node(
-            "Fill",
-            "dropped",
-            {"status": "pending", "drop_reason": "x"},
-        ),
-    )
+def test_the_pm_decision_counts_are_reported_as_decided() -> None:
+    """RPT-IDN-01 / RPT-NEV-01 / RPT-TYP-02: the PM's counts are projected, as floats.
 
-    portfolio = collect_portfolio_metrics(pm_run, (), (), fills)
+    A dropped order is not a rejection; the reporter re-decides nothing. The three
+    keys that described the run's own orders are gone (S253).
+    """
+    pm_run = Node("PMRun", "pm", {"approved_count": 3, "rejected_count": 1})
+
+    portfolio = collect_portfolio_metrics(pm_run, ())
 
     assert portfolio["approved_count"] == 3.0
     assert portfolio["rejected_count"] == 1.0
-    assert portfolio["execution_count"] == 1.0
-    assert portfolio["dropped_decision_count"] == 1.0
-    assert portfolio["approval_execution_gap"] == 2.0
+    assert all(isinstance(value, float) for value in portfolio.values())
+    for removed in (
+        "execution_count",
+        "dropped_decision_count",
+        "approval_execution_gap",
+    ):
+        assert removed not in portfolio
 
 
 def test_compose_story_uses_full_lineage_and_close_decision() -> None:

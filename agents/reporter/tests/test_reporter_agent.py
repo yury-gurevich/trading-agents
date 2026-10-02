@@ -21,6 +21,13 @@ from agents.reporter.tests.helpers import (
 from contracts.reporter import RunSnapshot, TradeNarrative
 from kernel import InMemoryGraphStore, InProcessBus, Node
 
+# A run, and a Fill the broker filled ten minutes before it (S253's window).
+_RUN_AT = {"created_at": "2026-09-15T22:40:00+00:00"}
+_FILLED = {
+    "broker_status": "filled",
+    "broker_status_refreshed_at": "2026-09-15T22:30:00+00:00",
+}
+
 
 def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
     """RPT-IN-01 / RPT-TRG-01 / RPT-OUT-01 / RPT-OUT-02: report+narrative RPC →
@@ -28,6 +35,8 @@ def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     seed_full_graph(graph)
+    graph.merge_node("PMRun", RUN_ID, _RUN_AT)
+    graph.merge_node("Fill", f"{RUN_ID}:AAPL:buy", _FILLED)
     ReporterAgent(bus, graph=graph).bind()
 
     report = bus.request(report_message())
@@ -38,7 +47,8 @@ def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
     assert report.message_type == "response"
     assert narrative.message_type == "response"
     assert snapshot.portfolio_metrics["positions_opened"] == 1.0
-    assert snapshot.portfolio_metrics["positions_closed"] == 1.0
+    # The lineage's CloseDecision is no broker fill: nothing closed in the window.
+    assert snapshot.portfolio_metrics["positions_closed"] == 0.0
     assert snapshot.signal_metrics["recommendation_count"] == 1.0
     assert snapshot.regime_attribution["bar_count_total"] == 6.0
     assert "AAPL" in story.story.summary
@@ -54,7 +64,10 @@ def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
 
 
 def test_reporter_handles_missing_nodes_without_crashing() -> None:
-    """RPT-OUT-04 / RPT-NEV-01: missing nodes → degraded response; no crash."""
+    """RPT-OUT-04 / RPT-NEV-01 / RPT-NEV-03: missing nodes → degraded response.
+
+    No crash; the degraded snapshot's counts read 0.0 and its headline says why.
+    """
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ReporterAgent(bus, graph=graph).bind()
@@ -124,7 +137,9 @@ def test_degraded_snapshot_omits_uncomputed_outcome_keys() -> None:
 
 def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
     pm_run = graph.merge_node(
-        "PMRun", RUN_ID, {"approved_count": 2, "rejected_count": 0}
+        "PMRun",
+        RUN_ID,
+        {"approved_count": 2, "rejected_count": 0, **_RUN_AT},
     )
     trades = (("AAPL", "target", 1000), ("MSFT", "stop", -500))
     for ticker, trigger, pnl_cents in trades:
@@ -135,7 +150,12 @@ def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
         fill = graph.merge_node(
             "Fill",
             f"{pos_id}:sell",
-            {"ticker": ticker, "status": "filled", "realized_pnl_cents": pnl_cents},
+            {
+                "ticker": ticker,
+                "side": "sell",
+                "realized_pnl_cents": pnl_cents,
+                **_FILLED,
+            },
         )
         position = graph.merge_node(
             "Position", pos_id, {"run_id": RUN_ID, "ticker": ticker}

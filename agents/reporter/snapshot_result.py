@@ -22,8 +22,8 @@ def snapshot_headline(
     """Return the operator-facing run headline."""
     return Explanation(
         summary=(
-            f"{portfolio['positions_opened']:.0f} positions opened; "
-            f"{portfolio['positions_closed']:.0f} closed; "
+            f"{_count(portfolio, 'positions_opened')} positions opened; "
+            f"{_count(portfolio, 'positions_closed')} closed; "
             f"{signal['recommendation_count']:.0f} recommendations stitched. "
             f"{performance_clause}"
         ),
@@ -43,6 +43,12 @@ def performance_headline_clause(
         f"vs {ticker or 'benchmark'}: {excess:.2f} pts over "
         f"{metrics['performance_sessions']:.0f} sessions at {exposure:.0f}% invested"
     )
+
+
+def _count(metrics: Mapping[str, float], key: str) -> str:
+    # An undefined count is absent (RPT-NEV-03): `?`, never a zero it cannot be.
+    value = metrics.get(key)
+    return "?" if value is None else f"{value:.0f}"
 
 
 def _display_value(value: float) -> float:

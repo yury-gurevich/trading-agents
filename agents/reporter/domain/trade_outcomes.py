@@ -4,10 +4,11 @@ Agent: reporter
 Role: compute dollar-based profit-factor and expectancy from realized close PnL.
 External I/O: none.
 
-Reads realized ``realized_pnl_cents`` from execution Fill records. Historical
-CloseDecision PnL remains legacy evidence only when it was not invalidated. When
-no realized PnL evidence exists, uncomputable metric keys are omitted instead of
-rendered as confident zeroes.
+Reads realized ``realized_pnl_cents`` from execution Fill records: the run snapshot
+passes every filled sell since the performance inception (S253, RPT-OUT-02).
+Historical CloseDecision PnL is still accepted here when it was not invalidated.
+When no realized PnL evidence exists, uncomputable metric keys are omitted instead
+of rendered as confident zeroes (RPT-NEV-03).
 """
 
 from __future__ import annotations

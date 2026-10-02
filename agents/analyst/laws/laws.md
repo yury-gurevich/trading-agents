@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -36,6 +36,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   a human-readable explanation. No provider calls are made; no graph nodes are written.
 - **ANLZ-IN-04** — `explain_recommendation` accepts a `CandidateSet`; returns an `Explanation`
   describing the scoring methodology. No provider call, no graph write.
+- **ANLZ-IN-05** — A candidate whose bars cover fewer sessions than `required_history_bars` (the
+  largest window of the five core indicators: RSI, MACD, Bollinger, SMA-200 distance, EMA crossover;
+  200 by default) is **scored**, not refused. Each core indicator its bars cannot compute is absent
+  from the score and visible as `<metric>_missing_bars` (the bars it is short); any other indicator
+  short of history is absent, and `indicators_available` counts what scored. Only fewer bars than
+  `min_history_bars` rejects the candidate, with reason `insufficient_market_history`. *(DRIFT-096,
+  S253.)*
 
 ---
 
@@ -404,3 +411,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop`. `ANLZ-TRG-02` names
   the graph-pull trigger the fleet runs and its key-and-edge bound (DRIFT-086), and stays 🟩. No
   behaviour change. One clause added and proven: 26 / 49 → 27 / 50.
+- v1.8 — amendment (S253 / DL-263, 2026-10-02). New `ANLZ-IN-05`: a candidate under
+  `required_history_bars` is scored on the indicators its bars allow, each missing core indicator
+  visible as `<metric>_missing_bars`, and only fewer than `min_history_bars` rejects
+  (`insufficient_market_history`). The book was silent (DRIFT-096, ruled A in S251's table); the code
+  has done this since the indicators were declared. No behaviour change and no analyst code edited.
+  Proven by `test_analyst_domain.py::test_sufficient_history_scores_from_technical_composite` and
+  `::test_score_candidate_reports_insufficient_history`. One clause added and proven: 27 / 50 →
+  28 / 51.

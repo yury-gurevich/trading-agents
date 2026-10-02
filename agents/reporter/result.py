@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.reporter.book_inputs import book_metrics
+from agents.reporter.domain.book_window import book_counts
 from agents.reporter.domain.lineage import (
     collect_run_lineage,
     collect_trade_lineage,
@@ -55,13 +57,14 @@ def build_snapshot(
     if pm_run is None:
         return degraded_snapshot(graph, run_id, f"No PMRun found for {run_id}.")
     settings = settings or ReporterSettings()
-    lineage_run = linked_pm_source(graph, pm_run)
-    lineage = collect_run_lineage(graph, lineage_run)
-    portfolio = collect_portfolio_metrics(
-        pm_run, lineage.positions, lineage.close_decisions, lineage.fills
-    )
-    outcomes = collect_trade_outcomes(lineage.fills, lineage.close_decisions)
-    portfolio = {**portfolio, **outcomes}
+    sink = sink or CollectingFaultSink()
+    lineage = collect_run_lineage(graph, linked_pm_source(graph, pm_run))
+    portfolio = {
+        **collect_portfolio_metrics(pm_run, lineage.close_decisions),
+        **book_metrics(
+            graph, pm_run, inception=settings.performance_inception, sink=sink
+        ),
+    }
     signal = collect_signal_metrics(
         lineage.recommendations, rejection_count=len(lineage.rejections)
     )
@@ -72,7 +75,7 @@ def build_snapshot(
         reason="performance inputs unavailable",
     )
     with fault_boundary(
-        sink or CollectingFaultSink(),
+        sink,
         agent="reporter",
         module="agents.reporter.result",
         capability="report.performance",
@@ -84,6 +87,8 @@ def build_snapshot(
             inception=settings.performance_inception,
             rolling_sessions=settings.performance_rolling_sessions,
         )
+    if performance.positions_held is not None:
+        portfolio["positions_held"] = performance.positions_held
     headline = snapshot_headline(portfolio, signal, performance.headline_clause)
     provenance = write_snapshot(
         graph,
@@ -134,8 +139,11 @@ def build_trade_narrative(
 
 def degraded_snapshot(graph: GraphStore, run_id: str, message: str) -> RunSnapshot:
     """Build and persist a non-crashing degraded snapshot."""
-    portfolio = collect_portfolio_metrics(None, (), ())
-    portfolio = {**portfolio, **collect_trade_outcomes(())}
+    portfolio = {
+        **collect_portfolio_metrics(None, ()),
+        **book_counts(()),
+        **collect_trade_outcomes(()),
+    }
     signal = collect_signal_metrics(())
     headline = Explanation(summary=message, evidence_refs=("reporter.graph",))
     provenance = write_snapshot(

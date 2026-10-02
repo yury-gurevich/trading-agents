@@ -10,6 +10,69 @@ and is marked CLOSED here.
 
 ---
 
+## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)
+
+**Question.** DL-262 decided what the book metrics read. How is it built so `result.py` (154) and
+`domain/lineage.py` (179) stay under 200, what happens when the reported run has no `created_at`, how
+is the snapshot selection shared, and which analyst clause takes DRIFT-096?
+
+**Decided.**
+
+- **D1, two new modules, lineage untouched.** `agents/reporter/domain/book_window.py` is pure: it
+  parses an instant, finds the window's start among `PMRun`s, places filled `Fill`s by
+  `broker_status_refreshed_at`, and counts. `agents/reporter/book_inputs.py` lists `Fill` and `PMRun`
+  **once each** per report and runs the pure functions inside a `fault_boundary`
+  (`capability="report.book"`), so a failure there leaves the book keys absent, records a fault and
+  keeps the rest of the snapshot (as `RPT-FAIL-04` does for performance). `domain/lineage.py` is not
+  changed: the lineage still supplies recommendations, rejections, the market lineage and the
+  `CloseDecision`s that `close_trigger_target` / `close_trigger_time` read.
+- **D2, the window.** Upper bound inclusive at the **reported** `PMRun.created_at` (the instant
+  `RPT-IDM-03` already uses; a resumed run's `linked_from_key` source is not consulted). Lower bound
+  exclusive at the latest other `PMRun.created_at` strictly before it; a `PMRun` whose `created_at`
+  does not parse is never a boundary; no earlier run, no lower bound. A fill counts only if its
+  lower-cased `broker_status` is in `FILLED_BROKER_STATUSES` and its `broker_status_refreshed_at`
+  parses (a naive instant is UTC, as the brief reads it). `status` and `submitted_at` are never read.
+- **D3, a reported run with no readable `created_at`.** The window and the inception span are
+  undefined, so `positions_opened`, `positions_closed`, `close_trigger_stop`,
+  `closed_trades_with_pnl`, `profit_factor` and `expectancy_cents` are **absent**, and the headline
+  prints `?` in the two count slots (the `?` `orchestration/batch_trace.py` already prints for an
+  absent key). No second fault is recorded: the performance read already faults on the same missing
+  `created_at`. `RPT-NEV-03` is amended to say so.
+- **D4, `positions_held`.** `performance_inputs.py`'s selection now returns the chosen
+  `BrokerPositionSnapshot` nodes (latest fresh per UTC date, at or before `PMRun.created_at`, on or
+  after the inception, with integer equity) and the points are built from them; `positions_held` is
+  the length of the last chosen node's `holdings`. One listing serves both. With none chosen, or when
+  the performance read faults, the key is absent.
+- **D5, the outcomes.** Filled sells refreshed in [00:00 UTC of `performance_inception`,
+  `PMRun.created_at`] go through the unchanged `collect_trade_outcomes`, so `_pnl_cents`'s exclusions
+  stand. `CloseDecision.pnl_cents` is no longer an input to the run snapshot (the function still
+  accepts it, for its own tests).
+- **D6, the degraded snapshot** keeps its counts at 0.0 (`book_counts(())`) and
+  `closed_trades_with_pnl` 0.0, with a headline that says why; it has no `positions_held`.
+- **D7, DRIFT-096 is a new clause, `ANLZ-IN-05`.** It is about what the analyst accepts as a scoreable
+  input, so it sits with `IN`; amending `ANLZ-OUT-03` (the regime gate) or `ANLZ-FAIL-03` (a scoring
+  exception) would have stretched clauses that say something else. Proven by two tests in one file,
+  `test_analyst_domain.py`: the 1-bar rejection and the 40-bar scored candidate (its confidence is
+  the blended one, so it was not rejected), which gains one assertion (`sma_distance_pct_missing_bars`
+  160) and folds its arithmetic comment into the citing docstring, because the file sat at 199 lines
+  and the block is at 200. No analyst code changes.
+
+**Road not taken.**
+
+- *Put the window in `domain/lineage.py` or `result.py`.* Both would cross 200 (179 + ~45, 154 + ~40).
+- *Report 0.0 for the counts of a run with no `created_at`.* A zero that cannot be true is the thing
+  this sprint removes; the omission is what `trade_outcomes.py` already does for an undefined ratio.
+- *A new headline sentence explaining the missing counts.* The spec forbids new wording; `?` is the
+  number becoming true, and the performance clause beside it already names the unavailable input.
+- *Raise inside the book read for a missing `created_at`, so the boundary records a fault.* Two
+  faults for one cause; the performance read already records it.
+- *A second `BrokerPositionSnapshot` listing for `positions_held`.* The spec says reuse; a copy could
+  drift from `RPT-OUT-07`'s rule (as work-queue 88's earliest-per-date bug did).
+- *Count `partial` fills.* `FILLED_BROKER_STATUSES` is the brief's and the contract's set; a
+  partial is not yet a position opened.
+
+---
+
 ## DL-262 - a run's book metrics are read from the broker's fills in the run's window, not from the PM run's lineage - status: DECIDED (planner, 2026-10-02; work-queue 106, DRIFT-099, built as S253)
 
 **Question.** The reporter's snapshot has never counted an opened or closed position. What should its

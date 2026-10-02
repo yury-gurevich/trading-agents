@@ -62,9 +62,11 @@ def test_full_p3_stop_breach_reports_held_position_and_fault() -> None:
         "response",
         "response",
     ]
-    assert snapshot.portfolio_metrics["positions_opened"] >= 1
+    # The paper broker writes `status`, never `broker_status`, and no position
+    # snapshot: the book counts read no fill and there is no as-of book (S253).
+    assert snapshot.portfolio_metrics["positions_opened"] == 0.0
     assert snapshot.portfolio_metrics["positions_closed"] == 0.0
-    assert snapshot.portfolio_metrics["positions_held"] >= 1
+    assert "positions_held" not in snapshot.portfolio_metrics
     assert snapshot.signal_metrics["recommendation_count"] >= 1
     assert snapshot.headline.summary
     assert "AAPL" in story.story.summary

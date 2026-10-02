@@ -54,7 +54,7 @@ def _rising_bars(count: int) -> tuple[OHLCVBar, ...]:
 
 
 def test_score_candidate_reports_insufficient_history() -> None:
-    """Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_8."""
+    """ANLZ-IN-05. Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_8."""
     score = score_candidate(candidate(), _rising_bars(1), {}, (), (), AnalystSettings())
 
     decision = decide(candidate(), score, _regime())
@@ -69,15 +69,15 @@ def test_score_candidate_reports_insufficient_history() -> None:
 
 
 def test_sufficient_history_scores_from_technical_composite() -> None:
+    """ANLZ-IN-05: 40 bars (< required_history_bars) are scored; SMA-200 is 160 short.
+    RSI 25, MACD 75, Bollinger 30 | ATR 55, Stoch 20, W%R 25, Chop 50 | OBV 70, RSI-2 20
+    | NW 30, turnaround (Sun) 50 = 450 / 11; SMA-200, EMA-50, golden cross absent."""
     score = score_candidate(
         candidate(), _rising_bars(40), {}, (), (), AnalystSettings()
     )
 
-    # 40 dipping-ramp bars -> RSI 25, MACD 75, Bollinger 30 | ATR 55, Stochastic 20,
-    # Williams 25, Choppiness 50 | OBV 70, RSI-2 20 | NW +4.82% -> 30, turnaround (last
-    # bar Sun) -> 50 available (SMA-200, EMA-50, golden cross and any pattern not) ->
-    # sum 450 / 11. technical = (450/11)/100; conf = 0.30 + t*0.60.
     technical = (450.0 / 11.0) / 100.0
+    assert score.metrics["sma_distance_pct_missing_bars"] == 160.0
     assert score.metrics["indicators_available"] == 11.0
     assert (
         score.metrics["technical_score"]

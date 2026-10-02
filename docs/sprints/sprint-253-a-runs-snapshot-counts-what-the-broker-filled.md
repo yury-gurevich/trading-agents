@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 106 (DRIFT-099, DRIFT-096)
 **Branch:** `sprint-253-a-runs-snapshot-counts-what-the-broker-filled`
-**Status:** SPEC
+**Status:** BUILT 2026-10-02 — by a Claude cloud session on `claude/magical-archimedes-c24l8w` (the session's forced branch name, not `sprint-253-…`); `make ci` exit 0 in the cloud tree (3,944 passed, 8 skipped, 100.00 %); reporter laws v1.5 (26 / 43), analyst laws v1.8 (28 / 51); DRIFT-099, DRIFT-096 and DRIFT-101 `CORRECTED`; owed to the planner: PATCH bump and `uv lock`, Windows `make ci`, `make gate-ran`, the CodeQL diff, F1, the retag after the fidelity verdict, F2
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-262](../design-log.md) (the planner's design: the window, the counts, the outcomes, the three keys removed) · the builder's decisions go to **DL-263**, reserved for this sprint · DRIFT-099 and DRIFT-096 (both closed here) · **DRIFT-101**, reserved for `RPT-NEV-03` against the code
@@ -421,15 +421,35 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *builder fills* | *builder fills* | *builder fills* | *builder fills* |
+| `agents/reporter/result.py`, `domain/metrics.py`, `domain/trade_outcomes.py`, `snapshot_result.py`, new `domain/book_window.py` + `book_inputs.py` | `agents/reporter/laws/laws.md` (v1.4, whole) + `test-plan.md` (whole); `docs/laws/conventions.md`; `docs/laws/drift-register.md` (header, reporter, analyst, system rows) | `RPT-IDN-01`, `RPT-IN-01`, `RPT-OUT-01`, `RPT-OUT-02`, `RPT-OUT-06`, `RPT-NEV-01..03`, `RPT-STA-02`, `RPT-IDM-01`, `RPT-IDM-03`, `RPT-ORD-01`, `RPT-FAIL-01`, `RPT-FAIL-04`, `RPT-TYP-02`, `RPT-CAP` (`Fill`, `PMRun`, `BrokerPositionSnapshot` are already in `labels_read`) | Yes, twice. (1) `RPT-NEV-03` says undefined metrics read "0 / 0.0", the code omits the two ratios, and the degraded snapshot reports its counts as 0.0: the clause is amended to all three, and a reported run with no `created_at` follows the omission rule, so its headline prints `?` where a count stands rather than a 0 that cannot be true. (2) `RPT-IDN-01` and `RPT-TYP-02` are 🟩 on `test_dropped_decision_is_visible_but_not_rejected`, which asserts `dropped_decision_count`: removing the key means that test is edited and renamed, and both rows re-pointed |
+| `agents/reporter/performance_inputs.py` (reused for `positions_held`) | same | `RPT-OUT-07`, `RPT-IDM-03`, `RPT-FAIL-04` | Yes: the selection is shared by returning the chosen snapshot nodes; a performance fault therefore also leaves `positions_held` absent, which is the containment `RPT-FAIL-04` already allows |
+| `contracts/broker_lifecycle.py` (read, unchanged) | — | — | `FILLED_BROKER_STATUSES` is `{"filled"}` only (a `partial` is not counted); `is_resting_stop_fill` keys on `stop_order_key` |
+| `orchestration/daily_brief_fills.py` (read, not imported) | — | — | Adopted its two rules: time is `broker_status_refreshed_at`; a fill whose time cannot be read is in no window. Its status read is lower-cased `broker_status` only, never `status` |
+| `agents/analyst/laws/laws.md`, `test-plan.md`, `tests/test_analyst_domain.py` | `agents/analyst/laws/laws.md` (v1.7, whole) + `test-plan.md` (whole); `domain/scoring.py`, `domain/technical_rules.py`, `history_requirements.py` (read) | `ANLZ-IN-01..04`, `ANLZ-OUT-01`, `ANLZ-OUT-03`, `ANLZ-FAIL-03`, PARAM `min_history_bars`, `lookback_days` | Yes: `*_missing_bars` is recorded for the **five core indicators** `required_history_bars` is the maximum of (RSI, MACD, Bollinger, SMA-200 distance, EMA crossover), not for every indicator; a short golden cross, OBV or pattern is simply absent and only `indicators_available` shows it. The clause says exactly that (new `ANLZ-IN-05`) |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *builder fills*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes**, as the
+planner answered. No `contracts/` file changes (`portfolio_metrics` stays `dict[str, float]`). The
+reporter's guarantee about what the book numbers mean changes (`RPT-OUT-02`, `RPT-IN-01`,
+`RPT-NEV-03`) and it gains one (`RPT-IDM-04`): reporter v1.4 → v1.5. The analyst's book gains a
+statement it did not make (`ANLZ-IN-05`, new): v1.7 → v1.8.
 
-**Contradictions found between a law and this spec:** *builder fills*
+**Contradictions found between a law and this spec:** none that stops the sprint. Two between the
+spec's wording and the code, settled for the code (which this sprint may not change): (a) the spec
+reads `RPT-NEV-03` as "the code omits", and the degraded snapshot (`RPT-OUT-06`) still writes its
+counts as 0.0 with a headline that says why; the amended clause states both. (b) The spec's DRIFT-096
+sentence ("each indicator that lacks history is … visible as a `*_missing_bars` metric") is true only
+of the five core indicators; the clause names them.
 
-**Laws found silent where a decision was needed:** *builder fills*
+**Laws found silent where a decision was needed:** (1) `RPT-NEV-03` was silent on a book count that
+cannot be computed (no `created_at` on the reported run): decided as omission, DL-263 D3, closed by the
+amended clause (DRIFT-101). (2) No clause says whether the `RPT-OUT-07` selection's inception bound
+applies to `positions_held`: it does, because the selection is reused, not copied (DL-263 D4). (3) A
+resumed `PMRun` (`linked_from_key`) has its own `created_at`; the window uses the **reported**
+`PMRun`'s, as `RPT-IDM-03` does (DL-263 D2). No drift row filed for (2) or (3): the amended
+`RPT-OUT-02` states both.
 
-**Clauses that were ⬜ and are now proven:** *builder fills*
+**Clauses that were ⬜ and are now proven:** none was ⬜ and is now 🟩. New and proven: `RPT-IDM-04`
+and `ANLZ-IN-05`. `RPT-IDM-01` stays ⬜: A3 proves the book-metrics half only (§7a).
 
 ---
 
@@ -437,50 +457,202 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *builder fills* | *builder fills* | *builder fills* | *builder fills* |
+| A1 | `test_the_runs_snapshot_counts_the_fills_in_its_window` | `agents/reporter/tests/test_book_window.py` | PASS | `RPT-OUT-02`, `RPT-IN-01` |
+| A2 | `test_a_fill_belongs_to_one_window` | `agents/reporter/tests/test_book_window.py` | PASS | `RPT-IDM-04`, `RPT-OUT-02` |
+| A3 | `test_re_reporting_an_old_run_reproduces_its_book_metrics` | `agents/reporter/tests/test_book_window.py` | PASS | `RPT-IDM-04`, `RPT-IDM-01` (cited; the row stays ⬜, see Law reading record) |
+| A4 | `test_the_first_run_has_no_window_start`; `test_a_run_without_created_at_has_no_book_counts` | `agents/reporter/tests/test_book_window.py` | PASS | `RPT-OUT-02`; `RPT-NEV-03`, `RPT-OUT-02` |
+| A5 | `test_outcomes_are_cumulative_since_the_inception` | `agents/reporter/tests/test_book_window.py` | PASS | `RPT-OUT-02`, `RPT-NEV-03` |
+| A6 | `test_no_exit_since_the_inception_omits_the_ratios` | `agents/reporter/tests/test_book_window_edges.py` | PASS | `RPT-NEV-03` (as amended: the ratios absent, `closed_trades_with_pnl` 0.0, exactly as before S253) |
+| A7 | `test_positions_held_is_the_as_of_snapshots_holdings` | `agents/reporter/tests/test_book_window_edges.py` | PASS | `RPT-OUT-02` |
+| A8 | `test_the_three_removed_keys_are_gone` | `agents/reporter/tests/test_book_window_edges.py` | PASS | `RPT-OUT-02` |
+| A9 | `test_the_trace_and_the_observatory_read_the_new_snapshot`; `test_the_readers_do_not_raise_on_absent_counts` | `orchestration/tests/test_reporter_snapshot_readers.py` | PASS | `RPT-OUT-02`; `RPT-NEV-03` |
+| A10 | `test_sufficient_history_scores_from_technical_composite`; `test_score_candidate_reports_insufficient_history` | `agents/analyst/tests/test_analyst_domain.py` | PASS | `ANLZ-IN-05` (both). `git diff --stat` under `agents/analyst/`: `laws/laws.md`, `laws/test-plan.md`, `tests/test_analyst_domain.py` only |
 
-**Tests added beyond the plan:** *builder fills*
+**Tests added beyond the plan:** `test_book_window_edges.py::test_a_book_read_fault_is_contained`
+(`RPT-NEV-03`): a failing `Fill` listing leaves the book keys absent, records one fault with capability
+`report.book`, keeps the rest of the snapshot, and the headline prints `?` (the spec's guardrail
+"contained like `RPT-FAIL-04`'s"). A4 also covers the naive (UTC) and unparseable refresh times and an
+unparseable `PMRun.created_at`, which is never a boundary.
 
-**Existing tests edited, and why:** *builder fills*
+**Existing tests edited, and why:**
+
+- `agents/reporter/tests/test_metrics_narrative.py::test_metrics_collect_counts_averages_and_regime_context`
+  — `collect_portfolio_metrics` now takes `(pm_run, close_decisions)`; the book counts and the stop
+  trigger no longer come from it, so it asserts their absence and the target/time triggers instead.
+- `::test_metrics_handle_empty_and_bad_numeric_values` — the new signature only.
+- `::test_dropped_decision_is_visible_but_not_rejected`, **renamed**
+  `test_the_pm_decision_counts_are_reported_as_decided` — it asserted the three removed keys. It keeps
+  `RPT-IDN-01` / `RPT-NEV-01` / `RPT-TYP-02` (PM counts projected, all floats) and asserts the keys are
+  gone; the `RPT-IDN-01` and `RPT-TYP-02` test-plan rows were re-pointed to the new name (rows only).
+- `agents/reporter/tests/test_reporter_agent.py::test_report_and_narrative_return_payloads_and_write_graph_nodes`
+  — the fixture's `PMRun` gets a `created_at` and its buy a broker fill ten minutes before it;
+  `positions_closed` reads 0.0, not 1.0, because the lineage's `CloseDecision` is no broker fill.
+- `::test_snapshot_reports_profit_factor_and_expectancy` (its `_seed_two_closed_trades`) — the two P&L
+  fills become filled sells refreshed before the run's `created_at`; same profit factor 2.0 and
+  expectancy 250.
+- `::test_reporter_handles_missing_nodes_without_crashing` — docstring only: it now also cites
+  `RPT-NEV-03` (the degraded snapshot's 0.0 counts and its reason), which the amended clause names.
+- `agents/reporter/tests/test_p3_reporter_slice.py::test_full_p3_stop_breach_reports_held_position_and_fault`,
+  `orchestration/tests/test_p4_celery_parity.py::test_p4_celery_eager_parity`,
+  `orchestration/tests/test_p4_daily_loop.py::test_p4_daily_loop_on_in_process_bus` — they asserted
+  `positions_opened >= 1` and `positions_held >= 1`, the lineage meaning. The paper broker writes
+  `status: filled` and never `broker_status`, and these flows write no `BrokerPositionSnapshot`, so
+  under the new meaning they read 0.0 / 0.0 and no `positions_held`; asserted with a comment saying why.
+- `agents/analyst/tests/test_analyst_domain.py` — two docstrings cite `ANLZ-IN-05`; the 40-bar test
+  gains `sma_distance_pct_missing_bars == 160.0`, and its four-line arithmetic comment moved into the
+  docstring (the file was at 199 and the block is at 200).
+- `orchestration/tests/daily_brief_fixtures.py` and `surfaces/tests/performance_fixtures.py` were read
+  and **not** edited: they seed `positions_opened` / `positions_closed` as data, which the new meaning
+  does not break.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *builder fills*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *builder fills*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container,
+`/home/user/trading-agents`, branch `claude/magical-archimedes-c24l8w` cut from `main` at `ae54cf3`;
+Linux, Python 3.13.14, dependencies from `uv sync --frozen`. **No `.env`.** Every proof is a unit test
+on `InMemoryGraphStore`; nothing reached Neon, Azure or the broker.
 
-**Result:** *builder fills*
+**Result:** on the spec's fixture the snapshot reads opened 1, closed 3, `close_trigger_stop` 3, headline
+"1 positions opened; 3 closed; …", `closed_trades_with_pnl` 4, profit factor 0.0, expectancy
+−3,632.25 (A1, A5, PASS). Each fill is counted by one window and an old run re-reports identically
+(A2, A3, PASS). `positions_held` is the as-of snapshot's 32 (A7), the three keys are gone (A8), both
+readers print the new numbers and tolerate absence (A9). Four plants red and restored. `make ci` exit 0.
+The live re-measure (F1) has **not** been run: no route to Neon from here.
 
-**Files changed:** *builder fills*
+**Files changed:** new `agents/reporter/domain/book_window.py`, `agents/reporter/book_inputs.py`,
+`agents/reporter/tests/book_fixtures.py`, `test_book_window.py`, `test_book_window_edges.py`,
+`orchestration/tests/test_reporter_snapshot_readers.py`; changed `agents/reporter/result.py`,
+`domain/metrics.py`, `domain/trade_outcomes.py` (docstring), `performance_inputs.py`,
+`snapshot_result.py`, the reporter and analyst tests listed above, reporter and analyst `laws.md` +
+`test-plan.md`, `docs/laws/ledger.md`, `docs/laws/INDEX.md`, `docs/laws/drift-register.md`,
+`docs/design-log.md` (DL-263), this spec, `docs/sprints/README.md`. Not touched: `contracts/`,
+`kernel/`, the forecaster, deliberator, execution and monitor agents, `tests/test_poll_payloads.py`,
+`tests/poll_payload_fixtures.py`, any analyst code, `pyproject.toml`'s version, `uv.lock`.
 
-**Design decisions:** *builder fills*
+**Design decisions:** [DL-263](../design-log.md) (D1–D7, with the road not taken), under the planner's
+DL-262.
 
-**Proof — the red run first:**
+**Proof — the red run first** (A1 and A5 written before any reporter code changed):
 
 ```text
-builder fills
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+____________ test_the_runs_snapshot_counts_the_fills_in_its_window _____________
+agents/reporter/tests/test_book_window.py:31: in test_the_runs_snapshot_counts_the_fills_in_its_window
+    assert portfolio["positions_opened"] == 1.0
+E   assert 4.0 == 1.0
+_______________ test_outcomes_are_cumulative_since_the_inception _______________
+agents/reporter/tests/test_book_window.py:48: in test_outcomes_are_cumulative_since_the_inception
+    assert portfolio["closed_trades_with_pnl"] == 4.0
+E   assert 0.0 == 4.0
+=========================== short test summary info ============================
+FAILED agents/reporter/tests/test_book_window.py::test_the_runs_snapshot_counts_the_fills_in_its_window
+FAILED agents/reporter/tests/test_book_window.py::test_outcomes_are_cumulative_since_the_inception
+2 failed in 1.26s
 ```
+
+(The old code counted the run's own four unfilled lineage buys as opened, and no outcome.)
 
 **Proof — the green run:**
 
 ```text
-builder fills
+agents/reporter/tests/test_book_window.py::test_the_runs_snapshot_counts_the_fills_in_its_window PASSED
+agents/reporter/tests/test_book_window.py::test_outcomes_are_cumulative_since_the_inception PASSED
+agents/reporter/tests/test_book_window.py::test_a_fill_belongs_to_one_window PASSED
+agents/reporter/tests/test_book_window.py::test_re_reporting_an_old_run_reproduces_its_book_metrics PASSED
+agents/reporter/tests/test_book_window.py::test_the_first_run_has_no_window_start PASSED
+agents/reporter/tests/test_book_window.py::test_a_run_without_created_at_has_no_book_counts PASSED
+agents/reporter/tests/test_book_window_edges.py::test_no_exit_since_the_inception_omits_the_ratios PASSED
+agents/reporter/tests/test_book_window_edges.py::test_positions_held_is_the_as_of_snapshots_holdings PASSED
+agents/reporter/tests/test_book_window_edges.py::test_the_three_removed_keys_are_gone PASSED
+agents/reporter/tests/test_book_window_edges.py::test_a_book_read_fault_is_contained PASSED
+orchestration/tests/test_reporter_snapshot_readers.py::test_the_trace_and_the_observatory_read_the_new_snapshot PASSED
+orchestration/tests/test_reporter_snapshot_readers.py::test_the_readers_do_not_raise_on_absent_counts PASSED
+agents/analyst/tests/test_analyst_domain.py::test_score_candidate_reports_insufficient_history PASSED
+agents/analyst/tests/test_analyst_domain.py::test_sufficient_history_scores_from_technical_composite PASSED
+============================== 14 passed in 0.42s ==============================
 ```
 
-**Guards planted:** *builder fills*
+**Guards planted (DL-70)** — each planted, run, red, and the file restored byte-for-byte (`cmp` against
+a copy taken before planting):
 
-**Module line counts:** *builder fills*
+1. *The counts read the lineage again* — `result.py` set `positions_opened` / `positions_closed` from
+   `len(lineage.positions)` / `len(lineage.close_decisions)`. A1:
+   `E   assert 4.0 == 1.0` · `FAILED …::test_the_runs_snapshot_counts_the_fills_in_its_window`.
+2. *The window's upper bound dropped* — `fills_between` lost `moment <= until`. A3:
+   `Differing items: {'close_trigger_stop': 4.0} != {… 3.0}`, `{'positions_opened': 2.0} != {… 1.0}`,
+   `{'positions_closed': 4.0} != {… 3.0}` · `FAILED …::test_re_reporting_an_old_run_reproduces_its_book_metrics`.
+   (A first version of A3 re-reported into the same graph; the plant then went red through the
+   append-only `Snapshot` merge, `ValueError: property 'metrics' cannot be overwritten`, not through the
+   test's assertion. A3 now builds the old report on its own graph, so the assertion carries the diff.)
+3. *The inception bound dropped* — `exits_since` lost `since <=`. A5: `E   assert 5.0 == 4.0`
+   (the pre-inception sell counted) · `FAILED …::test_outcomes_are_cumulative_since_the_inception`.
+4. *The lower bound made inclusive* — `moment > after` became `moment >= after`. A2:
+   `E   assert (2.0, 3.0, 3.0) == (1.0, 3.0, 3.0)` (the fill refreshed exactly at the previous run's
+   `created_at` counted twice) · `FAILED …::test_a_fill_belongs_to_one_window`.
 
-**`make ci`:** *builder fills*
+**Module line counts** (all < 200): `book_inputs.py` 63 (new), `domain/book_window.py` 96 (new),
+`domain/metrics.py` 104 → 81, `domain/trade_outcomes.py` 54 → 55, `performance_inputs.py` 146 → 147,
+`result.py` 154 → 162 (over the 150 warning), `snapshot_result.py` 49 → 55, `domain/lineage.py` 179
+(unchanged); tests: `book_fixtures.py` 131, `test_book_window.py` 164, `test_book_window_edges.py` 131,
+`test_metrics_narrative.py` 125 → 126, `test_p3_reporter_slice.py` 80, `test_reporter_agent.py`
+171 → 191, `agents/analyst/tests/test_analyst_domain.py` 199 → 199,
+`orchestration/tests/test_reporter_snapshot_readers.py` 74, `test_p4_celery_parity.py` 49,
+`test_p4_daily_loop.py` 51.
+
+**`make ci`:** `make ci > …/scratchpad/ci.txt 2>&1; echo $?` → **exit 0**, in the cloud tree above. All
+15 steps ran: ruff, format, mypy (1,149 files, no issues), import-linter (5 kept, 0 broken), module size
+(warnings only), module header, law coverage, PARAM sync (two pre-existing warnings), sprint status,
+markdown links, version scheme, pytest **3,944 passed, 8 skipped, coverage 100.00 %** ("Required test
+coverage of 100.0% reached"), dependency audit ("No unaccepted vulnerabilities; 1 accepted advisory
+re-checked", PYSEC-2026-2447), detect-secrets **Passed**, untracked secrets **Passed**. Run before the
+spec and README were set to BUILT; `check_sprint_status.py` and `check_markdown_links.py` were re-run
+on the final docs (below).
 
 **`make gate-ran`:** owed to the planner.
 
-**Not met / verified failing:** *builder fills*
+**Not met / verified failing:** nothing in the builder's scope is failing. **Not done here, by design:**
+F1 and F2 (no Neon), `make gate-ran` (no `gh`), Windows `make ci`, the CodeQL diff, the PATCH bump and
+`uv lock` (no route to `download.pytorch.org`; `pyproject.toml` and `uv.lock` are byte-identical to
+`main`).
 
 ---
 
 ## Return notes
 
-- *builder fills*
+- **Scope held.** The six decisions were built as specced. Two placements moved within the spec's
+  latitude: `positions_held` rides `PerformanceProjection` (the selection is shared, so a performance
+  fault also leaves it absent) and `domain/lineage.py` is untouched (the window went to two new modules).
+- **Disagreed after reading the laws, and settled for the code:** (1) `RPT-NEV-03`. **It said** an
+  undefined metric is "reported as 0 / 0.0". **The code** omits `profit_factor` and `expectancy_cents`
+  when no exit carries P&L (`trade_outcomes.py`, held by `test_degraded_snapshot_omits_uncomputed_outcome_keys`),
+  while the degraded snapshot writes its counts as 0.0 with a headline that says why. **Amended toward
+  the code**: an undefined metric is absent; the degraded snapshot's zeros are named. A reported run
+  with no `created_at` follows the omission rule, so its headline prints `?` in the count slots; that
+  is the only visible headline change, and only for a run without `created_at` (the spec measured 82
+  of 86 `PMRun`s carrying one; 4 old ones do not). Filed as DRIFT-101, CORRECTED. (2) The spec's
+  DRIFT-096 sentence says *each* indicator lacking history shows a `*_missing_bars` metric; the code
+  records it for the five core indicators only. `ANLZ-IN-05` says so.
+- **The vocabulary pack does not enumerate `Snapshot`'s metric keys.** `orchestration/packs/trading_graph_vocabulary.json`
+  lists `Snapshot` as a label and in the edge signatures `Snapshot -SUMMARISES-> PMRun` and
+  `Snapshot -LINKED_FROM-> Snapshot`; its `properties` map has no `Snapshot` entry, and no pack file
+  names `positions_opened` or any removed key.
+- **`RPT-IDM-01` stays ⬜.** A3 cites it, but proves only the book-metrics half of "the same
+  `RunSnapshot`"; flipping it would narrow the clause (§7a).
+- **Worth knowing at F1:** `write_snapshot` merges into `snapshot:<run id>`, and the in-memory store
+  refuses to overwrite a different `metrics` blob (seen in plant 2). A re-report on the live graph is
+  safe only because `RPT-IDM-04` makes the numbers identical; F1 should report over a copy, as the spec
+  says, not write into the live graph.
+- **`result.py` is at 162**, past the 150 warning; the next reporter change there should split it.
+- **No analyst code changed**; `pyproject.toml`'s version and `uv.lock` are untouched.
+- **Owed to the planner:** the PATCH bump and `uv lock`; Windows `make ci`; push and `make gate-ran`
+  from the worktree at the branch's `HEAD` (check the printed SHA); the CodeQL diff against
+  `sprint-251-every-open-drift-row-is-decided`; **F1** on Neon before the merge (12 / 3, 1 / 1, 0 / 0,
+  1 / 3 for the four runs; 31 exits at −146,279 cents for `sched-2026-10-01`; each of the 129 filled
+  fills in one window); the image-only retag after the fidelity verdict (not before `sched-2026-10-07`);
+  **F2** on the first scheduled run after it. Whichever of S252 and S253 returns second is rebased
+  (shared docs only).

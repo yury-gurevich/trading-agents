@@ -1,6 +1,6 @@
 # `Reporter` — Laws
 
-**Prefix:** `RPT` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `RPT` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Stitch each completed run and each trade into durable, human-readable metrics and
 > narrative — the truth surface the dashboard and operator read.
@@ -19,8 +19,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Inputs (`IN`)
 
-- **RPT-IN-01** — `report` accepts `ReportRequest { run_id: str }`. Identifies the pipeline run
-  whose PMRun, Fills, CloseDecisions, and Recommendations to aggregate.
+- **RPT-IN-01** — `report` accepts `ReportRequest { run_id: str }`. Identifies the `PMRun` whose
+  snapshot is built. From that run's own lineage it reads its Recommendations, Rejections, market
+  lineage and the `CloseDecision`s behind `close_trigger_target` / `close_trigger_time`. By time, not
+  by lineage, it reads the filled `Fill`s and the other `PMRun`s' `created_at` that bound the run's
+  window (`RPT-OUT-02`, `RPT-IDM-04`), and the fresh `BrokerPositionSnapshot`s and the run's own
+  `MarketData` (`RPT-OUT-07`). *(S253; was: "the pipeline run whose PMRun, Fills, CloseDecisions,
+  and Recommendations to aggregate".)*
 - **RPT-IN-02** — `narrative` accepts `NarrativeRequest { position_id: str }`. Keys the position
   whose scan-to-exit chain is stitched into a story.
 - **RPT-IN-03** — Pub/sub path: consumes a `ReadyEvent` on `monitor.decisions.ready`; resolves
@@ -46,8 +51,22 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **RPT-OUT-01** — `report` returns `RunSnapshot { run_id, portfolio_metrics, signal_metrics,
   regime_attribution, performance_metrics, headline, provenance }`.
-- **RPT-OUT-02** — `portfolio_metrics` includes at minimum `profit_factor`, `expectancy_cents`,
-  `closed_trades_with_pnl`; derived from `CloseDecision.pnl_cents` across all trigger types.
+- **RPT-OUT-02** — `portfolio_metrics` reports the book from the broker's fills, never from the
+  run's own orders. A `Fill` counts once its `broker_status` is in `FILLED_BROKER_STATUSES`, at its
+  `broker_status_refreshed_at` (never `submitted_at`, never `status`); one whose time cannot be read
+  is in no window. The run's **window** runs after the latest other `PMRun.created_at` strictly
+  before the reported one's (open when there is none), up to and including the reported
+  `PMRun.created_at`. `positions_opened` is the buy fills in the window, `positions_closed` the sell
+  fills, `close_trigger_stop` those sells that are resting broker stops. `positions_held` is the
+  number of holdings in the last snapshot `RPT-OUT-07` chooses (the latest fresh one at or before
+  `PMRun.created_at`). `closed_trades_with_pnl`, `profit_factor` and `expectancy_cents` are over every
+  filled sell carrying an integer `realized_pnl_cents` (a dropped, unfilled or invalidated one
+  carries none), refreshed from 00:00 UTC of `performance_inception` up to and including
+  `PMRun.created_at`. `approved_count`, `rejected_count` and `approval_rate` come from the `PMRun`;
+  `close_trigger_target` and `close_trigger_time` from its lineage's `CloseDecision`s.
+  *(DRIFT-099, S253 / DL-262, DL-263; was: "includes at minimum `profit_factor`,
+  `expectancy_cents`, `closed_trades_with_pnl`; derived from `CloseDecision.pnl_cents` across all
+  trigger types".)*
 - **RPT-OUT-03** — `narrative` returns `TradeNarrative { position_id, story, provenance }`.
 - **RPT-OUT-04** — A `Snapshot` graph node is written per `report` call; a `TradeNarrative` node
   per `narrative` call.
@@ -71,8 +90,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   projects; it has no write path to OrderIntent, Recommendation, or CloseDecision.
 - **RPT-NEV-02** — Never mutates another agent's graph nodes. Every node it reads was written by
   scanner, analyst, PM, execution, or monitor; the reporter may only write its own labels.
-- **RPT-NEV-03** — Never silences a partial graph. If metrics are undefined (no closed trades),
-  they are reported as 0 / 0.0; the explanation states why. Never KeyError.
+- **RPT-NEV-03** — Never silences a partial graph, and never a `KeyError`. A metric the graph
+  cannot define is **absent**, never a confident zero. With no exit carrying realised P&L in the span,
+  `profit_factor` and `expectancy_cents` are absent and `closed_trades_with_pnl` reads 0.0 (no wins
+  over some losses is a real profit factor of 0.0, not an undefined one). When the reported `PMRun`
+  has no readable `created_at`, the book counts and the three outcome keys are absent and the
+  headline prints `?` for each count; with no as-of position snapshot, `positions_held` is absent; a
+  failed book read leaves the book keys absent and records a fault. A degraded snapshot
+  (`RPT-OUT-06`) reports its counts as 0.0 and its headline states why. *(DRIFT-101, S253; was: "If
+  metrics are undefined (no closed trades), they are reported as 0 / 0.0; the explanation states
+  why.")*
 
 ## State & effects (`STA`)
 
@@ -90,6 +117,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **RPT-IDM-03** — The performance as-of date is the UTC date of `PMRun.created_at`. No fact dated
   after it is read, and no `BrokerPositionSnapshot` created after `PMRun.created_at` is read, so
   re-reporting an old run reproduces its figures even after the graph grows, including on its own date.
+- **RPT-IDM-04** — The book metrics read no `Fill` whose `broker_status_refreshed_at` is after
+  `PMRun.created_at`, and the window's start is another `PMRun`'s `created_at`, never the reporter's
+  own earlier output (`RPT-ORD-01`). So each filled fill belongs to exactly one run's window, and
+  re-reporting an old run reproduces its book metrics even after the graph grows. *(S253.)*
 
 ## Ordering & concurrency (`ORD`)
 
@@ -200,3 +231,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (DRIFT-087). `RPT-TRG-02` names the graph-pull trigger and its key-and-edge bound, including the
   sync markers it fetches and drops (DRIFT-086). Both stay 🟩, on S242's lineage tests and the
   reporter's poll tests. No behaviour change; 25 / 42 unchanged.
+- v1.5 — S253 / DL-262, DL-263 (2026-10-02). `RPT-OUT-02` rewritten: the book counts are the
+  broker's filled `Fill`s in the run's window (after the previous `PMRun.created_at`, up to and
+  including its own), `positions_held` is the as-of position snapshot's holdings, and the outcomes are
+  cumulative over filled exits since the inception, no longer `CloseDecision.pnl_cents`
+  (DRIFT-099); `execution_count`, `approval_execution_gap` and `dropped_decision_count` are removed.
+  `RPT-IN-01` says what a report reads. `RPT-NEV-03` amended to what the code does: an undefined
+  metric is absent, not 0 / 0.0, and the degraded snapshot's zero counts are named (DRIFT-101). New
+  `RPT-IDM-04`: no fill refreshed after the run is read and the window starts at another `PMRun`, so
+  a re-report reproduces the book. Proven by `test_book_window.py` and `test_book_window_edges.py`.
+  25 / 42 → 26 / 43.

@@ -119,8 +119,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   re-reporting an old run reproduces its figures even after the graph grows, including on its own date.
 - **RPT-IDM-04** — The book metrics read no `Fill` whose `broker_status_refreshed_at` is after
   `PMRun.created_at`, and the window's start is another `PMRun`'s `created_at`, never the reporter's
-  own earlier output (`RPT-ORD-01`). So each filled fill belongs to exactly one run's window, and
-  re-reporting an old run reproduces its book metrics even after the graph grows. *(S253.)*
+  own earlier output (`RPT-ORD-01`). So each filled fill belongs to exactly one PM decision's
+  window, and re-reporting an old run reproduces its book metrics even after the graph grows. A
+  resumed run's `PMRun` is a clone carrying its source's `created_at`, so it reports its source's
+  window and is never the start of it. *(S253.)*
 
 ## Ordering & concurrency (`ORD`)
 
@@ -239,5 +241,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `RPT-IN-01` says what a report reads. `RPT-NEV-03` amended to what the code does: an undefined
   metric is absent, not 0 / 0.0, and the degraded snapshot's zero counts are named (DRIFT-101). New
   `RPT-IDM-04`: no fill refreshed after the run is read and the window starts at another `PMRun`, so
-  a re-report reproduces the book. Proven by `test_book_window.py` and `test_book_window_edges.py`.
-  25 / 42 → 26 / 43.
+  a re-report reproduces the book; a resumed run, whose `PMRun` carries its source's `created_at`,
+  reports its source's window (the planner's sentence at merge, measured on the live graph). Proven
+  by `test_book_window.py` and `test_book_window_edges.py`. 25 / 42 → 26 / 43.

@@ -27,7 +27,7 @@
 | RPT-IDM-01 | ⬜ | — |
 | RPT-IDM-02 | 🟩 | `test_run_id_propagated_in_snapshot_ready_event` |
 | RPT-IDM-03 | 🟩 | `test_performance_inputs_do_not_read_after_pmrun_as_of`, `test_a_snapshot_created_after_the_pm_run_is_never_read` |
-| RPT-IDM-04 | 🟩 | `test_book_window.py::test_a_fill_belongs_to_one_window`, `test_book_window.py::test_re_reporting_an_old_run_reproduces_its_book_metrics` |
+| RPT-IDM-04 | 🟩 | `test_book_window.py::test_a_fill_belongs_to_one_window`, `test_book_window.py::test_re_reporting_an_old_run_reproduces_its_book_metrics`, `test_book_window_edges.py::test_a_resumed_run_reports_its_sources_window` |
 | RPT-ORD-01 | 🟩 | `test_snapshot_ignores_prior_reporter_performance_output` |
 | RPT-ORD-02 | ⬜ | — |
 | RPT-FAIL-01 | 🟩 | `test_reporter_fault_boundary_returns_degraded_payloads` |

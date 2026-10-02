@@ -71,6 +71,20 @@ is the snapshot selection shared, and which analyst clause takes DRIFT-096?
 - *Count `partial` fills.* `FILLED_BROKER_STATUSES` is the brief's and the contract's set; a
   partial is not yet a position opened.
 
+**Planner's note at merge (2026-10-02).** *[measured on the live graph]* A resumed run's `PMRun` is
+a clone: `orchestration/resume.py::_linked_props` copies its source's props, `created_at` included.
+The one on the graph, `resume-link:sched-2026-07-13-resume-monitor:pmrun`, shares
+`2026-07-13T22:33:14Z` with the `PMRun` it resumes. So D2's instant of the reported run is its
+source's: the two report the same window, and "strictly before" keeps either from being the
+other's start. The handback's law reading took a resumed run to have its own `created_at`; that was
+assumed, not read. `RPT-IDM-04` now says what happens, and
+`test_book_window_edges.py::test_a_resumed_run_reports_its_sources_window` holds it (planted: the
+start made inclusive, `assert (0.0, 0.0) == (1.0, 3.0)`, red, restored). No filled fill on the graph
+sits in that shared window, so F1 counted none twice (129 of 129 in exactly one window).
+*Ruled out:* giving the clone an empty window (it would report 0 opened on the run the operator
+resumed, the number this sprint exists to remove) and consulting `linked_from_key` for the instant
+(the same value by construction, and a second read path).
+
 ---
 
 ## DL-262 - a run's book metrics are read from the broker's fills in the run's window, not from the PM run's lineage - status: DECIDED (planner, 2026-10-02; work-queue 106, DRIFT-099, built as S253)

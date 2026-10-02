@@ -98,6 +98,25 @@ def test_a_book_read_fault_is_contained() -> None:
     assert [fault.capability for fault in sink.faults] == ["report.book"]
 
 
+def test_a_resumed_run_reports_its_sources_window() -> None:
+    """RPT-IDM-04: a resumed PMRun carries its source's `created_at`, and its window.
+
+    `orchestration/resume.py` clones the source's props, so the two share an instant:
+    neither is the other's window start, and both report the same book.
+    """
+    graph = InMemoryGraphStore()
+    seed_sched_2026_10_01(graph)
+    resumed_key = f"resume-link:{REPORTED_RUN}-resume-monitor:pmrun"
+    resumed_run = pm_run(graph, resumed_key, REPORTED_AT)
+    graph.merge_node("PMRun", resumed_run.key, {"linked_from_key": REPORTED_RUN})
+
+    source = build_snapshot(graph, REPORTED_RUN, settings=SETTINGS).portfolio_metrics
+    resumed = build_snapshot(graph, resumed_key, settings=SETTINGS).portfolio_metrics
+
+    assert resumed == source
+    assert (resumed["positions_opened"], resumed["positions_closed"]) == (1.0, 3.0)
+
+
 def _position_snapshot(
     graph: InMemoryGraphStore,
     key: str,

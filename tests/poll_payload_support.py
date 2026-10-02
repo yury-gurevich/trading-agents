@@ -16,6 +16,7 @@ from kernel import InMemoryGraphStore
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from datetime import tzinfo
+    from typing import Self
 
     from kernel import GraphStore, Node
 
@@ -94,5 +95,6 @@ class FrozenDatetime(datetime):
     """Pin execution's poll clock to the synthetic PM runs, independent of run date."""
 
     @classmethod
-    def now(cls, tz: tzinfo | None = None) -> datetime:
-        return NOW if tz is None else NOW.astimezone(tz)
+    def now(cls, tz: tzinfo | None = None) -> Self:
+        moment = NOW if tz is None else NOW.astimezone(tz)
+        return cls.combine(moment.date(), moment.timetz())

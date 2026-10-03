@@ -107,8 +107,13 @@ value is a different vocabulary and emphasis, and it takes the same quiz as the 
 a finance model as a deciding seat (no evidence it reasons better, and an older base model); patterns
 accepted because models agree (agreement is a hypothesis until the replay).
 
-**Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11); where the
-finance models are hosted, and which to try first.
+**Decided (operator, 2026-10-03).** The consultation starts with Palmyra-Fin-70B and Fin-R1, plus any
+stronger model on the Open FinLLM Leaderboard at spec time. It runs on the operator's machine if the
+models fit; a fit check (memory, a load, one timed answer each) comes first. Running a finance model
+permanently, as a new container or agent, is a later decision gated on the lab showing it adds
+something measurable, and would go through `ops/agent-genesis.md` with its own law book.
+
+**Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---
 

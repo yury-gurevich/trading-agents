@@ -649,3 +649,17 @@ Sources for the survey: [Palmyra Fin (Writer)](https://writer.com/llms/palmyra-f
 [FinGPT](https://github.com/AI4Finance-Foundation/FinGPT),
 [FinBen paper](https://arxiv.org/abs/2402.12659),
 [Open FinLLM Leaderboard](https://huggingface.co/spaces/finosfoundation/Open-Financial-LLM-Leaderboard).
+
+### Decided (operator, 2026-10-03)
+
+- **First models for the consultation:** Palmyra-Fin-70B and Fin-R1, plus whatever the live Open FinLLM
+  Leaderboard shows is stronger when the consultation is specced.
+- **Hosting for the test:** the operator's machine, if the models fit. The spec's first step is a
+  **fit check**: measure the machine's GPU memory and RAM, then load Fin-R1 and a quantised
+  Palmyra-Fin-70B and time one answer each. A model that does not fit is recorded as such, not forced.
+- **After the test:** the operator is open to running a finance model permanently, as *"a new
+  container / agent … if it works"*. That is a **later decision, gated on the lab showing the finance
+  model adds something measurable** to the book or to the expert. If it does, the live role (a
+  consultant the book is refreshed from, or a contrast voice inside deliberation) and the hosting (a GPU
+  container that scales to zero, a hosted endpoint) are decided then, with measured cost, as a new
+  agent through `ops/agent-genesis.md` and its own law book.

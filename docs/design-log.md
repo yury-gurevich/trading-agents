@@ -142,6 +142,27 @@ falling knife (RSI 24, 20 % under the SMA-200, relative strength −15 points) s
 confidence 0.619 on its contrarian sub-scores, with a reward/risk of 0.57 that the disclosure-only gate
 passes.
 
+**Amendment 7 (operator, 2026-10-03): ALL quant numbers are presented to and interpreted by the
+deliberators.** Read as: **presented**, so nothing the fleet's code computes for the decision is
+withheld; and **interpreted by each seat**, so every number gets a reading (value copied, scale named,
+meaning here, direction, weight). Built in the lab: house rule H12 and form law **DEC-FORM-07**
+(completeness, checked by code; the retry feedback lists every unread number). The book grows to
+**154 entries**, so every number in every packet is defined (`book/coverage.py`: ALL DEFINED). A
+`complete` packet arm adds the computed-but-withheld numbers (MACD line and signal, stochastic %D and
+the OBV signal, which decide three sub-scores; SMA, EMA and Bollinger levels; account cash, equity and
+buying power, holdings, VIX status and date, decision ATR). That is about 25 more numbers per case:
+133–138 in the production packet, 158–163 complete. The seats' agreement on each number's direction is
+reported. Fake-model proof: first attempts 2 % coverage, after the retry 100 %. **Found while
+building:** (1) the parser swallowed the first metric of every `{...}` block (fixed); (2) the
+synthetic portfolio misused the PM's `cash` field, which carries account equity in production (fixed,
+now mirroring `graph_portfolio.py`); (3) with a mostly-cash book the sector and correlation gates print
+NOT-EVALUATED, so every case now holds a baseline book at about 25 % deployment, like the live fleet;
+(4) `stop_pct` and `target_pct` appear in two units in one packet. **Cost:** each seat writes about 160
+readings. Expected about $7–8 per 8-case run of the operator's design, $11–13 for the 2-round debate,
+about $60 for all six variants, and about $1.90 for a 2-case first look. **Open, the operator's:**
+whether "all" includes the barrier forecast (item 99, parked until its skill is proven live); and
+whether every seat must read everything (`coverage: per_seat`, as built) or the trio collectively.
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

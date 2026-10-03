@@ -48,6 +48,7 @@ class Scenario:
     holdings: dict[str, list[tuple[int, float]]] = field(default_factory=dict)  # held ticker -> its segments
     held_sector: dict[str, str] = field(default_factory=dict)
     wiggle: float = 0.006
+    held_phase: float = 2.1  # 0.8 rad from the candidate: return correlation ~cos(0.8) = 0.70
     phase: float = 1.3
 
 

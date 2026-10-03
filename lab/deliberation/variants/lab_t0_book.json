@@ -5,23 +5,25 @@
   "rounds": 2,
   "instructions": "lab",
   "book": "system",
+  "packet": "production",
+  "coverage": "per_seat",
   "adapter": "chat",
   "retries": 1,
   "models": {
     "pro": {
       "model": "anthropic/claude-opus-5-5",
       "effort": "high",
-      "max_tokens": 16000
+      "max_tokens": 32000
     },
     "con": {
       "model": "anthropic/claude-opus-5-5",
       "effort": "high",
-      "max_tokens": 16000
+      "max_tokens": 32000
     },
     "judge": {
       "model": "anthropic/claude-opus-5-5",
       "effort": "high",
-      "max_tokens": 16000
+      "max_tokens": 32000
     }
   }
 }

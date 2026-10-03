@@ -9,19 +9,21 @@ from pydantic import BaseModel, Field
 Scale = Literal[
     "sub_score_0_100",
     "fraction_0_1",
+    "fraction",
     "percent",
     "percentage_points",
     "ratio",
     "raw_indicator",
     "count",
     "usd",
+    "shares",
     "flag_0_1",
     "days",
     "position_0_1",
-    "fraction",
     "index_points",
     "enum",
-    "shares",
+    "weight_sum",
+    "compound",
     "provider_scale_undeclared",
 ]
 
@@ -40,14 +42,18 @@ class Reading(BaseModel):
 
 
 class Brief(BaseModel):
-    readings: list[Reading] = Field(description="every value your case relies on, read before arguing")
+    readings: list[Reading] = Field(
+        description="EVERY number in the packet, one reading each, read before "
+        "arguing (house rule H12); a number that does not matter still gets weight low"
+    )
     gaps: list[str] = Field(description="evidence that is missing and would change the case")
     case: str = Field(description="your argument, built only on the readings above")
 
 
 class Ruling(BaseModel):
     own_readings: list[Reading] = Field(
-        description="your own reading of the packet, before weighing the cases"
+        description="your own reading of EVERY number in the packet, one each, before weighing the cases "
+        "(house rule H12)"
     )
     decisive: list[str] = Field(description="the metric keys (from own_readings) the ruling rests on")
     market_conditions: str = Field(

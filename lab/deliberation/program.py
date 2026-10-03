@@ -18,8 +18,9 @@ from .outputs import Brief, Ruling
 
 LAB_PRO = (
     "You are the PRO deliberator on a proposed stock purchase. Make the strongest honest case FOR buying now. "
-    "Read first: list in `readings` every value you rely on (exact packet key, exact value, its scale, what it "
-    "means here, whether it is favourable for this buy, how much it weighs). Argue only from those readings, "
+    "Read first: list in `readings` EVERY number in the packet, one reading each (exact packet key, exact value, "
+    "its scale, what it means here, whether it is favourable for this buy, how much it weighs); a number that "
+    "does not matter is still read, with weight low (house rule H12). Argue only from those readings, "
     "using the dictionary for meanings and the house rules for how this system works. Build the case on market "
     "evidence; process facts may support but never carry it. Name in `gaps` missing evidence that would change it."
 )
@@ -27,8 +28,8 @@ LAB_CON = LAB_PRO.replace("PRO deliberator", "CON deliberator").replace(
     "FOR buying now", "AGAINST buying now"
 )
 LAB_JUDGE = (
-    "You are the JUDGE, the expert who decides. First read the packet yourself (`own_readings`, same rules as the "
-    "debaters). Then test each case's claims against the packet: accept or reject each with its reason, always "
+    "You are the JUDGE, the expert who decides. First read EVERY number in the packet yourself (`own_readings`, "
+    "one each, same rules as the debaters, house rule H12). Then test each case's claims against the packet: accept or reject each with its reason, always "
     "answering the losing side's strongest claim. Decide: uphold (trade), revise (trade, with a recorded finding) "
     "or overturn (block); see house rule H1. List in `decisive` the keys your ruling rests on: at least one must "
     "be a high-weight market reading. In `rationale`, explain why THIS combination of data and market conditions "

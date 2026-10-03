@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
+from agents.analyst.domain import indicators, indicators_event, indicators_range
 from agents.analyst.domain.recommend import decide
 from agents.analyst.domain.scoring import score_candidate
 from agents.deliberator.context import build_veto_context
@@ -33,6 +34,16 @@ from .series import END, bars
 
 OUT = Path(__file__).parent / "cases" / "synthetic"
 
+# A baseline book like the live fleet's (~22 % deployed, several unrelated names), so the PM's sector and
+# correlation gates evaluate and print real numbers instead of NOT-EVALUATED. Different wiggle periods
+# keep these holdings close to uncorrelated with every candidate. (ticker, sector, wiggle period, phase)
+BASELINE_BOOK = (
+    ("UTIL", "Utilities", 3.9, 0.4),
+    ("BANK", "Financials", 5.3, 2.0),
+    ("TELE", "Communication Services", 6.7, 3.1),
+    ("REIT", "Real Estate", 8.1, 4.4),
+)
+
 
 @dataclass
 class Case:
@@ -44,6 +55,7 @@ class Case:
     decision: str
     context: str
     metrics: dict[str, float]
+    supplement: str = ""
 
 
 def _prov(agent: str) -> Provenance:
@@ -54,7 +66,11 @@ def build(sc: Scenario) -> Case:
     scanner_s, analyst_s, pm_s, provider_s = fleet_settings()
     spy = bars("SPY", [(300, 0.0005)], start=500.0, phase=0.0, wiggle=0.008, volume=60_000_000)
     stock = bars(sc.ticker, sc.segments, wiggle=sc.wiggle, phase=sc.phase)
-    held = {t: bars(t, segs, wiggle=sc.wiggle, phase=sc.phase) for t, segs in sc.holdings.items()}
+    held = {
+        t: bars(t, [(300, 0.0005)], start=140.0, wiggle=0.006, phase=ph, period=per)
+        for t, _, per, ph in BASELINE_BOOK
+    }
+    held |= {t: bars(t, segs, wiggle=sc.wiggle, phase=sc.held_phase) for t, segs in sc.holdings.items()}
     all_bars = stock + tuple(b for series in held.values() for b in series)
     earnings = {sc.ticker: END + timedelta(days=sc.earnings_in_days)}
 
@@ -88,10 +104,19 @@ def build(sc: Scenario) -> Case:
         c.metrics = dict(score.metrics)
         return c
     held_values = {t: Money(amount=Decimal(str(round(s[-1].close * 40, 2)))) for t, s in held.items()}
+    # Mirror production (agents/portfolio_manager/graph_portfolio.py): `cash` carries the account EQUITY;
+    # true cash, equity and buying power travel in the account_* cents fields.
+    cash = Decimal("80000.00")
+    equity = cash + sum((v.amount for v in held_values.values()), Decimal("0"))
     portfolio = PortfolioState(
-        cash=Money(amount=Decimal("80000.00")), positions={t: 40 for t in held}, position_values=held_values
+        cash=Money(amount=equity),
+        positions={t: 40 for t in held},
+        position_values=held_values,
+        account_cash_cents=int(cash * 100),
+        account_equity_cents=int(equity * 100),
+        account_buying_power_cents=int(cash * 100),
     )
-    sectors = {sc.ticker: sc.sector, **sc.held_sector}
+    sectors = {sc.ticker: sc.sector, **{t: sec for t, sec, _, _ in BASELINE_BOOK}, **sc.held_sector}
     approved, rejected = evaluate_recommendations(
         (rec,),
         {sc.ticker: Money(amount=Decimal(str(stock[-1].close)))},
@@ -182,7 +207,55 @@ def build(sc: Scenario) -> Case:
     )
     context = build_veto_context(graph, pm, orders, intent)
     decision = f"{intent.action} {intent.ticker} (qty {intent.quantity})"
-    return Case(sc.name, sc.ticker, sc.expert_view, True, None, decision, context, dict(score.metrics))
+    supplement = _supplement(sc, stock, analyst_s, portfolio, held_values, regime, intent)
+    return Case(
+        sc.name, sc.ticker, sc.expert_view, True, None, decision, context, dict(score.metrics), supplement
+    )
+
+
+def _f(x: float | None, nd: int = 4) -> str:
+    return "n/a" if x is None else f"{x:.{nd}g}"
+
+
+def _supplement(sc, stock, a, portfolio, held_values, regime, intent) -> str:
+    """Numbers the fleet's code computes for this decision but the production packet never shows."""
+    closes = [b.close for b in stock]
+    highs, lows = [b.high for b in stock], [b.low for b in stock]
+    vols = [float(b.volume) for b in stock]
+    macd = indicators.macd(closes, a.macd_fast, a.macd_slow, a.macd_signal)
+    stoch = indicators_range.stochastic(highs, lows, closes, a.stoch_k_period, a.stoch_d_period)
+    obv = indicators_event.obv(closes, vols, a.obv_signal_period)
+    w = a.bollinger_window
+    mid = indicators._sma(closes, w) if len(closes) >= w else None
+    sd = indicators._pstdev(closes[-w:]) if len(closes) >= w else None
+    sma_s = (
+        indicators._sma(closes, a.golden_cross_short_period)
+        if len(closes) >= a.golden_cross_short_period
+        else None
+    )
+    sma_l = indicators._sma(closes, a.sma_long_period) if len(closes) >= a.sma_long_period else None
+    ema_s = indicators._ema(closes, a.ema_short_period)
+    ema_l = indicators._ema(closes, a.ema_long_period)
+    lines = [
+        f"Lab supplement, indicator internals for {sc.ticker} (computed by the analyst's code, not shown in "
+        f"production): macd_line_price={_f(macd and macd[0])}; macd_signal_price={_f(macd and macd[1])}; "
+        f"stochastic_d={_f(stoch and stoch[1])}; obv_signal={_f(obv and obv[1])}; "
+        f"sma_{a.golden_cross_short_period}_usd={_f(sma_s)}; sma_{a.sma_long_period}_usd={_f(sma_l)}; "
+        f"ema_{a.ema_short_period}_usd={_f(ema_s)}; ema_{a.ema_long_period}_usd={_f(ema_l)}; "
+        f"bollinger_middle_usd={_f(mid)}; bollinger_upper_usd={_f(mid and sd is not None and mid + a.bollinger_sigma * sd)}; "
+        f"bollinger_lower_usd={_f(mid and sd is not None and mid - a.bollinger_sigma * sd)}",
+        f"Lab supplement, portfolio before this order: account_cash_usd={portfolio.account_cash_cents / 100:.2f}; "
+        f"account_equity_usd={portfolio.account_equity_cents / 100:.2f}; "
+        f"buying_power_usd={portfolio.account_buying_power_cents / 100:.2f}; "
+        f"deployed_usd={sum(v.amount for v in held_values.values()):.2f}; open_positions={len(portfolio.positions)}"
+        + "".join(
+            f"; holding_{t}_shares={q}; holding_{t}_value_usd={held_values[t].amount:.2f}"
+            for t, q in portfolio.positions.items()
+        ),
+        f"Lab supplement, regime data quality: vix_status={regime.vix_status}; vix_as_of={regime.vix_as_of}",
+        f"Lab supplement, order: decision_atr_pct={_f(intent.decision_atr_pct)}",
+    ]
+    return "\n".join(lines)
 
 
 def main() -> None:

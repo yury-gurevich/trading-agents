@@ -85,6 +85,13 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `favorable_excursion_sample_count` [count; not_directional]: Windows actually measured.
 - `value_reward_risk_ratio` [ratio; higher_better]: target_pct / stop_pct for this order. CAUTION: The gate is DISCLOSURE_ONLY at threshold 0 on the fleet: a ratio below 1 still PASSES.
 - `applied_reward_risk_ratio` [ratio; higher_better]: Reward/risk at the applied stop and target.
+- `flat_stop_pct` [percent; not_directional]: Stop under the flat mode (the regime base stop).
+- `flat_target_pct` [percent; not_directional]: Target under the flat mode.
+- `scaled_stop_pct` [percent; not_directional]: Stop under the scaled mode: 2 x atr_pct on the fleet. CAUTION: The fleet runs scaled, so this is the applied stop.
+- `scaled_target_pct` [percent; not_directional]: Target under the scaled mode: the trailing favorable excursion.
+- `flat_reward_risk_ratio` [ratio; higher_better]: target/stop under the flat mode.
+- `scaled_reward_risk_ratio` [ratio; higher_better]: target/stop under the scaled mode. CAUTION: Below 1 means the target is closer than the stop.
+- `decision_atr_pct` [percent; lower_better]: ATR % the analyst had at decision time, carried on the order.
 
 ## scanner
 - `scanner_score` [raw_indicator; higher_better]: The scanner's ranking score (equals its relative_strength feature).
@@ -93,6 +100,8 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `beta` [ratio; not_directional]: Beta vs the benchmark; >1 moves more than the market. CAUTION: Filtered at max_beta; matters more in risk-off regimes.
 - `days_to_earnings` [days; higher_better]: Calendar days to the next earnings report. CAUTION: Names inside the earnings exclusion are already dropped; a value just above it means the report lands inside a 10-session hold.
 - `latest_close` [usd; not_directional]: Latest close used by the scanner.
+- `universe_tickers` [count; not_directional]: Size of the scanner's universe this run.
+- `evaluated_tickers` [count; not_directional]: Tickers the scanner evaluated.
 
 ## regime
 - `label` [enum; not_directional]: Market regime label from the VIX (risk_on/neutral/risk_off/high/extreme).
@@ -110,4 +119,67 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `value_positions` [count; lower_better]: max_positions: open issuers incl. this one.
 - `value_order_cost_usd` [usd; not_directional]: cash_available: this order's cost.
 - `value_shares` [count; not_directional]: min_order_quantity: whole shares ordered.
+- `portfolio_value_usd` [usd; not_directional]: The account EQUITY the PM sizes against (cash + holdings). CAUTION: Equity, not cash: the PM's `cash` field carries equity in production.
+- `deployed_portfolio_usd` [usd; not_directional]: Market value of current holdings: the denominator of the sector and cluster gates. CAUTION: Concentration is measured against DEPLOYED capital, not equity.
+- `position_value_usd` [usd; not_directional]: This order's value (sizing gate).
+- `existing_issuer_value_usd` [usd; lower_better]: Value already held in this issuer.
+- `existing_sector_issuers` [count; lower_better]: Issuers already held in this sector.
+- `held_sector_value_usd` [usd; lower_better]: Value already held in this sector.
+- `deployed_this_batch_usd` [usd; not_directional]: Cost of other orders approved earlier in this batch, in this sector.
+- `order_cost_usd` [usd; not_directional]: This order's cost (sector gate).
+- `cash_buffer_pct` [fraction; not_directional]: Share of equity the PM keeps as cash (0.05 = 5 %).
+- `reserved_cash_this_batch_usd` [usd; not_directional]: Cash already reserved by earlier orders this batch.
+- `deployment_pct` [fraction; not_directional]: Deployed capital / equity.
+- `deployment_floor_pct` [fraction; not_directional]: Below this deployment the concentration gates do not evaluate. CAUTION: NOT-EVALUATED below the floor means the gate did not look.
+- `cluster_value_usd` [usd; lower_better]: Order cost + this issuer's holding + each correlated holding x its ramp weight.
+- `cluster_weight_total` [weight_sum; lower_better]: Sum of the ramp weights of held issuers correlated with this one.
+- `examined_issuers` [count; not_directional]: Held issuers the correlation gate compared with this one.
+- `correlated_issuers` [compound; lower_better]: Each held issuer above the ramp start, as TICKER:correlation:wWEIGHT (daily-return correlation over the lookback; weight from the ramp). CAUTION: A correlation of 0.70 counts about half of that holding toward the cluster.
+- `below_threshold_top` [compound; not_directional]: The highest correlations that stayed below the ramp start, TICKER:correlation.
+- `correlation_ramp` [compound; not_directional]: Correlations at or below the first number count 0, at or above the second count fully, linear in between.
+- `min_pair_overlap_bars` [count; higher_better]: Fewest overlapping bars in any compared pair.
+- `skipped_pairs` [count; lower_better]: Pairs skipped for too little overlapping history.
+- `threshold_portfolio_ratio` [ratio; not_directional]: sizing cap: max position value / equity (fleet: 0.01).
+- `threshold_shares` [count; not_directional]: min_order_quantity threshold.
+- `threshold_positions` [count; not_directional]: max_positions threshold (fleet: 60).
+- `threshold_available_cash_usd` [usd; not_directional]: Cash available for this order after buffer and reservations. CAUTION: Rendered in scientific notation (7.441e+04 = 74,410).
+- `threshold_reward_risk_ratio` [ratio; not_directional]: reward_risk threshold (fleet: 0, disclosure only).
+- `threshold_sector_exposure_ratio` [ratio; not_directional]: max_sector_pct threshold (share of deployed capital).
+- `threshold_sector_issuers` [count; not_directional]: max_names_per_sector threshold.
+- `threshold_cluster_exposure_ratio` [ratio; not_directional]: max_correlated_cluster_pct threshold (share of deployed capital).
+
+## order
+- `quantity_shares` [count; not_directional]: Shares the PM approved for this order.
+- `est_price_usd` [usd; not_directional]: Price the PM sized the order at (latest close).
+- `stop_pct` [percent; not_directional]: The order's protective stop distance below entry. CAUTION: Rendered as PERCENT in the 'PM order' line (4.64%) and as a FRACTION in the reward_risk detail (0.0464).
+- `target_pct` [percent; not_directional]: The order's profit target above entry. CAUTION: PERCENT in the 'PM order' line, FRACTION in the reward_risk detail.
+
+## market_data
+- `open_usd` [usd; not_directional]: Latest daily bar: open.
+- `high_usd` [usd; not_directional]: Latest daily bar: high.
+- `low_usd` [usd; not_directional]: Latest daily bar: low.
+- `close_usd` [usd; not_directional]: Latest daily bar: close.
+- `volume_shares` [shares; higher_better]: Latest daily bar: volume.
+
+## data_quality
+- `requested_tickers` [count; not_directional]: Tickers the provider was asked for in this run.
+- `returned_tickers` [count; higher_better]: Tickers it returned; below requested means missing data.
+
+## supplement
+- `macd_line_price` [raw_indicator; higher_better]: MACD line (fast EMA - slow EMA), price units. CAUTION: Its sign decides macd_histogram_score together with the histogram.
+- `macd_signal_price` [raw_indicator; not_directional]: MACD signal line; histogram = line - signal.
+- `stochastic_d` [raw_indicator; contrarian_low_is_bullish]: Stochastic %D (smoothed %K); scored together with %K.
+- `obv_signal` [raw_indicator; not_directional]: OBV signal line; OBV above it scores 70, below 35.
+- `sma_N_usd` [usd; not_directional]: Simple moving average over the N days in the key (sma_50_usd, sma_200_usd). CAUTION: sma_50 above sma_200 is the golden cross; close vs sma_200 is sma_distance_pct.
+- `ema_N_usd` [usd; not_directional]: Exponential moving average over the N days in the key (short and long). CAUTION: ema_spread_pct is the short-minus-long gap as % of price.
+- `bollinger_middle_usd` [usd; not_directional]: Bollinger middle band (window SMA).
+- `bollinger_upper_usd` [usd; not_directional]: Bollinger upper band (middle + sigma x std).
+- `bollinger_lower_usd` [usd; not_directional]: Bollinger lower band (middle - sigma x std).
+- `account_cash_usd` [usd; not_directional]: Broker cash.
+- `account_equity_usd` [usd; not_directional]: Broker equity (cash + holdings).
+- `buying_power_usd` [usd; not_directional]: Broker buying power.
+- `deployed_usd` [usd; not_directional]: Market value of current holdings.
+- `open_positions` [count; not_directional]: Number of current holdings.
+- `holding_TICKER_shares` [count; not_directional]: Shares held in that ticker.
+- `holding_TICKER_value_usd` [usd; not_directional]: Market value held in that ticker.
 

@@ -86,6 +86,13 @@ RULES: tuple[Rule, ...] = (
         "quant_metrics are 0-100 SUB-SCORES. The raw ratios appear under vendor names in the Fundamentals line.",
         "analyst fundamental_rules",
     ),
+    Rule(
+        "H12",
+        "Every number in the packet is read and interpreted by every deliberator: copied exactly, its scale "
+        "named, what it means here, whether it is favourable for this buy, and how much it weighs. A number that "
+        "does not matter is still read, with weight low and the reason.",
+        "operator rule, 2026-10-03 (DL-264)",
+    ),
 )
 
 

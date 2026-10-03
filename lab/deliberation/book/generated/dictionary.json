@@ -22,6 +22,8 @@
    "code_ref": "agents/analyst/domain/scoring.py:score_candidate",
    "pitfall": "Not a probability of profit. It is a linear rescale of the composite score.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -33,6 +35,8 @@
    "code_ref": "agents/analyst/domain/scoring.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -44,6 +48,8 @@
    "code_ref": "agents/analyst/domain/scoring.py:_composite",
    "pitfall": "A missing pillar is dropped, not scored as zero: the composite can rest on technicals alone.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -55,6 +61,8 @@
    "code_ref": "agents/analyst/domain/technical_rules.py:score_technical; scoring.py:_apply_relative_strength",
    "pitfall": "It AVERAGES contrarian sub-scores (RSI, Bollinger, stochastic, Williams, RSI-2, NW deviation) with trend sub-scores (SMA-200, EMA, MACD, golden cross, OBV). An extended leader and a falling knife can score within a few points of each other. Read the sub-scores, never this number alone.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -66,6 +74,8 @@
    "code_ref": "agents/analyst/domain/fundamental_rules.py:score_fundamental",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -77,6 +87,8 @@
    "code_ref": "agents/analyst/domain/sentiment_rules.py:score_sentiment",
    "pitfall": "'n/a' means no signal, not neutral, and the composite then rests on the other pillars.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -88,6 +100,8 @@
    "code_ref": "agents/analyst/domain/sentiment_rules.py:score_sentiment",
    "pitfall": "One strongly negative headline among few can pull the pillar to 0.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -99,6 +113,8 @@
    "code_ref": "sentiment_rules.py",
    "pitfall": "Headlines, not articles read in full.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -110,6 +126,8 @@
    "code_ref": "sentiment_rules.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -121,6 +139,8 @@
    "code_ref": "sentiment_rules.py",
    "pitfall": "Word counts, not article counts; they routinely exceed sentiment_articles (DL-112).",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -132,6 +152,8 @@
    "code_ref": "sentiment_rules.py",
    "pitfall": "Word counts, not article counts (DL-112).",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -143,6 +165,8 @@
    "code_ref": "agents/deliberator/context_market.py:market_lines",
    "pitfall": "A different scale and source from analyst_sentiment_score; do not compare the two numerically.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -154,6 +178,8 @@
    "code_ref": "indicators.py:rsi",
    "pitfall": "Scored contrarian: high RSI (overbought) gets a LOW sub-score.",
    "probe": "rsi",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 30 -> 80; x >= 30 and < 50 -> 65; x >= 50 and < 70 -> 50; x >= 70 -> 25"
   },
   {
@@ -165,6 +191,8 @@
    "code_ref": "technical_rules.py:score_rsi",
    "pitfall": "rsi_score=25 means rsi >= 70 (overbought), not weak momentum.",
    "probe": "rsi",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 30 -> 80; x >= 30 and < 50 -> 65; x >= 50 and < 70 -> 50; x >= 70 -> 25"
   },
   {
@@ -176,6 +204,8 @@
    "code_ref": "technical_rules_event.py",
    "pitfall": "",
    "probe": "rsi2",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 10 -> 80; x >= 10 and <= 90 -> 50; x > 90 -> 20"
   },
   {
@@ -187,6 +217,8 @@
    "code_ref": "technical_rules_event.py:score_rsi2",
    "pitfall": "",
    "probe": "rsi2",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 10 -> 80; x >= 10 and <= 90 -> 50; x > 90 -> 20"
   },
   {
@@ -198,6 +230,8 @@
    "code_ref": "technical_rules.py:score_bollinger",
    "pitfall": "Near the lower band is scored bullish (contrarian).",
    "probe": "bollinger",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 0.3 -> 75; x >= 0.3 and < 0.7 -> 50; x >= 0.7 -> 30"
   },
   {
@@ -209,6 +243,8 @@
    "code_ref": "technical_rules.py:score_bollinger",
    "pitfall": "",
    "probe": "bollinger",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 0.3 -> 75; x >= 0.3 and < 0.7 -> 50; x >= 0.7 -> 30"
   },
   {
@@ -220,6 +256,8 @@
    "code_ref": "technical_rules.py:score_sma_distance",
    "pitfall": "Trend-following: below the SMA-200 scores low.",
    "probe": "sma",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -5% -> 20; x > -5% and <= 0% -> 40; x > 0% and <= 5% -> 60; x > 5% -> 75"
   },
   {
@@ -231,6 +269,8 @@
    "code_ref": "technical_rules.py:score_sma_distance",
    "pitfall": "",
    "probe": "sma",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -5% -> 20; x > -5% and <= 0% -> 40; x > 0% and <= 5% -> 60; x > 5% -> 75"
   },
   {
@@ -242,6 +282,8 @@
    "code_ref": "technical_rules.py:score_ema_crossover",
    "pitfall": "",
    "probe": "ema",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75"
   },
   {
@@ -253,6 +295,8 @@
    "code_ref": "technical_rules.py:score_ema_crossover",
    "pitfall": "",
    "probe": "ema",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75"
   },
   {
@@ -264,6 +308,8 @@
    "code_ref": "technical_rules.py:score_macd",
    "pitfall": "Its sub-score also depends on the sign of the MACD line, which the packet does not show.",
    "probe": "macd",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45"
   },
   {
@@ -275,6 +321,8 @@
    "code_ref": "technical_rules.py:score_macd",
    "pitfall": "",
    "probe": "macd",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45"
   },
   {
@@ -286,6 +334,8 @@
    "code_ref": "technical_rules_event.py:score_golden_cross",
    "pitfall": "",
    "probe": "golden",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "golden cross -> 75; otherwise -> 25"
   },
   {
@@ -297,6 +347,8 @@
    "code_ref": "technical_rules_event.py",
    "pitfall": "",
    "probe": "golden",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "golden cross -> 75; otherwise -> 25"
   },
   {
@@ -308,6 +360,8 @@
    "code_ref": "technical_rules_event.py:score_obv",
    "pitfall": "The level itself means nothing; only OBV vs its signal line is scored.",
    "probe": "obv",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "OBV above its signal -> 70; otherwise -> 35"
   },
   {
@@ -319,6 +373,8 @@
    "code_ref": "technical_rules_event.py:score_obv",
    "pitfall": "",
    "probe": "obv",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "OBV above its signal -> 70; otherwise -> 35"
   },
   {
@@ -330,6 +386,8 @@
    "code_ref": "technical_rules_range.py:score_atr",
    "pitfall": "Lower volatility scores higher. It also sizes the scaled stop.",
    "probe": "atr",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35"
   },
   {
@@ -341,6 +399,8 @@
    "code_ref": "technical_rules_range.py:score_atr",
    "pitfall": "",
    "probe": "atr",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35"
   },
   {
@@ -352,6 +412,8 @@
    "code_ref": "technical_rules_range.py:score_stochastic",
    "pitfall": "Scored with %D (not shown): oversold high, overbought low.",
    "probe": "stochastic",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "%K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50"
   },
   {
@@ -363,6 +425,8 @@
    "code_ref": "technical_rules_range.py:score_stochastic",
    "pitfall": "",
    "probe": "stochastic",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "%K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50"
   },
   {
@@ -374,6 +438,8 @@
    "code_ref": "technical_rules_range.py:score_williams",
    "pitfall": "",
    "probe": "williams",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25"
   },
   {
@@ -385,6 +451,8 @@
    "code_ref": "technical_rules_range.py:score_williams",
    "pitfall": "",
    "probe": "williams",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25"
   },
   {
@@ -396,6 +464,8 @@
    "code_ref": "technical_rules_range.py:score_choppiness",
    "pitfall": "",
    "probe": "chop",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 38.2 -> 75; x >= 38.2 and <= 61.8 -> 50; x > 61.8 -> 30"
   },
   {
@@ -407,6 +477,8 @@
    "code_ref": "technical_rules_range.py:score_choppiness",
    "pitfall": "",
    "probe": "chop",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < 38.2 -> 75; x >= 38.2 and <= 61.8 -> 50; x > 61.8 -> 30"
   },
   {
@@ -418,6 +490,8 @@
    "code_ref": "technical_rules_pattern.py:score_kernel",
    "pitfall": "Below the smoothed line is scored bullish (contrarian).",
    "probe": "nw",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < -1% -> 70; x >= -1% and <= 1% -> 50; x > 1% -> 30"
   },
   {
@@ -429,6 +503,8 @@
    "code_ref": "technical_rules_pattern.py:score_kernel",
    "pitfall": "",
    "probe": "nw",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x < -1% -> 70; x >= -1% and <= 1% -> 50; x > 1% -> 30"
   },
   {
@@ -440,6 +516,8 @@
    "code_ref": "technical_rules_pattern.py:score_turnaround",
    "pitfall": "",
    "probe": "turnaround",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "signal -> 75; otherwise -> 50"
   },
   {
@@ -451,6 +529,8 @@
    "code_ref": "technical_rules_pattern.py",
    "pitfall": "",
    "probe": "turnaround",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "signal -> 75; otherwise -> 50"
   },
   {
@@ -462,6 +542,8 @@
    "code_ref": "technical_rules.py:score_technical",
    "pitfall": "Fewer indicators = a noisier technical_score.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -473,6 +555,8 @@
    "code_ref": "scoring.py",
    "pitfall": "Below 200 the SMA-200 and golden cross cannot compute and are absent.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -484,6 +568,8 @@
    "code_ref": "agents/analyst/domain/relative_strength.py:compute_relative_strength",
    "pitfall": "The SCANNER's relative_strength is a different metric with the same name: the stock's own total return as a fraction (0.12 = +12 %), with no benchmark. Check which block the value is in.",
    "probe": "rs",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -5 pp -> 20; x > -5 pp and <= 0 pp -> 40; x > 0 pp and <= 5 pp -> 60; x > 5 pp -> 80"
   },
   {
@@ -495,6 +581,8 @@
    "code_ref": "relative_strength.py:score_relative_strength",
    "pitfall": "",
    "probe": "rs",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "x <= -5 pp -> 20; x > -5 pp and <= 0 pp -> 40; x > 0 pp and <= 5 pp -> 60; x > 5 pp -> 80"
   },
   {
@@ -506,6 +594,8 @@
    "code_ref": "fundamental_rules.py:_FUNDAMENTAL_RULES",
    "pitfall": "NOT the P/E ratio. The ratio is peBasicExclExtraTTM in the Fundamentals line. A loss-maker has no pe key at all.",
    "probe": "fund:pe",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = peBasicExclExtraTTM or peTTM; first match wins: raw < 10 -> 80; raw <= 25 -> 60; otherwise -> 30 Non-positive raw values are skipped (no key)"
   },
   {
@@ -517,6 +607,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "NOT the ratio; raw value is pbQuarterly.",
    "probe": "fund:pb",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = pbQuarterly or pbAnnual; first match wins: raw < 1.5 -> 80; raw <= 3 -> 60; raw <= 5 -> 40; otherwise -> 20 Non-positive raw values are skipped (no key)"
   },
   {
@@ -528,6 +620,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "NOT the ratio; raw value is roeTTM (in %).",
    "probe": "fund:roe",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = roeTTM; first match wins: raw > 15 -> 80; raw > 5 -> 55; otherwise -> 25"
   },
   {
@@ -539,6 +633,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "Raw value is netProfitMarginTTM (in %).",
    "probe": "fund:net_margin",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = netProfitMarginTTM; first match wins: raw > 20 -> 80; raw > 10 -> 55; otherwise -> 30"
   },
   {
@@ -550,6 +646,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "Raw value is currentRatioQuarterly.",
    "probe": "fund:current_ratio",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = currentRatioQuarterly; first match wins: raw > 1.5 -> 70; raw > 1 -> 50; otherwise -> 25 Non-positive raw values are skipped (no key)"
   },
   {
@@ -561,6 +659,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "A HIGH debt_equity sub-score means LOW leverage.",
    "probe": "fund:debt_equity",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = totalDebt/totalEquityQuarterly or totalDebt/totalEquityAnnual; first match wins: raw < 0.5 -> 80; raw < 1 -> 65; raw < 2 -> 45; otherwise -> 20"
   },
   {
@@ -572,6 +672,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "Raw value is epsGrowthTTMYoy (in %).",
    "probe": "fund:eps_growth",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = epsGrowthTTMYoy; first match wins: raw > 20 -> 85; raw > 5 -> 65; raw > -5 -> 45; otherwise -> 20"
   },
   {
@@ -583,6 +685,8 @@
    "code_ref": "fundamental_rules.py",
    "pitfall": "Raw value is revenueGrowthTTMYoy (in %).",
    "probe": "fund:revenue_growth",
+   "alt_scales": [],
+   "pattern": "",
    "bands": "raw = revenueGrowthTTMYoy; first match wins: raw > 15 -> 80; raw > 5 -> 60; raw > -5 -> 45; otherwise -> 25"
   },
   {
@@ -594,6 +698,8 @@
    "code_ref": "fundamental_rules.py:score_fundamental",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -605,6 +711,8 @@
    "code_ref": "Finnhub metric; scored into pe",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -616,6 +724,8 @@
    "code_ref": "Finnhub; scored into pb",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -627,6 +737,8 @@
    "code_ref": "Finnhub; scored into roe",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -638,6 +750,8 @@
    "code_ref": "Finnhub; scored into net_margin",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -649,6 +763,8 @@
    "code_ref": "Finnhub; scored into current_ratio",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -660,6 +776,8 @@
    "code_ref": "Finnhub; scored into debt_equity",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -671,6 +789,8 @@
    "code_ref": "Finnhub; scored into eps_growth",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -682,6 +802,8 @@
    "code_ref": "Finnhub; scored into revenue_growth",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -693,6 +815,8 @@
    "code_ref": "agents/analyst/domain/stop_target.py",
    "pitfall": "In scaled mode it is a multiple of atr_pct.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -704,6 +828,8 @@
    "code_ref": "stop_target.py",
    "pitfall": "In scaled mode it is the trailing median 10-session favorable excursion (favorable_excursion_pct), which can be SMALLER than the stop.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -715,6 +841,8 @@
    "code_ref": "stop_target.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -726,6 +854,8 @@
    "code_ref": "stop_target.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -737,6 +867,8 @@
    "code_ref": "target_excursion_metrics.py",
    "pitfall": "A fraction here, while the stop/target lines show percent.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -748,6 +880,8 @@
    "code_ref": "target_excursion_metrics.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -759,6 +893,8 @@
    "code_ref": "target_excursion_metrics.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -770,6 +906,8 @@
    "code_ref": "target_excursion_metrics.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -781,6 +919,8 @@
    "code_ref": "agents/portfolio_manager/domain/gate_report.py",
    "pitfall": "The gate is DISCLOSURE_ONLY at threshold 0 on the fleet: a ratio below 1 still PASSES.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -792,6 +932,8 @@
    "code_ref": "stop_target",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -803,6 +945,8 @@
    "code_ref": "agents/scanner/domain/ranking.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -814,6 +958,8 @@
    "code_ref": "ranking.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -825,6 +971,8 @@
    "code_ref": "scanner filters.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -836,6 +984,8 @@
    "code_ref": "scanner filters.py",
    "pitfall": "Filtered at max_beta; matters more in risk-off regimes.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -847,6 +997,8 @@
    "code_ref": "scanner filters.py:_days_to_earnings",
    "pitfall": "Names inside the earnings exclusion are already dropped; a value just above it means the report lands inside a 10-session hold.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -858,6 +1010,8 @@
    "code_ref": "scanner filters.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -869,6 +1023,8 @@
    "code_ref": "agents/provider/domain/regime.py:classify_regime",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -880,6 +1036,8 @@
    "code_ref": "provider regime",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -891,6 +1049,8 @@
    "code_ref": "provider settings",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -902,6 +1062,8 @@
    "code_ref": "provider settings",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -913,6 +1075,8 @@
    "code_ref": "provider settings",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -924,6 +1088,8 @@
    "code_ref": "provider settings",
    "pitfall": "Nothing in the fleet sells on this horizon today (work-queue 92).",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -935,6 +1101,8 @@
    "code_ref": "agents/portfolio_manager/domain/sizing.py",
    "pitfall": "Fleet cap is 1 % of the portfolio per name.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -946,6 +1114,8 @@
    "code_ref": "portfolio_manager/domain/correlation.py",
    "pitfall": "NOT-EVALUATED while deployment is below its floor: the gate did not look, it did not pass.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -957,6 +1127,8 @@
    "code_ref": "portfolio_manager/domain/concentration.py",
    "pitfall": "NOT-EVALUATED below the deployment floor.",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -968,6 +1140,8 @@
    "code_ref": "portfolio_manager/domain/concentration.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -979,6 +1153,8 @@
    "code_ref": "position_gates.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -990,6 +1166,8 @@
    "code_ref": "position_gates.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
    "bands": ""
   },
   {
@@ -1001,6 +1179,844 @@
    "code_ref": "position_gates.py",
    "pitfall": "",
    "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "quantity_shares",
+   "pillar": "order",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Shares the PM approved for this order.",
+   "code_ref": "agents/portfolio_manager/domain/sizing.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "est_price_usd",
+   "pillar": "order",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Price the PM sized the order at (latest close).",
+   "code_ref": "portfolio_manager run.py:latest_close_prices",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "stop_pct",
+   "pillar": "order",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "The order's protective stop distance below entry.",
+   "code_ref": "PM gate_report.py",
+   "pitfall": "Rendered as PERCENT in the 'PM order' line (4.64%) and as a FRACTION in the reward_risk detail (0.0464).",
+   "probe": "",
+   "alt_scales": [
+    "fraction"
+   ],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "target_pct",
+   "pillar": "order",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "The order's profit target above entry.",
+   "code_ref": "PM gate_report.py",
+   "pitfall": "PERCENT in the 'PM order' line, FRACTION in the reward_risk detail.",
+   "probe": "",
+   "alt_scales": [
+    "fraction"
+   ],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "open_usd",
+   "pillar": "market_data",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Latest daily bar: open.",
+   "code_ref": "provider MarketData.bars",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "high_usd",
+   "pillar": "market_data",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Latest daily bar: high.",
+   "code_ref": "provider MarketData.bars",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "low_usd",
+   "pillar": "market_data",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Latest daily bar: low.",
+   "code_ref": "provider MarketData.bars",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "close_usd",
+   "pillar": "market_data",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Latest daily bar: close.",
+   "code_ref": "provider MarketData.bars",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "volume_shares",
+   "pillar": "market_data",
+   "scale": "shares",
+   "direction": "higher_better",
+   "what": "Latest daily bar: volume.",
+   "code_ref": "provider MarketData.bars",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "requested_tickers",
+   "pillar": "data_quality",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Tickers the provider was asked for in this run.",
+   "code_ref": "provider DataQualityTrace",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "returned_tickers",
+   "pillar": "data_quality",
+   "scale": "count",
+   "direction": "higher_better",
+   "what": "Tickers it returned; below requested means missing data.",
+   "code_ref": "provider DataQualityTrace",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "universe_tickers",
+   "pillar": "scanner",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Size of the scanner's universe this run.",
+   "code_ref": "scanner FilterTrace",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "evaluated_tickers",
+   "pillar": "scanner",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Tickers the scanner evaluated.",
+   "code_ref": "scanner FilterTrace",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "flat_stop_pct",
+   "pillar": "risk",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "Stop under the flat mode (the regime base stop).",
+   "code_ref": "analyst stop_target.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "flat_target_pct",
+   "pillar": "risk",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "Target under the flat mode.",
+   "code_ref": "analyst stop_target.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "scaled_stop_pct",
+   "pillar": "risk",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "Stop under the scaled mode: 2 x atr_pct on the fleet.",
+   "code_ref": "analyst stop_target.py",
+   "pitfall": "The fleet runs scaled, so this is the applied stop.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "scaled_target_pct",
+   "pillar": "risk",
+   "scale": "percent",
+   "direction": "not_directional",
+   "what": "Target under the scaled mode: the trailing favorable excursion.",
+   "code_ref": "analyst stop_target.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "flat_reward_risk_ratio",
+   "pillar": "risk",
+   "scale": "ratio",
+   "direction": "higher_better",
+   "what": "target/stop under the flat mode.",
+   "code_ref": "PM reward_risk_detail.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "scaled_reward_risk_ratio",
+   "pillar": "risk",
+   "scale": "ratio",
+   "direction": "higher_better",
+   "what": "target/stop under the scaled mode.",
+   "code_ref": "PM reward_risk_detail.py",
+   "pitfall": "Below 1 means the target is closer than the stop.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "decision_atr_pct",
+   "pillar": "risk",
+   "scale": "percent",
+   "direction": "lower_better",
+   "what": "ATR % the analyst had at decision time, carried on the order.",
+   "code_ref": "contracts/portfolio_manager.py:OrderIntent",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "portfolio_value_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "The account EQUITY the PM sizes against (cash + holdings).",
+   "code_ref": "agents/portfolio_manager/graph_portfolio.py",
+   "pitfall": "Equity, not cash: the PM's `cash` field carries equity in production.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "deployed_portfolio_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Market value of current holdings: the denominator of the sector and cluster gates.",
+   "code_ref": "PM concentration.py / correlation.py",
+   "pitfall": "Concentration is measured against DEPLOYED capital, not equity.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "position_value_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "This order's value (sizing gate).",
+   "code_ref": "PM sizing.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "existing_issuer_value_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "lower_better",
+   "what": "Value already held in this issuer.",
+   "code_ref": "PM sizing.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "existing_sector_issuers",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "lower_better",
+   "what": "Issuers already held in this sector.",
+   "code_ref": "PM concentration.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "held_sector_value_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "lower_better",
+   "what": "Value already held in this sector.",
+   "code_ref": "PM sector_gate_outcomes.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "deployed_this_batch_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Cost of other orders approved earlier in this batch, in this sector.",
+   "code_ref": "PM sector_book.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "order_cost_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "This order's cost (sector gate).",
+   "code_ref": "PM sector_gate_outcomes.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "cash_buffer_pct",
+   "pillar": "pm_gate",
+   "scale": "fraction",
+   "direction": "not_directional",
+   "what": "Share of equity the PM keeps as cash (0.05 = 5 %).",
+   "code_ref": "PM settings cash_buffer_pct",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "reserved_cash_this_batch_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Cash already reserved by earlier orders this batch.",
+   "code_ref": "PM position_gates.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "deployment_pct",
+   "pillar": "pm_gate",
+   "scale": "fraction",
+   "direction": "not_directional",
+   "what": "Deployed capital / equity.",
+   "code_ref": "PM deployment_floor.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "deployment_floor_pct",
+   "pillar": "pm_gate",
+   "scale": "fraction",
+   "direction": "not_directional",
+   "what": "Below this deployment the concentration gates do not evaluate.",
+   "code_ref": "PM deployment_floor.py",
+   "pitfall": "NOT-EVALUATED below the floor means the gate did not look.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "cluster_value_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "lower_better",
+   "what": "Order cost + this issuer's holding + each correlated holding x its ramp weight.",
+   "code_ref": "PM correlation.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "cluster_weight_total",
+   "pillar": "pm_gate",
+   "scale": "weight_sum",
+   "direction": "lower_better",
+   "what": "Sum of the ramp weights of held issuers correlated with this one.",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "examined_issuers",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Held issuers the correlation gate compared with this one.",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "correlated_issuers",
+   "pillar": "pm_gate",
+   "scale": "compound",
+   "direction": "lower_better",
+   "what": "Each held issuer above the ramp start, as TICKER:correlation:wWEIGHT (daily-return correlation over the lookback; weight from the ramp).",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "A correlation of 0.70 counts about half of that holding toward the cluster.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "below_threshold_top",
+   "pillar": "pm_gate",
+   "scale": "compound",
+   "direction": "not_directional",
+   "what": "The highest correlations that stayed below the ramp start, TICKER:correlation.",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "correlation_ramp",
+   "pillar": "pm_gate",
+   "scale": "compound",
+   "direction": "not_directional",
+   "what": "Correlations at or below the first number count 0, at or above the second count fully, linear in between.",
+   "code_ref": "PM correlation_ramp.py:contribution",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "min_pair_overlap_bars",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "higher_better",
+   "what": "Fewest overlapping bars in any compared pair.",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "skipped_pairs",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "lower_better",
+   "what": "Pairs skipped for too little overlapping history.",
+   "code_ref": "PM correlation_census.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_portfolio_ratio",
+   "pillar": "pm_gate",
+   "scale": "ratio",
+   "direction": "not_directional",
+   "what": "sizing cap: max position value / equity (fleet: 0.01).",
+   "code_ref": "PM settings max_position_pct",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_shares",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "min_order_quantity threshold.",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_positions",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "max_positions threshold (fleet: 60).",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_available_cash_usd",
+   "pillar": "pm_gate",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Cash available for this order after buffer and reservations.",
+   "code_ref": "PM position_gates.py",
+   "pitfall": "Rendered in scientific notation (7.441e+04 = 74,410).",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_reward_risk_ratio",
+   "pillar": "pm_gate",
+   "scale": "ratio",
+   "direction": "not_directional",
+   "what": "reward_risk threshold (fleet: 0, disclosure only).",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_sector_exposure_ratio",
+   "pillar": "pm_gate",
+   "scale": "ratio",
+   "direction": "not_directional",
+   "what": "max_sector_pct threshold (share of deployed capital).",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_sector_issuers",
+   "pillar": "pm_gate",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "max_names_per_sector threshold.",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "threshold_cluster_exposure_ratio",
+   "pillar": "pm_gate",
+   "scale": "ratio",
+   "direction": "not_directional",
+   "what": "max_correlated_cluster_pct threshold (share of deployed capital).",
+   "code_ref": "PM settings",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "macd_line_price",
+   "pillar": "supplement",
+   "scale": "raw_indicator",
+   "direction": "higher_better",
+   "what": "MACD line (fast EMA - slow EMA), price units.",
+   "code_ref": "analyst indicators.py:macd",
+   "pitfall": "Its sign decides macd_histogram_score together with the histogram.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "macd_signal_price",
+   "pillar": "supplement",
+   "scale": "raw_indicator",
+   "direction": "not_directional",
+   "what": "MACD signal line; histogram = line - signal.",
+   "code_ref": "analyst indicators.py:macd",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "stochastic_d",
+   "pillar": "supplement",
+   "scale": "raw_indicator",
+   "direction": "contrarian_low_is_bullish",
+   "what": "Stochastic %D (smoothed %K); scored together with %K.",
+   "code_ref": "analyst indicators_range.py:stochastic",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "obv_signal",
+   "pillar": "supplement",
+   "scale": "raw_indicator",
+   "direction": "not_directional",
+   "what": "OBV signal line; OBV above it scores 70, below 35.",
+   "code_ref": "analyst indicators_event.py:obv",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "sma_N_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Simple moving average over the N days in the key (sma_50_usd, sma_200_usd).",
+   "code_ref": "analyst indicators.py",
+   "pitfall": "sma_50 above sma_200 is the golden cross; close vs sma_200 is sma_distance_pct.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "sma_\\d+_usd",
+   "bands": ""
+  },
+  {
+   "key": "ema_N_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Exponential moving average over the N days in the key (short and long).",
+   "code_ref": "analyst indicators.py",
+   "pitfall": "ema_spread_pct is the short-minus-long gap as % of price.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "ema_\\d+_usd",
+   "bands": ""
+  },
+  {
+   "key": "bollinger_middle_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Bollinger middle band (window SMA).",
+   "code_ref": "analyst indicators.py:bollinger_position",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "bollinger_upper_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Bollinger upper band (middle + sigma x std).",
+   "code_ref": "analyst indicators.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "bollinger_lower_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Bollinger lower band (middle - sigma x std).",
+   "code_ref": "analyst indicators.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "account_cash_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Broker cash.",
+   "code_ref": "graph_portfolio.py account_cash_cents",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "account_equity_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Broker equity (cash + holdings).",
+   "code_ref": "graph_portfolio.py account_equity_cents",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "buying_power_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Broker buying power.",
+   "code_ref": "graph_portfolio.py account_buying_power_cents",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "deployed_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Market value of current holdings.",
+   "code_ref": "graph_portfolio.py position_values",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "open_positions",
+   "pillar": "supplement",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Number of current holdings.",
+   "code_ref": "graph_portfolio.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "bands": ""
+  },
+  {
+   "key": "holding_TICKER_shares",
+   "pillar": "supplement",
+   "scale": "count",
+   "direction": "not_directional",
+   "what": "Shares held in that ticker.",
+   "code_ref": "graph_portfolio.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "holding_[A-Z]+_shares",
+   "bands": ""
+  },
+  {
+   "key": "holding_TICKER_value_usd",
+   "pillar": "supplement",
+   "scale": "usd",
+   "direction": "not_directional",
+   "what": "Market value held in that ticker.",
+   "code_ref": "graph_portfolio.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "holding_[A-Z]+_value_usd",
    "bands": ""
   }
  ]

@@ -30,6 +30,7 @@ def bars(
     phase: float = 0.0,
     volume: int = 3_000_000,
     n: int = 300,
+    period: float = 2.7,
 ) -> tuple[OHLCVBar, ...]:
     """Piecewise drift: segments = [(sessions, daily_drift), ...]; the last segments end on END."""
     drifts: list[float] = []
@@ -40,7 +41,7 @@ def bars(
     price, out = start, []
     for i, (day, drift) in enumerate(zip(days, drifts, strict=True)):
         prev = price
-        price *= 1 + drift + wiggle * math.sin(i / 2.7 + phase)
+        price *= 1 + drift + wiggle * math.sin(i / period + phase)
         hi, lo = max(prev, price) * 1.006, min(prev, price) * 0.994
         out.append(
             OHLCVBar(

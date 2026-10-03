@@ -13,7 +13,7 @@ import re
 import dspy
 from dspy.lm15 import Message, Response, TextPart, Usage, response_to_events
 
-from .laws import packet_values
+from .laws import _expected_direction, _num, _unit_of, packet_values, required_numbers
 
 # $ per million tokens (input, output), from Anthropic's price list cached 2026-09-25.
 PRICES = {
@@ -49,7 +49,7 @@ def _field(text: str, name: str) -> str:
 
 
 def _r(pv, key, scale, direction, weight="high", meaning="", value=None):
-    v = value if value is not None else (pv[key][0][0] if key in pv else "n/a")
+    v = value if value is not None else (pv[key][0].value if key in pv else "n/a")
     return {
         "metric": key,
         "value": v,
@@ -62,10 +62,31 @@ def _r(pv, key, scale, direction, weight="high", meaning="", value=None):
 
 def _fav(pv, key, lo=40, hi=60):
     try:
-        v = float(pv[key][0][0])
+        v = float(pv[key][0].value)
     except (KeyError, ValueError):
         return "neutral"
     return "favourable" if v >= hi else "unfavourable" if v <= lo else "neutral"
+
+
+def _all_readings(packet: str, pv: dict, high: tuple[str, ...] = ()) -> list[dict]:
+    """One reading per number in the packet, with the unit and direction our own code implies."""
+    out = []
+    for key, groups in required_numbers(packet).items():
+        for g in groups:
+            o = g[0]
+            v = _num(o.value)
+            d = _expected_direction(key, v, pv) if v is not None else None
+            out.append(
+                {
+                    "metric": key,
+                    "value": o.raw,
+                    "scale": _unit_of(key, o) or "raw_indicator",
+                    "meaning_here": f"{key} as the dictionary defines it",
+                    "direction": d or "neutral",
+                    "weight": "high" if key in high else "low",
+                }
+            )
+    return out
 
 
 def fake_reply(system: str, user: str) -> str:
@@ -91,6 +112,7 @@ def fake_reply(system: str, user: str) -> str:
                     "contrarian: oversold is only support when the trend agrees (H7)",
                 ),
             ]
+            own = _all_readings(packet, pv, high=("sma_distance_pct", "rs_score"))
             ruling = {
                 "own_readings": own,
                 "decisive": ["sma_distance_pct", "rs_score"],
@@ -117,7 +139,7 @@ def fake_reply(system: str, user: str) -> str:
         out = {"ruling": ruling}
     else:
         side = "con" if ("CON deliberator" in system or "CHALLENGER" in system) else "pro"
-        conf = pv.get("confidence_score", [("0", "")])[0][0]
+        conf = pv["confidence_score"][0].value if "confidence_score" in pv else "0"
         reads = [
             _r(pv, "rsi_score", "sub_score_0_100", _fav(pv, "rsi_score"), "medium"),
             _r(pv, "sma_distance_pct", "percent", _fav(pv, "sma_distance_pct_score")),
@@ -132,6 +154,8 @@ def fake_reply(system: str, user: str) -> str:
         ]
         if not careful:
             reads.append(_r(pv, "pe", "ratio", "favourable", "medium", "a P/E ratio"))
+        if careful:
+            reads = _all_readings(packet, pv, high=("sma_distance_pct",))
         out = {
             "brief": {
                 "readings": reads,

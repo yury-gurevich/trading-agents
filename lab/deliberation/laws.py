@@ -1,4 +1,8 @@
-"""Decision code, Tier A form laws (DEC-FORM-01..06), checked by code on every seat's typed output.
+"""Decision code, Tier A form laws (DEC-FORM-01..07), checked by code on every seat's typed output.
+
+DEC-FORM-07 is the operator's rule (2026-10-03): ALL quant numbers are presented to and interpreted by
+the deliberators. Every number in the packet must be read by each seat: copied, its scale named, its
+meaning stated, its direction and weight given.
 
 Each violation carries feedback that quotes the dictionary entry, so a retry (and later GEPA) is told
 what the key means in this system, not just that it was wrong.
@@ -9,11 +13,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .book.entries import ENTRIES
+from .book.entries import lookup
 from .book.house_rules import RULES
 from .outputs import Brief, Reading, Ruling
 
-DICT = {e.key: e for e in ENTRIES}
 RAW_TO_SCORE = {
     "peBasicExclExtraTTM": "pe",
     "pbQuarterly": "pb",
@@ -24,8 +27,18 @@ RAW_TO_SCORE = {
     "epsGrowthTTMYoy": "eps_growth",
     "revenueGrowthTTMYoy": "revenue_growth",
 }
-NON_MARKET_PILLARS = {"pm_gate"}  # H4: process facts are never the basis
-_PAIR = re.compile(r"([A-Za-z_][A-Za-z0-9_/]*)=([^\s,;}\)\]]+)")
+NON_MARKET_PILLARS = {"pm_gate", "order", "data_quality"}  # H4: process facts are never the basis
+# A value stops at a separator OR an opening brace, so `quant_metrics=...{atr_pct=1.6` yields atr_pct too.
+_PAIR = re.compile(r"([A-Za-z_][A-Za-z0-9_/]*)=([^\s,;{}\)\]]+)")
+_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+@dataclass(frozen=True)
+class Occ:
+    value: str  # as rendered, without a trailing %
+    raw: str  # as rendered
+    block: str  # the line's leading words: "Analyst recommendation for X", "Scanner candidate ..."
+    line: str
 
 
 @dataclass(frozen=True)
@@ -36,38 +49,13 @@ class Violation:
     feedback: str
 
 
-def packet_values(context: str) -> dict[str, list[tuple[str, str]]]:
-    """key -> [(value as rendered, block)], block = the line's leading words (Analyst, Scanner, ...)."""
-    out: dict[str, list[tuple[str, str]]] = {}
+def packet_values(context: str) -> dict[str, list[Occ]]:
+    out: dict[str, list[Occ]] = {}
     for line in context.splitlines():
-        block = line.split(":", 1)[0][:40]
+        block = line.split(":", 1)[0][:60]
         for k, v in _PAIR.findall(line):
-            out.setdefault(k, []).append((v.rstrip("%"), block))
+            out.setdefault(k, []).append(Occ(v.rstrip("%"), v, block, line))
     return out
-
-
-def _entry_text(key: str) -> str:
-    e = DICT.get(key)
-    if e is None:
-        return f"`{key}` is not a key of the packet dictionary."
-    bands = next((x["bands"] for x in _BOOK()["entries"] if x["key"] == key), "")
-    txt = f"`{key}` [{e.scale}; {e.direction}]: {e.what}"
-    if bands:
-        txt += f" Bands: {bands}."
-    if e.pitfall:
-        txt += f" CAUTION: {e.pitfall}"
-    return txt
-
-
-_BOOK_CACHE: dict = {}
-
-
-def _BOOK() -> dict:  # noqa: N802
-    if not _BOOK_CACHE:
-        from .book.dictionary import generate
-
-        _BOOK_CACHE.update(generate())
-    return _BOOK_CACHE
 
 
 def _num(s: str) -> float | None:
@@ -77,20 +65,88 @@ def _num(s: str) -> float | None:
         return None
 
 
-def _expected_direction(key: str, value: float, pv: dict) -> str | None:
-    """What the code's own scoring implies for a buy: favourable / unfavourable / None (no clear call)."""
-    e = DICT.get(key)
-    score_key = RAW_TO_SCORE.get(key) or (f"{key}_score" if f"{key}_score" in pv else None)
+def _resolution(s: str) -> float:
+    """Half a unit in the last rendered digit: '2.32' -> 0.005, '7.441e+04' -> 5."""
+    mant, _, exp = s.rstrip("%").lower().partition("e")
+    decimals = len(mant.split(".")[1]) if "." in mant else 0
+    return 0.5 * 10 ** (-decimals) * 10 ** (int(exp) if exp else 0)
+
+
+def _same(a: str, b: str) -> bool:
+    fa, fb = _num(a), _num(b)
+    if fa is None or fb is None:
+        return a == b
+    return abs(fa - fb) <= max(_resolution(a), _resolution(b)) + 1e-12
+
+
+def required_numbers(context: str) -> dict[str, list[list[Occ]]]:
+    """Every number the packet presents, grouped: key -> groups of renderings of the same number.
+
+    A key with two genuinely different numbers (the analyst's and the scanner's relative_strength,
+    stop_pct as 4.64% and as 0.0464) yields two groups, and each must be read.
+    """
+    out: dict[str, list[list[Occ]]] = {}
+    for k, occs in packet_values(context).items():
+        entry = lookup(k)
+        for o in occs:
+            numeric = bool(re.search(r"\d", o.value)) and not _DATE.match(o.value)
+            absent_quant = o.value == "n/a" and entry is not None and entry.pillar not in NON_MARKET_PILLARS
+            if not (numeric or absent_quant):
+                continue
+            groups = out.setdefault(k, [])
+            for g in groups:
+                if _same(g[0].value, o.value):
+                    g.append(o)
+                    break
+            else:
+                groups.append([o])
+    return out
+
+
+_BOOK_CACHE: dict = {}
+
+
+def _book() -> dict:
+    if not _BOOK_CACHE:
+        from .book.dictionary import generate
+
+        _BOOK_CACHE.update(generate())
+    return _BOOK_CACHE
+
+
+def entry_text(key: str) -> str:
+    e = lookup(key)
+    if e is None:
+        return f"`{key}` is not a key of the packet dictionary."
+    bands = next((x["bands"] for x in _book()["entries"] if x["key"] == e.key), "")
+    txt = f"`{key}` [{e.scale}; {e.direction}]: {e.what}"
+    if bands:
+        txt += f" Bands: {bands}."
+    if e.pitfall:
+        txt += f" CAUTION: {e.pitfall}"
+    return txt
+
+
+def _unit_of(key: str, o: Occ) -> str | None:
+    """The unit this particular rendering is in, for keys that appear in two units."""
+    e = lookup(key)
+    if e is None:
+        return None
     if key == "relative_strength":
-        score_key = "rs_score"
-    if score_key and score_key in pv and score_key != key:
-        v = _num(pv[score_key][0][0])
-        return None if v is None else _band(v, 100)
-    if e and e.scale == "sub_score_0_100":
-        return _band(value, 100)
-    if key in {"analyst_sentiment_score", "sentiment_score"}:
-        return _band(value, 1)
-    return None
+        return "fraction" if o.block.startswith("Scanner") else "percentage_points"
+    if "fraction" in e.alt_scales and e.scale == "percent":
+        return "percent" if o.raw.endswith("%") else "fraction"
+    return e.scale
+
+
+def _matches(r: Reading, o: Occ) -> bool:
+    v = r.value.strip().rstrip("%")
+    if v == o.value:
+        return True
+    got, have = _num(v), _num(o.value)
+    if got is not None and have is not None and got == have:
+        return True
+    return bool(v) and _num(v) is None and v in o.line  # a compound value copied from its line
 
 
 def _band(v: float, top: float) -> str | None:
@@ -101,44 +157,60 @@ def _band(v: float, top: float) -> str | None:
     return None
 
 
+def _expected_direction(key: str, value: float, pv: dict) -> str | None:
+    """What the code's own scoring implies for a buy: favourable / unfavourable / None (no clear call)."""
+    e = lookup(key)
+    score_key = RAW_TO_SCORE.get(key) or (f"{key}_score" if f"{key}_score" in pv else None)
+    if key == "relative_strength":
+        score_key = "rs_score"
+    if score_key and score_key in pv and score_key != key:
+        v = _num(pv[score_key][0].value)
+        return None if v is None else _band(v, 100)
+    if e and e.scale == "sub_score_0_100":
+        return _band(value, 100)
+    if key in {"analyst_sentiment_score", "sentiment_score"}:
+        return _band(value, 1)
+    return None
+
+
 def check_reading(r: Reading, pv: dict, seat: str) -> list[Violation]:
-    out: list[Violation] = []
-    occ = pv.get(r.metric)
-    if not occ:
+    occs = pv.get(r.metric)
+    if not occs:
         return [
             Violation(
                 "DEC-FORM-01",
                 r.metric,
                 f"{seat}: `{r.metric}` is not a key in the packet",
                 "Name the metric by its exact packet key (e.g. rsi_score), nothing else. "
-                + _entry_text(r.metric),
+                + entry_text(r.metric),
             )
         ]
-    got = _num(r.value)
-    match = [(v, b) for v, b in occ if v == r.value.rstrip("%") or (got is not None and _num(v) == got)]
-    if not match:
+    out: list[Violation] = []
+    matched = [o for o in occs if _matches(r, o)]
+    if not matched:
         out.append(
             Violation(
                 "DEC-FORM-01",
                 r.metric,
-                f"{seat}: {r.metric}={r.value} but the packet says {', '.join(v for v, _ in occ)}",
+                f"{seat}: {r.metric}={r.value} but the packet says {', '.join(o.raw for o in occs)}",
                 "Copy values exactly as written; do not round or recompute.",
             )
         )
-    e = DICT.get(r.metric)
+    e = lookup(r.metric)
     if e is not None:
-        allowed = {e.scale}
-        if r.metric == "relative_strength" and any(b.startswith("Scanner") for _, b in (match or occ)):
-            allowed.add("fraction")
+        allowed = {_unit_of(r.metric, o) for o in matched} if matched else {e.scale, *e.alt_scales}
+        if r.metric == "relative_strength" and not matched:
+            allowed |= {"fraction"}
         if r.scale not in allowed:
             out.append(
                 Violation(
                     "DEC-FORM-02",
                     r.metric,
-                    f"{seat}: read {r.metric} as {r.scale}; it is {'/'.join(sorted(allowed))}",
-                    _entry_text(r.metric),
+                    f"{seat}: read {r.metric}={r.value} as {r.scale}; here it is {'/'.join(sorted(allowed))}",
+                    entry_text(r.metric),
                 )
             )
+    got = _num(r.value)
     if got is not None:
         exp = _expected_direction(r.metric, got, pv)
         if exp and r.direction != "neutral" and r.direction != exp:
@@ -147,10 +219,31 @@ def check_reading(r: Reading, pv: dict, seat: str) -> list[Violation]:
                     "DEC-FORM-02",
                     r.metric,
                     f"{seat}: called {r.metric}={r.value} {r.direction}; our scoring makes it {exp}",
-                    _entry_text(r.metric),
+                    entry_text(r.metric),
                 )
             )
     return out
+
+
+def check_complete(readings: list[Reading], context: str, seat: str) -> list[Violation]:
+    """DEC-FORM-07: every number in the packet is read (operator rule, house rule H12)."""
+    missing = []
+    for key, groups in required_numbers(context).items():
+        mine = [r for r in readings if r.metric == key]
+        for g in groups:
+            if not any(_matches(r, o) for r in mine for o in g):
+                missing.append(f"{key}={g[0].raw}")
+    if not missing:
+        return []
+    return [
+        Violation(
+            "DEC-FORM-07",
+            ",".join(m.split("=")[0] for m in missing),
+            f"{seat}: {len(missing)} numbers in the packet were not read",
+            "House rule H12: read EVERY number in the packet, one reading each (a number that does not "
+            "matter is still read, with weight low and why). Not yet read: " + "; ".join(missing),
+        )
+    ]
 
 
 def _falsified(text: str, seat: str) -> list[Violation]:
@@ -169,16 +262,20 @@ def _falsified(text: str, seat: str) -> list[Violation]:
     return out
 
 
-def check_brief(b: Brief, context: str, seat: str) -> list[Violation]:
+def check_brief(b: Brief, context: str, seat: str, require_all: bool = True) -> list[Violation]:
     pv = packet_values(context)
     out = [v for r in b.readings for v in check_reading(r, pv, seat)]
+    if require_all:
+        out += check_complete(b.readings, context, seat)
     return out + _falsified(b.case + " " + " ".join(r.meaning_here for r in b.readings), seat)
 
 
-def check_ruling(rl: Ruling, context: str) -> list[Violation]:
+def check_ruling(rl: Ruling, context: str, require_all: bool = True) -> list[Violation]:
     seat = "judge"
     pv = packet_values(context)
     out = [v for r in rl.own_readings for v in check_reading(r, pv, seat)]
+    if require_all:
+        out += check_complete(rl.own_readings, context, seat)
     by_key = {r.metric: r for r in rl.own_readings}
     decisive = [by_key[k] for k in rl.decisive if k in by_key]
     for k in rl.decisive:
@@ -194,7 +291,7 @@ def check_ruling(rl: Ruling, context: str) -> list[Violation]:
     market = [
         r
         for r in decisive
-        if r.weight == "high" and r.metric in DICT and DICT[r.metric].pillar not in NON_MARKET_PILLARS
+        if r.weight == "high" and lookup(r.metric) and lookup(r.metric).pillar not in NON_MARKET_PILLARS
     ]
     if not market:
         out.append(

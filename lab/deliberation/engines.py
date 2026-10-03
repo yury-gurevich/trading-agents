@@ -8,6 +8,7 @@ and corrects itself once it is given law feedback.
 from __future__ import annotations
 
 import json
+import os
 import re
 
 import dspy
@@ -29,6 +30,10 @@ def make_lm(spec: dict):
     if spec["model"] == "fake":
         eng = FakeEngine()
         return dspy.LM("fake/expert", engine=eng, cache=False)
+    # Without its key every call fails, and a failed call must never be graded as the model's answer.
+    key = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}.get(spec["model"].split("/", 1)[0])
+    if key and not os.environ.get(key):
+        raise SystemExit(f"REFUSED: {spec['model']} needs {key} in the environment; no call was made.")
     kwargs = {"max_tokens": spec.get("max_tokens", 16000), "cache": False, "num_retries": 3}
     if spec.get("effort"):
         kwargs["reasoning_effort"] = spec["effort"]

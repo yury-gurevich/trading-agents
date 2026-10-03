@@ -51,6 +51,9 @@ the evidence, **use** it, and decide on **market evidence**? It does not just de
 From the repo root:
 
 ```bash
+# 0. once per environment: the barrier forecast needs `arch` (see the trap below)
+uv pip install arch==8.0.0 scipy==1.17.1
+
 # 1. rebuild the cases and the dictionary (deterministic, $0)
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.cases
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.book.dictionary
@@ -101,6 +104,18 @@ thinking allowance]*:
 | `lab_t2_book_complete_strict` | The same, but every seat reads every number: what the relaxation saves | $7.91 ($39) |
 
 For two cases on `lab_t2_book_complete`: $1.71 ($9.71).
+
+🪤 **Without `arch` the rebuild silently drops the barrier forecast.** `arch` belongs to the
+`forecaster` extra, and that extra also pulls `torch`, which a claude.ai cloud session cannot download.
+Without it, every case's forecast line reads `no claim (ConfigurationError)`, six numbers per case
+disappear, and the counts fall from 164 to 158 for the judge and from 31 to 25 withheld. Step 0
+installs `arch` alone, at its locked version, into the venv; `uv.lock` is not touched. **Check that
+the rebuild leaves `git status` clean.** *[measured 2026-10-03]*
+
+**A real run refuses to start when the provider's key is missing**, before any call. A call that
+fails partway through (authentication, transport, provider) is reported as **NOT GRADED**, never as
+the model failing the test, and `explain_run` then exits 3. *[measured 2026-10-03: before this fix,
+a run with no key exited 0 and reported "0 of 6 pass"]*
 
 🪤 **The `production` instruction arm is production's role text inside the lab's typed output
 contract**, not a byte-for-byte replay. Production's judge prompt asks for a one-line JSON answer, and
@@ -201,8 +216,10 @@ budget, is the first thing the real run will show.
 
 ## Next
 
-1. **First real run, on the operator's machine** (a session started there with `claude remote-control`, or
-   by hand): **the iteration 1 explain test first**, seed prompt, on two cases, then all eight. Then
+1. **First real run, in a claude.ai cloud session** (DL-264 amendment 11), with `ANTHROPIC_API_KEY`
+   set as an environment variable in the environment's settings. **Attempted 2026-10-03: blocked**,
+   because the key was not in that session's environment (no call made, $0). The $0 steps all passed
+   there. **The iteration 1 explain test comes first**, seed prompt, on two cases, then all eight. Then
    **compile the judge** and compare seed with compiled on the held-out cases. Only if the explain test
    passes do the deciding variants follow, with a stated cap. If it fails, the misread keys it lists show
    what the book or the prompt must fix.

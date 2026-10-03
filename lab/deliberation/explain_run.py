@@ -21,6 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 import dspy
+from dspy.utils.exceptions import LMError
 
 from .book.house_rules import render as render_rules
 from .engines import make_lm, price
@@ -148,6 +149,8 @@ def explain_case(c: dict, variant: dict, programs: dict, book: str) -> dict:
                 seats[s] = {
                     "mode": mode,
                     "error": f"{type(e).__name__}: {str(e)[:300]}",
+                    # a provider error is no answer at all: not graded, not counted, and the run exits non-zero
+                    "provider_error": isinstance(e, LMError),
                     "pass": {"parsed": False},
                 }
     return {"case": c["name"], "expert_view": c["expert_view"], "seats": seats}
@@ -173,9 +176,15 @@ def report(results: list[dict], variant: dict, engine: str, cost: dict) -> str:
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     fails, misread, deriv_wrong = Counter(), Counter(), Counter()
-    n_pass = n = 0
+    n_pass = n = n_provider = 0
     for r in results:
         for s, d in r["seats"].items():
+            if d.get("provider_error"):
+                lines.append(
+                    f"| {r['case']} | {s} | PROVIDER ERROR, NOT GRADED: {d['error'][:80]} ||||||||||| - |"
+                )
+                n_provider += 1
+                continue
             n += 1
             if d["error"]:
                 lines.append(f"| {r['case']} | {s} | PARSE FAILED: {d['error'][:80]} ||||||||||| FAIL |")
@@ -200,6 +209,11 @@ def report(results: list[dict], variant: dict, engine: str, cost: dict) -> str:
         f"**{n_pass} of {n} seat-cases pass.** Failed checks: "
         + (", ".join(f"{k} ({v})" for k, v in fails.most_common()) or "none"),
         "",
+        *(
+            [f"**{n_provider} seat-cases NOT GRADED: the provider call failed.** Re-run them.", ""]
+            if n_provider
+            else []
+        ),
         "Derivations most often wrong: "
         + (", ".join(f"{k} ({v})" for k, v in deriv_wrong.most_common()) or "none"),
         "",
@@ -291,8 +305,13 @@ def main(argv=None) -> int:
     )
     (out / "report.md").write_text(report(results, variant, label, cost))
     ok = sum(all(d["pass"].values()) for r in results for d in r["seats"].values())
-    print(f"{ok}/{len(seats) * len(results)} seat-cases pass; wrote {out / 'report.md'}; cost {cost}")
-    return 0
+    bad = sum(bool(d.get("provider_error")) for r in results for d in r["seats"].values())
+    print(
+        f"{ok}/{len(seats) * len(results) - bad} graded seat-cases pass; wrote {out / 'report.md'}; cost {cost}"
+    )
+    if bad:
+        print(f"INCOMPLETE: {bad} seat-cases not graded (provider error); see the report")
+    return 3 if bad else 0
 
 
 if __name__ == "__main__":

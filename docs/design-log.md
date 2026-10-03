@@ -306,6 +306,25 @@ They are now the reference, not hypotheses. Changing either is an operator decis
 network path is confirmed (`api.anthropic.com` answers 401 without a key). If that run shows misreadings,
 **compile the judge only, capped at $15**; pro and con are decided after its result.
 
+**First attempt (cloud session, 2026-10-03): blocked, $0 spent.** `ANTHROPIC_API_KEY` was not in the
+session's environment, so no real call was made. `api.anthropic.com` answers 401 without a key. Every $0
+step passed there: the rebuild, ALL DEFINED, the prompt audit VALID on 8 × 3, and the fakes at
+good 24/24, flawed 0/24, hedging 0/24. Two defects were found and fixed, both in the lab only:
+
+- **The rebuild silently dropped the barrier forecast.** `arch` comes only with the `forecaster` extra,
+  whose `torch` the session cannot download. So every case read `no claim (ConfigurationError)`, and
+  six numbers per case were missing from the committed reference. Fix: install `arch` alone, at its
+  locked version, into the venv, and check that the rebuild leaves `git status` clean. With it, the
+  rebuild reproduces the committed cases byte for byte. *Ruled out:* committing the degraded cases,
+  because they would change the reference behind the operator's approval; and re-locking, because
+  `uv.lock` is off limits for the lab.
+- **A provider failure was graded as the model failing.** Without a key, `explain_run` exited 0 with
+  "0 of 6 seat-cases pass", which is indistinguishable from a model that cannot read the data. Fix:
+  `make_lm` refuses a real run when the provider's key variable is missing, before any call. A `dspy`
+  `LMError` partway through a run is reported as NOT GRADED, kept out of the pass count, and makes
+  `explain_run` exit 3; the seat-cases already paid for are still written. *Not yet applied* to
+  `run.py`'s deliberation loop or to GEPA's metric calls, because only the key preflight covers them.
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

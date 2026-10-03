@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-264 - the deliberators need a standalone lab that measures understanding, use and decisiveness per parameter, not a verdict - status: PROPOSED (operator ask, 2026-10-03; work-queue 97)
+## DL-264 - the deliberators need a standalone lab that measures understanding, use and decisiveness per parameter, not a verdict - status: PROPOSED, scope decided (operator, 2026-10-03; work-queue 97)
 
 **Question.** The operator does not trust that the deliberator trio understands its quant and sentiment
 evidence, or that the evidence determines its decisions, and doubts that DSPy delivered what was
@@ -35,9 +35,16 @@ harness (a consistently wrong referee passes); an LLM grader as the primary unde
 (shares the misreadings); keyword markers for meaning; the glossary in the docstring (GEPA rewrites
 it); `dspy` in images; GEPA before the metric exists.
 
-**Open, the operator's.** Whether a process-only ruling is ever legitimate; who authors expert cases;
-where recorded cases live (they carry the account's cash and holdings, and the repo is public); judge
-only or all three roles first; the budget for L2–L3 and L5.
+**Decided (operator, 2026-10-03).** (1) All three roles from the first pass, not the judge alone.
+(2) Decisions must rest on quant data used as an expert would: a process-only basis scores as a failure
+by default, and process-only rulings are reported in their own column so that whether any are
+legitimate is settled later on evidence. (3) The planner drafts the expert cases and the operator
+approves them. (4) Synthetic cases first; final validation on real, previously seen cases, whose
+storage is decided when they are first needed (default OneDrive). (5) The lab is additive and must not
+break anything that exists: new code only, production's renderer imported read-only with a byte-parity
+test, no live writes, `dspy` out of images.
+
+**Open, the operator's.** The budget for L2–L3, and later for L5.
 
 ---
 

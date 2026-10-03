@@ -1,6 +1,6 @@
 # The deliberation lab: a standalone bench for whether the expert understands its evidence
 
-**Part of:** [R009 · DSPy](INDEX.md) · **Date:** 2026-10-03 · **Status:** PROPOSED, nothing built
+**Part of:** [R009 · DSPy](INDEX.md) · **Date:** 2026-10-03 · **Status:** PROPOSED, nothing built; scope decisions taken 2026-10-03 (§9)
 ([DL-264](../../design-log.md)) · **Asked for by:** the operator, 2026-10-03
 
 > *"I want a standalone test environment that allows us to make changes to the prompt and its
@@ -215,7 +215,7 @@ optimise toward verdict agreement, which is what we already distrust.
 | Step | Delivers | You can then |
 | --- | --- | --- |
 | **L0 Glossary** | Answer key generated from code, with a coverage test | Read what each parameter means, in one place |
-| **L1 Bench** | Case files and export, variant files with production's renderer as baseline, runner, cache, budget, fake mode; the judge gets guided reasoning in the lab | Run any prompt variant over any case set offline |
+| **L1 Bench** | Synthetic case files (real-case export comes last), variant files with production's renderer as baseline, runner, cache, budget, fake mode; the judge gets guided reasoning in the lab | Run any prompt variant over any case set offline |
 | **L2 Understood + used** | Quiz and readings audit, with a report per role × parameter | See today's champion's baseline: which parameters each role misreads or ignores |
 | **L3 Decisive** | Perturbation, placebo, ablation and repeats, and the sensitivity matrix | See which parameters actually move the expert's decision |
 | **L4 Workbench** | Expert case library and an A vs B diff report | Change prompt or data presentation and see the effect, parameter by parameter |
@@ -243,13 +243,45 @@ L0–L3 answer your question about today's expert. L4 is the tool you asked for.
 
 ---
 
-## 9. Decisions that are yours
+## 9. Decisions (operator, 2026-10-03)
 
-1. **Is a ruling on process facts alone ever legitimate?** For example, overturning because the
-   earnings window was never checked. This sets whether Test 2 penalises such rulings.
-2. **Who authors the expert cases?** You write them, or the planner drafts candidates and you
-   approve the expected ruling and decisive parameters.
-3. **Where recorded cases live.** Packets carry the account's cash and holdings, and the repo is
-   public. The proposal is OneDrive, as with the replay cache, with synthetic and expert cases in the repo.
-4. **Scope of the first pass:** judge only (the measured gap), or all three roles.
-5. **Budget** for L2–L3, and later for L5.
+**Decided:**
+
+1. **All three roles from the first pass.** The defender, the challenger and the judge are all guided,
+   audited, quizzed and perturbed. That costs about three times the calls of a judge-only pass.
+2. **The decision rests on quant data, read and used as an expert would.** Operator: *"I want it to
+   be dependent on quant data and expert use of the quant data as a base for decision making."* So a
+   ruling or argument whose basis is process facts alone (gates passed, sizing, a missing
+   attestation) **scores as a failure in Test 2 by default**. Process facts may support a quant-based
+   case, but they are not its basis. The operator did not settle whether any process-only ruling is
+   ever legitimate, so the lab **reports process-only rulings as their own column**, with the case
+   quoted, so that question is decided later on evidence rather than in the abstract.
+3. **The planner drafts the expert cases, and the operator approves** each one's expected ruling and
+   decisive parameters.
+4. **Synthetic data first, real cases last.** L1–L4 run on synthetic cases built from the glossary.
+   Final validation runs on **real, previously seen cases** (recorded packets). Where those live is
+   decided when they are first needed, before L4's final run. The default is still OneDrive, because
+   real packets carry the account's cash and holdings and the repo is public.
+5. **Nothing that exists may break** (§10).
+
+**Still open:** the budget for L2–L3, and later for L5. Each run states its cost before it starts (§6).
+
+---
+
+## 10. Guarantee: the lab does not touch what is there
+
+The operator's condition, 2026-10-03. The lab is **additive**:
+
+- **New code only.** The lab lives in its own folder, inside the module-size and import-linter gates.
+  Agent, kernel and orchestration code does not change for the lab. Production's renderer is
+  **imported read-only** as the baseline variant, never edited to suit the lab.
+- **No writes anywhere live.** It does not write to the graph, publish to the bus, or contact the
+  fleet or the broker. The one graph read, the export of real cases, comes at the end and is read-only,
+  like `orchestration/replay_corpus.py` today.
+- **`dspy` stays out of images.** It is a dev-group dependency used only by the lab (DL-252).
+- **Proven by the gate.** `make ci` stays green with all 15 steps, and the existing deliberator tests
+  are untouched. A test asserts that the baseline variant renders byte-for-byte what the deliberator
+  agent sends today. If production changes, that test turns red, so the lab can never quietly measure
+  a prompt the fleet no longer uses.
+- **Production changes only through promotion** (L6): a separate sprint, with its own law cycle,
+  firewall and deploy.

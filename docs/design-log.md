@@ -10,6 +10,37 @@ and is marked CLOSED here.
 
 ---
 
+## DL-264 - the deliberators need a standalone lab that measures understanding, use and decisiveness per parameter, not a verdict - status: PROPOSED (operator ask, 2026-10-03; work-queue 97)
+
+**Question.** The operator does not trust that the deliberator trio understands its quant and sentiment
+evidence, or that the evidence determines its decisions, and doubts that DSPy delivered what was
+expected. How do we test a prompt and its accompanying data offline, so that a change to either is
+shown to be understood and used in the expert's decision?
+
+**Measured.** DSPy as an optimiser has never run: `DSPyPromptOptimizer.compile_prompt` imports `dspy`
+to check that it exists and then string-joins the few-shot examples (`kernel/dspy_optimizer.py:33-34`).
+Every existing deliberation tool measures a verdict, a parse or a keyword (table in the proposal), and
+none perturbs an input and watches the decision.
+
+**Proposed.** [deliberation-lab.md](research/dspy/deliberation-lab.md): case set × prompt variant ×
+model config, run offline with content-hashed caching and a budget; four tests (a typed comprehension
+quiz, a readings audit with the judge guided too, one-at-a-time counterfactual sensitivity with placebo,
+ablation and repeats, and operator-authored expert cases); the answer key is a glossary generated from
+code (97 c), shown as an input field. DSPy proper (`Evaluate`, then GEPA) runs only in the lab;
+production keeps DL-252's DSPy-free renderer. Sequence L0 glossary → L1 bench → L2 understood + used
+→ L3 decisive → L4 workbench → L5 GEPA → L6 promote.
+
+**Ruled out.** Live nights as the test bed (no perturbation, real orders); the fidelity or verdict
+harness (a consistently wrong referee passes); an LLM grader as the primary understanding measure
+(shares the misreadings); keyword markers for meaning; the glossary in the docstring (GEPA rewrites
+it); `dspy` in images; GEPA before the metric exists.
+
+**Open, the operator's.** Whether a process-only ruling is ever legitimate; who authors expert cases;
+where recorded cases live (they carry the account's cash and holdings, and the repo is public); judge
+only or all three roles first; the budget for L2–L3 and L5.
+
+---
+
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)
 
 **Question.** DL-262 decided what the book metrics read. How is it built so `result.py` (154) and

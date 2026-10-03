@@ -17,6 +17,7 @@ and use it as arguments.**
 | File | Read it for |
 | --- | --- |
 | [three-roles-goal.md](three-roles-goal.md) | **Start here.** Where each role stands (measured), what DSPy offers for each part of the goal, the offline checks, the proposed sequence and the decisions left open |
+| [deliberation-lab.md](deliberation-lab.md) | **Proposed 2026-10-03.** A standalone bench that runs a prompt variant over a case set offline and measures, per role and parameter, whether the evidence is understood, used and decisive (quiz, readings audit, counterfactual sensitivity, expert cases) |
 | [packet-inventory.md](packet-inventory.md) | Everything computed about a trade, against what the deliberators receive today, and the one law (`FORE-NEV-02`) that blocks part of it |
 | [concepts.md](concepts.md) | Signatures, modules, adapters, language models, settings and threads, saving and loading |
 | [optimization.md](optimization.md) | Data, metrics, `Evaluate`, every optimiser, GEPA in depth, and what a GEPA run would cost here |

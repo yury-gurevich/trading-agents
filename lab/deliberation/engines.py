@@ -8,13 +8,13 @@ and corrects itself once it is given law feedback.
 from __future__ import annotations
 
 import json
-import os
 import re
 
 import dspy
 from dspy.lm15 import Message, Response, TextPart, Usage, response_to_events
 
 from .laws import _num, _unit_of, accepted_directions, packet_values, required_numbers
+from .preflight import PLACEHOLDER, prove
 
 # $ per million tokens (input, output), from Anthropic's price list cached 2026-09-25.
 PRICES = {
@@ -30,11 +30,12 @@ def make_lm(spec: dict):
     if spec["model"] == "fake":
         eng = FakeEngine()
         return dspy.LM("fake/expert", engine=eng, cache=False)
-    # Without its key every call fails, and a failed call must never be graded as the model's answer.
-    key = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}.get(spec["model"].split("/", 1)[0])
-    if key and not os.environ.get(key):
-        raise SystemExit(f"REFUSED: {spec['model']} needs {key} in the environment; no call was made.")
+    # Without an accepted key every call fails, and a failed call must never be graded as the model's answer:
+    # one free models call proves the key (variable or environment credential) and the model, or refuses.
+    key = prove(spec["model"])
     kwargs = {"max_tokens": spec.get("max_tokens", 16000), "cache": False, "num_retries": 3}
+    if key == PLACEHOLDER:
+        kwargs["api_key"] = key  # the environment supplies the real one on the way out
     if spec.get("effort"):
         kwargs["reasoning_effort"] = spec["effort"]
     # Never pass temperature: Opus 5.5 rejects sampling parameters (DL-264 amendment 5).

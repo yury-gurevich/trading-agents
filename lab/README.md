@@ -112,9 +112,11 @@ disappear, and the counts fall from 164 to 158 for the judge and from 31 to 25 w
 installs `arch` alone, at its locked version, into the venv; `uv.lock` is not touched. **Check that
 the rebuild leaves `git status` clean.** *[measured 2026-10-03]*
 
-**A real run refuses to start when the provider's key is missing**, before any call. A call that
-fails partway through (authentication, transport, provider) is reported as **NOT GRADED**, never as
-the model failing the test, and `explain_run` then exits 3. *[measured 2026-10-03: before this fix,
+**A real run first proves its key with one free call that lists the provider's models**
+(`preflight.py`). It works whether the key is a variable or an environment API credential, and the run
+is refused unless the provider answers 200 and lists the model. A call that fails partway through
+(authentication, transport, provider) is reported as **NOT GRADED**, never as the model failing the
+test. `explain_run` and `run.py` then exit 3, and a compile stops without scoring it. *[measured 2026-10-03: before this fix,
 a run with no key exited 0 and reported "0 of 6 pass"]*
 
 🪤 **The `production` instruction arm is production's role text inside the lab's typed output

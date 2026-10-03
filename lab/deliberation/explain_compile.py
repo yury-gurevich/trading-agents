@@ -24,20 +24,22 @@ import json
 from pathlib import Path
 
 import dspy
+from dspy.utils.exceptions import LMError
 
 from .book.entries import lookup
 from .engines import make_lm, price
 from .explain_fake import ExplainFakeEngine, FakeReflection
 from .explain_grade import PASS_BAR, grade, passes
 from .explain_run import (
+    ExplainSeat,
     book_text,
     call_cost,
     explain_case,
     modes,
     report,
-    seat_program,
 )
 from .laws import CONTRARIAN_KEYS, entry_text
+from .preflight import ProviderAbort
 from .program import adapter
 from .run import CASES, ledger, packet_of
 
@@ -140,6 +142,16 @@ def feedback_of(g: dict, packet: str, max_keys: int = 25) -> str:
     return "\n\n".join(out) or "All checks met."
 
 
+class GuardedSeat(ExplainSeat):
+    """The seat as GEPA sees it: a provider error leaves the compile instead of being scored as an answer."""
+
+    def forward(self, decision: str, packet: str):
+        try:
+            return super().forward(decision=decision, packet=packet)
+        except LMError as e:
+            raise ProviderAbort(f"{type(e).__name__}: {str(e)[:300]}") from e
+
+
 def make_metric():
     def metric(gold, pred, trace=None, pred_name=None, pred_trace=None):
         ex = getattr(pred, "explanation", None)
@@ -237,68 +249,12 @@ def main(argv=None) -> int:
     }
     metric = make_metric()
     lines = [f"# Compiled explain prompt: {variant['name']} ({a.engine})", ""]
-    for s in seats:
-        dspy.configure(lm=student[s], adapter=adapter(variant.get("adapter", "chat"), book))
-        seed = seat_program(s, m[s], None)
-        gepa = dspy.GEPA(
-            metric=metric,
-            max_metric_calls=a.max_metric_calls,
-            reflection_lm=reflection,
-            reflection_minibatch_size=a.minibatch,
-            use_merge=False,
-            num_threads=1,
-            track_stats=True,
-            seed=0,
-            log_dir=str(out / "gepa" / s),
-        )
-        best = gepa.compile(
-            seed,
-            trainset=examples(cases, SPLIT["train"], variant, m[s]),
-            valset=examples(cases, SPLIT["val"], variant, m[s]),
-        )
-        best.save(str(out / f"{s}.json"))
-        r = best.detailed_results
-        # the held-out result: the seed and the compiled prompt, first attempt only, on cases the compile never saw
-        test = [c for c in cases if c["name"] in SPLIT["test"]]
-        before = [explain_case(c, variant, {s: seed}, book) for c in test]
-        after = [explain_case(c, variant, {s: best}, book) for c in test]
-        (out / f"test_{s}_seed.md").write_text(report(before, variant, f"{a.engine}, seed prompt", {}))
-        (out / f"test_{s}_compiled.md").write_text(report(after, variant, f"{a.engine}, compiled prompt", {}))
-
-        def tally(rs, seat=s):
-            return sum(all(r["seats"][seat]["pass"].values()) for r in rs), [
-                round(score_of(r["seats"][seat]["grade"])[0], 3) if r["seats"][seat].get("grade") else 0.0
-                for r in rs
-            ]
-
-        (bp, bs), (ap_, as_) = tally(before), tally(after)
-        system = adapter("chat", book).format(best.explain.signature, [], {"decision": "x", "packet": "y"})[
-            0
-        ]["content"]
-        summary["seats"][s] = {
-            "seed_instructions": seed.explain.signature.instructions,
-            "compiled_instructions": best.explain.signature.instructions,
-            "candidates": len(r.candidates),
-            "val_scores": [round(x, 3) for x in r.val_aggregate_scores],
-            "test_seed": {"passes": bp, "scores": bs},
-            "test_compiled": {"passes": ap_, "scores": as_},
-            "book_intact": book in system,
-        }
-        lines += [
-            f"## {s}",
-            "",
-            f"- candidates {len(r.candidates)}; val scores {summary['seats'][s]['val_scores']}",
-            f"- **held out ({', '.join(SPLIT['test'])})**: seed {bp}/{len(test)} pass, scores {bs} -> "
-            f"compiled {ap_}/{len(test)} pass, scores {as_}",
-            f"- book intact in the system message: {book in system}",
-            "",
-            "Compiled instruction:",
-            "",
-            "```text",
-            best.explain.signature.instructions,
-            "```",
-            "",
-        ]
+    try:
+        for s in seats:
+            compile_seat(s, a, variant, cases, book, m, student, reflection, metric, out, summary, lines)
+    except ProviderAbort as e:
+        summary["aborted"] = f"provider error, nothing scored from it: {e}"
+        print(f"ABORTED: a provider call failed during the compile; it was not scored. {e}")
     lms = {**{f"s_{k}": v for k, v in student.items()}, "reflection": reflection}
     summary["cost"] = ledger(lms)
     (out / "compiled.json").write_text(json.dumps(summary, indent=1))
@@ -306,9 +262,74 @@ def main(argv=None) -> int:
     print(f"wrote {out / 'report.md'}; cost {summary['cost']}")
     for s, d in summary["seats"].items():
         print(
-            f"  {s}: held-out pass {d['test_seed']['passes']} -> {d['test_compiled']['passes']} of {len(SPLIT['test'])}; book intact {d['book_intact']}"
+            f"  {s}: held-out pass {d['test_seed']['passes']} -> {d['test_compiled']['passes']} of "
+            f"{len(SPLIT['test'])}; book intact {d['book_intact']}"
         )
-    return 0
+    return 3 if "aborted" in summary else 0
+
+
+def compile_seat(s, a, variant, cases, book, m, student, reflection, metric, out, summary, lines) -> None:
+    dspy.configure(lm=student[s], adapter=adapter(variant.get("adapter", "chat"), book))
+    seed = GuardedSeat(s, m[s])
+    gepa = dspy.GEPA(
+        metric=metric,
+        max_metric_calls=a.max_metric_calls,
+        reflection_lm=reflection,
+        reflection_minibatch_size=a.minibatch,
+        use_merge=False,
+        num_threads=1,
+        track_stats=True,
+        seed=0,
+        log_dir=str(out / "gepa" / s),
+    )
+    best = gepa.compile(
+        seed,
+        trainset=examples(cases, SPLIT["train"], variant, m[s]),
+        valset=examples(cases, SPLIT["val"], variant, m[s]),
+    )
+    best.save(str(out / f"{s}.json"))
+    r = best.detailed_results
+    # the held-out result: the seed and the compiled prompt, first attempt only, on cases the compile never saw
+    test = [c for c in cases if c["name"] in SPLIT["test"]]
+    before = [explain_case(c, variant, {s: seed}, book) for c in test]
+    after = [explain_case(c, variant, {s: best}, book) for c in test]
+    (out / f"test_{s}_seed.md").write_text(report(before, variant, f"{a.engine}, seed prompt", {}))
+    (out / f"test_{s}_compiled.md").write_text(report(after, variant, f"{a.engine}, compiled prompt", {}))
+
+    def tally(rs, seat=s):
+        return sum(all(r["seats"][seat]["pass"].values()) for r in rs), [
+            round(score_of(r["seats"][seat]["grade"])[0], 3) if r["seats"][seat].get("grade") else 0.0
+            for r in rs
+        ]
+
+    (bp, bs), (ap_, as_) = tally(before), tally(after)
+    system = adapter("chat", book).format(best.explain.signature, [], {"decision": "x", "packet": "y"})[0][
+        "content"
+    ]
+    summary["seats"][s] = {
+        "seed_instructions": seed.explain.signature.instructions,
+        "compiled_instructions": best.explain.signature.instructions,
+        "candidates": len(r.candidates),
+        "val_scores": [round(x, 3) for x in r.val_aggregate_scores],
+        "test_seed": {"passes": bp, "scores": bs},
+        "test_compiled": {"passes": ap_, "scores": as_},
+        "book_intact": book in system,
+    }
+    lines += [
+        f"## {s}",
+        "",
+        f"- candidates {len(r.candidates)}; val scores {summary['seats'][s]['val_scores']}",
+        f"- **held out ({', '.join(SPLIT['test'])})**: seed {bp}/{len(test)} pass, scores {bs} -> "
+        f"compiled {ap_}/{len(test)} pass, scores {as_}",
+        f"- book intact in the system message: {book in system}",
+        "",
+        "Compiled instruction:",
+        "",
+        "```text",
+        best.explain.signature.instructions,
+        "```",
+        "",
+    ]
 
 
 if __name__ == "__main__":

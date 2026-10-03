@@ -322,8 +322,33 @@ good 24/24, flawed 0/24, hedging 0/24. Two defects were found and fixed, both in
   "0 of 6 seat-cases pass", which is indistinguishable from a model that cannot read the data. Fix:
   `make_lm` refuses a real run when the provider's key variable is missing, before any call. A `dspy`
   `LMError` partway through a run is reported as NOT GRADED, kept out of the pass count, and makes
-  `explain_run` exit 3; the seat-cases already paid for are still written. *Not yet applied* to
-  `run.py`'s deliberation loop or to GEPA's metric calls, because only the key preflight covers them.
+  `explain_run` exit 3; the seat-cases already paid for are still written.
+
+**Amended the same day (operator chose to keep the key under API credentials).** A key added under
+"API credentials" never appears as a variable, so a refusal on the missing variable would block a working
+set-up. The preflight (`preflight.py`) is now **one free call that lists the provider's models**:
+
+- It uses the variable when it is set, else a placeholder the environment may replace.
+- The run is refused, before any paid call, unless the call returns 200 and the model is listed.
+- Without a variable, the placeholder is passed as `api_key`, because litellm requires one.
+
+The same guard now covers the other two paths:
+
+- **`run.py`:** a provider error stops that seat. It is not retried as a parse failure; it is counted as
+  PROVIDER ERROR (not graded), and the run exits 3.
+- **The compile:** a provider error raises `ProviderAbort`, a `BaseException`, so GEPA cannot score it
+  as an answer. The compile stops, records why, and exits 3.
+
+**Measured:**
+- Here, with no key, all three real entry points refuse with exit 1 and make no paid call.
+- An injected auth error on the 4th compile call aborts the compile with nothing scored.
+- A simulated 200 response passes when the model is listed and refuses when it is not.
+- A captured request body carries only `model`, `system`, `messages` and `max_tokens`: **no
+  temperature**.
+
+🪤 **Unverified:** whether API credentials reach `api.anthropic.com` at all. This container sends that
+host direct (it is in `NO_PROXY`), so a proxy-side injection might never see it. The preflight states
+the truth either way. If it refuses, the fix is the key under Environment variables.
 
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 

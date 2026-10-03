@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import dspy
+from dspy.utils.exceptions import LMError
 
 from .book.entries import lookup
 from .book.house_rules import render as render_rules
@@ -57,8 +58,15 @@ class Checked(dspy.Module):
             except Exception as e:  # parse failure, provider error: recorded, not hidden
                 obj = None
                 attempts.append(
-                    {"output": None, "error": f"{type(e).__name__}: {str(e)[:300]}", "violations": []}
+                    {
+                        "output": None,
+                        "error": f"{type(e).__name__}: {str(e)[:300]}",
+                        "violations": [],
+                        "provider_error": isinstance(e, LMError),
+                    }
                 )
+                if isinstance(e, LMError):  # no answer at all: never retried as a parse failure, never graded
+                    break
                 feedback = "Your previous answer could not be parsed. Follow the output structure exactly."
                 continue
             attempts.append(
@@ -217,8 +225,10 @@ def report(results: list[dict], variant: dict, cost: dict) -> str:
                     key_errors[v["metric"]] += 1
             for v in af["violations"]:
                 final[v["clause"]] += 1
-            first["PARSE"] += a0["error"] is not None
-            final["PARSE"] += af["error"] is not None
+            for c, a in ((first, a0), (final, af)):
+                c["PROVIDER ERROR (not graded)" if a.get("provider_error") else "PARSE"] += (
+                    a["error"] is not None
+                )
             coverage.append((r["case"], f"{s['seat']} r{s['round']}", _read(a0, need), _read(af, need), need))
             for rd in _readings(af):
                 key_reads[rd["metric"]][s["seat"]] += 1
@@ -289,7 +299,10 @@ def main(argv=None) -> int:
     )
     (out / "report.md").write_text(report(results, variant, cost))
     print(f"wrote {out / 'report.md'}; cost {cost}")
-    return 0
+    bad = sum(any(a.get("provider_error") for a in s["attempts"]) for r in results for s in r["seats"])
+    if bad:
+        print(f"INCOMPLETE: {bad} seats hit a provider error and are NOT GRADED; see results.json")
+    return 3 if bad else 0
 
 
 if __name__ == "__main__":

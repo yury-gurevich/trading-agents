@@ -20,7 +20,7 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `sma_distance_pct_score` [sub_score_0_100; higher_better]: Sub-score of sma_distance_pct. Bands: x <= -5% -> 20; x > -5% and <= 0% -> 40; x > 0% and <= 5% -> 60; x > 5% -> 75.
 - `ema_spread_pct` [percent; higher_better]: Short EMA minus long EMA as % of price (positive = up-trend). Bands: x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75.
 - `ema_spread_pct_score` [sub_score_0_100; higher_better]: Sub-score of ema_spread_pct. Bands: x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75.
-- `macd_histogram` [raw_indicator; higher_better]: MACD line minus signal line, in price units. Bands: line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45. CAUTION: Its sub-score also depends on the sign of the MACD line, which the packet does not show.
+- `macd_histogram` [raw_indicator; higher_better]: MACD line minus signal line, in price units. Bands: line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45. CAUTION: Its sub-score also depends on the sign of the MACD line, macd_line_price (absent from the production packet).
 - `macd_histogram_score` [sub_score_0_100; higher_better]: Sub-score from MACD line and histogram signs. Bands: line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45.
 - `golden_cross` [flag_0_1; higher_better]: 1 when the 50-day SMA is above the 200-day SMA, else 0. Bands: golden cross -> 75; otherwise -> 25.
 - `golden_cross_score` [sub_score_0_100; higher_better]: Sub-score of golden_cross. Bands: golden cross -> 75; otherwise -> 25.
@@ -28,7 +28,7 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `obv_score` [sub_score_0_100; higher_better]: 70 when OBV is above its signal average (accumulation), else 35. Bands: OBV above its signal -> 70; otherwise -> 35.
 - `atr_pct` [percent; lower_better]: Average True Range as % of price: daily volatility. Bands: x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35. CAUTION: Lower volatility scores higher. It also sizes the scaled stop.
 - `atr_pct_score` [sub_score_0_100; higher_better]: Sub-score of atr_pct. Bands: x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35.
-- `stochastic_k` [raw_indicator; contrarian_low_is_bullish]: Stochastic %K, 0-100: close within the recent high-low range. Bands: %K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50. CAUTION: Scored with %D (not shown): oversold high, overbought low.
+- `stochastic_k` [raw_indicator; contrarian_low_is_bullish]: Stochastic %K, 0-100: close within the recent high-low range. Bands: %K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50. CAUTION: Scored with %D (stochastic_d; absent from the production packet): oversold high, overbought low.
 - `stochastic_k_score` [sub_score_0_100; higher_better]: Sub-score from %K and %D. Bands: %K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50.
 - `williams_r` [raw_indicator; contrarian_low_is_bullish]: Williams %R, -100..0 (-100 = at the period low). Bands: x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25.
 - `williams_r_score` [sub_score_0_100; higher_better]: Sub-score of williams_r (contrarian). Bands: x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25.

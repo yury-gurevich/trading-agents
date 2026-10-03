@@ -195,6 +195,50 @@ The barrier forecast in the lab comes from the forecaster's own GARCH fit and pa
 For the falling knife it gives an 81 % chance of the target first, an illustration of why H13 exists.
 On synthetic periodic series it is not evidence of the forecaster's quality.
 
+**Amendment 9 (planner, 2026-10-03, iteration 1 at the operator's request: "make sure the initial prompt
+is valid and includes all quant data … proof that the deliberators (a) understand data as a financial
+indicator, (b) can attach a meaning to each one and to all of them in combination").** Two steps, both
+before any deciding.
+
+- **Step 1, prompt validity ($0, `prompt_audit.py`).** It renders the exact messages DSPy sends, for every
+  case and seat, and checks: (A) every number the analyst computed is in the packet, with the same value;
+  (B) the packet is intact in the user message; (C) every number has a dictionary entry, and the entry is
+  in the system message; (D) all 13 house rules, the role instructions and the output schema are present;
+  (E) the output ceiling has room. **Measured: VALID on 8 cases × 3 seats.** Each check was proven to
+  catch a planted break. It also lists what production withholds: 31–33 numbers per case.
+- **Step 2, the explain test (`explain_run.py`).** Each seat explains, without arguing or deciding.
+  (a) Per number, it gives the indicator family, unit, meaning here, direction for this buy, and, for a
+  raw indicator, the 0–100 sub-score our bands assign. (b) In combination, it reproduces the six
+  aggregates from their parts (technical, fundamental, composite, confidence, applied stop,
+  reward/risk), gives a verdict per pillar, names the interactions, and states the situation.
+  - It is graded by code against keys computed by the analyst's own scorers and formulas, on the
+    **first attempt only**: no feedback, no retry, because a retry teaches to the test.
+  - **The pass bar, pre-registered:**
+    - coverage 100 %
+    - value 98 %, scale 95 %, family 90 %, direction 90 %, sub-score 90 %
+    - **critical 100 %**: contrarian oscillators read the right way round (H7), and H11 sub-scores
+      never read as ratios
+    - derivations ≥ 5/6, pillars ≥ 5/6
+    - expected interactions recall ≥ 70 %
+  - **Direction is graded only where the code's own score makes a clear call** (≥ 60 or ≤ 40). There,
+    "neutral" counts as wrong.
+- **Ruled out:**
+  - grading after a retry, for the reason above;
+  - a single averaged score, because the contrarian misreading touches 5 of about 110 numbers, so an
+    average hides it (measured: 92 % direction on the extended leader, which still read RSI the naive
+    way round; hence the critical check);
+  - accepting "neutral" as never wrong, because a hedger who commits to nothing would pass;
+  - telling the model the case name, which would leak the answer.
+- **The grader is proven on three fakes:**
+  - `good`, answering from the keys: 24/24 pass;
+  - `flawed`, an untrained reader: 0/24, failing scale, sub-score, critical, derivations, pillars,
+    interactions and the judge's coverage;
+  - `hedging`, right but uncommitted: 0/24, failing direction and critical only.
+- **Planner drafts, for the operator to approve:** the expected interactions per scenario
+  (`explain_grade.EXPECTED_INTERACTIONS`), the only hand-written key.
+- **Cost:** about $2.27 for 2 cases ($4.07 worst case) and $9.12 for 8 ($16.29), on Opus 5.5.
+  **Not yet run on a real model.**
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

@@ -41,6 +41,8 @@ the evidence, **use** it, and decide on **market evidence**? It does not just de
 | Engines | `engines.py` | A deterministic fake ($0), or real `dspy.LM` (Anthropic / OpenAI). **No temperature is ever sent**, because Opus 5.5 rejects it |
 | Runner | `run.py` | Each seat gets **one form-law retry** (our own loop, not `dspy.Refine`). Every real run is costed and refused without `--max-usd`. The report covers rulings, **coverage per seat**, violations, **whether the seats agree on what each number means**, and per-key reads and misreads |
 | Compare | `compare.py` | Several runs side by side |
+| Iteration 1, step 1 | `prompt_audit.py` | Is the prompt valid, and does it carry ALL the quant data? It renders the exact messages and checks values, packet, definitions, rules, schema and ceiling. $0 |
+| Iteration 1, step 2 | `explain_models.py`, `explain_grade.py`, `explain_run.py`, `explain_fake.py` | Do the seats **understand** the data? They explain, without deciding: each number as an indicator, then the numbers in combination. Graded by code against the analyst's own scorers, first attempt only |
 
 ## Run it
 
@@ -56,7 +58,16 @@ PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.book.c
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.run \
     --variant lab/deliberation/variants/lab_t2_book_complete.json --engine fake --out /tmp/lab/fake
 
-# 3. real models (needs ANTHROPIC_API_KEY in the shell; refuses without a cap). Cheapest first look:
+# 3. iteration 1: prompt validity ($0), then the explain test (fakes $0: good must pass, flawed and hedging fail)
+PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.prompt_audit \
+    --variant lab/deliberation/variants/lab_t2_book_complete.json --out /tmp/lab/prompts
+PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explain_run \
+    --variant lab/deliberation/variants/lab_t2_book_complete.json --engine fake-flawed --out /tmp/lab/explain-fake
+PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explain_run \
+    --variant lab/deliberation/variants/lab_t2_book_complete.json --engine real --max-usd 3 \
+    --cases falling_knife,value_trap --out /tmp/lab/explain-first
+
+# 4. real models (needs ANTHROPIC_API_KEY in the shell; refuses without a cap). Cheapest first look:
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.run \
     --variant lab/deliberation/variants/lab_t2_book_complete.json --engine real --max-usd 3 \
     --cases falling_knife,value_trap --out /tmp/lab/first
@@ -131,11 +142,47 @@ budget, is the first thing the real run will show.
   *[Caveat: the synthetic series are smooth and periodic, so their GARCH numbers test how the
   deliberators handle an unproven input, not how good the forecaster is.]*
 
+## Iteration 1: is the prompt valid, and is the data understood?
+
+**[measured 2026-10-03; design and pass bar in DL-264 amendment 9]**
+
+- **The prompt is valid, on 8 cases × 3 seats.** Every number the analyst computed reaches the packet
+  with its value; the packet is intact; every number's definition is in the system message; all rules
+  and the schema are present. The judge reads 164–169 numbers, the debaters 110–112. Production
+  withholds 31–33 numbers per case.
+- **What the explain test asks of each seat**, without deciding:
+  - (a) for each number: its indicator family, unit, meaning here, direction for this buy, and the
+    0–100 sub-score a raw indicator maps to;
+  - (b) the six aggregates reproduced from their parts, a verdict per pillar, the interactions
+    between numbers, and the situation.
+- **The pass bar, pre-registered:**
+  - coverage 100 %;
+  - value 98 %, scale 95 %, family 90 %, direction 90 %, sub-score 90 %;
+  - **critical 100 %**: no contrarian oscillator read the wrong way round, and no sub-score read as
+    a ratio;
+  - derivations ≥ 5/6, pillars ≥ 5/6, interactions ≥ 70 %;
+  - first attempt only.
+- **The grader tells the fakes apart:**
+
+  | Fake | Behaviour | Passes |
+  | --- | --- | --- |
+  | `good` | answers from the keys | 24/24 |
+  | `flawed` | reads like an untrained model | 0/24 |
+  | `hedging` | right, but calls every direction neutral | 0/24, failing only direction and critical |
+
+  An averaged score alone would have let the flawed reader's RSI misreading through on the extended
+  leader (92 % direction); the critical check catches it.
+- **Not yet run on a real model.** Two cases ≈ $2.27 ($4.07 worst case); eight ≈ $9.12 ($16.29).
+- **For the operator to approve:** the expected interactions per scenario
+  (`explain_grade.EXPECTED_INTERACTIONS`), beside each scenario's `expert_view`.
+
 ## Next
 
-1. **First real runs, on the operator's machine** (a session started there with
-   `claude remote-control`, or by hand): two cases first, then all eight, for each variant, with a stated cap.
-2. **L2:** the comprehension quiz, which asks each role what each key means, without deciding.
+1. **First real run, on the operator's machine** (a session started there with `claude remote-control`, or
+   by hand): **the iteration 1 explain test first**, on two cases, then all eight. Only if the explain test
+   passes do the deciding variants follow, with a stated cap. If it fails, the misread keys it lists show
+   what the book or the prompt must fix.
+2. **L2** is now the explain test above. It replaces the planned comprehension quiz.
 3. **L3:** sensitivity, moving one parameter at a time (and along the §12 patterns), with placebo,
    ablation and repeats. Plus faithfulness: do the claimed decisive keys actually move the ruling?
 4. **The operator approves** the scenarios' `expert_view`, and the expert cases are drafted from them.

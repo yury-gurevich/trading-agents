@@ -269,7 +269,7 @@ ENTRIES: tuple[Entry, ...] = (
         HIGHER,
         "MACD line minus signal line, in price units.",
         "technical_rules.py:score_macd",
-        "Its sub-score also depends on the sign of the MACD line, which the packet does not show.",
+        "Its sub-score also depends on the sign of the MACD line, macd_line_price (absent from the production packet).",
         probe="macd",
     ),
     E(
@@ -344,7 +344,7 @@ ENTRIES: tuple[Entry, ...] = (
         CONTRA,
         "Stochastic %K, 0-100: close within the recent high-low range.",
         "technical_rules_range.py:score_stochastic",
-        "Scored with %D (not shown): oversold high, overbought low.",
+        "Scored with %D (stochastic_d; absent from the production packet): oversold high, overbought low.",
         probe="stochastic",
     ),
     E(

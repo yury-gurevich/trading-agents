@@ -206,7 +206,7 @@ def report(results: list[dict], variant: dict, engine: str, cost: dict) -> str:
         "Keys most often misread: "
         + (", ".join(f"`{k}` ({v})" for k, v in misread.most_common(15)) or "none"),
         "",
-        "## The situation each seat saw, beside the expert view (planner draft, to be approved)",
+        "## The situation each seat saw, beside the expert view (operator-approved)",
         "",
     ]
     for r in results:

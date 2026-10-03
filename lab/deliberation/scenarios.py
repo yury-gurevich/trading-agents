@@ -1,7 +1,7 @@
 """The synthetic scenarios: named market situations an expert should recognise.
 
-`expert_view` is the planner's draft of what a competent reader should conclude. It is a
-hypothesis for the operator to approve or correct (DL-264, decision 3), not ground truth.
+`expert_view` is what a competent reader should conclude: drafted by the planner and APPROVED by the
+operator on 2026-10-03 (DL-264 amendment 11). Changing one is an operator decision, recorded there.
 """
 
 from __future__ import annotations

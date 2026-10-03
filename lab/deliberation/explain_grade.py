@@ -194,7 +194,7 @@ def expected_pillars(pv: dict) -> dict[str, set[str]]:
     }
 
 
-# ---- (b) the interactions each scenario should reveal: PLANNER DRAFT, for operator approval ----------
+# ---- (b) the interactions each scenario should reveal: operator-APPROVED 2026-10-03 (DL-264 am. 11) ----
 CONTRARIAN = set(
     "rsi rsi_score rsi2 rsi2_score stochastic_k stochastic_k_score stochastic_d williams_r "
     "williams_r_score bollinger_position bollinger_position_score nw_deviation_pct "

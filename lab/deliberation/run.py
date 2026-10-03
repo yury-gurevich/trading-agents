@@ -195,7 +195,7 @@ def report(results: list[dict], variant: dict, cost: dict) -> str:
         "",
         "## Rulings",
         "",
-        "| Case | Ruling | Decisive | Market basis? | Expert view (planner draft, to be approved) |",
+        "| Case | Ruling | Decisive | Market basis? | Expert view (operator-approved) |",
         "| --- | --- | --- | --- | --- |",
     ]
     coverage = []

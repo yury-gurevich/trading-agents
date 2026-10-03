@@ -196,8 +196,8 @@ budget, is the first thing the real run will show.
     have been compiled into the prompt.
   - Contrarian oscillators are now read with the trend (`laws.accepted_directions`): oversold in a
     downtrend is "unfavourable or neutral".
-- **For the operator to approve:** the expected interactions per scenario
-  (`explain_grade.EXPECTED_INTERACTIONS`), beside each scenario's `expert_view`.
+- **Approved by the operator (2026-10-03):** the expected interactions per scenario
+  (`explain_grade.EXPECTED_INTERACTIONS`) and each scenario's `expert_view`.
 
 ## Next
 
@@ -209,4 +209,4 @@ budget, is the first thing the real run will show.
 2. **L2** is now the explain test above. It replaces the planned comprehension quiz.
 3. **L3:** sensitivity, moving one parameter at a time (and along the §12 patterns), with placebo,
    ablation and repeats. Plus faithfulness: do the claimed decisive keys actually move the ruling?
-4. **The operator approves** the scenarios' `expert_view`, and the expert cases are drafted from them.
+4. **The expert cases** are drafted from the approved `expert_view`s (approved 2026-10-03).

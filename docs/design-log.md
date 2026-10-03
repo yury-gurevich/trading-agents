@@ -234,8 +234,8 @@ before any deciding.
   - `flawed`, an untrained reader: 0/24, failing scale, sub-score, critical, derivations, pillars,
     interactions and the judge's coverage;
   - `hedging`, right but uncommitted: 0/24, failing direction and critical only.
-- **Planner drafts, for the operator to approve:** the expected interactions per scenario
-  (`explain_grade.EXPECTED_INTERACTIONS`), the only hand-written key.
+- **Hand-written keys:** the expected interactions per scenario (`explain_grade.EXPECTED_INTERACTIONS`),
+  the only hand-written part of the grading. Approved by the operator; see amendment 11.
 - **Cost:** about $2.27 for 2 cases ($4.07 worst case) and $9.12 for 8 ($16.29), on Opus 5.5.
   **Not yet run on a real model.**
 
@@ -292,6 +292,17 @@ iteration 1: the metric it needed now exists, and it measures understanding rath
   - holding out nothing: a prompt compiled on all eight cases proves only that it fits them.
 - **Cost, Opus 5.5 as student and reflection model, 24 metric calls per seat:** the judge alone ≈ $14
   ($25 worst case); all three seats ≈ $37 ($74). **Not yet run on a real model.**
+
+**Amendment 11 (operator, 2026-10-03: "approved").** The operator approved both hand-written keys as drafted:
+
+- the **expected interactions** per scenario (`explain_grade.EXPECTED_INTERACTIONS`), which iteration 1
+  grades and the compile steers toward;
+- each scenario's **`expert_view`** (`scenarios.py`), the expert conclusion the deliberating runs are
+  compared against.
+
+They are now the reference, not hypotheses. Changing either is an operator decision, recorded here.
+**Still open:** the first real run (on the operator's machine, or here once an API key is added as an
+environment secret), and the compile budget.
 
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 

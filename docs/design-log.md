@@ -301,8 +301,10 @@ iteration 1: the metric it needed now exists, and it measures understanding rath
   compared against.
 
 They are now the reference, not hypotheses. Changing either is an operator decision, recorded here.
-**Still open:** the first real run (on the operator's machine, or here once an API key is added as an
-environment secret), and the compile budget.
+**Decided the same day (operator):** the first real run happens in a claude.ai cloud session, with
+`ANTHROPIC_API_KEY` added as an environment variable in the environment's settings (never the repo). The
+network path is confirmed (`api.anthropic.com` answers 401 without a key). If that run shows misreadings,
+**compile the judge only, capped at $15**; pro and con are decided after its result.
 
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 

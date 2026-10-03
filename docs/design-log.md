@@ -113,6 +113,19 @@ models fit; a fit check (memory, a load, one timed answer each) comes first. Run
 permanently, as a new container or agent, is a later decision gated on the lab showing it adds
 something measurable, and would go through `ops/agent-genesis.md` with its own law book.
 
+**Amendment 5 (operator, 2026-10-03): DSPy studied to practitioner depth.** DSPy 3.4.0 was read at
+the source and run offline (DummyLM and a scripted custom engine, $0); the result is
+[practitioner-notes-3.4.md](research/dspy/practitioner-notes-3.4.md). Findings that change the lab
+(proposal §16): a typed input's schema descriptions never reach the prompt (measured), so meanings come
+only from the book; the book is rendered in the system message by a custom adapter, outside the
+instructions, where it survived a GEPA run and is cacheable (measured); GEPA changes instructions only
+and accepts `objective_scores` with a Pareto front per objective (measured); `Refine` sends
+`temperature=1.0` (measured), which Opus 5.5 rejects per Anthropic's documentation (not verified live),
+so the form-law retry is our own loop; `track_usage` misses `dspy.Parallel` threads (measured), so the
+lab counts cost itself; DSPy 3.4 ships a TypeSafe System One client, which makes the Jev shadow path a
+model swap on the same signature. **Ruled out:** `dspy.Refine` / `BestOfN` / `n > 1` on Opus 5.5; the
+book as an optimisable instruction.
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

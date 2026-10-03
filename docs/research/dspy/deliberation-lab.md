@@ -663,3 +663,27 @@ Sources for the survey: [Palmyra Fin (Writer)](https://writer.com/llms/palmyra-f
   consultant the book is refreshed from, or a contrast voice inside deliberation) and the hosting (a GPU
   container that scales to zero, a hosted endpoint) are decided then, with measured cost, as a new
   agent through `ops/agent-genesis.md` and its own law book.
+
+---
+
+## 16. Corrections from the DSPy 3.4 study (2026-10-03)
+
+[practitioner-notes-3.4.md](practitioner-notes-3.4.md) verified DSPy against its source and by offline
+runs. Where it overrides the sections above, it wins:
+
+- **The book goes in the system message, through a custom adapter, not in an input field** (§4, §13).
+  It survived a GEPA run untouched **[measured]**, and it is cacheable. The input-field placement stays
+  as an arm.
+- **A typed packet's schema descriptions never reach the model** **[measured]**. Meanings come only from
+  the book.
+- **No `dspy.Refine`, `BestOfN`, `MultiChainComparison` or `n > 1` on Opus 5.5.** They send sampling
+  temperatures, which Opus 5.5 rejects per Anthropic's documentation **[source; not verified live]**.
+  The form-law retry is our own loop.
+- **The judge's decision basis uses `JSONAdapter`** (schema-constrained output) once that is confirmed
+  live on Opus 5.5.
+- **Costs are counted by the lab's engine**, because `dspy.track_usage` misses `dspy.Parallel` threads
+  **[measured]**.
+- **GEPA's metric returns `objective_scores`** for understood, used, decisive and faithful, so each gets
+  its own Pareto front **[measured]**. Its feedback quotes the book's entry whenever a reading is wrong,
+  because GEPA writes domain facts into instructions and cannot see the system-message book.
+- **InferRules** joins the Tier C drafting tools, as a candidate generator over approved expert cases.

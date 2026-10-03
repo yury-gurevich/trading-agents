@@ -554,3 +554,12 @@ Under **ADR-0029, only `overturn` blocks an order. A `revise` is a recorded find
 about the trade.** A judgement law whose conclusion is "revise" therefore has no effect on what is
 bought. If a law should *reduce* a position rather than block it, `revise` needs an action, such as a
 smaller size. That is capital-risk policy, the operator's.
+
+### Decided (operator, 2026-10-03)
+
+- **Tier C is departable with a stated reason.** The judge may rule against a judgement law only by
+  naming it and saying why this case differs. Departures are recorded, and the lab reports their rate
+  and reads their reasons.
+- **`revise` and the production response to a form-law violation are decided after the lab.** The lab
+  reports how often each judgement law fires, what a size-reducing `revise` would have changed on the
+  case set, and the form-law violation rate after one retry. Those numbers go to the operator.

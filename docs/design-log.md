@@ -85,9 +85,14 @@ lab tests the code by tiers (none / A / A + B / A + B + C). The checker is kerne
 pack data. **Found:** under ADR-0029 a `revise` changes nothing about the order, so a law that
 concludes "revise" has no trading effect unless `revise` gains an action (operator policy).
 
-**Open, the operator's.** Whether Tier C is binding or departable with a stated reason; whether
-`revise` should carry an action; what a production form-law violation does after its retry; the
-budget for L2–L3, and later for L5.
+**Decided (operator, 2026-10-03).** Tier C is **departable with a stated reason**: the judge names the
+law and why this case differs, and the departure is recorded and reviewed. Whether `revise` carries
+an action, and what a production form-law violation does after its retry, are **decided after the
+lab**: the lab measures how often each judgement law fires, what a size-reducing `revise` would have
+done, and the form-law violation rate, and brings those numbers to the decision.
+
+**Open, the operator's.** The budget for L2–L3, and later for L5; the model list and pass margin
+(§11).
 
 ---
 

@@ -400,3 +400,37 @@ It passes all four or it fails, as the experiment records here already do.
 The lab **measures** these arms; it does not deploy them. A new topology, a different model per role,
 or fewer rounds in production is a separate sprint, with a deliberator law cycle and a
 deploy. §10's guarantee holds: nothing that runs today is touched by the lab.
+
+---
+
+## 12. Worked example: the planner took its own quiz (2026-10-03)
+
+The operator asked whether the planner model understands each quant and what a combination means. The
+planner answered first from general finance knowledge, then read the code. Where they differ, the
+glossary must carry the code's meaning, and the quiz has a seed question:
+
+| Key | The general-finance reading | What our code computes |
+| --- | --- | --- |
+| `pe = 30` | a P/E ratio of 30 | a 0–100 **sub-score**: 30 is the default band, so P/E > 25 (expensive). 60 means 10–25, and 80 means under 10. A loss-maker has **no** `pe` key at all (`agents/analyst/domain/fundamental_rules.py`) |
+| `rsi_score = 25` | weak momentum | RSI ≥ 70: overbought, scored **low on purpose** (contrarian) (`technical_rules.py`) |
+| Bollinger position `0.1` | breaking down | near the lower band, scored **75**, bullish (contrarian) |
+| `relative_strength` (scanner) | performance against the market | the stock's **own** total return over the scanner window, as a **fraction** (0.12 = +12 %), with no benchmark (`agents/scanner/domain/filters.py:112`) |
+| `relative_strength` (analyst) | the same | the stock's trailing return **minus the benchmark's**, in **percentage points**, then banded 20 / 40 / 60 / 80 (`relative_strength.py`) |
+
+**The combination finding.** The technical score is the **average** of contrarian sub-scores (RSI,
+Bollinger: low is bullish) and trend-following sub-scores (SMA-200 distance, EMA spread, MACD: up is
+bullish). On those five alone:
+
+- A **strong, extended leader** (RSI 75, upper band, 8 % above SMA-200, EMAs and MACD positive)
+  scores (25 + 30 + 75 + 75 + 75) / 5 = **56**.
+- A **falling knife** (RSI 28, lower band, 8 % below SMA-200, EMAs and MACD negative) scores
+  (80 + 75 + 20 + 25 + 25) / 5 = **45**.
+
+The two opposite market situations land 11 points apart, and the composite does not say which one it
+is. An expert reading the combination would name the situation ("extended momentum, pullback risk" or
+"downtrend with oversold readings"). A reader of `technical_score` alone cannot. So the glossary needs
+**combination patterns** as well as single-key definitions, and Test 3 should perturb parameters
+*jointly* along these patterns as well as one at a time.
+
+*Caveat:* whether either pattern predicts returns is not shown here. That is EXP-014 and EXP-015's
+question, not the glossary's.

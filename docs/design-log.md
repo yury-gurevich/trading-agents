@@ -44,6 +44,23 @@ storage is decided when they are first needed (default OneDrive). (5) The lab is
 break anything that exists: new code only, production's renderer imported read-only with a byte-parity
 test, no live writes, `dspy` out of images.
 
+**Amendment 1 (operator, 2026-10-03): the target trio, fewer rounds, cheaper models.** The operator
+described the intended design: the pro and con deliberators each receive the quant data and make
+their case independently, and the judge decides from both cases plus its own reading, recording why
+that combination of data and market conditions led to the decision. Today's code runs a sequential
+debate of 2 rounds (5 serial calls, D1 → C1 → D2 → C2 → J), all three roles on `claude-opus-5` at effort
+`high`, and the judge returns a ruling with a ~237-character rationale. The lab adds (proposal §11):
+topology arms T0 (today), T1 (1 round), T2 (independent briefs + a deciding judge with a typed
+decision basis, 3 calls with 2 in parallel) and T3 (T2 + one rebuttal each); model arms per role
+(Opus 5.5, Sonnet 5.5, Haiku 4.5, optionally OpenAI) and effort arms; a *faithfulness* score (do the
+judge's claimed decisive readings match what the perturbations show actually moves the ruling); and a
+pre-registered non-inferiority bar for "up to the job". Search order: quiz as entry filter → topology
+on the champion model → downgrade one role at a time → effort sweep → confirm on real cases. **Found
+while checking:** the Anthropic adapter always sends `output_config.effort`
+(`kernel/llm_anthropic.py:101`), which Haiku 4.5 rejects, so the lab needs a per-model call profile.
+**Ruled out:** testing models on a full cross-product (cost); judging a cheaper model by verdict
+agreement with the champion alone (the champion's verdicts are what is in doubt).
+
 **Open, the operator's.** The budget for L2–L3, and later for L5.
 
 ---

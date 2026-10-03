@@ -285,3 +285,118 @@ The operator's condition, 2026-10-03. The lab is **additive**:
   a prompt the fleet no longer uses.
 - **Production changes only through promotion** (L6): a separate sprint, with its own law cycle,
   firewall and deploy.
+
+---
+
+## 11. The target trio, fewer rounds, and cheaper models (operator, 2026-10-03, second ask)
+
+> *"The pro and con deliberators get the quant data and make their cases, and submit them to the top
+> deliberator. He then makes the decision based on their arguments, adding his own opinion as final,
+> together with the reasoning why that particular combination of data and market conditions led to
+> that particular decision."* Also: test less powerful models, and see whether fewer iterations will do.
+> (operator, 2026-10-03)
+
+### What runs today (read from the code, 2026-10-03)
+
+- **A sequential debate.** The defender argues, then the challenger rebuts having read the defender,
+  for `max_rounds` = 2 (`agents/deliberator/settings.py`; the pack does not override it). Then the judge
+  rules. That makes **5 calls per order, one after another**: D1 → C1 → D2 → C2 → J.
+- **All three roles on `claude-opus-5`** at effort `high`. The pack leaves the three `*_MODEL`
+  variables empty, so each resolves to the adapter default (`kernel/llm_factory.py`).
+- **The judge returns a ruling and a short rationale**, averaging 237 characters. It records no readings
+  and no structured basis for its decision.
+
+### The design the operator described: independent briefs and a deciding judge
+
+```text
+              packet + glossary (identical for both)
+              ┌──────────────┴──────────────┐
+              ▼                             ▼
+         DEFENDER (pro)               CHALLENGER (con)        in parallel; neither sees the other
+         readings → case              readings → case
+              └──────────────┬──────────────┘
+                             ▼
+                 JUDGE (packet + glossary + both cases)
+                 1. its own readings of the packet (its own opinion)
+                 2. each case's claims checked against the packet: accepted / rejected, and why
+                 3. ruling + DECISION BASIS
+```
+
+The **decision basis** is a typed record, not prose, so code can check it:
+
+| Field | Content | Checked by |
+| --- | --- | --- |
+| `decisive_readings` | the metrics that decided it: value, meaning here, direction, weight (high / medium / low) | value against the packet; meaning and direction against the glossary |
+| `market_conditions` | regime, VIX and its as-of date, sector context, earnings horizon | values against the packet |
+| `accepted` / `rejected` | each side's claims the judge accepted or rejected, with the reason | every claim traces to a case; every reason cites a reading |
+| `own_view` | what the judge read that neither side raised | readings not in either case |
+| `ruling` + `rationale` | the decision, and why *this combination* of data and conditions leads to it | — |
+
+**This gives the lab its strongest test: is the stated reason the real reason?** Test 3 perturbs each
+parameter. If the judge names `rsi_score` as a high-weight decisive reading, moving it should move the
+ruling. If moving it changes nothing, while moving a parameter the judge never named does change the
+ruling, then the stated basis is a story told afterwards, not the cause. The lab reports this as
+**faithfulness**: the agreement between the claimed decisive readings and the measured sensitivity.
+
+**Cost and speed.** This design needs 3 calls instead of 5, and the two briefs run in parallel. The wall
+clock is about two calls long instead of five.
+
+**What it gives up, which the lab measures rather than assumes:** the challenger no longer answers the
+defender, so a rebuttal cannot expose a weak defence. That is one of the arms below.
+
+### Arms to compare (same case set, same scorers)
+
+**Topology and rounds:**
+
+| Arm | Calls per order | What it tests |
+| --- | --- | --- |
+| T0 today: sequential debate, 2 rounds | 5 serial | The baseline |
+| T1 sequential, 1 round | 3 serial | What the second round adds |
+| T2 independent briefs + deciding judge with decision basis | 3, 2 in parallel | The operator's design |
+| T3 T2 + one rebuttal each (each side reads the other's brief once) | 5, in 2 parallel pairs | Whether rebuttal earns its cost |
+
+For each arm the report shows what changed: rulings, new readings, and whether any decisive parameter
+appeared only in the extra round. If round 2 introduces no new decisive reading and changes no ruling
+beyond the noise floor, it is not paying for itself.
+
+**Models, per role.** Prices are per million input / output tokens, read from the Anthropic price list
+cached 2026-09-25:
+
+| Model | $ in / out | Notes for the lab |
+| --- | --- | --- |
+| `claude-opus-5` (today) | 5 / 25 | Champion |
+| `claude-opus-5-5` | 4 / 20 | Newer and cheaper than today's. Its effort defaults to `medium`, so the lab sets effort explicitly |
+| `claude-sonnet-5-5` | 2 / 10 | The main "less powerful" candidate |
+| `claude-haiku-4-5` | 1 / 5 | Smallest. It does **not** accept the `effort` parameter, which our adapter always sends (`kernel/llm_anthropic.py:101`), and its context is 200K. The lab needs a per-model call profile before it can test Haiku |
+| `gpt-5.5` (OpenAI) | — | Already wired as the alternative provider; optional arm |
+
+**Effort:** `low`, `medium` and `high` for each model that supports it. A strong model at lower effort
+is often a better trade than a weaker model at higher effort, and both are tested.
+
+### How to search without paying for every combination
+
+1. **Quiz as the entry filter (cheap).** Every candidate model takes the comprehension quiz (Test 1)
+   with the champion prompt and glossary. A model that does not understand the parameters does not go
+   on to deliberate.
+2. **Topology at the champion model.** Run T0–T3 on Opus 5 and pick the topology.
+3. **Downgrade one role at a time** on the chosen topology. First the two debaters with the judge
+   held on Opus, then the judge.
+4. **Effort sweep** on the surviving configurations.
+5. **Confirm** the winner on real, previously seen cases (§9, decision 4).
+
+**"Up to the job" has a pre-registered bar,** written before the first run. A cheaper configuration
+qualifies only if, against the champion on the same cases:
+
+- understood, used, decisive and faithfulness scores are not worse by more than a stated margin
+  (beyond the run-to-run noise measured by the repeats);
+- the placebo flip rate is not higher;
+- expert-case accuracy is not lower;
+- cost or latency, or both, are lower.
+
+It passes all four or it fails, as the experiment records here already do.
+
+### What this does not change
+
+The lab **measures** these arms; it does not deploy them. A new topology, a different model per role,
+or fewer rounds in production is a separate sprint, with a deliberator law cycle and a
+deploy. §10's guarantee holds: nothing that runs today is touched by the lab.

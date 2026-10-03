@@ -460,3 +460,97 @@ nothing is cut; a pattern the sensitivity test contradicts is corrected or remov
 
 **Build order change:** L0 becomes *Book Part I (generated) + Part III*, and Part II is drafted
 alongside L1 so it is ready for L2's first comparison.
+
+---
+
+## 14. The decision code: laws that help the deliberators decide (operator, 2026-10-03)
+
+> *"We need a set of laws to help the deliberators decide. A harness of a sort."* (operator)
+
+**What exists and what does not.** `agents/deliberator/laws/laws.md` (`DLIB-*`) governs the
+deliberator as **software**: its inputs, triggers, outputs, failures and audit. Nothing tells the
+**expert** how to decide: what to read, how to weigh it, when a ruling is allowed. The book (§13) says
+what things *mean*. The decision code says what the expert *must do* with them, and code checks that it
+did.
+
+### The harness
+
+```text
+packet + book (I–III) + decision code
+                 │
+                 ▼
+     role writes typed output (readings, case or decision basis, ruling)
+                 │
+                 ▼
+     LAW CHECKER (code, after every call)
+        ├─ passes ─────────────────────────────► accepted; laws applied are recorded
+        ├─ breaks a FORM law ─► one retry, with the broken clause quoted ─► still broken: recorded violation
+        └─ departs from a JUDGEMENT law ─► allowed only with a stated reason; the departure is recorded
+```
+
+The LLM still decides. The harness makes sure it decided **lawfully**: on the packet's true values, by
+the method, and against the doctrine. It also records each case where it chose to depart.
+
+### Three tiers
+
+**Tier A: form laws.** Code enforces them, and a ruling that breaks one is not accepted.
+
+| ID | Law |
+| --- | --- |
+| DEC-FORM-01 | Every value read equals the packet's value. |
+| DEC-FORM-02 | Every metric read exists in the dictionary (book Part I), and its stated scale and direction match it. |
+| DEC-FORM-03 | Every ruling's decision basis contains at least one high-weight quant or sentiment reading (operator policy, §9). |
+| DEC-FORM-04 | An `overturn` names at least one high-weight decisive reading that bears **against** the order. |
+| DEC-FORM-05 | An `uphold` names the opposing side's strongest claim and why it was rejected. |
+| DEC-FORM-06 | No statement about how our system works contradicts book Part III (the S245 class: "calendar days" when the code counts sessions). |
+
+**Tier B: procedure laws.** The expert's method. Code checks that each step is present and consistent.
+
+| ID | Law |
+| --- | --- |
+| DEC-PROC-01 | Read before arguing: readings come first, and an argument may use only what was read. |
+| DEC-PROC-02 | **Pillar sweep:** state the bearing of each pillar (technical, fundamental, relative strength, sentiment, risk and portfolio), or mark it *absent* with the reason. Absence is evidence, not silence. |
+| DEC-PROC-03 | Name the combination pattern from book Part II that fits the stock, or say that none fits. |
+| DEC-PROC-04 | State the market conditions: regime, VIX level and its as-of date, earnings horizon. |
+| DEC-PROC-05 | Contrarian sub-scores (RSI, Bollinger) are read **with** the trend readings, never alone (§12). |
+| DEC-PROC-06 | A gap that would change the ruling if filled is named as such. |
+| DEC-PROC-07 | The judge addresses each side's strongest claim, adds its own reading, and explains why **this combination** of data and conditions leads to **this ruling**. |
+
+**Tier C: judgement laws.** The doctrine, drafted from cited literature and **approved one by one by
+the operator**. Each is marked *judgement, not evidenced* until the replay shows it earns. Its numbers
+come from the dictionary's bands, never from the prompt.
+
+| ID | Law (draft) |
+| --- | --- |
+| DEC-JUDG-01 | **Falling knife.** Below the 200-day average with negative MACD and negative relative strength: oversold readings do not count as support for a buy. |
+| DEC-JUDG-02 | **Extended leader.** Overbought and far above the 200-day average: the case must weigh pullback risk against the stop's distance in ATR. |
+| DEC-JUDG-03 | **Value trap.** A favourable valuation sub-score with unfavourable growth sub-scores: valuation alone does not support the buy. |
+| DEC-JUDG-04 | **Pillars in conflict.** A strong technical case against strongly negative sentiment, or the reverse, cannot be upheld without resolving the conflict explicitly. |
+| DEC-JUDG-05 | **Event inside the holding period.** The scanner excludes earnings within 5 days (`earnings_exclusion_days`); earnings later, but inside the expected holding period, must be weighed. |
+| DEC-JUDG-06 | **Risk-off.** In a risk-off regime or a high VIX, a high-beta buy needs a stronger case to be upheld. |
+| DEC-JUDG-07 | *(parked with item 99)* When the barrier forecast says the stop is likelier first than the target, the case must answer it. |
+
+### How the lab uses the code
+
+- **Compliance:** the rate at which each law is met, per role, model and topology.
+- **Consistency:** when a judgement law's conditions hold in a case, did the ruling follow it, or state
+  a departure?
+- **The code is tested like the book.** The same cases run with no code, Tier A only, A + B, and
+  A + B + C. A law that changes nothing is dropped. A law that makes the expert worse on the expert
+  cases is revised.
+- **Then the money question.** Does following a judgement law improve outcomes? That is the replay's
+  question (P17), not the lab's.
+
+### Where it lives, and the wall
+
+The checker engine is substrate (`kernel`), decision-agnostic like `deliberation_eval.py`. The trading
+laws are pack data, which keeps ADR-0012's wall. In the lab the code is part of a prompt variant.
+Promotion to production is a law cycle: a `DEC-*` clause family, test-plan rows citing each clause ID,
+and the same evidence bar as any other law.
+
+### 🪤 One thing the code cannot fix by itself
+
+Under **ADR-0029, only `overturn` blocks an order. A `revise` is a recorded finding and changes nothing
+about the trade.** A judgement law whose conclusion is "revise" therefore has no effect on what is
+bought. If a law should *reduce* a position rather than block it, `revise` needs an action, such as a
+smaller size. That is capital-risk policy, the operator's.

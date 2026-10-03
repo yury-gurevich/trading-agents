@@ -71,7 +71,23 @@ the operator (judgement until the replay evidences it), III house rules from the
 tests the book itself (none / I / I + II, version against version). **Ruled out:** a book written
 by hand for Part I (drifts from the code); patterns presented as proven edge.
 
-**Open, the operator's.** The budget for L2–L3, and later for L5.
+**Amendment 3 (operator, 2026-10-03): a decision code, "a harness of a sort".** The `DLIB-*` law
+book governs the deliberator as software; nothing governs how the expert decides. Proposal §14: a
+three-tier decision code checked by code after every call. Tier A form laws (true values, dictionary
+meanings, a quant basis for every ruling, an overturn needs a high-weight reading against, an uphold
+answers the strongest opposing claim, no false facts about the system): a break gets one retry with
+the clause quoted, then is a recorded violation. Tier B procedure laws (read first, pillar sweep with
+absence stated, name the pattern, state market conditions, contrarian scores read with trend, name
+decisive gaps, the judge explains why this combination leads to this ruling). Tier C judgement laws
+(falling knife, extended leader, value trap, pillars in conflict, an event inside the holding period,
+risk-off with high beta), operator-approved one by one and marked unevidenced until the replay. The
+lab tests the code by tiers (none / A / A + B / A + B + C). The checker is kernel; trading clauses are
+pack data. **Found:** under ADR-0029 a `revise` changes nothing about the order, so a law that
+concludes "revise" has no trading effect unless `revise` gains an action (operator policy).
+
+**Open, the operator's.** Whether Tier C is binding or departable with a stated reason; whether
+`revise` should carry an action; what a production form-law violation does after its retry; the
+budget for L2–L3, and later for L5.
 
 ---
 

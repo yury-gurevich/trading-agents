@@ -6,7 +6,7 @@
   "instructions": "production",
   "book": "none",
   "packet": "production",
-  "coverage": "per_seat",
+  "coverage": "decision_rule",
   "adapter": "chat",
   "retries": 1,
   "models": {

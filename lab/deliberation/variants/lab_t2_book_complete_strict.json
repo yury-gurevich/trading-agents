@@ -1,12 +1,12 @@
 {
-  "name": "lab_t2_book_complete",
-  "note": "the operator's design with EVERY computed number presented (production withholds ~25 per case)",
+  "name": "lab_t2_book_complete_strict",
+  "note": "as lab_t2_book_complete, but every seat must read every number: measures what the relaxation costs",
   "topology": "T2",
   "rounds": 1,
   "instructions": "lab",
   "book": "system",
   "packet": "complete",
-  "coverage": "decision_rule",
+  "coverage": "strict",
   "adapter": "chat",
   "retries": 1,
   "models": {

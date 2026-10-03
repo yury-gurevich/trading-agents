@@ -21,6 +21,10 @@ from .engines import make_lm, price
 from .laws import NON_MARKET_PILLARS, check_brief, check_ruling, required_numbers
 from .program import INSTRUCTIONS, BriefSig, RulingSig, adapter, render_brief, seat
 
+# Who must read what (DL-264 amendment 8). decision_rule: the judge reads every number, the debaters every
+# number of evidence. strict: every seat reads every number. none: no completeness requirement.
+COVERAGE = {"decision_rule": ("evidence", "all"), "strict": ("all", "all"), "none": ("none", "none")}
+
 LAB = Path(__file__).parent
 CASES = LAB / "cases" / "synthetic"
 BOOK_MD = LAB / "book" / "generated" / "dictionary.md"
@@ -36,9 +40,9 @@ def packet_of(c: dict, variant: dict) -> str:
 class Checked(dspy.Module):
     """One seat with its own form-law retry loop (no dspy.Refine: it forces temperature, DL-264 am. 5)."""
 
-    def __init__(self, predictor, kind: str, retries: int, require_all: bool):
+    def __init__(self, predictor, kind: str, retries: int, coverage: str):
         super().__init__()
-        self.p, self.kind, self.retries, self.require_all = predictor, kind, retries, require_all
+        self.p, self.kind, self.retries, self.coverage = predictor, kind, retries, coverage
 
     def forward(self, **inputs):
         attempts, feedback, obj = [], "", None
@@ -47,9 +51,9 @@ class Checked(dspy.Module):
                 out = self.p(**inputs, law_feedback=feedback)
                 obj = out.brief if self.kind == "brief" else out.ruling
                 if self.kind == "brief":
-                    v = check_brief(obj, inputs["packet"], inputs.get("side", "?"), self.require_all)
+                    v = check_brief(obj, inputs["packet"], inputs.get("side", "?"), self.coverage)
                 else:
-                    v = check_ruling(obj, inputs["packet"], self.require_all)
+                    v = check_ruling(obj, inputs["packet"], self.coverage)
             except Exception as e:  # parse failure, provider error: recorded, not hidden
                 obj = None
                 attempts.append(
@@ -77,10 +81,15 @@ def estimate(variant: dict, cases: list[dict], book: str) -> tuple[float, float,
     priced = True
     for c in cases:
         packet = packet_of(c, variant)
-        n_numbers = sum(len(g) for g in required_numbers(packet).values())
+        debaters, _ = COVERAGE[variant.get("coverage", "decision_rule")]
+        n_all = sum(len(g) for g in required_numbers(packet).values())
+        n_ev = sum(len(g) for g in required_numbers(packet, True).values())
         t_in = (len(book) + len(packet) + 6000) / 4
-        t_out = 60 * n_numbers + 1500 + 3000  # readings + case + a thinking allowance
         for role, n in seat_calls(variant).items():
+            n_numbers = (
+                n_all if role == "judge" or debaters == "all" else (n_ev if debaters == "evidence" else 10)
+            )
+            t_out = 60 * n_numbers + 1500 + 3000  # readings + case + a thinking allowance
             spec = variant["models"][role]
             p = price(spec["model"])
             if p is None:
@@ -95,10 +104,10 @@ def estimate(variant: dict, cases: list[dict], book: str) -> tuple[float, float,
 def run_case(c: dict, variant: dict, lms: dict, book: str) -> dict:
     ins = INSTRUCTIONS[variant["instructions"]]
     r = variant.get("retries", 1)
-    every_seat = variant.get("coverage", "per_seat") == "per_seat"
-    pro = Checked(seat(BriefSig, ins["pro"], lms["pro"]), "brief", r, every_seat)
-    con = Checked(seat(BriefSig, ins["con"], lms["con"]), "brief", r, every_seat)
-    judge = Checked(seat(RulingSig, ins["judge"], lms["judge"]), "ruling", r, True)
+    debaters, judge_cov = COVERAGE[variant.get("coverage", "decision_rule")]
+    pro = Checked(seat(BriefSig, ins["pro"], lms["pro"]), "brief", r, debaters)
+    con = Checked(seat(BriefSig, ins["con"], lms["con"]), "brief", r, debaters)
+    judge = Checked(seat(RulingSig, ins["judge"], lms["judge"]), "ruling", r, judge_cov)
     base = {"decision": c["decision"], "packet": packet_of(c, variant)}
     turns = []
     with dspy.context(adapter=adapter(variant.get("adapter", "chat"), book)):
@@ -125,7 +134,11 @@ def run_case(c: dict, variant: dict, lms: dict, book: str) -> dict:
         "case": c["name"],
         "expert_view": c["expert_view"],
         "decision": c["decision"],
-        "required_numbers": sum(len(g) for g in required_numbers(base["packet"]).values()),
+        "required_numbers": {
+            mode: sum(len(g) for g in required_numbers(base["packet"], mode == "evidence").values())
+            for mode in ("all", "evidence")
+        },
+        "coverage_modes": {"debaters": debaters, "judge": judge_cov},
         "seats": seats,
         "ruling": j_out.final.model_dump() if j_out.final else None,
     }
@@ -177,7 +190,7 @@ def report(results: list[dict], variant: dict, cost: dict) -> str:
         f"# Lab run: {variant['name']}",
         "",
         f"Topology {variant['topology']}, instructions `{variant['instructions']}`, book `{variant['book']}`, "
-        f"packet `{variant.get('packet', 'production')}`, coverage `{variant.get('coverage', 'per_seat')}`, "
+        f"packet `{variant.get('packet', 'production')}`, coverage `{variant.get('coverage', 'decision_rule')}`, "
         f"adapter `{variant.get('adapter', 'chat')}`, retries {variant.get('retries', 1)}. Cost: {cost}.",
         "",
         "## Rulings",
@@ -194,8 +207,9 @@ def report(results: list[dict], variant: dict, cost: dict) -> str:
             f"| {r['case']} | {rl.get('ruling', 'FAILED')} | {', '.join(dec)} | {'yes' if market else 'NO'} "
             f"| {r['expert_view'][:110]} |"
         )
-        need = r["required_numbers"]
         for s in r["seats"]:
+            mode = r["coverage_modes"]["judge" if s["seat"] == "judge" else "debaters"]
+            need = r["required_numbers"]["evidence" if mode == "evidence" else "all"] if mode != "none" else 0
             a0, af = s["attempts"][0], s["attempts"][-1]
             for v in a0["violations"]:
                 first[v["clause"]] += 1

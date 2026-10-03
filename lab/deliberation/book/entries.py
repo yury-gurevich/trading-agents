@@ -9,7 +9,7 @@ settings at generation time.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 # scale vocabulary
 SUB = "sub_score_0_100"
@@ -42,6 +42,13 @@ class Entry:
     probe: str = ""  # name of a scorer probe in dictionary.py; its bands are generated
     alt_scales: tuple[str, ...] = ()  # the same key rendered in another unit elsewhere in the packet
     pattern: str = ""  # regex for keys that embed a name or period, e.g. holding_<TICKER>_value_usd
+    # Who must read it (DL-264 amendment 8): "evidence" = every seat (the default, so a new number is
+    # read by everyone until someone decides otherwise); "bookkeeping" = the judge must, debaters may.
+    tier: str = "evidence"
+    # "proven" = a deterministic computation or a model with demonstrated skill; "unproven" = a model
+    # output whose skill is not yet shown live. Unproven numbers are presented and read, but may not
+    # carry a decision on their own (DEC-FORM-08).
+    status: str = "proven"
 
 
 E = Entry
@@ -1280,7 +1287,125 @@ MORE: tuple[Entry, ...] = (
         pattern=r"holding_[A-Z]+_value_usd",
     ),
 )
-ENTRIES = ENTRIES + MORE
+BARRIER: tuple[Entry, ...] = (
+    E(
+        "barrier_p_stop_first",
+        "forecast",
+        UNIT,
+        LOWER,
+        "Forecaster's probability that the stop is touched before the target within 10 sessions "
+        "(GARCH(1,1)-t fitted on ~760 bars, 1,000 simulated paths).",
+        "agents/forecaster/barrier_forecast.py",
+        "UNPROVEN: no live skill shown yet. Read it, weigh it, never decide on it alone (DEC-FORM-08).",
+        status="unproven",
+    ),
+    E(
+        "barrier_p_target_first",
+        "forecast",
+        UNIT,
+        HIGHER,
+        "Probability the target is touched before the stop within 10 sessions.",
+        "agents/forecaster/barrier_forecast.py",
+        "UNPROVEN, as above.",
+        status="unproven",
+    ),
+    E(
+        "barrier_p_neither",
+        "forecast",
+        UNIT,
+        NONE,
+        "Probability neither is touched within 10 sessions.",
+        "agents/forecaster/barrier_forecast.py",
+        "UNPROVEN, as above.",
+        status="unproven",
+    ),
+    E(
+        "barrier_horizon_sessions",
+        "forecast",
+        DAYS,
+        NONE,
+        "Horizon of the barrier forecast, in sessions.",
+        "forecaster barrier_garch.py HORIZON_SESSIONS",
+    ),
+    E(
+        "barrier_history_bars",
+        "forecast",
+        COUNT,
+        HIGHER,
+        "Bars the GARCH model was fitted on.",
+        "forecaster barrier_forecast.py",
+    ),
+    E(
+        "barrier_settled_claims",
+        "forecast",
+        COUNT,
+        HIGHER,
+        "Past barrier forecasts already settled against "
+        "what happened; the forecast's skill cannot be judged before enough have settled.",
+        "forecaster barrier_skill.py",
+    ),
+)
+
+# Numbers that describe the machinery rather than the stock or the market: the judge must read them,
+# debaters may (DL-264 amendment 8).
+BOOKKEEPING = {
+    "requested_tickers",
+    "returned_tickers",
+    "universe_tickers",
+    "evaluated_tickers",
+    "rank_ordinal",
+    "indicators_available",
+    "fundamentals_available",
+    "history_bars",
+    "sentiment_articles",
+    "sentiment_batch_weighted_articles",
+    "sentiment_positive_words",
+    "sentiment_negative_words",
+    "favorable_excursion_horizon_days",
+    "favorable_excursion_lookback_windows",
+    "favorable_excursion_sample_count",
+    "open_usd",
+    "high_usd",
+    "low_usd",
+    "volume_shares",
+    "latest_close",
+    "est_price_usd",
+    "quantity_shares",
+    "position_value_usd",
+    "order_cost_usd",
+    "value_order_cost_usd",
+    "value_shares",
+    "value_positions",
+    "cash_buffer_pct",
+    "reserved_cash_this_batch_usd",
+    "deployed_this_batch_usd",
+    "examined_issuers",
+    "min_pair_overlap_bars",
+    "skipped_pairs",
+    "correlation_ramp",
+    "below_threshold_top",
+    "threshold_portfolio_ratio",
+    "threshold_shares",
+    "threshold_positions",
+    "threshold_available_cash_usd",
+    "threshold_reward_risk_ratio",
+    "threshold_sector_exposure_ratio",
+    "threshold_sector_issuers",
+    "threshold_cluster_exposure_ratio",
+    "base_stop_loss_pct",
+    "base_take_profit_pct",
+    "base_max_holding_days",
+    "account_cash_usd",
+    "buying_power_usd",
+    "open_positions",
+    "holding_TICKER_shares",
+    "barrier_horizon_sessions",
+    "barrier_history_bars",
+    "confidence",
+}
+ENTRIES = tuple(
+    replace(e, tier="bookkeeping") if e.key in BOOKKEEPING else e for e in ENTRIES + MORE + BARRIER
+)
 
 _EXACT = {e.key: e for e in ENTRIES}
 _PATTERNS = [(re.compile(f"^{e.pattern}$"), e) for e in ENTRIES if e.pattern]

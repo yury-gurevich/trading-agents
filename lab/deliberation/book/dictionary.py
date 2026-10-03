@@ -140,7 +140,9 @@ def render(book: dict) -> str:
     for group in dict.fromkeys(e["pillar"] for e in book["entries"]):
         lines.append(f"## {group}")
         for e in (x for x in book["entries"] if x["pillar"] == group):
-            line = f"- `{e['key']}` [{e['scale']}; {e['direction']}]: {e['what']}"
+            tags = [e["scale"], e["direction"]] + (["bookkeeping"] if e["tier"] == "bookkeeping" else [])
+            tags += ["UNPROVEN"] if e["status"] == "unproven" else []
+            line = f"- `{e['key']}` [{'; '.join(tags)}]: {e['what']}"
             if e["bands"]:
                 line += f" Bands: {e['bands']}."
             if e["pitfall"]:

@@ -1,4 +1,4 @@
-"""Decision code, Tier A form laws (DEC-FORM-01..07), checked by code on every seat's typed output.
+"""Decision code, Tier A form laws (DEC-FORM-01..08), checked by code on every seat's typed output.
 
 DEC-FORM-07 is the operator's rule (2026-10-03): ALL quant numbers are presented to and interpreted by
 the deliberators. Every number in the packet must be read by each seat: copied, its scale named, its
@@ -79,7 +79,7 @@ def _same(a: str, b: str) -> bool:
     return abs(fa - fb) <= max(_resolution(a), _resolution(b)) + 1e-12
 
 
-def required_numbers(context: str) -> dict[str, list[list[Occ]]]:
+def required_numbers(context: str, evidence_only: bool = False) -> dict[str, list[list[Occ]]]:
     """Every number the packet presents, grouped: key -> groups of renderings of the same number.
 
     A key with two genuinely different numbers (the analyst's and the scanner's relative_strength,
@@ -88,6 +88,8 @@ def required_numbers(context: str) -> dict[str, list[list[Occ]]]:
     out: dict[str, list[list[Occ]]] = {}
     for k, occs in packet_values(context).items():
         entry = lookup(k)
+        if evidence_only and entry is not None and entry.tier == "bookkeeping":
+            continue
         for o in occs:
             numeric = bool(re.search(r"\d", o.value)) and not _DATE.match(o.value)
             absent_quant = o.value == "n/a" and entry is not None and entry.pillar not in NON_MARKET_PILLARS
@@ -225,10 +227,12 @@ def check_reading(r: Reading, pv: dict, seat: str) -> list[Violation]:
     return out
 
 
-def check_complete(readings: list[Reading], context: str, seat: str) -> list[Violation]:
+def check_complete(
+    readings: list[Reading], context: str, seat: str, evidence_only: bool = False
+) -> list[Violation]:
     """DEC-FORM-07: every number in the packet is read (operator rule, house rule H12)."""
     missing = []
-    for key, groups in required_numbers(context).items():
+    for key, groups in required_numbers(context, evidence_only).items():
         mine = [r for r in readings if r.metric == key]
         for g in groups:
             if not any(_matches(r, o) for r in mine for o in g):
@@ -262,20 +266,20 @@ def _falsified(text: str, seat: str) -> list[Violation]:
     return out
 
 
-def check_brief(b: Brief, context: str, seat: str, require_all: bool = True) -> list[Violation]:
+def check_brief(b: Brief, context: str, seat: str, coverage: str = "evidence") -> list[Violation]:
     pv = packet_values(context)
     out = [v for r in b.readings for v in check_reading(r, pv, seat)]
-    if require_all:
-        out += check_complete(b.readings, context, seat)
+    if coverage != "none":
+        out += check_complete(b.readings, context, seat, evidence_only=coverage == "evidence")
     return out + _falsified(b.case + " " + " ".join(r.meaning_here for r in b.readings), seat)
 
 
-def check_ruling(rl: Ruling, context: str, require_all: bool = True) -> list[Violation]:
+def check_ruling(rl: Ruling, context: str, coverage: str = "all") -> list[Violation]:
     seat = "judge"
     pv = packet_values(context)
     out = [v for r in rl.own_readings for v in check_reading(r, pv, seat)]
-    if require_all:
-        out += check_complete(rl.own_readings, context, seat)
+    if coverage != "none":
+        out += check_complete(rl.own_readings, context, seat, evidence_only=coverage == "evidence")
     by_key = {r.metric: r for r in rl.own_readings}
     decisive = [by_key[k] for k in rl.decisive if k in by_key]
     for k in rl.decisive:
@@ -301,6 +305,16 @@ def check_ruling(rl: Ruling, context: str, require_all: bool = True) -> list[Vio
                 "judge: no high-weight market reading among the decisive ones",
                 "House rule H4: the ruling must rest on market evidence (technical, fundamental, "
                 "relative strength, sentiment, volatility, regime). Process facts may support only.",
+            )
+        )
+    if market and all(lookup(r.metric).status == "unproven" for r in market):
+        out.append(
+            Violation(
+                "DEC-FORM-08",
+                ",".join(r.metric for r in market),
+                "judge: the ruling's market basis is only unproven model output",
+                "House rule H13: an unproven number (e.g. the barrier forecast) is read and may support a "
+                "ruling, but at least one PROVEN high-weight market reading must carry it.",
             )
         )
     if rl.ruling == "overturn" and not any(

@@ -88,10 +88,19 @@ RULES: tuple[Rule, ...] = (
     ),
     Rule(
         "H12",
-        "Every number in the packet is read and interpreted by every deliberator: copied exactly, its scale "
-        "named, what it means here, whether it is favourable for this buy, and how much it weighs. A number that "
-        "does not matter is still read, with weight low and the reason.",
-        "operator rule, 2026-10-03 (DL-264)",
+        "Every number in the packet is presented to you and must be read: copied exactly, its scale named, what it "
+        "means here, whether it is favourable for this buy, and how much it weighs. The judge reads EVERY number. "
+        "The pro and con read every number of evidence and may skip bookkeeping (the dictionary marks each "
+        "entry). A number that does not matter is still read, with weight low and the reason.",
+        "operator rule 2026-10-03; tiers decided in DL-264 amendment 8",
+    ),
+    Rule(
+        "H13",
+        "A number marked UNPROVEN in the dictionary (a model output whose skill is not yet shown live, such as the "
+        "barrier forecast) is read and weighed like any other, but it may never carry a decision on its own: at "
+        "least one PROVEN market reading must. When its skill is proven the mark is removed and nothing else "
+        "changes.",
+        "DL-264 amendment 8 (replaces hiding the forecast until proven, work-queue 99)",
     ),
 )
 

@@ -24,6 +24,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -37,6 +39,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -50,6 +54,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -63,6 +69,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -76,6 +84,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -89,6 +99,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -102,6 +114,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -115,6 +129,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -128,6 +144,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -141,6 +159,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -154,6 +174,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -167,6 +189,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -180,6 +204,8 @@
    "probe": "rsi",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 30 -> 80; x >= 30 and < 50 -> 65; x >= 50 and < 70 -> 50; x >= 70 -> 25"
   },
   {
@@ -193,6 +219,8 @@
    "probe": "rsi",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 30 -> 80; x >= 30 and < 50 -> 65; x >= 50 and < 70 -> 50; x >= 70 -> 25"
   },
   {
@@ -206,6 +234,8 @@
    "probe": "rsi2",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 10 -> 80; x >= 10 and <= 90 -> 50; x > 90 -> 20"
   },
   {
@@ -219,6 +249,8 @@
    "probe": "rsi2",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 10 -> 80; x >= 10 and <= 90 -> 50; x > 90 -> 20"
   },
   {
@@ -232,6 +264,8 @@
    "probe": "bollinger",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 0.3 -> 75; x >= 0.3 and < 0.7 -> 50; x >= 0.7 -> 30"
   },
   {
@@ -245,6 +279,8 @@
    "probe": "bollinger",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 0.3 -> 75; x >= 0.3 and < 0.7 -> 50; x >= 0.7 -> 30"
   },
   {
@@ -258,6 +294,8 @@
    "probe": "sma",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -5% -> 20; x > -5% and <= 0% -> 40; x > 0% and <= 5% -> 60; x > 5% -> 75"
   },
   {
@@ -271,6 +309,8 @@
    "probe": "sma",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -5% -> 20; x > -5% and <= 0% -> 40; x > 0% and <= 5% -> 60; x > 5% -> 75"
   },
   {
@@ -284,6 +324,8 @@
    "probe": "ema",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75"
   },
   {
@@ -297,6 +339,8 @@
    "probe": "ema",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -1% -> 25; x > -1% and <= 0% -> 40; x > 0% and <= 1% -> 60; x > 1% -> 75"
   },
   {
@@ -310,6 +354,8 @@
    "probe": "macd",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45"
   },
   {
@@ -323,6 +369,8 @@
    "probe": "macd",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "line>0 and histogram>0 -> 75; histogram>0 only -> 60; line<0 and histogram<0 -> 25; otherwise -> 45"
   },
   {
@@ -336,6 +384,8 @@
    "probe": "golden",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "golden cross -> 75; otherwise -> 25"
   },
   {
@@ -349,6 +399,8 @@
    "probe": "golden",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "golden cross -> 75; otherwise -> 25"
   },
   {
@@ -362,6 +414,8 @@
    "probe": "obv",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "OBV above its signal -> 70; otherwise -> 35"
   },
   {
@@ -375,6 +429,8 @@
    "probe": "obv",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "OBV above its signal -> 70; otherwise -> 35"
   },
   {
@@ -388,6 +444,8 @@
    "probe": "atr",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35"
   },
   {
@@ -401,6 +459,8 @@
    "probe": "atr",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 2% -> 70; x >= 2% and < 4% -> 55; x >= 4% -> 35"
   },
   {
@@ -414,6 +474,8 @@
    "probe": "stochastic",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "%K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50"
   },
   {
@@ -427,6 +489,8 @@
    "probe": "stochastic",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "%K and %D both < 20 -> 80; %K < 20 -> 65; %K and %D both > 80 -> 20; %K > 80 -> 35; otherwise 50"
   },
   {
@@ -440,6 +504,8 @@
    "probe": "williams",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25"
   },
   {
@@ -453,6 +519,8 @@
    "probe": "williams",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < -80 -> 75; x >= -80 and <= -20 -> 50; x > -20 -> 25"
   },
   {
@@ -466,6 +534,8 @@
    "probe": "chop",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 38.2 -> 75; x >= 38.2 and <= 61.8 -> 50; x > 61.8 -> 30"
   },
   {
@@ -479,6 +549,8 @@
    "probe": "chop",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < 38.2 -> 75; x >= 38.2 and <= 61.8 -> 50; x > 61.8 -> 30"
   },
   {
@@ -492,6 +564,8 @@
    "probe": "nw",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < -1% -> 70; x >= -1% and <= 1% -> 50; x > 1% -> 30"
   },
   {
@@ -505,6 +579,8 @@
    "probe": "nw",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x < -1% -> 70; x >= -1% and <= 1% -> 50; x > 1% -> 30"
   },
   {
@@ -518,6 +594,8 @@
    "probe": "turnaround",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "signal -> 75; otherwise -> 50"
   },
   {
@@ -531,6 +609,8 @@
    "probe": "turnaround",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "signal -> 75; otherwise -> 50"
   },
   {
@@ -544,6 +624,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -557,6 +639,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -570,6 +654,8 @@
    "probe": "rs",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -5 pp -> 20; x > -5 pp and <= 0 pp -> 40; x > 0 pp and <= 5 pp -> 60; x > 5 pp -> 80"
   },
   {
@@ -583,6 +669,8 @@
    "probe": "rs",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "x <= -5 pp -> 20; x > -5 pp and <= 0 pp -> 40; x > 0 pp and <= 5 pp -> 60; x > 5 pp -> 80"
   },
   {
@@ -596,6 +684,8 @@
    "probe": "fund:pe",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = peBasicExclExtraTTM or peTTM; first match wins: raw < 10 -> 80; raw <= 25 -> 60; otherwise -> 30 Non-positive raw values are skipped (no key)"
   },
   {
@@ -609,6 +699,8 @@
    "probe": "fund:pb",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = pbQuarterly or pbAnnual; first match wins: raw < 1.5 -> 80; raw <= 3 -> 60; raw <= 5 -> 40; otherwise -> 20 Non-positive raw values are skipped (no key)"
   },
   {
@@ -622,6 +714,8 @@
    "probe": "fund:roe",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = roeTTM; first match wins: raw > 15 -> 80; raw > 5 -> 55; otherwise -> 25"
   },
   {
@@ -635,6 +729,8 @@
    "probe": "fund:net_margin",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = netProfitMarginTTM; first match wins: raw > 20 -> 80; raw > 10 -> 55; otherwise -> 30"
   },
   {
@@ -648,6 +744,8 @@
    "probe": "fund:current_ratio",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = currentRatioQuarterly; first match wins: raw > 1.5 -> 70; raw > 1 -> 50; otherwise -> 25 Non-positive raw values are skipped (no key)"
   },
   {
@@ -661,6 +759,8 @@
    "probe": "fund:debt_equity",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = totalDebt/totalEquityQuarterly or totalDebt/totalEquityAnnual; first match wins: raw < 0.5 -> 80; raw < 1 -> 65; raw < 2 -> 45; otherwise -> 20"
   },
   {
@@ -674,6 +774,8 @@
    "probe": "fund:eps_growth",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = epsGrowthTTMYoy; first match wins: raw > 20 -> 85; raw > 5 -> 65; raw > -5 -> 45; otherwise -> 20"
   },
   {
@@ -687,6 +789,8 @@
    "probe": "fund:revenue_growth",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": "raw = revenueGrowthTTMYoy; first match wins: raw > 15 -> 80; raw > 5 -> 60; raw > -5 -> 45; otherwise -> 25"
   },
   {
@@ -700,6 +804,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -713,6 +819,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -726,6 +834,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -739,6 +849,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -752,6 +864,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -765,6 +879,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -778,6 +894,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -791,6 +909,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -804,6 +924,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -817,6 +939,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -830,6 +954,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -843,6 +969,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -856,6 +984,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -869,6 +999,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -882,6 +1014,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -895,6 +1029,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -908,6 +1044,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -921,6 +1059,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -934,6 +1074,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -947,6 +1089,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -960,6 +1104,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -973,6 +1119,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -986,6 +1134,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -999,6 +1149,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1012,6 +1164,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1025,6 +1179,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1038,6 +1194,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1051,6 +1209,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1064,6 +1224,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1077,6 +1239,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1090,6 +1254,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1103,6 +1269,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1116,6 +1284,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1129,6 +1299,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1142,6 +1314,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1155,6 +1329,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1168,6 +1344,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1181,6 +1359,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1194,6 +1374,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1207,6 +1389,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1222,6 +1406,8 @@
     "fraction"
    ],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1237,6 +1423,8 @@
     "fraction"
    ],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1250,6 +1438,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1263,6 +1453,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1276,6 +1468,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1289,6 +1483,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1302,6 +1498,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1315,6 +1513,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1328,6 +1528,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1341,6 +1543,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1354,6 +1558,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1367,6 +1573,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1380,6 +1588,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1393,6 +1603,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1406,6 +1618,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1419,6 +1633,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1432,6 +1648,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1445,6 +1663,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1458,6 +1678,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1471,6 +1693,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1484,6 +1708,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1497,6 +1723,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1510,6 +1738,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1523,6 +1753,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1536,6 +1768,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1549,6 +1783,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1562,6 +1798,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1575,6 +1813,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1588,6 +1828,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1601,6 +1843,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1614,6 +1858,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1627,6 +1873,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1640,6 +1888,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1653,6 +1903,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1666,6 +1918,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1679,6 +1933,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1692,6 +1948,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1705,6 +1963,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1718,6 +1978,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1731,6 +1993,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1744,6 +2008,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1757,6 +2023,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1770,6 +2038,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1783,6 +2053,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1796,6 +2068,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1809,6 +2083,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1822,6 +2098,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1835,6 +2113,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1848,6 +2128,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1861,6 +2143,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1874,6 +2158,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "sma_\\d+_usd",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1887,6 +2173,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "ema_\\d+_usd",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1900,6 +2188,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1913,6 +2203,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1926,6 +2218,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1939,6 +2233,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1952,6 +2248,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1965,6 +2263,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1978,6 +2278,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -1991,6 +2293,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -2004,6 +2308,8 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "holding_[A-Z]+_shares",
+   "tier": "bookkeeping",
+   "status": "proven",
    "bands": ""
   },
   {
@@ -2017,6 +2323,98 @@
    "probe": "",
    "alt_scales": [],
    "pattern": "holding_[A-Z]+_value_usd",
+   "tier": "evidence",
+   "status": "proven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_p_stop_first",
+   "pillar": "forecast",
+   "scale": "fraction_0_1",
+   "direction": "lower_better",
+   "what": "Forecaster's probability that the stop is touched before the target within 10 sessions (GARCH(1,1)-t fitted on ~760 bars, 1,000 simulated paths).",
+   "code_ref": "agents/forecaster/barrier_forecast.py",
+   "pitfall": "UNPROVEN: no live skill shown yet. Read it, weigh it, never decide on it alone (DEC-FORM-08).",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "evidence",
+   "status": "unproven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_p_target_first",
+   "pillar": "forecast",
+   "scale": "fraction_0_1",
+   "direction": "higher_better",
+   "what": "Probability the target is touched before the stop within 10 sessions.",
+   "code_ref": "agents/forecaster/barrier_forecast.py",
+   "pitfall": "UNPROVEN, as above.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "evidence",
+   "status": "unproven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_p_neither",
+   "pillar": "forecast",
+   "scale": "fraction_0_1",
+   "direction": "not_directional",
+   "what": "Probability neither is touched within 10 sessions.",
+   "code_ref": "agents/forecaster/barrier_forecast.py",
+   "pitfall": "UNPROVEN, as above.",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "evidence",
+   "status": "unproven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_horizon_sessions",
+   "pillar": "forecast",
+   "scale": "days",
+   "direction": "not_directional",
+   "what": "Horizon of the barrier forecast, in sessions.",
+   "code_ref": "forecaster barrier_garch.py HORIZON_SESSIONS",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_history_bars",
+   "pillar": "forecast",
+   "scale": "count",
+   "direction": "higher_better",
+   "what": "Bars the GARCH model was fitted on.",
+   "code_ref": "forecaster barrier_forecast.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "bookkeeping",
+   "status": "proven",
+   "bands": ""
+  },
+  {
+   "key": "barrier_settled_claims",
+   "pillar": "forecast",
+   "scale": "count",
+   "direction": "higher_better",
+   "what": "Past barrier forecasts already settled against what happened; the forecast's skill cannot be judged before enough have settled.",
+   "code_ref": "forecaster barrier_skill.py",
+   "pitfall": "",
+   "probe": "",
+   "alt_scales": [],
+   "pattern": "",
+   "tier": "evidence",
+   "status": "proven",
    "bands": ""
   }
  ]

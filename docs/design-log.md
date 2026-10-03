@@ -163,6 +163,38 @@ about $60 for all six variants, and about $1.90 for a 2-case first look. **Open,
 whether "all" includes the barrier forecast (item 99, parked until its skill is proven live); and
 whether every seat must read everything (`coverage: per_seat`, as built) or the trio collectively.
 
+**Amendment 8 (planner, delegated by the operator 2026-10-03: "make the decision in both cases … strict
+enough to be valid, but not too restrictive to be a hindrance in production or get in the way of future
+functionality").** One principle: **present everything, decide on what is proven.**
+
+- **Decision A, the barrier forecast:** yes, it is presented. It is tagged **UNPROVEN** in the
+  dictionary. It must be read and may support a ruling, but at least one **proven** high-weight market
+  reading must carry the ruling (house rule H13, form law DEC-FORM-08, checked by code). When the live
+  scorecard shows skill (item 99's trigger, `skill_lo > 0`), the tag is removed and nothing else
+  changes. This **replaces** item 99's "hide until proven" for the lab, and is the recommended
+  production rule. Hiding the forecast could not measure the deference risk item 99 feared; the
+  guard prevents it directly, and the lab's sensitivity test (L3) will show whether a ruling moves with
+  the forecast alone. It generalises: any future model output (a new forecast, a Jev or finance-model
+  opinion, a reweighted signal) enters the same way, presented and tagged, with no gate change.
+  *Ruled out:* hiding the forecast (unmeasurable, and blocks future signals); making it decisive at
+  once (deference to an unproven number).
+- **Decision B, who reads what:** the **judge reads every number**; the **pro and con read every
+  number of evidence** and may skip numbers tagged **bookkeeping** (thresholds, counts, prices,
+  account plumbing; 53 of 160 entries). **A new number defaults to evidence**, so nothing enters
+  unread unless someone decides it is bookkeeping. `strict` (every seat reads everything) stays as a
+  comparison arm, and `none` stays available for experiments that need no completeness requirement.
+  *Ruled out:* every seat reads everything as the production rule (about 13 % more output; the
+  debaters' reading of thresholds adds cost, not understanding); the trio collectively (the decider
+  could rule without having read a number).
+
+Measured on the synthetic cases: the judge must read 158–167 numbers, the debaters 106–112. Fake-model
+proof: 2 % → 100 % after the retry, and DEC-FORM-08 refuses a forecast-only ruling. Cost for 8 cases
+of the operator's design on the complete packet: about $6.86 (strict $7.91); 2 cases about $1.71.
+The barrier forecast in the lab comes from the forecaster's own GARCH fit and path simulation over a
+760-bar history (`arch` installed into this container's local environment only, not the lockfile).
+For the falling knife it gives an 81 % chance of the target first, an illustration of why H13 exists.
+On synthetic periodic series it is not evidence of the forecaster's quality.
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

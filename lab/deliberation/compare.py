@@ -32,9 +32,11 @@ def summary(run_dir: str) -> dict:
                 )
                 for a in (a0, af)
             }
-            need += r["required_numbers"]
-            read0 += r["required_numbers"] - miss[id(a0)] if a0["output"] else 0
-            read1 += r["required_numbers"] - miss[id(af)] if af["output"] else 0
+            mode = r["coverage_modes"]["judge" if s["seat"] == "judge" else "debaters"]
+            n = 0 if mode == "none" else r["required_numbers"]["evidence" if mode == "evidence" else "all"]
+            need += n
+            read0 += n - miss[id(a0)] if a0["output"] else 0
+            read1 += n - miss[id(af)] if af["output"] else 0
             out = af["output"] or {}
             for x in out.get("readings", []) + out.get("own_readings", []):
                 directions[(r["case"], x["metric"])].add(x["direction"])

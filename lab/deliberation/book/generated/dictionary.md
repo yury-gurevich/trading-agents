@@ -5,7 +5,7 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 
 ## composite
 - `confidence_score` [fraction_0_1; higher_better]: The analyst's confidence = confidence_floor + confidence_span x composite_score. Gated against the regime's base_min_confidence_score. CAUTION: Not a probability of profit. It is a linear rescale of the composite score.
-- `confidence` [fraction_0_1; higher_better]: Same number as confidence_score, repeated inside quant_metrics.
+- `confidence` [fraction_0_1; higher_better; bookkeeping]: Same number as confidence_score, repeated inside quant_metrics.
 - `composite_score` [fraction_0_1; higher_better]: Weighted mean of the pillars present: technical, fundamental, sentiment (weights in the house rules), renormalised over the pillars that exist. CAUTION: A missing pillar is dropped, not scored as zero: the composite can rest on technicals alone.
 
 ## technical
@@ -38,8 +38,8 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `nw_deviation_pct_score` [sub_score_0_100; higher_better]: Sub-score of nw_deviation_pct. Bands: x < -1% -> 70; x >= -1% and <= 1% -> 50; x > 1% -> 30.
 - `turnaround` [flag_0_1; higher_better]: 1 when the turnaround pattern detector fires, else 0. Bands: signal -> 75; otherwise -> 50.
 - `turnaround_score` [sub_score_0_100; higher_better]: 75 when turnaround fires, else neutral 50. Bands: signal -> 75; otherwise -> 50.
-- `indicators_available` [count; not_directional]: How many indicator sub-scores were averaged. CAUTION: Fewer indicators = a noisier technical_score.
-- `history_bars` [count; higher_better]: Daily bars the analyst had for this ticker. CAUTION: Below 200 the SMA-200 and golden cross cannot compute and are absent.
+- `indicators_available` [count; not_directional; bookkeeping]: How many indicator sub-scores were averaged. CAUTION: Fewer indicators = a noisier technical_score.
+- `history_bars` [count; higher_better; bookkeeping]: Daily bars the analyst had for this ticker. CAUTION: Below 200 the SMA-200 and golden cross cannot compute and are absent.
 
 ## fundamental
 - `fundamental_score` [fraction_0_1; higher_better]: Mean of the fundamental sub-scores (pe, pb, roe, net_margin, current_ratio, debt_equity, eps_growth, revenue_growth) /100.
@@ -51,7 +51,7 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `debt_equity` [sub_score_0_100; higher_better]: SUB-SCORE of debt/equity (less debt scores higher). Bands: raw = totalDebt/totalEquityQuarterly or totalDebt/totalEquityAnnual; first match wins: raw < 0.5 -> 80; raw < 1 -> 65; raw < 2 -> 45; otherwise -> 20. CAUTION: A HIGH debt_equity sub-score means LOW leverage.
 - `eps_growth` [sub_score_0_100; higher_better]: SUB-SCORE of trailing EPS growth year on year. Bands: raw = epsGrowthTTMYoy; first match wins: raw > 20 -> 85; raw > 5 -> 65; raw > -5 -> 45; otherwise -> 20. CAUTION: Raw value is epsGrowthTTMYoy (in %).
 - `revenue_growth` [sub_score_0_100; higher_better]: SUB-SCORE of trailing revenue growth year on year. Bands: raw = revenueGrowthTTMYoy; first match wins: raw > 15 -> 80; raw > 5 -> 60; raw > -5 -> 45; otherwise -> 25. CAUTION: Raw value is revenueGrowthTTMYoy (in %).
-- `fundamentals_available` [count; not_directional]: How many fundamental sub-scores were averaged.
+- `fundamentals_available` [count; not_directional; bookkeeping]: How many fundamental sub-scores were averaged.
 - `peBasicExclExtraTTM` [ratio; lower_better]: The actual trailing P/E ratio (vendor field).
 - `pbQuarterly` [ratio; lower_better]: Price/book ratio (vendor).
 - `roeTTM` [percent; higher_better]: Return on equity, % (vendor).
@@ -64,10 +64,10 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 ## sentiment
 - `analyst_sentiment_score` [fraction_0_1; higher_better]: The analyst's news-headline sentiment pillar (0 all negative, 0.5 balanced, 1 all positive); 'n/a' when no headline contains a lexicon word. CAUTION: 'n/a' means no signal, not neutral, and the composite then rests on the other pillars.
 - `sentiment_score` [fraction_0_1; higher_better]: Same lexicon pillar as analyst_sentiment_score, inside quant_metrics. Each headline scores 50+50*(pos-neg)/(pos+neg); headlines with no lexicon word are skipped. CAUTION: One strongly negative headline among few can pull the pillar to 0.
-- `sentiment_articles` [count; not_directional]: Number of HEADLINES that contained at least one lexicon word. CAUTION: Headlines, not articles read in full.
-- `sentiment_batch_weighted_articles` [count; not_directional]: Weighted headline denominator used by the mean (a headline shared across tickers weighs less).
-- `sentiment_positive_words` [count; not_directional]: Lexicon WORD occurrences counted as positive. CAUTION: Word counts, not article counts; they routinely exceed sentiment_articles (DL-112).
-- `sentiment_negative_words` [count; not_directional]: Lexicon WORD occurrences counted as negative. CAUTION: Word counts, not article counts (DL-112).
+- `sentiment_articles` [count; not_directional; bookkeeping]: Number of HEADLINES that contained at least one lexicon word. CAUTION: Headlines, not articles read in full.
+- `sentiment_batch_weighted_articles` [count; not_directional; bookkeeping]: Weighted headline denominator used by the mean (a headline shared across tickers weighs less).
+- `sentiment_positive_words` [count; not_directional; bookkeeping]: Lexicon WORD occurrences counted as positive. CAUTION: Word counts, not article counts; they routinely exceed sentiment_articles (DL-112).
+- `sentiment_negative_words` [count; not_directional; bookkeeping]: Lexicon WORD occurrences counted as negative. CAUTION: Word counts, not article counts (DL-112).
 - `provider_sentiment_score` [provider_scale_undeclared; higher_better]: The data provider's own sentiment number for the ticker (scale not declared in our code). It does not feed the analyst's composite. CAUTION: A different scale and source from analyst_sentiment_score; do not compare the two numerically.
 
 ## relative_strength
@@ -80,9 +80,9 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `applied_stop_pct` [percent; not_directional]: Stop actually applied (fleet mode = scaled).
 - `applied_target_pct` [percent; not_directional]: Target actually applied.
 - `favorable_excursion_pct` [fraction; higher_better]: Median best gain reached within favorable_excursion_horizon_days over the trailing windows (0.0266 = 2.66 %). CAUTION: A fraction here, while the stop/target lines show percent.
-- `favorable_excursion_horizon_days` [days; not_directional]: Horizon (sessions) of the excursion measure.
-- `favorable_excursion_lookback_windows` [count; not_directional]: Trailing windows sampled.
-- `favorable_excursion_sample_count` [count; not_directional]: Windows actually measured.
+- `favorable_excursion_horizon_days` [days; not_directional; bookkeeping]: Horizon (sessions) of the excursion measure.
+- `favorable_excursion_lookback_windows` [count; not_directional; bookkeeping]: Trailing windows sampled.
+- `favorable_excursion_sample_count` [count; not_directional; bookkeeping]: Windows actually measured.
 - `value_reward_risk_ratio` [ratio; higher_better]: target_pct / stop_pct for this order. CAUTION: The gate is DISCLOSURE_ONLY at threshold 0 on the fleet: a ratio below 1 still PASSES.
 - `applied_reward_risk_ratio` [ratio; higher_better]: Reward/risk at the applied stop and target.
 - `flat_stop_pct` [percent; not_directional]: Stop under the flat mode (the regime base stop).
@@ -95,75 +95,75 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 
 ## scanner
 - `scanner_score` [raw_indicator; higher_better]: The scanner's ranking score (equals its relative_strength feature).
-- `rank_ordinal` [count; lower_better]: Rank among scanner candidates (1 = strongest).
+- `rank_ordinal` [count; lower_better; bookkeeping]: Rank among scanner candidates (1 = strongest).
 - `average_volume` [shares; higher_better]: Mean daily volume over the scanner window.
 - `beta` [ratio; not_directional]: Beta vs the benchmark; >1 moves more than the market. CAUTION: Filtered at max_beta; matters more in risk-off regimes.
 - `days_to_earnings` [days; higher_better]: Calendar days to the next earnings report. CAUTION: Names inside the earnings exclusion are already dropped; a value just above it means the report lands inside a 10-session hold.
-- `latest_close` [usd; not_directional]: Latest close used by the scanner.
-- `universe_tickers` [count; not_directional]: Size of the scanner's universe this run.
-- `evaluated_tickers` [count; not_directional]: Tickers the scanner evaluated.
+- `latest_close` [usd; not_directional; bookkeeping]: Latest close used by the scanner.
+- `universe_tickers` [count; not_directional; bookkeeping]: Size of the scanner's universe this run.
+- `evaluated_tickers` [count; not_directional; bookkeeping]: Tickers the scanner evaluated.
 
 ## regime
 - `label` [enum; not_directional]: Market regime label from the VIX (risk_on/neutral/risk_off/high/extreme).
 - `vix_index` [index_points; lower_better]: CBOE VIX level the regime was classified on.
 - `base_min_confidence_score` [fraction_0_1; not_directional]: Regime floor the analyst's confidence must clear.
-- `base_stop_loss_pct` [percent; not_directional]: Regime default stop (used when no analyst stop).
-- `base_take_profit_pct` [percent; not_directional]: Regime default target.
-- `base_max_holding_days` [days; not_directional]: Regime's intended maximum holding period, in sessions. CAUTION: Nothing in the fleet sells on this horizon today (work-queue 92).
+- `base_stop_loss_pct` [percent; not_directional; bookkeeping]: Regime default stop (used when no analyst stop).
+- `base_take_profit_pct` [percent; not_directional; bookkeeping]: Regime default target.
+- `base_max_holding_days` [days; not_directional; bookkeeping]: Regime's intended maximum holding period, in sessions. CAUTION: Nothing in the fleet sells on this horizon today (work-queue 92).
 
 ## pm_gate
 - `value_portfolio_ratio` [ratio; lower_better]: sizing: position value / portfolio value. CAUTION: Fleet cap is 1 % of the portfolio per name.
 - `value_cluster_exposure_ratio` [ratio; lower_better]: correlated_cluster_pct: share of deployed capital in names correlated with this one. CAUTION: NOT-EVALUATED while deployment is below its floor: the gate did not look, it did not pass.
 - `value_sector_exposure_ratio` [ratio; lower_better]: max_sector_pct: sector share of deployed capital. CAUTION: NOT-EVALUATED below the deployment floor.
 - `value_sector_issuers` [count; lower_better]: max_names_per_sector: issuers in the sector incl. this one.
-- `value_positions` [count; lower_better]: max_positions: open issuers incl. this one.
-- `value_order_cost_usd` [usd; not_directional]: cash_available: this order's cost.
-- `value_shares` [count; not_directional]: min_order_quantity: whole shares ordered.
+- `value_positions` [count; lower_better; bookkeeping]: max_positions: open issuers incl. this one.
+- `value_order_cost_usd` [usd; not_directional; bookkeeping]: cash_available: this order's cost.
+- `value_shares` [count; not_directional; bookkeeping]: min_order_quantity: whole shares ordered.
 - `portfolio_value_usd` [usd; not_directional]: The account EQUITY the PM sizes against (cash + holdings). CAUTION: Equity, not cash: the PM's `cash` field carries equity in production.
 - `deployed_portfolio_usd` [usd; not_directional]: Market value of current holdings: the denominator of the sector and cluster gates. CAUTION: Concentration is measured against DEPLOYED capital, not equity.
-- `position_value_usd` [usd; not_directional]: This order's value (sizing gate).
+- `position_value_usd` [usd; not_directional; bookkeeping]: This order's value (sizing gate).
 - `existing_issuer_value_usd` [usd; lower_better]: Value already held in this issuer.
 - `existing_sector_issuers` [count; lower_better]: Issuers already held in this sector.
 - `held_sector_value_usd` [usd; lower_better]: Value already held in this sector.
-- `deployed_this_batch_usd` [usd; not_directional]: Cost of other orders approved earlier in this batch, in this sector.
-- `order_cost_usd` [usd; not_directional]: This order's cost (sector gate).
-- `cash_buffer_pct` [fraction; not_directional]: Share of equity the PM keeps as cash (0.05 = 5 %).
-- `reserved_cash_this_batch_usd` [usd; not_directional]: Cash already reserved by earlier orders this batch.
+- `deployed_this_batch_usd` [usd; not_directional; bookkeeping]: Cost of other orders approved earlier in this batch, in this sector.
+- `order_cost_usd` [usd; not_directional; bookkeeping]: This order's cost (sector gate).
+- `cash_buffer_pct` [fraction; not_directional; bookkeeping]: Share of equity the PM keeps as cash (0.05 = 5 %).
+- `reserved_cash_this_batch_usd` [usd; not_directional; bookkeeping]: Cash already reserved by earlier orders this batch.
 - `deployment_pct` [fraction; not_directional]: Deployed capital / equity.
 - `deployment_floor_pct` [fraction; not_directional]: Below this deployment the concentration gates do not evaluate. CAUTION: NOT-EVALUATED below the floor means the gate did not look.
 - `cluster_value_usd` [usd; lower_better]: Order cost + this issuer's holding + each correlated holding x its ramp weight.
 - `cluster_weight_total` [weight_sum; lower_better]: Sum of the ramp weights of held issuers correlated with this one.
-- `examined_issuers` [count; not_directional]: Held issuers the correlation gate compared with this one.
+- `examined_issuers` [count; not_directional; bookkeeping]: Held issuers the correlation gate compared with this one.
 - `correlated_issuers` [compound; lower_better]: Each held issuer above the ramp start, as TICKER:correlation:wWEIGHT (daily-return correlation over the lookback; weight from the ramp). CAUTION: A correlation of 0.70 counts about half of that holding toward the cluster.
-- `below_threshold_top` [compound; not_directional]: The highest correlations that stayed below the ramp start, TICKER:correlation.
-- `correlation_ramp` [compound; not_directional]: Correlations at or below the first number count 0, at or above the second count fully, linear in between.
-- `min_pair_overlap_bars` [count; higher_better]: Fewest overlapping bars in any compared pair.
-- `skipped_pairs` [count; lower_better]: Pairs skipped for too little overlapping history.
-- `threshold_portfolio_ratio` [ratio; not_directional]: sizing cap: max position value / equity (fleet: 0.01).
-- `threshold_shares` [count; not_directional]: min_order_quantity threshold.
-- `threshold_positions` [count; not_directional]: max_positions threshold (fleet: 60).
-- `threshold_available_cash_usd` [usd; not_directional]: Cash available for this order after buffer and reservations. CAUTION: Rendered in scientific notation (7.441e+04 = 74,410).
-- `threshold_reward_risk_ratio` [ratio; not_directional]: reward_risk threshold (fleet: 0, disclosure only).
-- `threshold_sector_exposure_ratio` [ratio; not_directional]: max_sector_pct threshold (share of deployed capital).
-- `threshold_sector_issuers` [count; not_directional]: max_names_per_sector threshold.
-- `threshold_cluster_exposure_ratio` [ratio; not_directional]: max_correlated_cluster_pct threshold (share of deployed capital).
+- `below_threshold_top` [compound; not_directional; bookkeeping]: The highest correlations that stayed below the ramp start, TICKER:correlation.
+- `correlation_ramp` [compound; not_directional; bookkeeping]: Correlations at or below the first number count 0, at or above the second count fully, linear in between.
+- `min_pair_overlap_bars` [count; higher_better; bookkeeping]: Fewest overlapping bars in any compared pair.
+- `skipped_pairs` [count; lower_better; bookkeeping]: Pairs skipped for too little overlapping history.
+- `threshold_portfolio_ratio` [ratio; not_directional; bookkeeping]: sizing cap: max position value / equity (fleet: 0.01).
+- `threshold_shares` [count; not_directional; bookkeeping]: min_order_quantity threshold.
+- `threshold_positions` [count; not_directional; bookkeeping]: max_positions threshold (fleet: 60).
+- `threshold_available_cash_usd` [usd; not_directional; bookkeeping]: Cash available for this order after buffer and reservations. CAUTION: Rendered in scientific notation (7.441e+04 = 74,410).
+- `threshold_reward_risk_ratio` [ratio; not_directional; bookkeeping]: reward_risk threshold (fleet: 0, disclosure only).
+- `threshold_sector_exposure_ratio` [ratio; not_directional; bookkeeping]: max_sector_pct threshold (share of deployed capital).
+- `threshold_sector_issuers` [count; not_directional; bookkeeping]: max_names_per_sector threshold.
+- `threshold_cluster_exposure_ratio` [ratio; not_directional; bookkeeping]: max_correlated_cluster_pct threshold (share of deployed capital).
 
 ## order
-- `quantity_shares` [count; not_directional]: Shares the PM approved for this order.
-- `est_price_usd` [usd; not_directional]: Price the PM sized the order at (latest close).
+- `quantity_shares` [count; not_directional; bookkeeping]: Shares the PM approved for this order.
+- `est_price_usd` [usd; not_directional; bookkeeping]: Price the PM sized the order at (latest close).
 - `stop_pct` [percent; not_directional]: The order's protective stop distance below entry. CAUTION: Rendered as PERCENT in the 'PM order' line (4.64%) and as a FRACTION in the reward_risk detail (0.0464).
 - `target_pct` [percent; not_directional]: The order's profit target above entry. CAUTION: PERCENT in the 'PM order' line, FRACTION in the reward_risk detail.
 
 ## market_data
-- `open_usd` [usd; not_directional]: Latest daily bar: open.
-- `high_usd` [usd; not_directional]: Latest daily bar: high.
-- `low_usd` [usd; not_directional]: Latest daily bar: low.
+- `open_usd` [usd; not_directional; bookkeeping]: Latest daily bar: open.
+- `high_usd` [usd; not_directional; bookkeeping]: Latest daily bar: high.
+- `low_usd` [usd; not_directional; bookkeeping]: Latest daily bar: low.
 - `close_usd` [usd; not_directional]: Latest daily bar: close.
-- `volume_shares` [shares; higher_better]: Latest daily bar: volume.
+- `volume_shares` [shares; higher_better; bookkeeping]: Latest daily bar: volume.
 
 ## data_quality
-- `requested_tickers` [count; not_directional]: Tickers the provider was asked for in this run.
-- `returned_tickers` [count; higher_better]: Tickers it returned; below requested means missing data.
+- `requested_tickers` [count; not_directional; bookkeeping]: Tickers the provider was asked for in this run.
+- `returned_tickers` [count; higher_better; bookkeeping]: Tickers it returned; below requested means missing data.
 
 ## supplement
 - `macd_line_price` [raw_indicator; higher_better]: MACD line (fast EMA - slow EMA), price units. CAUTION: Its sign decides macd_histogram_score together with the histogram.
@@ -175,11 +175,19 @@ Composite = weighted mean of present pillars {'technical': 0.5, 'fundamental': 0
 - `bollinger_middle_usd` [usd; not_directional]: Bollinger middle band (window SMA).
 - `bollinger_upper_usd` [usd; not_directional]: Bollinger upper band (middle + sigma x std).
 - `bollinger_lower_usd` [usd; not_directional]: Bollinger lower band (middle - sigma x std).
-- `account_cash_usd` [usd; not_directional]: Broker cash.
+- `account_cash_usd` [usd; not_directional; bookkeeping]: Broker cash.
 - `account_equity_usd` [usd; not_directional]: Broker equity (cash + holdings).
-- `buying_power_usd` [usd; not_directional]: Broker buying power.
+- `buying_power_usd` [usd; not_directional; bookkeeping]: Broker buying power.
 - `deployed_usd` [usd; not_directional]: Market value of current holdings.
-- `open_positions` [count; not_directional]: Number of current holdings.
-- `holding_TICKER_shares` [count; not_directional]: Shares held in that ticker.
+- `open_positions` [count; not_directional; bookkeeping]: Number of current holdings.
+- `holding_TICKER_shares` [count; not_directional; bookkeeping]: Shares held in that ticker.
 - `holding_TICKER_value_usd` [usd; not_directional]: Market value held in that ticker.
+
+## forecast
+- `barrier_p_stop_first` [fraction_0_1; lower_better; UNPROVEN]: Forecaster's probability that the stop is touched before the target within 10 sessions (GARCH(1,1)-t fitted on ~760 bars, 1,000 simulated paths). CAUTION: UNPROVEN: no live skill shown yet. Read it, weigh it, never decide on it alone (DEC-FORM-08).
+- `barrier_p_target_first` [fraction_0_1; higher_better; UNPROVEN]: Probability the target is touched before the stop within 10 sessions. CAUTION: UNPROVEN, as above.
+- `barrier_p_neither` [fraction_0_1; not_directional; UNPROVEN]: Probability neither is touched within 10 sessions. CAUTION: UNPROVEN, as above.
+- `barrier_horizon_sessions` [days; not_directional; bookkeeping]: Horizon of the barrier forecast, in sessions.
+- `barrier_history_bars` [count; higher_better; bookkeeping]: Bars the GARCH model was fitted on.
+- `barrier_settled_claims` [count; higher_better]: Past barrier forecasts already settled against what happened; the forecast's skill cannot be judged before enough have settled.
 

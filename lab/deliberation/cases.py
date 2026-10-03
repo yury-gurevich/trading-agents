@@ -65,7 +65,9 @@ def _prov(agent: str) -> Provenance:
 def build(sc: Scenario) -> Case:
     scanner_s, analyst_s, pm_s, provider_s = fleet_settings()
     spy = bars("SPY", [(300, 0.0005)], start=500.0, phase=0.0, wiggle=0.008, volume=60_000_000)
-    stock = bars(sc.ticker, sc.segments, wiggle=sc.wiggle, phase=sc.phase)
+    # One long history (the forecaster fits ~760 bars); the scanner, analyst and packet use the last 300.
+    stock_long = bars(sc.ticker, sc.segments, wiggle=sc.wiggle, phase=sc.phase, n=760)
+    stock = stock_long[-300:]
     held = {
         t: bars(t, [(300, 0.0005)], start=140.0, wiggle=0.006, phase=ph, period=per)
         for t, _, per, ph in BASELINE_BOOK
@@ -208,8 +210,56 @@ def build(sc: Scenario) -> Case:
     context = build_veto_context(graph, pm, orders, intent)
     decision = f"{intent.action} {intent.ticker} (qty {intent.quantity})"
     supplement = _supplement(sc, stock, analyst_s, portfolio, held_values, regime, intent)
+    supplement += "\n" + _barrier(sc.ticker, stock_long, intent)
     return Case(
         sc.name, sc.ticker, sc.expert_view, True, None, decision, context, dict(score.metrics), supplement
+    )
+
+
+def _barrier(ticker: str, long_bars, intent) -> str:
+    """The forecaster's own barrier claim, computed exactly as the live forecaster does (barrier_forecast.py)."""
+    import numpy as np
+    from agents.forecaster.barrier_fit import ArchGarchFitter
+    from agents.forecaster.domain.barrier_garch import (
+        HORIZON_SESSIONS,
+        accept_fit,
+        barrier_seed,
+        daily_moves,
+        garch_path_probs,
+    )
+    from agents.forecaster.settings import ForecasterSettings
+
+    head = "Lab supplement, barrier forecast (forecaster GARCH, advisory; skill UNPROVEN, not shown in production): "
+    fs = ForecasterSettings()
+    if len(long_bars) < fs.barrier_min_history_sessions or not intent.stop_pct or not intent.target_pct:
+        return head + "no claim (history or barriers missing)"
+    r, lh, ll = daily_moves(
+        np.array([b.high for b in long_bars]),
+        np.array([b.low for b in long_bars]),
+        np.array([b.close for b in long_bars]),
+    )
+    try:
+        params = accept_fit(ArchGarchFitter().fit(r))
+    except Exception as e:  # arch missing: the forecaster extra is not installed here
+        return head + f"no claim ({type(e).__name__})"
+    if params is None:
+        return head + "no claim (GARCH fit failed)"
+    rng = np.random.default_rng(barrier_seed(ticker, long_bars[-1].bar_date))
+    p_stop, p_target, p_neither = garch_path_probs(
+        rng,
+        params.as_tuple(),
+        r,
+        lh,
+        ll,
+        0,
+        len(r),
+        intent.stop_pct,
+        intent.target_pct,
+        n_paths=fs.barrier_paths,
+    )
+    return head + (
+        f"barrier_p_stop_first={p_stop:.3f}; barrier_p_target_first={p_target:.3f}; barrier_p_neither={p_neither:.3f}; "
+        f"barrier_horizon_sessions={HORIZON_SESSIONS}; barrier_history_bars={len(long_bars)}; barrier_settled_claims=0"
     )
 
 

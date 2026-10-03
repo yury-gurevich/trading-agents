@@ -239,6 +239,60 @@ before any deciding.
 - **Cost:** about $2.27 for 2 cases ($4.07 worst case) and $9.12 for 8 ($16.29), on Opus 5.5.
   **Not yet run on a real model.**
 
+**Amendment 10 (planner, 2026-10-03; the operator: "do not forget to compile the prompt as DSPy wants you
+to").** The explain prompt is now **compiled**, not only hand-written. This brings GEPA forward from L5 into
+iteration 1: the metric it needed now exists, and it measures understanding rather than verdict agreement
+(the reason §12 held it back).
+
+- **How (`explain_compile.py`):**
+  - Each seat is a DSPy program, `ExplainSeat`, with one predictor.
+  - The metric is the explain grader. The score is half the mean of the graded quantities and half the
+    share of pass-bar checks met. `objective_scores` gives each check its own Pareto front.
+  - The feedback has one `CHECK:` line per failed check, and it **quotes the dictionary entry** for every
+    misread key, because GEPA cannot see the book in the system message.
+  - GEPA rewrites the instructions only, with a budget given in metric calls and no merge. The judge is
+    compiled first.
+  - The program is saved with `save()`; `explain_run --compiled DIR` loads it. It refuses a compiled
+    prompt built against a different book (sha256), because the instruction was tuned to that book.
+- **The split, fixed before any run:**
+  - train: extended leader, value trap, earnings inside the hold, risk-off high beta;
+  - val: steady compounder, correlated with a holding;
+  - **held out: falling knife and pillars in conflict**, the hardest reads.
+
+  The result is the seed prompt against the compiled one on the held-out cases, first attempt only.
+- **Proven on fakes ($0):**
+  - The student fake makes each error unless its instruction carries the matching lesson.
+  - The scripted reflection fake adds the lesson for each check the feedback names.
+  - Result, for every seat: 0/2 → 2/2 on the held-out cases. The book is intact in the system message,
+    and the saved program loads back (0/24 → 24/24 across all cases).
+  - This proves the loop, not what a real reflection model would write.
+- **Defect found and fixed: H7 was contradicted by the answer key and by DEC-FORM-02.**
+  - Directions came from the code's sub-score alone. So the falling knife's RSI of 18.55 (sub-score 80)
+    was "favourable", and a judge who called it unfavourable was corrected toward the reading H7 forbids
+    (oversold in a downtrend is not support).
+  - In the deliberation runs, the form-law retry would have taught that. Under GEPA it would have been
+    compiled into the instruction.
+  - Fix: `laws.accepted_directions`. Contrarian oscillators and their sub-scores accept a set of
+    directions, read with the trend (the mean of the code's SMA, EMA, MACD and golden-cross
+    sub-scores):
+
+    | Reading | Downtrend | Otherwise |
+    | --- | --- | --- |
+    | Oversold | unfavourable or neutral | favourable or neutral |
+    | Overbought | unfavourable | unfavourable or neutral |
+
+  - The critical check for these keys is now H7-consistent direction plus the correct sub-score, which
+    shows the contrarian scoring is known.
+  - *Ruled out:* grading by the code's score alone (it encodes the scorer, not the expert); dropping
+    direction for contrarian keys (it would lose the H7 test entirely).
+- **Ruled out for compiling:**
+  - few-shot demos (BootstrapFewShot, MIPROv2): a demo is about 15k tokens of explanation, and MIPROv2
+    samples at temperature 1.0, which Opus 5.5 rejects;
+  - compiling against the deciding variants first: understanding comes before use;
+  - holding out nothing: a prompt compiled on all eight cases proves only that it fits them.
+- **Cost, Opus 5.5 as student and reflection model, 24 metric calls per seat:** the judge alone ≈ $14
+  ($25 worst case); all three seats ≈ $37 ($74). **Not yet run on a real model.**
+
 **Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11).
 
 ---

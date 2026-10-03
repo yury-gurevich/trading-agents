@@ -92,7 +92,7 @@ class Interaction(BaseModel):
 
 class Explanation(BaseModel):
     interpretations: list[Interpretation] = Field(
-        description="one per number you must read (house rule H12), each read independently"
+        description="one per number you must read (house rule H12), each read on its own, except contrarian oscillators, which are read with the trend (house rule H7)"
     )
     derivations: list[Derivation] = Field(
         description="reproduce EACH named aggregate from its parts using the packet's own numbers"

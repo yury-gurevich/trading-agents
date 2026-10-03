@@ -42,6 +42,8 @@ the evidence, **use** it, and decide on **market evidence**? It does not just de
 | Runner | `run.py` | Each seat gets **one form-law retry** (our own loop, not `dspy.Refine`). Every real run is costed and refused without `--max-usd`. The report covers rulings, **coverage per seat**, violations, **whether the seats agree on what each number means**, and per-key reads and misreads |
 | Compare | `compare.py` | Several runs side by side |
 | Iteration 1, step 1 | `prompt_audit.py` | Is the prompt valid, and does it carry ALL the quant data? It renders the exact messages and checks values, packet, definitions, rules, schema and ceiling. $0 |
+| Iteration 1, step 3 | `explain_compile.py` → `<out>/<seat>.json` | **Compiles** the explain prompt the DSPy way: GEPA rewrites each seat's instructions against the grader as a feedback metric, on train and val cases, and the seed and compiled prompts are graded on **held-out** cases. `explain_run --compiled DIR` evaluates a compiled prompt |
+| Rendered prompts | `prompts/` | The exact messages each seat receives (seed prompt, falling knife) |
 | Iteration 1, step 2 | `explain_models.py`, `explain_grade.py`, `explain_run.py`, `explain_fake.py` | Do the seats **understand** the data? They explain, without deciding: each number as an indicator, then the numbers in combination. Graded by code against the analyst's own scorers, first attempt only |
 
 ## Run it
@@ -66,6 +68,13 @@ PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explai
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explain_run \
     --variant lab/deliberation/variants/lab_t2_book_complete.json --engine real --max-usd 3 \
     --cases falling_knife,value_trap --out /tmp/lab/explain-first
+
+# compile the explain prompt (fake $0: proves the loop; real: the judge first, with a stated cap)
+PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explain_compile \
+    --variant lab/deliberation/variants/lab_t2_book_complete.json --engine fake --out /tmp/lab/compiled
+PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.explain_compile \
+    --variant lab/deliberation/variants/lab_t2_book_complete.json --engine real --seats judge \
+    --max-metric-calls 24 --max-usd 15 --out /tmp/lab/compiled-judge
 
 # 4. real models (needs ANTHROPIC_API_KEY in the shell; refuses without a cap). Cheapest first look:
 PYTHONPATH=. uv run --frozen --extra optimizer python -m lab.deliberation.run \
@@ -173,13 +182,28 @@ budget, is the first thing the real run will show.
   An averaged score alone would have let the flawed reader's RSI misreading through on the extended
   leader (92 % direction); the critical check catches it.
 - **Not yet run on a real model.** Two cases ≈ $2.27 ($4.07 worst case); eight ≈ $9.12 ($16.29).
+- **The prompt is compiled the DSPy way** (DL-264 amendment 10).
+  - **What it is:** an `ExplainSeat` program per seat. GEPA rewrites the instructions only, against the
+    grader turned into a feedback metric. Each failed check gets a `CHECK:` line, and every misread
+    key's dictionary entry is quoted.
+  - **The split:** train (4 cases), val (2), and **held out (falling knife, pillars in conflict)**.
+  - **The proof, on fakes:** held-out pass 0/2 → 2/2 for every seat. The book is intact, and the saved
+    program loads back. This proves the loop, not a model.
+  - **Real cost, 24 metric calls:** the judge ≈ $14 ($25 worst case); all three seats ≈ $37 ($74).
+- **Fixed while building it: H7 was contradicted by the answer key and by DEC-FORM-02.**
+  - The falling knife's RSI 18.55 was graded "favourable" because the code scores oversold as bullish.
+    An expert calling it unfavourable would have been corrected, and under GEPA that correction would
+    have been compiled into the prompt.
+  - Contrarian oscillators are now read with the trend (`laws.accepted_directions`): oversold in a
+    downtrend is "unfavourable or neutral".
 - **For the operator to approve:** the expected interactions per scenario
   (`explain_grade.EXPECTED_INTERACTIONS`), beside each scenario's `expert_view`.
 
 ## Next
 
 1. **First real run, on the operator's machine** (a session started there with `claude remote-control`, or
-   by hand): **the iteration 1 explain test first**, on two cases, then all eight. Only if the explain test
+   by hand): **the iteration 1 explain test first**, seed prompt, on two cases, then all eight. Then
+   **compile the judge** and compare seed with compiled on the held-out cases. Only if the explain test
    passes do the deciding variants follow, with a stated cap. If it fails, the misread keys it lists show
    what the book or the prompt must fix.
 2. **L2** is now the explain test above. It replaces the planned comprehension quiz.

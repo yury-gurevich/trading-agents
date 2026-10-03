@@ -175,6 +175,52 @@ def _expected_direction(key: str, value: float, pv: dict) -> str | None:
     return None
 
 
+# H7: contrarian oscillators (and their sub-scores) score oversold as bullish, but oversold in a downtrend is not
+# support. Their direction for a buy is read WITH the trend, so they accept a set of directions, not one.
+CONTRARIAN_RAW = {
+    "rsi",
+    "rsi2",
+    "stochastic_k",
+    "stochastic_d",
+    "williams_r",
+    "bollinger_position",
+    "nw_deviation_pct",
+}
+CONTRARIAN_KEYS = CONTRARIAN_RAW | {f"{k}_score" for k in CONTRARIAN_RAW - {"stochastic_d"}}
+TREND_SCORES = (
+    "sma_distance_pct_score",
+    "ema_spread_pct_score",
+    "macd_histogram_score",
+    "golden_cross_score",
+)
+
+
+def trend_state(pv: dict) -> str | None:
+    """'up' / 'down' / 'mixed' from the code's own trend sub-scores (mean >= 60 / <= 40), None if absent."""
+    vals = [_num(pv[k][0].value) for k in TREND_SCORES if k in pv]
+    vals = [v for v in vals if v is not None]
+    if not vals:
+        return None
+    m = sum(vals) / len(vals)
+    return "up" if m >= 60 else "down" if m <= 40 else "mixed"
+
+
+def accepted_directions(key: str, value: float, pv: dict) -> set[str] | None:
+    """The directions an expert may give this reading for a buy; None where the code makes no clear call."""
+    if key == "stochastic_d" and "stochastic_k_score" in pv:
+        e = _band(_num(pv["stochastic_k_score"][0].value) or 50, 100)
+    else:
+        e = _expected_direction(key, value, pv)
+    if e is None:
+        return None
+    if key not in CONTRARIAN_KEYS:
+        return {e}
+    down = trend_state(pv) == "down"
+    if e == "favourable":  # oversold: support only when the trend agrees (H7)
+        return {"unfavourable", "neutral"} if down else {"favourable", "neutral"}
+    return {"unfavourable"} if down else {"unfavourable", "neutral"}  # overbought
+
+
 def check_reading(r: Reading, pv: dict, seat: str) -> list[Violation]:
     occs = pv.get(r.metric)
     if not occs:
@@ -214,13 +260,14 @@ def check_reading(r: Reading, pv: dict, seat: str) -> list[Violation]:
             )
     got = _num(r.value)
     if got is not None:
-        exp = _expected_direction(r.metric, got, pv)
-        if exp and r.direction != "neutral" and r.direction != exp:
+        acc = accepted_directions(r.metric, got, pv)
+        if acc and r.direction != "neutral" and r.direction not in acc:
             out.append(
                 Violation(
                     "DEC-FORM-02",
                     r.metric,
-                    f"{seat}: called {r.metric}={r.value} {r.direction}; our scoring makes it {exp}",
+                    f"{seat}: called {r.metric}={r.value} {r.direction}; our scoring, read with the trend "
+                    f"for contrarian oscillators (H7), makes it {' or '.join(sorted(acc))}",
                     entry_text(r.metric),
                 )
             )

@@ -13,7 +13,7 @@ import re
 import dspy
 from dspy.lm15 import Message, Response, TextPart, Usage, response_to_events
 
-from .laws import _expected_direction, _num, _unit_of, packet_values, required_numbers
+from .laws import _num, _unit_of, accepted_directions, packet_values, required_numbers
 
 # $ per million tokens (input, output), from Anthropic's price list cached 2026-09-25.
 PRICES = {
@@ -75,7 +75,8 @@ def _all_readings(packet: str, pv: dict, high: tuple[str, ...] = ()) -> list[dic
         for g in groups:
             o = g[0]
             v = _num(o.value)
-            d = _expected_direction(key, v, pv) if v is not None else None
+            acc = accepted_directions(key, v, pv) if v is not None else None
+            d = sorted(acc - {"neutral"} or acc)[0] if acc else None
             out.append(
                 {
                     "metric": key,

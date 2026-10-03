@@ -17,7 +17,16 @@ from agents.analyst.domain import technical_rules_range as trr
 
 from .book.entries import lookup
 from .explain_models import Explanation
-from .laws import _expected_direction, _matches, _num, _unit_of, packet_values, required_numbers
+from .laws import (
+    CONTRARIAN_KEYS,
+    CONTRARIAN_RAW,
+    _matches,
+    _num,
+    _unit_of,
+    accepted_directions,
+    packet_values,
+    required_numbers,
+)
 
 # ---- (a) concept families -------------------------------------------------------------------------------
 _C = {
@@ -245,17 +254,16 @@ EXPECTED_INTERACTIONS: dict[str, list[tuple[set[str], set[str], set[str]]]] = {
 }
 
 
-CONTRARIAN_RAW = {
-    "rsi",
-    "rsi2",
-    "stochastic_k",
-    "stochastic_d",
-    "williams_r",
-    "bollinger_position",
-    "nw_deviation_pct",
-}
 H11_SUBSCORES = set(_FUND_SUBSCORES)
 _FIELDS = ("value", "scale", "concept", "direction", "implied", "critical")
+
+
+def group_name(g: set[str]) -> str:
+    """A readable name for a key group of EXPECTED_INTERACTIONS (used in feedback, never in grading)."""
+    for name, v in globals().items():
+        if name.isupper() and isinstance(v, set) and v == g:
+            return name.lower().replace("_", " ") + " readings"
+    return ", ".join(f"`{k}`" for k in sorted(g)[:6])
 
 
 def _hits(keys: list[str], group: set[str]) -> bool:
@@ -277,7 +285,7 @@ def grade(ex: Explanation, packet: str, case: str, coverage: str) -> dict:
             if matched
             else ({e.scale, *e.alt_scales} if e else set())
         )
-        exp_dir = _expected_direction(it.metric, v, pv) if v is not None else None
+        exp_dir = accepted_directions(it.metric, v, pv) if v is not None else None
         imp = (
             implied_sub_score(it.metric, v, pv, matched[0].block if matched else "")
             if v is not None
@@ -290,8 +298,9 @@ def grade(ex: Explanation, packet: str, case: str, coverage: str) -> dict:
                 "value": bool(matched),
                 "scale": it.scale in units if e else False,
                 "concept": None if concepts is None else it.concept in concepts,
-                # graded only where the code's own score makes a clear call (>= 60 or <= 40); "neutral" there is wrong
-                "direction": None if exp_dir is None else it.direction == exp_dir,
+                # graded only where the code's score makes a clear call (>= 60 or <= 40); "neutral" there is wrong,
+                # except for contrarian oscillators, read with the trend (H7, laws.accepted_directions)
+                "direction": None if exp_dir is None else it.direction in exp_dir,
                 "implied": None
                 if imp is None
                 else (it.implied_sub_score is not None and abs(it.implied_sub_score - imp) < 0.51),
@@ -299,8 +308,28 @@ def grade(ex: Explanation, packet: str, case: str, coverage: str) -> dict:
         )
         # the two misreadings this system is built to catch must not happen even once (H7, H11)
         r = rows[-1]
-        if it.metric in CONTRARIAN_RAW and r["direction"] is not None:
-            r["critical"] = r["direction"]
+        r["got"] = {
+            "value": it.value,
+            "scale": it.scale,
+            "concept": it.concept,
+            "direction": it.direction,
+            "implied": it.implied_sub_score,
+        }
+        r["want"] = {
+            "value": [o.value for o in occs],
+            "scale": sorted(units),
+            "concept": sorted(concepts or []),
+            "direction": sorted(exp_dir) if exp_dir else None,
+            "implied": imp,
+        }
+        if it.metric in CONTRARIAN_KEYS:
+            # H7: read with the trend; and a raw oscillator's sub-score shows the contrarian scoring is known
+            got = [
+                x
+                for x in (r["direction"], r["implied"] if it.metric in CONTRARIAN_RAW else None)
+                if x is not None
+            ]
+            r["critical"] = all(got) if got else None
         elif it.metric in H11_SUBSCORES and e is not None:
             r["critical"] = r["scale"]
         else:
@@ -342,9 +371,12 @@ def grade(ex: Explanation, packet: str, case: str, coverage: str) -> dict:
         "per_number": {f: rate(f) for f in ("value", "scale", "concept", "direction", "implied", "critical")},
         "errors": [r for r in rows if any(r[f] is False for f in _FIELDS)][:60],
         "derivations": deriv,
+        "derivation_values": {n: {"want": x, "got": got_d.get(n)} for n, x in exp_d.items()},
+        "pillar_values": {n: {"want": sorted(ok), "got": got_p.get(n, "absent")} for n, ok in exp_p.items()},
         "pillars": pillars,
         "interactions_recall": (sum(found) / len(found)) if found else None,
         "interactions_found": found,
+        "expected_interactions": [[group_name(a), group_name(b), sorted(r)] for a, b, r in expected_int],
         "situation": ex.situation,
         "overall": ex.overall,
     }

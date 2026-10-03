@@ -563,3 +563,89 @@ smaller size. That is capital-risk policy, the operator's.
 - **`revise` and the production response to a form-law violation are decided after the lab.** The lab
   reports how often each judgement law fires, what a size-reducing `revise` would have changed on the
   case set, and the form-law violation rate after one retry. Those numbers go to the operator.
+
+---
+
+## 15. Model roles, and a dialogue with financial models (operator, 2026-10-03)
+
+> *"I prefer Opus 5.5 as the smartest today. The OpenAI model is there for contrast, to cover as much
+> knowledge as possible from whatever went into training different models. We can experiment with
+> models on another test branch. I want to explore models with financial training or tuning, from
+> Hugging Face or anywhere else, and establish a dialogue with a financial model to get an expert
+> definition of the meaning of each metric and the importance of a particular combination."* (operator)
+
+### Roles of the models (decided)
+
+| Role | Model | Why |
+| --- | --- | --- |
+| **Champion expert**, all three seats in the lab's main line | `claude-opus-5-5`, effort set explicitly (its default is `medium`) | The operator's choice: the strongest model today. Production still runs `claude-opus-5`; moving it is a separate, later change |
+| **Contrast** | `gpt-5.5` (OpenAI, already wired) | **Knowledge diversity, not cost.** A different training corpus gives a second reading of the same evidence. Disagreements are surfaced, not averaged away |
+| **Cheaper models** (Sonnet 5.5, Haiku 4.5, effort sweeps) | — | A **separate test track** on its own branch. It does not block the main line, and it reuses §11's pass bar |
+| **Financial consultant** | a finance-trained model (candidates below) | A third, domain-trained voice for **writing the book**, not for deciding trades |
+
+### Candidate financial models (surveyed 2026-10-03; not yet tried)
+
+| Model | What it is | Note |
+| --- | --- | --- |
+| **Palmyra-Fin-70B** (Writer) | Finance-tuned 70B, 32K context; open weights on Hugging Face, also on NVIDIA, AWS Marketplace and Ollama | Reported 73 % on a CFA Level III multiple-choice sample. Released 2024, on an older base model |
+| **Fin-R1** (SUFE-AIFLM-Lab) | 7B reasoning model fine-tuned from Qwen2.5-7B-Instruct, with SFT and RL on financial reasoning data distilled from DeepSeek-R1 | Leads FinQA (76.0) and ConvFinQA (85.0) per its authors. Small enough to run locally |
+| **Llama-Open-Finance-8B** (DragonLLM / AGEFI) | 8B finance-language model, English and French | Built for reporting, risk and sentiment work rather than markets reasoning |
+| **FinMA-7B** (PIXIU / ChanceFocus), **FinGPT** (AI4Finance) | Earlier instruction-tuned finance models and adapters | Older; likely below the others |
+| **Open FinLLM Leaderboard** (FINOS / Hugging Face) | A live ranking across financial tasks | Check it when choosing; the list above will age |
+
+🪤 **Set expectations from the evidence.** The FinBen benchmark (NeurIPS 2024) found that closed
+general models generally beat open finance-tuned ones. Instruction tuning helped simple tasks
+(sentiment, extraction) but not complex reasoning, forecasting or decision-making. Most finance models
+are built on older, smaller base models than Opus 5.5 or GPT-5.5. So the expected value of a finance
+model here is **a different vocabulary and training emphasis** (filings, CFA material, analyst prose),
+not better reasoning. The lab tests that rather than assumes it: the finance model takes the same
+comprehension quiz (Test 1, general-finance questions) as the others.
+
+### The consultation: a structured dialogue to draft book Part II
+
+1. **Single metrics.** For each dictionary entry, we send what our code computes (its definition,
+   scale, direction and bands, from Part I) and ask four questions. What does this measure in market
+   terms? When is it informative, and when misleading? How important is it for a long-only buy held 1–10
+   sessions, relative to the others? What does it interact with?
+2. **Combinations.** We send named combinations in our keys (§12's extended leader and falling knife,
+   §14's judgement-law conditions) and ask: what situation is this, what does it mean for this stock
+   in this market, what is the risk, what would confirm or refute it, and where in the literature is it
+   described?
+3. **Challenge our design.** We ask questions the code's authors never checked. For example: is
+   contrarian RSI scoring right for a 1–10 session horizon? Is averaging contrarian and trend
+   sub-scores sound? Answers that challenge the code become **candidate experiments** in the work queue,
+   never direct code changes.
+4. **Independent panel.** Opus 5.5, GPT-5.5 and the finance model(s) answer the same questions
+   separately, in structured JSON, without seeing each other's answers. Follow-up questions go to each
+   one in its own thread.
+5. **Triangulate:**
+   - Where all agree, the answer becomes a draft pattern.
+   - Where they disagree, the answers are shown **side by side** for the operator.
+   - A claim that contradicts what our code computes is discarded, because the code is the truth for Part I.
+   - A claim that needs a source is flagged until it has one.
+6. **Approve, then test.** The operator approves each pattern into book Part II. The lab measures
+   whether the book makes the expert better (§13), and the replay measures whether a pattern earns
+   (P17). A pattern three models agree on is still only a hypothesis.
+
+### Where it runs, and what it never touches
+
+- **Lab-only and offline.** No finance model enters a production image, the bus or the graph.
+- **Hosting** *[assumed, not measured]*: Fin-R1 and the 8B models run on a workstation (Ollama or
+  `transformers`). Palmyra-Fin-70B needs a large GPU (a short Hugging Face Inference Endpoint or a hosted
+  provider) or a quantised local build. This cloud session's egress policy has blocked large ML
+  downloads before (DL-228), so the consultation is expected to run on the operator's machine.
+- **Licences** are checked per model before use (Llama-family and vendor licences differ).
+- **Credentials** (a Hugging Face token, if needed) go in `.env` or Key Vault, never in the tree.
+- **Cost:** answers are cached by question and model hash, so the dialogue is paid for once. At a few
+  hundred questions, the frontier-model share is a few dollars *[estimate]*, and a hosted 70B endpoint
+  costs GPU-hours, not tokens.
+
+Sources for the survey: [Palmyra Fin (Writer)](https://writer.com/llms/palmyra-fin/),
+[Palmyra-Fin on VentureBeat](https://venturebeat.com/ai/writers-new-ai-models-are-scary-good-at-healthcare-and-finance-tasks),
+[Fin-R1 paper](https://huggingface.co/papers/2503.16252),
+[Fin-R1 on GitHub](https://github.com/sufe-aiflm-lab/fin-r1),
+[LLM Open Finance models](https://huggingface.co/blog/OVHaiLLM/llm-open-finance-models),
+[FinMA-7B](https://huggingface.co/ChanceFocus/finma-7b-full),
+[FinGPT](https://github.com/AI4Finance-Foundation/FinGPT),
+[FinBen paper](https://arxiv.org/abs/2402.12659),
+[Open FinLLM Leaderboard](https://huggingface.co/spaces/finosfoundation/Open-Financial-LLM-Leaderboard).

@@ -91,8 +91,24 @@ an action, and what a production form-law violation does after its retry, are **
 lab**: the lab measures how often each judgement law fires, what a size-reducing `revise` would have
 done, and the form-law violation rate, and brings those numbers to the decision.
 
-**Open, the operator's.** The budget for L2–L3, and later for L5; the model list and pass margin
-(§11).
+**Amendment 4 (operator, 2026-10-03): model roles and a financial consultant.** Champion in the
+lab's main line: `claude-opus-5-5` (effort set explicitly), the operator's choice as the strongest
+model today. `gpt-5.5` stays as a **contrast** for knowledge diversity, not as a cost option. Cheaper
+models move to a separate test track on their own branch. New: a **consultation** with finance-trained
+models (candidates Palmyra-Fin-70B, Fin-R1, Llama-Open-Finance-8B; surveyed, none tried) to draft book
+Part II. Per metric and per combination, an independent panel (Opus 5.5, GPT-5.5, the finance model)
+answers the same structured questions. Agreement becomes a draft pattern, disagreement goes to the
+operator side by side, a claim contradicting the code is discarded, and the operator approves each
+pattern. The panel is also asked to challenge our design (contrarian RSI on a 1–10 session horizon;
+averaging contrarian with trend sub-scores), and its answers become candidate experiments, never
+direct changes. Lab-only; no finance model enters an image. **Expectation set from FinBen:** closed
+general models generally beat finance-tuned open ones on complex reasoning, so the finance model's
+value is a different vocabulary and emphasis, and it takes the same quiz as the others. **Ruled out:**
+a finance model as a deciding seat (no evidence it reasons better, and an older base model); patterns
+accepted because models agree (agreement is a hypothesis until the replay).
+
+**Open, the operator's.** The budget for L2–L3, and later for L5; the pass margin (§11); where the
+finance models are hosted, and which to try first.
 
 ---
 

@@ -1,0 +1,11 @@
+# The deliberation lab: an experiment, deliberately outside the repo's CI gates (operator,
+# 2026-10-03: "I do not care about CI ... for this experiment only"). This file exists so the
+# root `ruff check .` applies relaxed rules here instead of the production rule set.
+# The lab runs in the repo's own environment:  uv run --frozen --extra optimizer python -m lab.deliberation ...
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E501"]

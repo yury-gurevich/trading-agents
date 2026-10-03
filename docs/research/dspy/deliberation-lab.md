@@ -687,3 +687,12 @@ runs. Where it overrides the sections above, it wins:
   its own Pareto front **[measured]**. Its feedback quotes the book's entry whenever a reading is wrong,
   because GEPA writes domain facts into instructions and cannot see the system-message book.
 - **InferRules** joins the Tier C drafting tools, as a candidate generator over approved expert cases.
+
+---
+
+## 17. Built: L0–L1 as an experiment (2026-10-03)
+
+The bench exists in [`lab/`](../../../lab/README.md): synthetic cases through the fleet's own code, the
+generated dictionary, the house rules, the Tier A form laws, the DSPy trio (T0 and T2), the retry loop,
+cost control and reports. It is proven on a fake model only. The README lists what is built, how to
+run it, the five variants, and what the real code has already shown.

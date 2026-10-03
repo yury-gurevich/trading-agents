@@ -1,0 +1,27 @@
+{
+  "name": "lab_t0_book",
+  "note": "lab instructions + book, today's 2-round debate",
+  "topology": "T0",
+  "rounds": 2,
+  "instructions": "lab",
+  "book": "system",
+  "adapter": "chat",
+  "retries": 1,
+  "models": {
+    "pro": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "con": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "judge": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    }
+  }
+}

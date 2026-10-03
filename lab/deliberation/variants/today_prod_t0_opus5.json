@@ -1,0 +1,27 @@
+{
+  "name": "today_prod_t0_opus5",
+  "note": "closest to the fleet today: production role prompts, no book, 2-round debate, Opus 5",
+  "topology": "T0",
+  "rounds": 2,
+  "instructions": "production",
+  "book": "none",
+  "adapter": "chat",
+  "retries": 1,
+  "models": {
+    "pro": {
+      "model": "anthropic/claude-opus-5",
+      "effort": "high",
+      "max_tokens": 8192
+    },
+    "con": {
+      "model": "anthropic/claude-opus-5",
+      "effort": "high",
+      "max_tokens": 8192
+    },
+    "judge": {
+      "model": "anthropic/claude-opus-5",
+      "effort": "high",
+      "max_tokens": 8192
+    }
+  }
+}

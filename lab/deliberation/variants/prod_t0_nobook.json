@@ -1,0 +1,27 @@
+{
+  "name": "prod_t0_nobook",
+  "note": "production prompts on Opus 5.5: isolates the model change",
+  "topology": "T0",
+  "rounds": 2,
+  "instructions": "production",
+  "book": "none",
+  "adapter": "chat",
+  "retries": 1,
+  "models": {
+    "pro": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "con": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "judge": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "lab_t2_book",
+  "note": "the operator's design: independent briefs, deciding judge",
+  "topology": "T2",
+  "rounds": 1,
+  "instructions": "lab",
+  "book": "system",
+  "adapter": "chat",
+  "retries": 1,
+  "models": {
+    "pro": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "con": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    },
+    "judge": {
+      "model": "anthropic/claude-opus-5-5",
+      "effort": "high",
+      "max_tokens": 16000
+    }
+  }
+}

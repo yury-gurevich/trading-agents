@@ -61,6 +61,16 @@ while checking:** the Anthropic adapter always sends `output_config.effort`
 **Ruled out:** testing models on a full cross-product (cost); judging a cheaper model by verdict
 agreement with the champion alone (the champion's verdicts are what is in doubt).
 
+**Amendment 2 (operator, 2026-10-03): the expert needs a book.** After the planner's own quiz (§12:
+`pe`, `rsi_score`, Bollinger position and the two `relative_strength` keys misread on general-finance
+priors; the technical score averages contrarian and trend sub-scores, so an extended leader and a
+falling knife land 56 against 45), the operator: *"without a book in finance you cannot interpret
+it."* The glossary becomes a three-part book (proposal §13): I a dictionary generated from code, II
+interpretation patterns over combinations drafted from cited literature and approved per pattern by
+the operator (judgement until the replay evidences it), III house rules from the law books. The lab
+tests the book itself (none / I / I + II, version against version). **Ruled out:** a book written
+by hand for Part I (drifts from the code); patterns presented as proven edge.
+
 **Open, the operator's.** The budget for L2–L3, and later for L5.
 
 ---

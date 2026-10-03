@@ -434,3 +434,29 @@ is. An expert reading the combination would name the situation ("extended moment
 
 *Caveat:* whether either pattern predicts returns is not shown here. That is EXP-014 and EXP-015's
 question, not the glossary's.
+
+---
+
+## 13. The expert's book (operator, 2026-10-03)
+
+> *"Without a book in finance you cannot interpret it."* (operator, after §12)
+
+§12 showed it: general finance knowledge alone misread our keys. The deliberators need a **book**, the
+same one for all three roles, versioned like any other part of a prompt variant. It has three parts,
+because each has a different source of truth:
+
+| Part | Content | Source of truth | Who writes it |
+| --- | --- | --- | --- |
+| **I. Dictionary** | Every packet key: what it is, scale and unit, direction for a buy (contrarian bands included), the thresholds our gates use, which pillar it feeds | **The code.** Generated from it, with a test that fails when a key has no entry | Generated (L0) |
+| **II. Interpretation** | Named **combination patterns** in our keys: the extended leader, the falling knife, a breakout on volume, the value trap (cheap `pe` with negative growth), quality at a reasonable price, earnings-event risk, high beta in a high VIX, price against sentiment. For each one: the conditions, what it means for the stock in this market, and what a buy decision must weigh | **Finance literature**, cited, and marked *judgement, not yet evidenced* until the replay shows a pattern predicts anything (EXP-014 / EXP-015) | The planner drafts it; **the operator approves each pattern** |
+| **III. House rules** | How our gates work and what they cannot see; what counts as a process fact; the operator's policy that a decision rests on quant data (§9) | Laws and ADRs | Derived from the law books |
+
+**How the lab uses it.** The book is an input field, never the instructions, so an optimiser cannot
+rewrite it (§4). It sits first in the message with a cache breakpoint after it, so repeated calls read
+it from cache. Most importantly, **the book is itself tested**: the same cases are run with no book,
+with Part I only, and with Parts I + II, version against version. That measures whether the book
+improves understanding, use and faithfulness, and which chapter does it. A chapter that changes
+nothing is cut; a pattern the sensitivity test contradicts is corrected or removed.
+
+**Build order change:** L0 becomes *Book Part I (generated) + Part III*, and Part II is drafted
+alongside L1 so it is ready for L2's first comparison.

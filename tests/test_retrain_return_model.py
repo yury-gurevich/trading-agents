@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from scripts import retrain_return_model_helpers as helpers
+from scripts import retrain_return_model_swap as swap
 
 from agents.forecaster.domain.features import FeatureRow
 from agents.forecaster.domain.retrain_policy import CompareVerdict, RetrainDecision
@@ -92,9 +93,9 @@ def test_decision_and_verdict_payloads_are_json_shapes() -> None:
 
 def test_candidate_path_and_swap_plan_archive_without_delete(tmp_path) -> None:
     model_path = tmp_path / "models" / "lgbm-return-v1.txt"
-    candidate_path = helpers.candidate_path_for(model_path, stamp="20260704T010203Z")
+    candidate_path = swap.candidate_path_for(model_path, stamp="20260704T010203Z")
 
-    steps = helpers.plan_swap(model_path, candidate_path, stamp="20260704T010203Z")
+    steps = swap.plan_swap(model_path, candidate_path, stamp="20260704T010203Z")
 
     assert candidate_path == (
         tmp_path / "models" / "candidates" / "lgbm-return-v1-20260704T010203Z.txt"
@@ -117,9 +118,9 @@ def test_execute_swap_archives_incumbent_and_keeps_challenger(tmp_path) -> None:
     candidate_path.parent.mkdir()
     model_path.write_text("old", encoding="utf-8")
     candidate_path.write_text("new", encoding="utf-8")
-    steps = helpers.plan_swap(model_path, candidate_path, stamp="20260704T010203Z")
+    steps = swap.plan_swap(model_path, candidate_path, stamp="20260704T010203Z")
 
-    helpers.execute_swap(steps)
+    swap.execute_swap(steps)
 
     archive_path = Path(steps[0][2])
     assert archive_path.read_text(encoding="utf-8") == "old"
@@ -129,7 +130,7 @@ def test_execute_swap_archives_incumbent_and_keeps_challenger(tmp_path) -> None:
 
 def test_execute_swap_rejects_unknown_action(tmp_path) -> None:
     with pytest.raises(ValueError, match="unknown swap action"):
-        helpers.execute_swap([("surprise", tmp_path / "a", tmp_path / "b")])
+        swap.execute_swap([("surprise", tmp_path / "a", tmp_path / "b")])
 
 
 def test_report_payload_includes_optional_challenger_metrics(tmp_path) -> None:

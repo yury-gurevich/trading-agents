@@ -21,13 +21,15 @@ from scripts.price_csv import load_price_csv
 from scripts.retrain_return_model_helpers import (
     MetricMap,
     build_parser,
-    candidate_path_for,
-    execute_swap,
     label_rows_for_horizon,
     partition_recent_dates,
-    plan_swap,
     render_comparison_table,
     report_payload,
+)
+from scripts.retrain_return_model_swap import (
+    candidate_path_for,
+    execute_swap,
+    plan_swap,
 )
 
 from agents.forecaster.domain.retrain_policy import (

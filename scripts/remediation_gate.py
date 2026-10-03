@@ -2,13 +2,13 @@
 
 Agent: tooling
 Role: freeze/check the bounded remediation selector against the trading golden set.
-External I/O: stdout; optional LLM provider when --real is supplied.
+External I/O: stdout; writes the golden on --freeze; optional LLM provider (via
+              `scripts/remediation_gate_llm.py`) when --real is supplied.
 """
 
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import os
 import sys
@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from agents.master.remediation_gate import RemediationSelectionScore
-    from kernel import FakeLLMClient
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -31,102 +30,9 @@ _PROMPT = _PACK / "trading_remediation_prompt.json"
 _GOLDEN = Path(__file__).with_name("remediation_selector_golden.json")
 
 
-class _AnthropicStructured:
-    """Structured-ish Anthropic adapter for live selector probes."""
-
-    def __init__(self, api_key: str, model: str) -> None:
-        # Local import: this module puts the repo root on sys.path below its own
-        # import block, so a top-level `scripts.` import would not resolve.
-        from scripts.deliberate import anthropic_effort
-
-        anthropic = importlib.import_module("anthropic")
-        self._client = anthropic.Anthropic(api_key=api_key)
-        self._model = model
-        self._effort = anthropic_effort()
-
-    def complete(
-        self, *, system: str, user: str, tool_schema: dict[str, object]
-    ) -> str:
-        del tool_schema
-        resp = self._client.messages.create(
-            model=self._model,
-            max_tokens=1000,
-            output_config={"effort": self._effort},
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return "".join(getattr(block, "text", "") for block in resp.content)
-
-
-class _OpenAIStructured:
-    """OpenAI adapter that asks the model for JSON matching the tool schema."""
-
-    def __init__(self, api_key: str, model: str) -> None:
-        openai = importlib.import_module("openai")
-        self._client = openai.OpenAI(api_key=api_key)
-        self._model = model
-
-    def complete(
-        self, *, system: str, user: str, tool_schema: dict[str, object]
-    ) -> str:
-        resp = self._client.chat.completions.create(
-            model=self._model,
-            max_completion_tokens=1000,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "remediation_selection",
-                    "schema": tool_schema,
-                    "strict": True,
-                },
-            },
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        )
-        return resp.choices[0].message.content or ""
-
-
-def _fake() -> FakeLLMClient:
-    from kernel import FakeLLMClient
-
-    return FakeLLMClient(
-        {
-            "blank-key-vault-secret": _response("refetch-from-key-vault"),
-            "postgres-unreachable": _response("resume-instance"),
-            "credential-compromised": _response("rotate-credential"),
-            "service-destroyed": _response("recreate-instance"),
-            "unknown": _response("pause-and-escalate"),
-        }
-    )
-
-
-def _response(remediation: str) -> str:
-    return f'{{"remediation": "{remediation}", "rationale": "matched golden"}}'
-
-
-def _build_real_llm() -> _OpenAIStructured | _AnthropicStructured:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-    provider = os.environ.get("LLM_PROVIDER", "openai").strip().lower()
-    if provider == "anthropic":
-        key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not key:
-            raise SystemExit("ANTHROPIC_API_KEY not set - cannot run --real")
-        model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
-        print(f"MODE: real (Anthropic {model})")
-        return _AnthropicStructured(key, model)
-    key = os.environ.get("OPENAI_API_KEY", "")
-    if not key:
-        raise SystemExit("OPENAI_API_KEY not set - cannot run --real")
-    model = os.environ.get("OPENAI_MODEL", "gpt-5.5")
-    print(f"MODE: real (OpenAI {model})")
-    return _OpenAIStructured(key, model)
-
-
 def _score(real: bool) -> tuple[RemediationSelectionScore, ...]:
+    from scripts.remediation_gate_llm import build_real_llm, fake
+
     from agents.master.remediation import load_remediations
     from agents.master.remediation_gate import (
         load_prompt_artifact,
@@ -134,7 +40,7 @@ def _score(real: bool) -> tuple[RemediationSelectionScore, ...]:
         run_selection_eval,
     )
 
-    llm = _build_real_llm() if real else _fake()
+    llm = build_real_llm() if real else fake()
     cases = load_selection_cases(str(_CASES))
     catalogue = load_remediations(str(_CATALOGUE))
     artifact = load_prompt_artifact(str(_PROMPT))

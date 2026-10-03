@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `chore-three-scripts-leave-the-size-baseline`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** no bump
 **Effort:** S
 **Decisions:** none owed beyond the split seams, which are the builder's call and go in the closeout ·
@@ -253,15 +253,25 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| `scripts/check_worktrees.py` + new sibling | `CLAUDE.md` § Module size, § Architecture boundaries; `scripts/check_module_header.py` (what the header step requires) | 200-line hard block / 150 warn, "split, don't trim", no `# noqa` to bypass; header needs `Agent:` + `Role:` (spec also asks `External I/O:`) | **Yes.** The repo's sibling-import idiom in `scripts/` is `if str(_ROOT) not in sys.path: …` followed by `# noqa: E402` imports. The spec forbids adding `# noqa`, so the new imports either use the bare `sys.path.insert(...)` statement form ruff's E402 tolerates (as `retrain_return_model.py` already does) or a function-local import (as `remediation_gate.py` already does). The two pre-existing `# noqa: S603` comments move *with* the subprocess calls they annotate; none is added |
+| `scripts/retrain_return_model_helpers.py`, `scripts/retrain_return_model.py`, `tests/test_retrain_return_model.py` | same, plus the spec's "import every name from the module that defines it" / "no re-export shims" | same | **Yes.** Every public name in the helpers module is reached by the test as `helpers.<name>`, so moving any public name forces the test to reach it through the new module — see Return notes for how that was resolved |
+| `scripts/remediation_gate.py` + new sibling | same | same; spec trap: `--real` / `--freeze` never run | No — the file already imports lazily inside functions, so the sibling is imported the same way and nothing at module top changes order |
+| `scripts/module_size_baseline.py` | its own docstring; `tests/test_check_module_size.py::test_every_baselined_path_is_over_the_block_today` | the list may only shrink; an entry split below 200 **must** be deleted, and the guard test fails until it is | No — it is exactly the red-first step |
+| `docs/laws/conventions.md` | §3 Gray → green, §7 Test citation, §10 Tests are local | binds agent law clauses only | No — no agent law book binds `scripts/` tooling; no clause is cited or moved |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **No.** Only
+`scripts/` modules move code between files, plus the import lines of one test. Nothing under
+`agents/`, `contracts/`, `kernel/`, `orchestration/` or `surfaces/` is touched.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None between a law and the spec. One internal
+tension inside the spec, reported in Return notes: "touch only the import lines of
+`tests/test_retrain_return_model.py`" vs. "the test must import every name from the module that
+defines it", given the test reaches all its names as `helpers.<name>`.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** None — the split seams are the builder's call by
+the spec's own terms.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** None; tooling chore, no law clause in scope.
 
 ---
 
@@ -269,46 +279,219 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to fill* | | | |
+| A1 | `make ci` step 5, `scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts` | `Makefile` `ci:` | 🟩 passed — 12 `[LEGACY]` lines, none for the three files; `retrain_return_model_helpers.py` is a `[WARN]` (168), no `[FAIL]`; `make ci` exit 0 | none — tooling, no law clause |
+| A2 | `tests/test_check_module_size.py::test_every_baselined_path_is_over_the_block_today` | `tests/test_check_module_size.py` | 🟥 seen red (`check_worktrees.py` split to 128, entry kept), then 🟩 after the three entries were deleted (8 / 8 passed; in `make ci`'s 3,966) | none |
+| A3 | `tests/test_retrain_return_model.py` (unchanged 11 tests) | `tests/test_retrain_return_model.py` | 🟩 11 passed before, 11 passed after; no assertion or test body logic edited — one import line added and the module alias changed on 5 call lines (see Return notes) | none |
+| A4 | `uv run python scripts/remediation_gate.py --check` before vs after | output files in the session scratchpad | 🟩 byte-identical (sha256 `caf00093…dec551` both), exit 0 both | none |
+| A5 | `uv run python scripts/check_worktrees.py` before vs after | output files in the session scratchpad | 🟩 byte-identical (sha256 `03c2e204…a754` both), exit 0 both; **plus** a planted-state diff, below | none |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** No new test file. One extra *proof* beyond A5: the before/after A5
+run in this tree only exercises the CLEAN path (one worktree, no merged branches), so I planted
+temporary local state — a merged branch with no worktree, a stale clean worktree, a dirty worktree,
+an active worktree with a commit not in `main`, and a detached merged worktree — ran the pre-split
+`check_worktrees.py` (`git show HEAD:scripts/check_worktrees.py`) and the split one in the same tree,
+diffed them (identical, both exit 1), then removed every probe worktree and branch.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT 2026-10-03 — branch `chore-three-scripts-leave-the-size-baseline`, cut from the
+spec commit `47abd6b` (parent `main` `e31a67d`); not merged.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud session, the single checkout
+`/home/user/trading-agents` (Linux, Python 3.13.14, uv 0.8.17), on the branch above. **No `.env`.**
+Every before/after pair ran in that same tree, minutes apart.
 
-**Result:** *to fill*
+**Result:** the three files are under the block (128 / 112 / 168), each split-off module carries
+the `Agent:` / `Role:` / `External I/O:` header, `LEGACY_MAX_LINES` lists **12**, the before/after
+outputs are byte-identical, and `make ci` exits 0 at 100.00 %.
 
-**Files changed:** *to fill*
+**Files changed:**
 
-**Split seams chosen:** *to fill — per file, what moved where and why*
+- `scripts/check_worktrees.py` (201 → 128) and new `scripts/worktree_git.py` (99)
+- `scripts/remediation_gate.py` (206 → 112) and new `scripts/remediation_gate_llm.py` (111)
+- `scripts/retrain_return_model_helpers.py` (200 → 168) and new `scripts/retrain_return_model_swap.py` (46)
+- `scripts/retrain_return_model.py` (140 → 142): its import block only
+- `tests/test_retrain_return_model.py` (168 → 169): one import line, and the alias on 5 call lines
+- `scripts/module_size_baseline.py` (38 → 35): the three entries deleted, nothing else
+- this spec
 
-**Proof — the red run first:**
+`pyproject.toml` and `uv.lock`: **untouched** (`git diff` empty for both).
+
+**Split seams chosen:**
+
+- **`check_worktrees.py`** — the git/gh plumbing (`_git_exe`, `_git`, `_root`, `_worktrees`,
+  `_is_contained`, `_dirty_count`, `_open_pr_heads` and the two timeout constants) moved to
+  `scripts/worktree_git.py` as public names (`git_exe`, `git`, `primary_root`, `worktrees`,
+  `is_contained`, `dirty_count`, `open_pr_heads`), because they are now imported across a module
+  boundary. `_root` became `primary_root` so `main`'s local `root` cannot shadow it. The verdict and
+  report logic, `KEEP_FILE`/`MAIN`/`REMOTE_MAIN` and `main` stay. The script reaches its sibling the
+  way `retrain_return_model.py` already does — a bare `sys.path.insert(...)` and then
+  `from scripts.worktree_git import ...`, which ruff's E402 accepts without a `# noqa`. The two
+  existing `# noqa: S603` comments moved with the `subprocess.run` calls they annotate; none was added.
+- **`remediation_gate.py`** — `_AnthropicStructured`, `_OpenAIStructured`, `_fake`, `_response`
+  and `_build_real_llm` moved to `scripts/remediation_gate_llm.py` (as `AnthropicStructured`,
+  `OpenAIStructured`, `fake`, `build_real_llm`; `_response` stays private there). The gate imports
+  them inside `_score`, beside the `agents.master` imports it already deferred there, so nothing at
+  module top changes order and `--check` still never imports `scripts.deliberate`. The
+  freeze/check CLI, the paths and `main` stay.
+- **`retrain_return_model_helpers.py`** — the swap trio (`candidate_path_for`, `plan_swap`,
+  `execute_swap`) and `SwapStep` moved to `scripts/retrain_return_model_swap.py`. It was the
+  module's only External I/O, so the helpers module is now what its title already claimed — pure
+  (`External I/O: none`). `pathlib.Path` became annotation-only there and moved under
+  `TYPE_CHECKING` at ruff's request (TC003). The CLI imports the trio from the swap module, the
+  rest from helpers. Chosen by the operator in-session over the table seam (see Return notes).
+
+**Proof — the red run first:** (`check_worktrees.py` split to 128, its entry still listed)
 
 ```text
-to fill
+$ uv run pytest tests/test_check_module_size.py -q --no-cov -p no:cacheprovider
+......F.                                                                 [100%]
+=================================== FAILURES ===================================
+______________ test_every_baselined_path_is_over_the_block_today _______________
+tests/test_check_module_size.py:92: in test_every_baselined_path_is_over_the_block_today
+    assert count >= module.FAIL_LIMIT, f"{name} is {count}; delete its entry"
+E   AssertionError: scripts/check_worktrees.py is 128; delete its entry
+E   assert 128 >= 200
+E    +  where 200 = <module 'scripts.check_module_size' from '/home/user/trading-agents/scripts/check_module_size.py'>.FAIL_LIMIT
+=========================== short test summary info ============================
+FAILED tests/test_check_module_size.py::test_every_baselined_path_is_over_the_block_today
+1 failed, 7 passed in 0.28s
+exit 1
+
+$ uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+[FAIL] scripts/check_worktrees.py: 128 lines is under the block - delete its entry from scripts/module_size_baseline.py so it cannot grow back.
+exit 1
 ```
+
+Green after the three deletions: `tests/test_check_module_size.py` 8 / 8 passed (run together with
+A3: `19 passed in 0.40s`), and the module-size step inside `make ci` passed.
 
 **Proof — no behaviour change (A3–A5):**
 
 ```text
-to fill
+# A4 -- before and after, same tree
+$ uv run python scripts/remediation_gate.py --check      # exit 0 both times
+REMEDIATION SELECTOR GATE
+  pass_rate: 1.00
+  regressed: none
+  gained:    none
+  VERDICT: PASS
+gate output: IDENTICAL
+gate exit: IDENTICAL (gate exit 0)
+caf00093192adf9385ff097e6b2f146283dabcdf188f5a429d4921f8b3dec551  gate_before.txt
+caf00093192adf9385ff097e6b2f146283dabcdf188f5a429d4921f8b3dec551  gate_after.txt
+
+# A5 -- before and after, same tree
+$ uv run python scripts/check_worktrees.py               # exit 0 both times
+Worktrees
+  - trading-agents: primary
+
+Merged local branches with no worktree
+  (none)
+
+Merged remote branches with no open PR
+  (none)
+
+Skipped: backup/*, open-PR branches, worktrees in .worktree-keep.
+
+CLEAN - no stale worktrees or merged branches.
+wt output: IDENTICAL
+wt exit: IDENTICAL (wt exit 0)
+03c2e204251d450cecc152e1a39e2395fa7579248cb717739ef1d9277ae8a754  wt_before.txt
+03c2e204251d450cecc152e1a39e2395fa7579248cb717739ef1d9277ae8a754  wt_after.txt
+
+# A5, extra -- planted state; pre-split script (git show HEAD:...) vs split script
+PLANTED: IDENTICAL
+Worktrees
+  - trading-agents: primary
+  - wt-active [probe-active]: ACTIVE - commits not in main
+  - wt-detached [(detached)]: STALE - merged and clean
+  - wt-dirty [probe-dirty]: KEEP - 1 uncommitted file(s)
+  - wt-stale [probe-stale]: STALE - merged and clean
+
+Merged local branches with no worktree
+  - probe-merged
+
+Merged remote branches with no open PR
+  (none)
+
+Skipped: backup/*, open-PR branches, worktrees in .worktree-keep.
+
+STALE - 2 worktree(s), 1 local branch(es), 0 remote branch(es).
+Remove with: git worktree remove <path> ; git branch -d <name> ;
+             git push origin --delete <name>
+exit 1
+(all probe worktrees and branches removed afterwards; `git worktree list` back to the one checkout)
+
+# A3 -- before (main tree, pre-split) and after
+$ uv run pytest tests/test_retrain_return_model.py -q --no-cov
+...........                                                              [100%]
+11 passed in 0.60s                                   # before
+$ uv run pytest tests/test_retrain_return_model.py tests/test_check_module_size.py -q --no-cov
+...................                                                      [100%]
+19 passed in 0.40s                                   # after: 11 + 8
+# and inside make ci: tests/test_retrain_return_model.py ...........  (11)
+
+$ uv run python scripts/retrain_return_model.py --help   # imports resolve from the repo root
+help exit 0
 ```
 
-**Module line counts:** *to fill*
+`remediation_gate.py` was run with `--check` only; `--real` and `--freeze` were never run.
 
-**`make ci`:** *to fill — file, exit code, pass count, coverage*
+**Module line counts:** `check_worktrees.py` **128**, `worktree_git.py` **99**,
+`remediation_gate.py` **112**, `remediation_gate_llm.py` **111**,
+`retrain_return_model_helpers.py` **168** (warn band), `retrain_return_model_swap.py` **46**;
+importers `retrain_return_model.py` 142, `tests/test_retrain_return_model.py` 169.
 
-**`make gate-ran`:** *owed to the planner if built in a cloud session*
+**`make ci`:** `make ci > ci.txt 2>&1; echo $?` → **exit 0**, read from `ci.txt` (gitignored), all
+15 steps run: ruff, format, mypy, import-linter, module size (12 `[LEGACY]`, 0 `[FAIL]`), module
+header, law coverage, PARAM sync, sprint status, markdown links, version scheme, pytest **3,966
+passed, 8 skipped, TOTAL 100.00 %** ("Required test coverage of 100.0% reached"), dependency audit
+("No unaccepted vulnerabilities; 1 accepted advisory re-checked"), detect-secrets Passed,
+untracked secrets Passed (3 new files scanned). Run twice: once on the code alone, and again on the
+final tree after the handback, the `BUILT` status and the README/INDEX rows were written. The second
+run also exited 0, with 3,966 passed, 8 skipped and 100.00 %. Only this paragraph changed after it, and
+`check_sprint_status.py` and `check_markdown_links.py` were re-run on that edit (both exit 0).
 
-**Not met / verified failing:** *to fill*
+**`make gate-ran`:** **owed to the planner** — no `gh` in the cloud container. Remote run results,
+if read through the GitHub connector, are an observation, not `GATE PROVEN`.
+
+**Not met / verified failing:**
+
+- **"Aim under 150" not met for `retrain_return_model_helpers.py`: 168** (warn band, 32 under the
+  block). The operator chose the swap-only seam in-session; moving the table formatters as well
+  would have reached ~120.
+- **"Touch only the import lines of `tests/test_retrain_return_model.py`" not met as worded:**
+  besides one added import line, 5 call lines changed `helpers.<name>(` to `swap.<name>(`. No
+  assertion, fixture, argument or test name changed. Operator-approved; see Return notes.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- **Spec tension, resolved by the operator in-session.** The spec said both "the test must import
+  every name from the module that defines it" and "touch only the import lines" of the test. The
+  test reaches every public helper as `helpers.<name>`, so with re-export shims ruled out, *any*
+  public name that moves forces a call-site edit. I stopped and asked; the operator chose the
+  swap-trio seam with the alias renamed on the 5 call lines (`candidate_path_for` ×1, `plan_swap`
+  ×2, `execute_swap` ×2). The alternatives offered were: swap + table (helpers ~120, 6 call lines),
+  only the private formatters (test untouched, helpers ~176), or stop and leave the file frozen.
+- **Branch.** Built on `chore-three-scripts-leave-the-size-baseline`, as the operator's handover
+  named. The cloud environment had pre-assigned `claude/kind-brown-y5y06d`; it was not used.
+- **Base.** The spec commit `47abd6b` was not on `main` (only on the session branch), so this branch
+  carries it: its parent chain is `47abd6b` → `main` `e31a67d`.
+- **`# noqa` count unchanged.** The two `# noqa: S603` in `worktree_git.py` are the ones that sat on
+  the same `subprocess.run` calls in `check_worktrees.py`; moved, not added. The new sibling imports
+  avoid the repo's usual `# noqa: E402` by using the bare `sys.path.insert(...)` form
+  (`check_worktrees.py`) or a function-local import (`remediation_gate.py`).
+- **Names made public** in the three new modules because they now cross a module boundary
+  (`_git` → `git`, `_build_real_llm` → `build_real_llm`, etc.). No old name is kept alive anywhere.
+- **Owed to the planner:** `make gate-ran` from a worktree at this branch's head (check the printed
+  SHA), then the merge. No `uv lock` is owed — no bump and no dependency change. No deploy.
+- **For the planner at merge** (CLAUDE.md is out of scope here): CLAUDE.md § Module size still
+  says "Those 16 are frozen". The baseline listed 15 before this chore and lists 12 after it.
+- **Sprint docs.** Setting this spec to `BUILT` made `check_sprint_status.py` fail until the spec's
+  row in `docs/sprints/README.md` agreed, so that row's status cell (and the matching
+  `docs/sprints/INDEX.md` cell) now reads BUILT. Nothing else in either file changed.

@@ -1,26 +1,26 @@
 """Pure helpers for the rolling return-model retrain CLI.
 
 Agent: tooling
-Role: partition evidence windows, format champion tables, and plan swaps.
-External I/O: execute_swap performs the explicit --apply artifact move/copy.
+Role: partition evidence windows, format champion tables, and build the parser
+      and report payload. The artifact swap lives in `retrain_return_model_swap.py`.
+External I/O: none.
 """
 
 from __future__ import annotations
 
 import argparse
-import shutil
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from agents.forecaster.domain.return_labels import build_label_rows
 from agents.forecaster.settings import ForecasterSettings
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from agents.forecaster.domain.retrain_policy import CompareVerdict, RetrainDecision
     from agents.forecaster.domain.return_labels import LabelRow
 
 MetricMap = dict[str, float]
-SwapStep = tuple[str, Path, Path]
 
 _COMPARISON_COLUMNS = (
     "complete_cases",
@@ -105,38 +105,6 @@ def verdict_to_dict(verdict: CompareVerdict | None) -> dict[str, object] | None:
         "primary_delta": verdict.primary_delta,
         "secondary_delta": verdict.secondary_delta,
     }
-
-
-def candidate_path_for(model_path: Path, *, stamp: str) -> Path:
-    """Return the sprint-standard challenger artifact path for an active model."""
-    return (
-        model_path.parent
-        / "candidates"
-        / f"{model_path.stem}-{stamp}{model_path.suffix}"
-    )
-
-
-def plan_swap(model_path: Path, candidate_path: Path, *, stamp: str) -> list[SwapStep]:
-    """Plan archive-then-install steps without deleting any artifact."""
-    archive_path = (
-        model_path.parent / "archive" / f"{model_path.stem}-{stamp}{model_path.suffix}"
-    )
-    return [
-        ("archive", model_path, archive_path),
-        ("install", candidate_path, model_path),
-    ]
-
-
-def execute_swap(steps: list[SwapStep]) -> None:
-    """Execute a planned archive/install swap."""
-    for action, source, destination in steps:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if action == "archive":
-            shutil.move(source, destination)
-        elif action == "install":
-            shutil.copy2(source, destination)
-        else:
-            raise ValueError(f"unknown swap action: {action}")
 
 
 def build_parser(settings: ForecasterSettings | None = None) -> argparse.ArgumentParser:

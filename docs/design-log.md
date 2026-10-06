@@ -167,6 +167,33 @@ before the run. Estimate $7.70; no call starts after $9.00.
 **Not decided.** Whether the packet's `Regime:` line should stop presenting four constants as the regime's. It
 belongs with work-queue 107's packet change.
 
+🔴 **AMENDMENT 3, 2026-10-06 23:14 AEDT — EXP-019 was stopped by an empty LLM account, and it is the fleet's account too.**
+
+**What happened.** After 31 of the 52 planned calls ($3.91) the vendor refused the next four: *"Your credit
+balance is too low to access the Anthropic API"*. The fleet's `anthropic-api-key` is the same key as the
+planner's (compared by hash), so the three deliberators and the operator agent have no credit either.
+*[by S227's design, not tested tonight]* A run whose only failing checks are the LLM agents proceeds with its
+buys held.
+
+**The planner's miss.** The spend was approved; the balance was never asked about, and the planner cannot read
+it. A paid experiment draws on the same balance as the nightly debate. The planner's standing rule from now:
+ask what the balance can carry before a paid run, and count the fleet's night first.
+
+**Interim, not a verdict** ([EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md), Appendix R; phase 2 has not run). With the arithmetic in the
+packet, 45 of the 45 answers given are right. On today's packet 34 of 45 are, and all 11 errors are false
+alarms: a debater today names more pillars as decisive than are.
+
+**Found by an arm-B turn, and checked against the packet: MRK was approved on a rival's good news.** MRK's
+order on `sched-2026-10-05` cleared its floor only on its sentiment score (0.7167; neutral gives 0.5918). 7 of
+its 20 headlines are about Vaxcyte's pneumococcal vaccine trial win, two of them *"Takes Aim at Pfizer and
+Merck"*, and the word count reads *spikes*, *soars*, *win* and *success* as good news for Merck. The live debate
+that night ruled `revise` on the `reward_risk` gate and never raised it. The challenger given the arithmetic
+found it in one turn. Filed as work-queue **108**.
+
+**Owed by the operator:** the top-up, before the fleet check that precedes `sched-2026-10-06` (22:30 UTC).
+**Owed by the planner after it:** the remaining 21 calls (about $2.80), on the operator's word that the balance
+can carry them.
+
 ---
 
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)

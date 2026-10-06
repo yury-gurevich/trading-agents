@@ -1,6 +1,8 @@
 # EXP-019 — Do the two debaters know what an order hinges on, and does telling them the score arithmetic make them know it?
 
-**Status:** PRE-REGISTERED 2026-10-06 · not run.
+**Status:** PRE-REGISTERED 2026-10-06 (`3a33716c`) · **RUN INTERRUPTED 2026-10-06** after 31 of the 52
+planned calls ($3.91): the Anthropic account ran out of credit. Interim numbers are in Appendix R. No
+verdict yet; sections 6 to 8 wait for the rest of the run.
 **Decision / origin:** [DL-264](../../design-log.md) and its amendment (the operator, 2026-10-06: *"Can
 we make LLM understand and assign 'weights' to the quant values we send them … not only the value, but
 general significance of an indicator in relation of other indicators"*) · work-queue **107** · notes in
@@ -188,7 +190,61 @@ re-run; nothing else is.
 
 ## Appendix R — Run record
 
-Not run.
+**Run 2026-10-06, interrupted.** Planner, from the worktree pinned at `3391df9d`, key from the main
+checkout's `.env`. Pre-registered at `3a33716c` (22:59 AEDT), before the first paid call.
+
+**What ran.** Phase 1 only, and not all of it: **31 of its 36 calls** were answered, for **$3.91**
+(283,152 input tokens of all kinds and 117,021 output tokens; 2,504 to 6,228 output tokens a call; the
+slowest call 76 s; 0 `max_tokens` stops). 30 turns were read. One was not: DE's challenger in arm A
+wrote its reasoning and its typed answers and no `argument`, the failure S246's replay saw once in 20.
+
+**Why it stopped.** At about 23:10 AEDT the vendor refused four calls, three attempts each, with
+*"Your credit balance is too low to access the Anthropic API"*: GILD's defender in arm B (so its
+challenger was never asked), and the challengers of AMGN (both arms) and GILD (arm A). No answer was
+produced, seen or billed for any of them. They were moved out of the ledger into
+`exp019_refused.jsonl`, so the runner makes those calls when it is next run; the ledger as it stood is
+kept as `exp019_calls.before-quarantine.jsonl`. 🩹 **A deviation from "three attempts, then unread":**
+a refused call is a run that was stopped, not a turn that could not be read.
+
+**The fleet shares the key.** The fleet's `anthropic-api-key` in Key Vault and the planner's key are the
+same key (compared by hash; neither was printed). The empty account is the fleet's too.
+
+**The estimate was wrong.** A call cost **$0.126** on average against the $0.11 assumed from S246's
+replay: the turns write more. At the measured rate phases 1 and 2 cost about $6.70; the extension would
+then start, and the $9.00 stop would cut it short.
+
+**How the calls were driven.** The first unit was run alone to prove the parse on a real answer; then
+phase 1 in two slices of nine units. Each went through the frozen runner's own `unit()` and ledger,
+with the ids and order of `--phase 1`, so that one tool call stayed inside its time limit. The frozen
+scripts were not edited.
+
+**Interim numbers, not a verdict** (`exp019_score.py` on the partial ledger, sha-256 prefix
+`20e5d6053784`). Phase 2 has not run, and five phase-1 turns are missing.
+
+| | Arm A, today's packet | Arm B, with the arithmetic |
+| --- | --- | --- |
+| Turns answered and read, of 18 | 15 | 15 |
+| Answers right, of the 45 given | 34 | 45 |
+| Wrong answers | 11, all false alarms | 0 |
+| True hinges found, of those asked | 7 of 7 | 8 of 8 |
+| Probabilities between 0.2 and 0.8 | 10 of 45 | 0 of 45 |
+| Brier score (always "no" scores 0.185) | 0.190 | 0.002 |
+| Weight placed on the hinge pillar, orders that have one | 0.39 | 0.68 |
+
+- Paired Brier difference, B − A, over the 42 answers both arms gave: −0.188 [−0.249, −0.111].
+- **Today's debaters over-attribute.** Every arm-A error names a pillar as decisive that is not.
+- One arm-A defender (GILD) worked the weights out by itself (*"a composite that reproduces exactly as
+  0.5*technical + 0.3*fundamental + 0.2*sentiment"*) and still called the technical pillar a hinge.
+- The word-match check on arguments is saturated in both arms (7 of 7, 7 of 8) and tells nothing.
+- **One arm-B turn, read in full: MRK's challenger.** It wrote that *"by the packet's own arithmetic
+  only sentiment is load-bearing"* (neutral sentiment gives 0.5918, below the floor), then that the
+  score's positive words come from headlines about a rival. *[checked against the packet]* 7 of MRK's
+  20 headlines are about Vaxcyte's pneumococcal vaccine trial, two of them *"Takes Aim at Pfizer and
+  Merck"*. The recorded live debate of 2026-10-05 ruled `revise` on the `reward_risk` gate and never
+  raised it.
+
+**To finish:** 5 calls of phase 1 and the 16 of phase 2, about $2.80 at the measured rate; then the
+extension if the frozen rule allows it.
 
 ### Reproducing
 

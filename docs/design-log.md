@@ -263,6 +263,21 @@ found it in one turn. Filed as work-queue **108**.
 **Owed by the planner after it:** the remaining 21 calls (about $2.80), on the operator's word that the balance
 can carry them.
 
+📎 **AMENDMENT 4, 2026-10-07 00:00 AEDT — the operator's prototype is filed as R010, and two of its ideas feed the two goals.**
+
+The operator supplied a generic debate-pipeline prototype (a proponent, an opponent, a judge that computes risk
+and issues directives, and a revision loop) and asked for it to be filed as research:
+[R010](research/debate-pipeline-prototype/INDEX.md). The planner's reading, not a decision:
+
+- **For goal (b), a ruling needs a reader.** The prototype's judge issues directives that the next round must
+  answer. Here the reader cannot be a model that rewrites the order (ADR-0017, ADR-0022). It is ADR-0029's
+  register for a point about the system, and the other debater's next turn for a point about this order.
+- **For decisions that rest on facts, risk figures belong in the packet.** The prototype has the judge compute
+  VaR and expected shortfall. Computed in code and defined, they are evidence (work-queue 98). Computed by a
+  model, they are not.
+- **Not taken:** a model that writes the trading plan, a judge inside the loop it rules on, and the generic
+  parameter list.
+
 ---
 
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)

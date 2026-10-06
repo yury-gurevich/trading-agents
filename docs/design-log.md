@@ -10,6 +10,87 @@ and is marked CLOSED here.
 
 ---
 
+## DL-264 - the debaters answer each other only by habit, and the judge has given every debate since 2026-09-17 the same ruling on the same closed grounds - status: MEASURED (planner, 2026-10-06 21:50 AEDT); direction OPEN, the operator's
+
+**The operator's focus (2026-10-06).** *"How our trio of experts can be made to produce a) discussion
+b) qualified answer to the debate issues."* This entry measures where the three roles stand on both. It
+adds to DL-250 (do the roles understand the evidence), work-queue 75 (one-sided examples) and
+[ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) (what a ruling binds). It
+re-opens none of them.
+
+**Measured.** *[2026-10-06, read-only, no LLM call]* All 88 `DeliberationRun`s. The denominator is every
+order with recorded turns that did not fail open: **243 orders in 42 runs**. 🪰 The "names the other
+side" and "concedes" rows are word matches, so they are upper bounds on engagement, not proof of it.
+
+| What | Measured |
+| --- | --- |
+| Rulings since 2026-09-17 | **34 of 34 `revise`**, over 11 runs (one is the planner-fired test run of 2026-10-01). Last `uphold` 2026-09-15, last `overturn` 2026-09-01 |
+| What those 34 rationales rest on | `reward_risk` or its zero threshold **30**, sizing **19**, correlation **10**, sentiment or news **2** |
+| The judge's rationale | median **230** characters (49 to 740); names the defender in **14 of 243** (6 %), and in 2 of the last 34 |
+| Who speaks last | the challenger, in **73 of 73** debates since 2026-09-01 |
+| Round 2 names the other side | defender 136 of 235 (58 %), challenger 100 of 243 (41 %) |
+| Round 2 concedes something | defender 63 of 235 (27 %), challenger 53 of 243 (22 %) |
+| Guided turns whose reasoning could not be read | 1 of 36 (a challenger round 2 wrote its `argument` inside the reasoning JSON) |
+
+Forty older records (2026-08-07 and 08-08) list their turns out of order. Not investigated; every
+record since 2026-09-01 is in order.
+
+**One debate read in full: GILD, `sched-2026-10-05`** (4 turns, each about 4,000 characters).
+
+- **There is an exchange.** The defender's round 2 opens on the challenger's claim (*"the only risk
+  check with a non-zero threshold is the one it barely cleared"*), answers it with four gates from the
+  packet, answers the sizing and the confidence points, and concedes one gap (no fill-price re-check).
+  The challenger's round 2 answers the defender's "scaled beats flat" with the packet's own numbers
+  (the target is the same in both modes; the stop is 2.00 ATR against a 1.73 ATR target).
+- **The last turn adds a point nobody can answer:** the confidence floor rejected 0 of 37 candidates.
+- **The ruling restates the challenger's last turn.** It names `reward_risk`, the skew, the sizing
+  headroom and the sector slot, and addresses none of the defender's three answers.
+- **The contested points are about the gates and the bracket.** The stock's own evidence
+  (fundamentals, sentiment 0.750, beta) is read in round 1 and the sentiment is never contested.
+- **Every demand is a change to the system** (*"set threshold_reward_risk_ratio above 0"*,
+  *"re-check sizing at fill"*). No one acting on one order can make it.
+
+**Why, read in the code.**
+
+1. **Nothing asks for a reply.** A guided turn is `readings`, `gaps`, `argument`
+   (`kernel/deliberation_guided.py`), and the role prompts say *argue for* and *attack*
+   (`kernel/deliberation_prompts.py`). Answering the other side is the model's habit. It is not a
+   recorded step, so it cannot be scored, and it is absent from about half of round-2 turns.
+2. **The challenger closes.** `_debate` (`agents/deliberator/poll.py`) asks the defender, then the
+   challenger, in each round, and the judge reads the transcript straight after the challenger's
+   last turn.
+3. **The judge is asked for one line and has been shown one ruling.** `JUDGE_SYSTEM` asks for
+   `{"ruling", "rationale": "<one line>"}`. All six of its examples rule `revise`. It is told not to
+   uphold when the challenger "catches a grounded implementation-specific flaw", and the challenger is
+   told to find one and to say why it forces REVISE or OVERTURN. The ruling has no place to list the
+   contested points, say who prevailed on each and on which reading, or say what would have to change.
+4. **The issues are about the system, and they are closed.** The floor of 0 on `reward_risk` (ADR-0027
+   Correction 2, EXP-011), fixed-fraction sizing (EXP-012) and the correlation cutoff (EXP-008) are
+   each measured and decided. No role is told so. ADR-0029's decisions 2, 3 and 4 (a block names a
+   fact about this order; the judge is told what each ruling does; a `revise` lands in a register,
+   deduplicated by ground) were sequenced after S214, are not built, and are not in the work queue.
+   Since S214 a `revise` does not block. **So for three weeks the debate has changed no order, and
+   its finding has had no reader.**
+
+**What the two goals need, as far as the measurement shows.** Not decided; the direction is the
+operator's.
+
+- **(a) A discussion** needs replying to be a recorded step: a turn after the first lists the other
+  side's points and answers each (concede, rebut with a reading, or name it as a matter for the
+  system, not this order). The last word must not open a new point, or the defender gets a closing
+  reply.
+- **(b) A qualified answer** needs the ruling to be built from the issues: each contested issue, both
+  positions, the judge's finding, the reading it rests on, and whether the issue is about this order
+  or about every order. An issue about every order goes to ADR-0029's register with its standing
+  answer, and that answer is given to all three roles as a definition (DL-250's rule: true of every
+  order, the same for every role).
+
+**Not measured.** Whether a reply answers the point it names (it needs a typed record or a reader);
+what a closing turn would cost; whether ADR-0029's tests 1 to 5 were ever read as a set (test 3 feared
+`overturn` above 20 %; it reads 0 of 34).
+
+---
+
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)
 
 **Question.** DL-262 decided what the book metrics read. How is it built so `result.py` (154) and

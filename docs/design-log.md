@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-264 - the debaters answer each other only by habit, and the judge has given every debate since 2026-09-17 the same ruling on the same closed grounds - status: MEASURED (planner, 2026-10-06 21:50 AEDT); direction OPEN, the operator's
+## DL-264 - the debaters answer each other only by habit, and the judge has given every debate since 2026-09-17 the same ruling on the same closed grounds - status: MEASURED (planner, 2026-10-06 21:50 AEDT); direction DECIDED (operator, 2026-10-06: the debaters first, and whether they can weigh the evidence; work-queue 107)
 
 **The operator's focus (2026-10-06).** *"How our trio of experts can be made to produce a) discussion
 b) qualified answer to the debate issues."* This entry measures where the three roles stand on both. It
@@ -88,6 +88,63 @@ operator's.
 **Not measured.** Whether a reply answers the point it names (it needs a typed record or a reader);
 what a closing turn would cost; whether ADR-0029's tests 1 to 5 were ever read as a set (test 3 feared
 `overturn` above 20 %; it reads 0 of 34).
+
+🧭 **AMENDMENT, 2026-10-06 22:24 AEDT — the operator's direction: the debaters first, and whether they can weigh the
+evidence.**
+
+**The direction.** *"I would start with deliberators. Why? They are the source of data for the rest of
+the process. … If the source is bad then the rest of the data is a 'fruit of a poison tree'."* And
+what to concentrate on: *"Can we make LLM understand and assign 'weights' to the quant values we send
+them. … Can they be made to understand not only the value, but general significance of an indicator in
+relation of other indicators. … I want to make sure the decisions are made based on facts."* The
+planner had proposed starting with the judge. The order is now the defender and the challenger, then
+the judge, and the first question is significance, ahead of the reply step and the issue-built ruling
+above.
+
+**Measured the same day** ([rounds-and-weights](research/dspy/rounds-and-weights.md); no LLM call).
+
+- **The system has weights, and no role is shown them.** Confidence = 0.30 + 0.60 × (0.50 × technical
+  + 0.30 × fundamental + 0.20 × sentiment). The VIX is not in the score: it selects the regime, which
+  sets the floor and the base stop and target. The packet prints the scores with no weight and no
+  formula.
+- **GILD cleared its floor only on the sentiment score** (0.628 against 0.600; 0.598 with sentiment at
+  a neutral 0.50). The debate spent two rounds on *"an undisclosed mapping"* between two numbers that
+  one line of code relates, and named the sentiment score once.
+- **Nine debates store their packet.** The code's weights reproduce the confidence in 9 of 9. Five
+  would fail the floor with one pillar set to neutral. In the three that hinge on sentiment, the
+  judge's ruling mentions sentiment in none.
+
+**DSPy, read at 3.4.0 and probed offline** (the operator: *"Read it and tell me what you think"*). The
+site has no example of roles arguing. `dspy.History` carries rounds as real message pairs, where we
+paste one text block. The experimental decision types (`Score`, `Choice`, `Noul`) with `ReAnchor` make
+a stated weight a typed number that can be compared and calibrated, and they work beside S246's guided
+reasoning, as top-level fields only. They record a weight. They do not make it right.
+
+**The planner's answer to the question.** A model will state a weight for anything, so a stated weight
+proves nothing by itself. It can be checked against two references that exist today at no cost: the
+code's arithmetic (which pillar this order hinges on), and a changed input (do the weight and the
+argument follow it). Whether the code's own weights are right is a third question that only outcomes
+answer, and fundamentals and sentiment have no history in the replay cache (DL-232).
+
+**Next step, proposed (not approved: it spends money).** One pre-registered experiment on recorded
+packets before any production change, EXP-019: the two debaters' first turns with typed weights, on
+today's packet and on the packet plus the arithmetic, each with the hinge value moved. The call count
+and the dollar budget are stated in the pre-registration. After it, the packet states the arithmetic
+(with work-queue 98) and the turn records its weights. Work-queue **107**.
+
+**Finance models from Hugging Face** (the operator: *"may be relevant or not"*).
+
+- **Not for the three roles' reasoning.** No model knows what our keys mean in this system, which is
+  the measured defect. *[assumed, not measured]* A smaller model is also weaker at the strict typed
+  output the harness depends on.
+- **Relevant in one place this entry measured.** The sentiment score decided 3 of 9 orders. It is a
+  word count over headlines, and GILD's list includes headlines about other companies. Scoring it with
+  a finance-tuned model is the existing champion–challenger track.
+- **A later arm, not a first step.** All three roles run one model (`claude-opus-5`, read from the run
+  record), so they may share blind spots. A second model family as one debater can be an arm of the
+  same experiment.
+
+🪰 The last section is the planner's knowledge of those models, not a survey made today.
 
 ---
 

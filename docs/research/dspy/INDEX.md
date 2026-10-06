@@ -17,6 +17,7 @@ and use it as arguments.**
 | File | Read it for |
 | --- | --- |
 | [three-roles-goal.md](three-roles-goal.md) | **Start here.** Where each role stands (measured), what DSPy offers for each part of the goal, the offline checks, the proposed sequence and the decisions left open |
+| [rounds-and-weights.md](rounds-and-weights.md) | How DSPy carries rounds (`dspy.History`), what its decision types offer for a stated weight, and the score arithmetic the debaters are not shown (GILD worked through) |
 | [packet-inventory.md](packet-inventory.md) | Everything computed about a trade, against what the deliberators receive today, and the one law (`FORE-NEV-02`) that blocks part of it |
 | [concepts.md](concepts.md) | Signatures, modules, adapters, language models, settings and threads, saving and loading |
 | [optimization.md](optimization.md) | Data, metrics, `Evaluate`, every optimiser, GEPA in depth, and what a GEPA run would cost here |

@@ -2,7 +2,8 @@
 
 **Status:** PRE-REGISTERED 2026-10-06 (`3a33716c`) · **RUN INTERRUPTED 2026-10-06** after 31 of the 52
 planned calls ($3.91): the Anthropic account ran out of credit. Interim numbers are in Appendix R. No
-verdict yet; sections 6 to 8 wait for the rest of the run.
+verdict yet; sections 6 to 8 wait for the rest of the run, which is not before the account is funded
+again (the operator, 2026-10-06: no funds until Sunday 2026-10-11; [DL-265](../../design-log.md)).
 **Decision / origin:** [DL-264](../../design-log.md) and its amendment (the operator, 2026-10-06: *"Can
 we make LLM understand and assign 'weights' to the quant values we send them … not only the value, but
 general significance of an indicator in relation of other indicators"*) · work-queue **107** · notes in

@@ -10,6 +10,75 @@ and is marked CLOSED here.
 
 ---
 
+## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
+
+**What the operator decided, in order.** Asked to top up the Anthropic account after EXP-019 emptied it
+(DL-264 amendment 3): *"No, no funds until coming Sunday"*. Then: *"re-wire for Chat GPT and get the
+pipeline going"*. And, watching it being done: *"that SHOULD be a configurational change and a trigger"*.
+
+**What stood in the way** *[measured 2026-10-06, read in the code and on the fleet]*.
+
+- **Each deliberator must pass both vendors' probes.** The credential-test pack lists `anthropic` and
+  `openai` for all three, and the fleet check counts every failing probe, required or not
+  (`agents/master/credential_test.py`, `fleet_preflight.py`). Setting the provider alone would have left
+  them refused.
+- **The operator agent has no provider setting** and its only probe is `anthropic`. One refused agent
+  makes the run degraded, and a degraded run holds its buys whoever is missing.
+- **The tunables pack is a fidelity decision path** (`scripts/replay_fidelity_git.py`). Changing the
+  provider there and recording a deploy would have reset the clean-session count two days before the
+  verdict of 2026-10-08.
+- **Without the switch:** the September drain's four recorded failures read `degraded` under today's
+  code (4 of 4), and no degraded run has ever been placed (0 of 84 `RunRequest`s), so four nights would
+  have run a path proven only by unit tests, with no buys.
+
+**What was changed, live only, 12:30 to 12:50 UTC.**
+
+| App | Change | Everything else |
+| --- | --- | --- |
+| `master` | `MASTER_CREDENTIAL_TESTS_B64` = the repo pack without the four `anthropic` probes (8 of 12 tests remain) | image `s251`, resources, scale, secrets, ingress and identity equal the snapshot |
+| `deliberator-manager`, `-proponent`, `-opponent` | `DELIBERATOR_LLM_PROVIDER=openai`; the models resolve to `gpt-5.5` | the same |
+
+No code moved and no `DeployRecord` was written: the fleet's deployed commit is still `d526faf4`. The
+snapshots and the temporary declaration are in OneDrive `trading-agents-data/rewire-2026-10-06/`.
+
+**Proven.**
+
+- **The vendor.** The fleet's own probes, run with the fleet's keys: `openai` passed, `anthropic` failed.
+- **The debate, offline.** One full debate on `gpt-5.5` through the production functions, on GILD's
+  recorded packet: 4 of 4 guided turns read, the slowest call 54 s against the 120 s limit, the judge's
+  JSON read (`revise`). **$0.66 for the order.**
+- **The fleet, live.** The master and the three deliberators were woken under their own rule names. The
+  fleet check **passed twice with 0 failures over all 15 agent types**; each deliberator reached
+  `state active` with `openai` declared, tested and passed; 0 escalations, 0 faults, no run and no
+  debate written. The four wake windows were restored and equal their snapshots.
+
+**What it means for the week.**
+
+- **A debated buy costs about $0.66**, so three buys a night are about $2 and twelve about $8, on the
+  OpenAI account, whose balance the planner cannot read.
+- **The model change is ungated.** DL-24's gate needs an Anthropic judge, which has no credit. `gpt-5.5`
+  ruled on 136 orders in August and September. This week's rulings are its own and are not to be pooled
+  with `claude-opus-5`'s.
+- **The operator agent activates unchecked** and its chat fails on use until the account is funded.
+- 🪤 **The state is live only.** The pack still says `anthropic`, so any full `up` puts both changes back.
+- **EXP-019 does not move.** It is pre-registered on `claude-opus-5`; another model is another experiment.
+
+**To restore, after the top-up and a fresh probe of the Anthropic key:** set
+`DELIBERATOR_LLM_PROVIDER=anthropic` on the three deliberators and the master's
+`MASTER_CREDENTIAL_TESTS_B64` from the repo pack, then compare each app with its snapshot.
+
+**Ruled out.**
+
+- *Change the pack and run a full `up`.* It resets the fidelity count, and the state is temporary.
+- *Mark the probes not required.* The fleet check counts them anyway.
+- *Leave the operator agent's probe.* The run would be degraded and the buys held.
+- *Fire a test run now.* It would decide today's as-of again with three orders already queued for the open.
+
+**Owed.** The morning check of `sched-2026-10-06`, the first run on OpenAI: a normal posture, the run's
+`role_models`, buys submitted, the night's cost. The restore after Sunday. Work-queue **109**.
+
+---
+
 ## DL-264 - the debaters answer each other only by habit, and the judge has given every debate since 2026-09-17 the same ruling on the same closed grounds - status: MEASURED (planner, 2026-10-06 21:50 AEDT); direction DECIDED (operator, 2026-10-06: the debaters first, and whether they can weigh the evidence; work-queue 107)
 
 **The operator's focus (2026-10-06).** *"How our trio of experts can be made to produce a) discussion

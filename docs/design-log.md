@@ -146,6 +146,27 @@ and the dollar budget are stated in the pre-registration. After it, the packet s
 
 🪰 The last section is the planner's knowledge of those models, not a survey made today.
 
+🩹 **CORRECTION and AMENDMENT 2, 2026-10-06 22:57 AEDT — the VIX sets nothing; the experiment is approved and
+pre-registered.**
+
+**Correction.** The amendment above says the VIX *"selects the regime, which sets the floor and the base stop
+and target"*. That is what the packet's `Regime:` line suggests, and it is wrong. *[measured 2026-10-06, the
+whole mechanism read]* `classify_regime` turns the VIX into a label. The provider then builds every
+`RegimeContext` from four settings constants (`agents/provider/agent.py`), the same under every label. The
+label is read only to be printed: the analyst's summary sentences, the packet and the trace. **In today's code a
+large VIX changes no score, no floor, no stop and no target.** On the operator's own example (*"a large VIX or
+great company data?"*) the code gives the VIX no weight at all, so any weight a debater puts on it is the
+debater's own. EXP-013 measured that scaling risk down under stress loses; nothing tells the debaters so.
+
+**Approved.** Operator, 2026-10-06: *"go ahead"*, on *"OK to spend up to $10 on it?"*.
+[EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md) is pre-registered: nine
+recorded packets and four with the relative-strength band moved; today's packet against the packet plus the
+arithmetic; each debater answers, with a probability, whether the order hinges on each pillar; the bars are set
+before the run. Estimate $7.70; no call starts after $9.00.
+
+**Not decided.** Whether the packet's `Regime:` line should stop presenting four constants as the regime's. It
+belongs with work-queue 107's packet change.
+
 ---
 
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)

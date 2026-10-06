@@ -93,8 +93,11 @@ turn signature was built as `ChainOfThought(Turn, rationale_field_type=GuidedRea
 - composite = 0.50 × technical + 0.30 × fundamental + 0.20 × sentiment, renormalised over the pillars
   present
 - confidence = 0.30 + 0.60 × composite
-- **The VIX is not in the score.** It picks the regime (thresholds at 15, 20, 25 and 35), and the
-  regime sets the floor that confidence must clear and the base stop and target.
+- **The VIX is in nothing.** It picks the regime label (thresholds at 15, 20, 25 and 35), and the
+  label is only printed. The floor, the base stop, the base target and the holding window are the
+  same settings constants under every label (`agents/provider/agent.py`, `domain/regime.py`).
+  🩹 *Corrected 2026-10-06:* this note first said the regime sets them, which is what the packet's
+  `Regime:` line suggests and no code does.
 
 The packet shows the three pillar scores, the composite and the confidence. It shows **no weight and
 no formula**.
@@ -128,7 +131,7 @@ companies (Compugen, BioMarin, Pfizer).
 
 1. **Facts in.** The packet states the arithmetic above for the order: each pillar's weight and
    contribution, the formula, the margin over the floor, which pillar the outcome hinges on, and
-   what the VIX sets. Generated from code and the same for all three roles, so it is a definition
+   that the VIX sets nothing. Generated from code and the same for all three roles, so it is a definition
    (DL-250's rule), not a hint. It belongs with work-queue 98 and 97 (c).
 2. **Weights out, typed.** After its readings a debater states how much each evidence family bears
    on this order (technical, fundamental, sentiment, regime, the stop and target, the book) and

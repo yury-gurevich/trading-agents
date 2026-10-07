@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-254-each-debater-turn-is-run-by-dspy`
-**Status:** BUILT 2026-10-07 — all 12 handback items met; 4251 tests pass, 100.00% coverage, 33 guards red/restored; 14/15 CI recipes pass, external advisory audit NOT RUN under the no-network restriction; not pushed or merged.
+**Status:** MERGED 2026-10-07 — `0.122.00`, fast-forwarded to `228e16c1`, tag `v0.122.00`, GATE PROVEN `228e16c1` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,255 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s254`; merged with the planner's dependency layout (DSPy in the dev group, the audit's premise widened, [DL-268](../design-log.md)) and with an import cycle that CodeQL reported as an error on the branch removed; deliberator laws v1.13 (28 / 60, new `DLIB-NEV-10`); the planner's own comparison with `main`: 168 of 168 turns byte-identical; `main`'s own runs are green (CI, CodeQL, Security Findings, *Build and push agent images* 15 / 15): the built deliberator image installed 94 packages with `dspy==3.4.0` and neither `diskcache` nor `litellm` (the installer's list, and the image scan's 95 package rows), its real entrypoint ran to the master handshake, and it is 60.5 MB compressed against `s251`'s 42.5 MB; **not deployed**: the image-only retag waits for the fidelity verdict (2026-10-08); owed: the retag, F1, F2.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) (DSPy runs the LLM

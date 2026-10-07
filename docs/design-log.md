@@ -10,6 +10,53 @@ and is marked CLOSED here.
 
 ---
 
+## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); a live mitigation is proposed and waits for the operator; the fix is work-queue 112
+
+**How it was found.** Sizing work-queue 111 (the output cap on `gpt-5.5`), the planner looked at what a
+longer turn meets on its way back. A served peer receives its request under a message lock, runs the model
+call, publishes the reply, and only then completes the message.
+
+**Measured, no LLM call.**
+
+- The two request subscriptions the debaters serve from, `deliberator-proponent.requests` and
+  `deliberator-opponent.requests`, have a lock of **one minute**. Nothing sets it: `create_subscription` is
+  called with the vendor's default. No code renews a lock, and no code catches a lost one.
+- The repo's own receiver and `serve_once`, on disposable topics on the live namespace with that default
+  lock and a handler that takes 70 seconds: the reply is published, then `serve_once` raises
+  `MessageLockLostError`. `serve_loop` catches nothing, so in a container the peer's process ends. A
+  second consumer, as a restarted process would be, receives the same request again: the handler runs a
+  **second** time and a second reply is published. The topics were deleted afterwards.
+- The same check with a five-minute lock: served once, no error, one reply, nothing redelivered.
+- The ledger keys a call by agent and correlation id and returns the first record when the key exists
+  (`kernel/llm_ledger.py`). So a turn served twice is one `LLMCall`: the second, paid call is not recorded.
+  The planner's first reading, *"1,387 calls, no id served twice"*, therefore proved nothing and is
+  withdrawn.
+- How long turns take: on Opus the debaters' calls average 41 to 51 seconds. On `gpt-5.5` the defender's
+  production turn took 58.1 and 59.8 seconds in the one debate measured, and its typed turn averages 66
+  seconds with a slowest of 118. In the live records 4 served turns passed 60 seconds, all on 2026-08-19,
+  all `gpt-5.5`.
+
+**What it means.** On Opus the lock is rarely reached. On `gpt-5.5` about half of the defender's turns
+reach it. Each one that does: the debate gets its reply, the peer then dies, restarts and makes the same
+call again, unrecorded; its second reply is an orphan; and the manager's next request to that peer waits
+behind the repeat, against a 120-second wait, so that order can fail open. Raising the output cap
+(work-queue 111) makes turns longer, so this comes first.
+
+**Options.**
+
+- **Live, now:** set the lock of the two request subscriptions to five minutes, the vendor's maximum. One
+  setting on each, reversible, measured above to remove the failure for any turn under five minutes. It
+  changes production infrastructure, so it is the operator's to approve.
+- **The fix (work-queue 112):** subscriptions are created with an explicit lock; a served peer renews its
+  lock while the handler runs, or settles the message before a long handler and relies on the claim check;
+  a lost lock is caught and recorded as a fault instead of ending the process; and the ledger records a
+  repeat instead of hiding it. Which of these, and in what order, is for the sprint's spec.
+
+**Not taken.** Lowering the model's effort so that turns finish sooner: it changes what the debaters write,
+to work around a transport setting. Catching the error alone: the turn would still be served twice.
+
+---
+
 ## DL-269 - the analyst and the provider record the constants they used, and the packet states the score arithmetic only when it reproduces the record - status: DECIDED (planner, 2026-10-07 18:19 AEDT); SPEC as [S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md), work-queue 107
 
 **The question.** Step 2 of DL-264 amendment 5 puts the score arithmetic in the packet. EXP-019's arm B is

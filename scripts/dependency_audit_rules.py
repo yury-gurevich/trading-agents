@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
 _EXTRA: Final = re.compile(r"--extra[=\s]+([A-Za-z0-9._-]+)")
+_EXCLUDED: Final = re.compile(r"--no-install-package[=\s]+([A-Za-z0-9._-]+)")
 BASELINE_FILE: Final = "scripts/dependency_audit_baseline.py"
 
 
@@ -52,11 +53,22 @@ def findings_of(report: Mapping[str, Any]) -> list[Finding]:
     return sorted(seen.values(), key=lambda found: (found.package, found.vuln_id))
 
 
+def sync_commands(text: str) -> tuple[str, ...]:
+    """Read actual uv sync commands, joining Docker continuations, not comments."""
+    joined = re.sub(r"\\\s*\n", " ", text)
+    commands = []
+    for run in re.findall(r"(?im)^\s*RUN\s+(.+)$", joined):
+        commands.extend(re.findall(r"\buv\s+sync\b[^;&]*", run.split("#", 1)[0]))
+    return tuple(commands)
+
+
 def extras_installed_by(dockerfiles: Mapping[str, str]) -> dict[str, list[str]]:
     """Map each extra named in a Dockerfile to the Dockerfiles that install it."""
     installers: dict[str, list[str]] = {}
     for name, text in sorted(dockerfiles.items()):
-        for extra in _EXTRA.findall(text):
+        for extra in sorted(
+            {e for c in sync_commands(text) for e in _EXTRA.findall(c)}
+        ):
             installers.setdefault(extra, []).append(name)
     return installers
 
@@ -68,7 +80,7 @@ def _match(entry: AcceptedAdvisory, findings: Sequence[Finding]) -> Finding | No
 
 
 def _premise_errors(
-    entry: AcceptedAdvisory, found: Finding, installers: Mapping[str, list[str]]
+    entry: AcceptedAdvisory, found: Finding, dockerfiles: Mapping[str, str]
 ) -> list[str]:
     """Return the acceptance's premises that no longer hold."""
     errors: list[str] = []
@@ -84,22 +96,38 @@ def _premise_errors(
             f"{found.package} - re-read the advisory before re-accepting it"
         )
     extra = entry.reachable_only_via_extra
-    if extra and installers.get(extra):
+    unsafe = (
+        [
+            name
+            for name, text in sorted(dockerfiles.items())
+            if any(
+                extra in _EXTRA.findall(c) and entry.package not in _EXCLUDED.findall(c)
+                for c in sync_commands(text)
+            )
+        ]
+        if extra
+        else []
+    )
+    if unsafe:
         errors.append(
             f"{entry.vuln_id}: the '{extra}' extra is now installed by "
-            f"{', '.join(installers[extra])}, so {entry.package} reaches a "
+            f"{', '.join(unsafe)} without excluding {entry.package}, so it reaches a "
             f"deployed container - the acceptance in {BASELINE_FILE} is void"
         )
     return errors
 
 
 def _accepted_note(
-    entry: AcceptedAdvisory, found: Finding, dockerfile_count: int
+    entry: AcceptedAdvisory,
+    found: Finding,
+    dockerfile_count: int,
+    installer_count: int,
 ) -> str:
     """Return the line that puts an acceptance and its premises in gate output."""
     reach = (
         f"reachable only via the '{entry.reachable_only_via_extra}' extra, "
-        f"installed by 0 of {dockerfile_count} Dockerfiles; "
+        f"installed by {installer_count} of {dockerfile_count} Dockerfiles; "
+        f"each installing command excludes {entry.package} by name; "
         if entry.reachable_only_via_extra
         else ""
     )
@@ -130,10 +158,11 @@ def evaluate(
             )
             continue
         answered.add((found.vuln_id, found.package))
-        premise_errors = _premise_errors(entry, found, installers)
+        premise_errors = _premise_errors(entry, found, dockerfiles)
         errors.extend(premise_errors)
         if not premise_errors:
-            notes.append(_accepted_note(entry, found, len(dockerfiles)))
+            count = len(installers.get(entry.reachable_only_via_extra or "", []))
+            notes.append(_accepted_note(entry, found, len(dockerfiles), count))
     errors.extend(
         f"{found.package} {found.version}: {found.vuln_id} is not accepted "
         f"(fix versions: {', '.join(found.fix_versions) or 'none'})"

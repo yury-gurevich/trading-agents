@@ -29,6 +29,8 @@ because they are the same bytes.
 
 from __future__ import annotations
 
+import dspy  # type: ignore[import-untyped]
+
 from agents.deliberator import (
     context,
     context_market,
@@ -40,9 +42,10 @@ from agents.deliberator import (
 from kernel import (
     deliberation,
     deliberation_guided,
-    deliberation_guided_format,
     deliberation_guided_render,
+    deliberation_program,
     deliberation_prompts,
+    dspy_engine,
 )
 from kernel.prompt_recipe import recipe_digest
 
@@ -50,8 +53,8 @@ from kernel.prompt_recipe import recipe_digest
 #: `kernel.deliberation` renders the judge's turn and `kernel.deliberation_prompts`
 #: holds the champion role prompts; the five `context*` modules build the
 #: CONTEXT / EVIDENCE block interpolated into it. S246's debaters are asked
-#: through `guided_turn`, in the format `kernel.deliberation_guided_format`
-#: freezes and `kernel.deliberation_guided_render` renders, and
+#: through `guided_turn` and DSPy's program/engine; the installed DSPy version
+#: is part of this recipe. `kernel.deliberation_guided_render` and
 #: `kernel.deliberation_guided` shapes the turn text every later prompt quotes.
 PROMPT_MODULES = (
     context,
@@ -62,10 +65,11 @@ PROMPT_MODULES = (
     guided_turn,
     deliberation,
     deliberation_guided,
-    deliberation_guided_format,
     deliberation_guided_render,
+    deliberation_program,
     deliberation_prompts,
+    dspy_engine,
 )
 
 #: Computed once per process: module source cannot change under a running image.
-PROMPT_RECIPE_HASH = recipe_digest(PROMPT_MODULES)
+PROMPT_RECIPE_HASH = recipe_digest(PROMPT_MODULES, versions={"dspy": dspy.__version__})

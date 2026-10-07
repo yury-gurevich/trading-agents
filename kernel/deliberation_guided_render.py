@@ -1,47 +1,17 @@
-"""Render the guided turn's messages and its recorded text, without DSPy.
+"""Render the guided turn's recorded text and transcript.
 
 Agent: kernel
-Role: build DSPy's ChainOfThought system and user messages for a guided debate
-      turn from the frozen format text, and render a parsed turn as the text the
-      next speaker and the judge read (DL-252 D1, D2, D5).
+Role: render a parsed turn as the text the next speaker and judge read (DL-252).
 External I/O: none.
 """
 
 from __future__ import annotations
 
-import textwrap
 from typing import TYPE_CHECKING
-
-from kernel.deliberation_guided_format import (
-    GUIDED_TURN_PREFIX,
-    GUIDED_USER_REQUIREMENTS,
-    OBJECTIVE_LEAD,
-)
 
 if TYPE_CHECKING:
     from kernel.deliberation import Turn
     from kernel.deliberation_guided import GuidedReasoning
-
-
-def guided_system(role_prompt: str) -> str:
-    """Return DSPy's system message for this signature around one role prompt.
-
-    As `ChatAdapter.format_task_description` does: the prompt is dedented, then
-    every line, blank ones too, is put on its own line behind eight spaces.
-    """
-    lines = textwrap.dedent(role_prompt).splitlines()
-    return GUIDED_TURN_PREFIX + OBJECTIVE_LEAD + ("\n" + " " * 8).join(["", *lines])
-
-
-def guided_user(decision: str, context: str, transcript: str) -> str:
-    """Return DSPy's user message for one turn's three inputs."""
-    sections = (
-        f"[[ ## decision ## ]]\n{decision}",
-        f"[[ ## context ## ]]\n{context}",
-        f"[[ ## transcript ## ]]\n{transcript}",
-        GUIDED_USER_REQUIREMENTS,
-    )
-    return "\n\n".join(("", *sections, "")).strip()
 
 
 def render_transcript(transcript: tuple[Turn, ...]) -> str:

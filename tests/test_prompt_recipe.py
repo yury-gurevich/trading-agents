@@ -133,8 +133,9 @@ def test_the_deliberator_declares_every_module_that_builds_its_prompt() -> None:
         "kernel.deliberation_prompts",
         "agents.deliberator.guided_turn",
         "kernel.deliberation_guided",
-        "kernel.deliberation_guided_format",
         "kernel.deliberation_guided_render",
+        "kernel.deliberation_program",
+        "kernel.dspy_engine",
     }
 
 

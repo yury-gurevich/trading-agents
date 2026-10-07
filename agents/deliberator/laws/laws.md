@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -80,6 +80,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   without a verdict.
 + **DLIB-NEV-09** -- Never tells a debate role how this system's code behaves
   unless a test pins that statement to the code it describes.
+
++ **DLIB-NEV-10** -- Never lets a library that builds or parses a role's prompt
+  reach a model vendor except through the agent's own LLM client.
 
 ## State & Effects (`STA`)
 
@@ -297,3 +300,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   Why: the idle finder downloaded completed `DeliberationRun` transcripts through per-run walks.
   The payload case and orderless-candidate test prove the bound; existing manager tests prove the
   graph trigger. `TRG-01` moves gray to green, 26 / 59 -> 27 / 59; no other clause changes.
+
++ v1.13 -- S254 / ADR-0032 (2026-10-07). Adds and proves `DLIB-NEV-10`:
+  prompt libraries reach model vendors only through the agent's own LLM client.
+  Defender and challenger turns now execute DSPy through that client; their
+  transmitted text and recorded outcomes are unchanged. One clause added and
+  proven, 27 / 59 -> 28 / 60; no other clause changes.

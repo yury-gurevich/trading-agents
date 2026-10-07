@@ -2,8 +2,7 @@
 
 Agent: kernel
 Role: define the reasoning a defender or challenger writes before its argument,
-      render DSPy's ChainOfThought messages for it without importing DSPy, and
-      parse a completion back into that reasoning, strictly (DL-252).
+      render its recorded text and parse a completion strictly (DL-252).
 External I/O: none.
 """
 
@@ -16,8 +15,6 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from kernel.deliberation_guided_render import guided_system as guided_system
-from kernel.deliberation_guided_render import guided_user as guided_user
 from kernel.deliberation_guided_render import render_guided_text as render_guided_text
 from kernel.deliberation_guided_render import render_transcript as render_transcript
 

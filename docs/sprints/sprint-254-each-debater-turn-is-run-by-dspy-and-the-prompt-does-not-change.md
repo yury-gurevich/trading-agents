@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-254-each-debater-turn-is-run-by-dspy`
-**Status:** SPEC — the build resumes: checklist 8 was the planner's defect and is corrected (2026-10-07 14:31 AEDT, DL-267); not BUILT.
+**Status:** BUILT 2026-10-07 — all 12 handback items met; 4251 tests pass, 100.00% coverage, 33 guards red/restored; 14/15 CI recipes pass, external advisory audit NOT RUN under the no-network restriction; not pushed or merged.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) (DSPy runs the LLM
@@ -270,20 +270,20 @@ not a proof.
 
 ## Success factors
 
-- [ ] A served defender or challenger turn is executed by `dspy.ChainOfThought`, and the vendor client
+- [x] A served defender or challenger turn is executed by `dspy.ChainOfThought`, and the vendor client
       receives the text `main` sends.
-- [ ] Every captured case records what `main` records, and both roles' system prompt hashes equal
+- [x] Every captured case records what `main` records, and both roles' system prompt hashes equal
       `main`'s.
-- [ ] One vendor call per turn on every path; a failed call raises what it raises on `main`.
-- [ ] The deliberator's Dockerfile installs DSPy and leaves out `diskcache` and `litellm`; no other
+- [x] One vendor call per turn on every path; a failed call raises what it raises on `main`.
+- [x] The deliberator's Dockerfile installs DSPy and leaves out `diskcache` and `litellm`; no other
       Dockerfile changed.
-- [ ] No other agent's entrypoint can reach `dspy`.
-- [ ] `kernel/deliberation_guided_format.py` is gone, and no module holds DSPy's format text.
-- [ ] `pyproject.toml` and `uv.lock` are untouched.
-- [ ] Law cycle done for `DLIB-NEV-10`, or an existing clause named in its place.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
+- [x] No other agent's entrypoint can reach `dspy`.
+- [x] `kernel/deliberation_guided_format.py` is gone, and no module holds DSPy's format text.
+- [x] `pyproject.toml` and `uv.lock` are untouched.
+- [x] Law cycle done for `DLIB-NEV-10`, or an existing clause named in its place.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
 
@@ -536,36 +536,42 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | `test_a_served_turn_runs_dspy_and_sends_mains_text` | `agents/deliberator/tests/test_dspy_runtime.py` | verified failing (red before implementation) | DLIB-OUT-06 |
-| A2 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-06, DLIB-NEV-07 (planned, not a proof) |
-| A3 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-FAIL-01, DLIB-FAIL-04 (planned, not a proof) |
-| A4 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-03 (planned, not a proof) |
-| A5 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OBS-06 (planned, not a proof) |
-| A6 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OBS-07 (planned, not a proof) |
-| A7 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-ORD-01, DLIB-OUT-06 (planned, not a proof) |
-| B1 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-03, DLIB-OBS-07 (planned, not a proof) |
-| B2 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-NEV-10 (owed) (planned, not a proof) |
-| B3 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-NEV-05 (planned, not a proof) |
-| B4 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | ADR-0032, DL-184 (planned, not a proof) |
-| B5 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DL-184, DL-199 (planned, not a proof) |
-| B6 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-06 (planned, not a proof) |
-| B7 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-FAIL-04 (planned, not a proof) |
+| A1 | `test_a_served_turn_runs_dspy_and_sends_mains_text` | `agents/deliberator/tests/test_dspy_runtime.py` | PASS: 1; original red retained | DLIB-OUT-06 |
+| A2 | `test_served_records_equal_main` | `agents/deliberator/tests/test_dspy_turn_parity.py` | PASS: 114 outcomes | DLIB-OUT-06, DLIB-NEV-07 |
+| A3 | `test_served_failures_equal_main_and_keep_ledger_stop_reason` | `agents/deliberator/tests/test_dspy_turn_parity.py` | PASS: 18 failures and ledger stop reasons | DLIB-FAIL-01, DLIB-FAIL-04 |
+| A4 | `test_every_turn_has_one_client_call_and_one_ledger_row` | `agents/deliberator/tests/test_dspy_turn_parity.py` | PASS: 132 one-call / one-row cases | DLIB-OUT-03 |
+| A5 | `test_role_system_text_is_reused_and_has_mains_hash` | `agents/deliberator/tests/test_dspy_turn_parity.py` | PASS: 2 roles; actual calls and ledger hashes | DLIB-OBS-06 |
+| A6 | `test_dspy_version_changes_only_the_deliberator_recipe; test_each_new_modules_source_changes_the_recipe` | `tests/test_dspy_recipe.py` | PASS: version and both modules; operator unchanged | DLIB-OBS-07 |
+| A7 | `test_concurrent_turns_keep_their_own_client_and_packet` | `agents/deliberator/tests/test_dspy_concurrency.py` | PASS: 4 overlapping plain threads | DLIB-ORD-01, DLIB-OUT-06 |
+| B1 | `test_served_turn_needs_no_excluded_package_cache_or_history` | `tests/test_dspy_boundary.py` | PASS: hard import blocks, empty cache/history, repeated calls | DLIB-OUT-03, DLIB-OBS-07 |
+| B2 | `test_dspy_uses_only_the_agents_engine_with_sockets_refused` | `tests/test_dspy_boundary.py` | PASS: actual LM engine; sockets refused | DLIB-NEV-10 |
+| B3 | `test_other_image_entrypoints_import_without_dspy` | `tests/test_no_dspy_at_runtime.py` | PASS: 13 modules and 1 script; deliberator requires DSPy | DLIB-NEV-05 |
+| B4 | `test_only_deliberator_installs_optimizer_with_exact_exclusions` | `tests/test_dspy_images.py` | PASS: all 15 tracked Dockerfiles; exact 2 exclusions | DLIB-DEP-03 (bounded image premise only), ADR-0032 |
+| B5 | `test_optimizer_installation_with_diskcache_excluded_preserves_acceptance; test_any_optimizer_command_without_diskcache_exclusion_voids_acceptance; test_each_installer_must_exclude_the_package_and_comments_install_nothing` | `tests/test_dspy_images.py` | PASS: 9 synthetic premise cases; existing alias/fix/stale/package guards pass | DLIB-DEP-03 (bounded audit premise only), DL-184, DL-199 |
+| B6 | `test_the_golden_writer_produces_the_goldens_shape; test_the_golden_was_written_by_dspy_and_covers_the_spec_table` | `tests/test_guided_offline_scripts.py; tests/test_deliberation_guided.py` | PASS: real installed DSPy, exact output bytes and version | DLIB-OUT-06 |
+| B7 | `existing judge, verdict and fail-open tests (unchanged)` | `tests/test_deliberation.py; agents/deliberator/tests/test_judge_non_answer_fail_open.py; agents/deliberator/tests/test_review_veto_semantics.py` | PASS: 19 existing tests, no edits | DLIB-FAIL-04 |
 
-**Tests added beyond the plan:** None. A1 uses `dspy_served_probe.py` to observe ChainOfThought execution in a fresh interpreter.
+**Tests added beyond the plan:** Four engine/adapter edge tests in `tests/test_dspy_engine.py`: streaming uses a single completion, the caller chooses the blank stop reason, an uncaused DSPy error remains loud, and a future parser non-answer still retains its text and reason. B5 additionally proves comments, separate commands and multiple installers cannot satisfy an exclusion. A6 checks each new module's actual source sensitivity. Probes use canned clients only.
+
+**Resume test output** (`.venv/s254-proof/plan-green.txt`, exit 0; full command recorded in Closeout):
+
+```text
+368 passed in 30.34s
+```
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC — not built. The handover says to stop if the spec is wrong; checklist 8 cannot be satisfied by the scoped source edits.
+**Resume INTENT (Step 5, 2026-10-07):** Execute D1 and D3-D7 against the measured Appendix shape, retaining the law reading, two Appendix runs, main fixture, A1 red and DL-267. Prove A1-A7/B1-B7, complete only DLIB-NEV-10/v1.13 and its rollups, break/restore every new guard, redirect CI, and report unavailable steps. No network, .env, push, judge edit, dependency-file edit or STATE edit.
 
-**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s254`, branch `sprint-254-each-debater-turn-is-run-by-dspy`, `.env` absent. `UV_OFFLINE=1`, `UV_NO_SYNC=1`; no network or LLM call. No bare `uv sync`.
+**Result:** Implemented the measured engine/program shape. Actual served calls preserve all six captured wire requests and both role hashes; all 132 records or exceptions match main. Every case makes one client call and one ledger row. Four overlapping threads retain their own clients and packets. The strict parser and blank rules, client failure types, judge and recorded payload fields are preserved. Real installed DSPy reproduces the golden byte for byte; only its version value changes. Both new modules and that version enter the deliberator recipe; the operator recipe remains the captured main value.
 
-**Result:** The unmodified Appendix passed twice at DSPy 3.4.0: 132/132 equal outcomes and 132/132 equal single wire calls, neither excluded package loaded, zero cache files and zero global-history calls. Main's 132 outcomes, six requests, two hashes and operator digest were captured before implementation. A1 is verified failing before implementation. The requested runtime build is **not done**.
+**Law cycle:** DLIB-NEV-10 added exactly as authorised; laws v1.13 and Changelog name S254/ADR-0032; B2 docstring and test-plan row cite it; both rollups read 28 / 60. All 59 pre-existing clauses are byte-identical. The OUT-06 test-plan citation follows the retired runtime-free probe to A1/A2. No other clause is edited, and DEP-03/OBS-02 remain gray.
 
-**Files changed:** Only the sprint/README/INDEX status and reasoning records, STATE, A1 and its canned subprocess probe, `tests/fixtures/guided_turn_main_records.json`, and the five public digests' scoped `.secrets.baseline` false positives. No production module, law, Dockerfile, dependency file or audit rule changed.
+**Design decisions:** D1 and D3-D7 implemented as written. D2 (dev dependency and version bump) remains the planner's merge work. DL-267 and the Planner's correction stand; no new behavioural decision was needed.
 
-**Design decisions:** DL-266 D1-D7 are unchanged and not implemented. DL-267 records the newly measured checklist contradiction and the proposed source-scoped grep; the correction was not applied without a corrected handover.
+**Files changed:** The guided turn and recipe declarations; the two new kernel modules; shared recipe hashing; removal of the copied message formatter and old program/probe; real golden writer and tests; deliberator Dockerfile only; audit premise and baseline; the authorised law amendment/rollups; sprint handback and indexes. Existing agent/judge/operator/replay logic, prompt text, contracts, baseline fixture and dependency files were not edited on resume.
 
 **The Appendix script's two outputs:**
 
@@ -615,62 +621,214 @@ FAILED agents/deliberator/tests/test_dspy_runtime.py::test_a_served_turn_runs_ds
 1 failed in 2.45s
 ```
 
-**Proof — the green run:** not done: stopped before implementation. The Appendix proofs above are environment/reference proofs, not green tests of a changed runtime.
-
-**Guards planted:** A1 red only. A1 final green and every A2-A7/B1-B7 break-and-restore are not done, because implementation stopped at checklist 8.
-
-**Module line counts:** `agents/deliberator/tests/test_dspy_runtime.py`: 29; `agents/deliberator/tests/dspy_served_probe.py`: 71. No touched production modules.
-
-**`make ci`:** NOT RUN; no `make ci` exit code or output file exists. The handover's explicit stop rule was followed before implementation. The successful commit hooks did run and pass ruff, format, mypy, import-linter, module size, module header, law coverage and detect-secrets. The other seven CI steps are **NOT RUN** because the build stopped: PARAM/settings sync, sprint status, markdown links, version scheme, pytest with coverage, dependency audit, untracked secrets. A1 alone was run with `--no-cov` and failed as required. These commit checks are not a full CI pass.
-
-**Commit hooks (real output, `.venv/s254-proof/commit-final.txt`, exit 0):**
+**Proof — green runtime and planned regressions:**
 
 ```text
-Ruff lint................................................................Passed
-Ruff format..............................................................Passed
-mypy.....................................................................Passed
-trim trailing whitespace.................................................Passed
-fix end of files.........................................................Passed
-check yaml...........................................(no files to check)Skipped
-check toml...........................................(no files to check)Skipped
-check for added large files..............................................Passed
-check for merge conflicts................................................Passed
-debug statements (python)................................................Passed
-detect private key.......................................................Passed
-markdownlint-cli2........................................................Passed
-Detect secrets...........................................................Passed
-module size (warn 150 / hard block 200)..................................Passed
-coding-agent module header (Agent:/Role:)................................Passed
-law coverage ledger......................................................Passed
-import-linter (agents are islands).......................................Passed
-COMMIT_EXIT=0
+uv run --no-sync pytest agents/deliberator/tests/test_dspy_runtime.py --no-cov -q
+1 passed in 7.77s
+
+uv run --no-sync pytest agents/deliberator/tests/test_dspy_runtime.py agents/deliberator/tests/test_dspy_turn_parity.py agents/deliberator/tests/test_dspy_concurrency.py tests/test_dspy_recipe.py tests/test_dspy_boundary.py tests/test_no_dspy_at_runtime.py tests/test_dspy_images.py tests/test_dspy_engine.py tests/test_guided_offline_scripts.py tests/test_deliberation_guided.py tests/test_deliberation_guided_text.py tests/test_prompt_recipe.py tests/test_check_dependency_audit.py agents/deliberator/tests/test_guided_turn.py tests/test_deliberation.py agents/deliberator/tests/test_judge_non_answer_fail_open.py agents/deliberator/tests/test_review_veto_semantics.py --no-cov -q
+368 passed in 30.34s
 ```
 
-**Not met / verified failing:**
+Both commands returned exit 0. Logs: `.venv/s254-proof/a1-green.txt` and `plan-green.txt`. B1/B2 fresh interpreters refuse connections, block both excluded imports, and observe actual engines, two client calls/two ledger rows, empty cache files and empty global/per-LM history. B3 imports what all fourteen other Dockerfile CMDs run with DSPy blocked.
 
-- Checklist 8 is **verified failing as written**: even after all its runtime identifiers are removed, its unqualified command still matches the sprint document itself and historical S246/design records. Actual output on the pre-implementation tree:
+**Guard break-and-restore proofs (DL-70):** Each mutation ran in a fresh pytest process, returned exit 1, was restored byte for byte in `finally`, then returned exit 0. Logs: `.venv/s254-proof/<guard>-red.txt` and `<guard>-restored.txt`; manifests: `guards-0-10.json`, `guards-10-21.json`, `guards-21-33.json`. No judge file was mutated.
 
-  ```text
-  docs/design-log.md:1181:golden.** Three literals: `GUIDED_TURN_PREFIX` (DSPy's field-description and structure blocks, with the
-  docs/sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md:439:    tests/dspy_free_probe.py are gone; `git grep -n "guided_system\|GUIDED_TURN_PREFIX"` is empty.
-  REMOVAL_COMMAND_EXIT=0
-  MATCH_LINES=28
-  ```
+| Guard | Guarded property | Planted result (exit 1) | Restored result (exit 0) |
+| --- | --- | --- | --- |
+| 01-cot | A1 actual ChainOfThought execution (`agents/deliberator/tests/test_dspy_runtime.py`) | 1 failed in 8.71s | 1 passed in 6.57s |
+| 02-system | A1 unchanged signature/system text (`agents/deliberator/tests/test_dspy_runtime.py`) | 1 failed in 8.50s | 1 passed in 6.61s |
+| 03-user | A1 unchanged user packet (`agents/deliberator/tests/test_dspy_runtime.py`) | 1 failed in 8.82s | 1 passed in 6.71s |
+| 04-repair | A2 strict JSON without repair (`agents/deliberator/tests/test_dspy_turn_parity.py::test_served_records_equal_main[defender-first_turn-malformed_json_trailing_comma]`) | 1 failed in 4.19s | 1 passed in 4.18s |
+| 05-argument | A2 blank argument stays unreadable (`agents/deliberator/tests/test_dspy_turn_parity.py::test_served_records_equal_main[defender-first_turn-empty_argument]`) | 1 failed in 4.28s | 1 passed in 4.54s |
+| 06-blank | A2 blank completion keeps empty_debate_turn (`agents/deliberator/tests/test_dspy_turn_parity.py::test_served_records_equal_main[defender-first_turn-blank]`) | 1 failed in 4.29s | 1 passed in 4.21s |
+| 07-cause | A3 original client failure type/message (`agents/deliberator/tests/test_dspy_turn_parity.py::test_served_failures_equal_main_and_keep_ledger_stop_reason`) | 18 failed in 4.84s | 18 passed in 5.00s |
+| 08-once | A4 one client call (`agents/deliberator/tests/test_dspy_turn_parity.py::test_every_turn_has_one_client_call_and_one_ledger_row[defender-first_turn-valid]`) | 1 failed in 4.24s | 1 passed in 4.21s |
+| 09-hashes | A5 actual system text and ledger hashes (`agents/deliberator/tests/test_dspy_turn_parity.py::test_role_system_text_is_reused_and_has_mains_hash`) | 2 failed in 4.34s | 2 passed in 4.27s |
+| 10-version | A6 installed version is actually hashed (`tests/test_dspy_recipe.py`) | 1 failed, 2 passed in 3.95s | 3 passed in 1.97s |
+| 11-engine-recipe | A6 engine source is actually declared (`tests/test_dspy_recipe.py`) | 2 failed, 1 passed in 4.03s | 3 passed in 2.03s |
+| 12-program-recipe | A6 program source is actually declared (`tests/test_dspy_recipe.py`) | 2 failed, 1 passed in 3.94s | 3 passed in 1.95s |
+| 13-thread | A7 no global LM/adapter configuration (`agents/deliberator/tests/test_dspy_concurrency.py`) | 1 failed in 3.89s | 1 passed in 3.80s |
+| 14-disk | B1 disk cache disabled at import (`tests/test_dspy_boundary.py::test_served_turn_needs_no_excluded_package_cache_or_history`) | 1 failed in 3.39s | 1 passed in 5.68s |
+| 15-memory | B1 memory cache disabled at import (`tests/test_dspy_boundary.py::test_served_turn_needs_no_excluded_package_cache_or_history`) | 1 failed in 3.47s | 1 passed in 5.70s |
+| 16-lm-cache | B1 per-LM cache disabled (`tests/test_dspy_boundary.py::test_served_turn_needs_no_excluded_package_cache_or_history`) | 1 failed in 3.83s | 1 passed in 5.70s |
+| 17-history | B1 history disabled (`tests/test_dspy_boundary.py::test_served_turn_needs_no_excluded_package_cache_or_history`) | 1 failed in 5.87s | 1 passed in 5.98s |
+| 18-retries | B2 retries disabled (`tests/test_dspy_boundary.py::test_dspy_uses_only_the_agents_engine_with_sockets_refused`) | 1 failed in 5.86s | 1 passed in 5.71s |
+| 19-fallback | B2 JSON adapter fallback disabled (`tests/test_dspy_boundary.py::test_dspy_uses_only_the_agents_engine_with_sockets_refused`) | 1 failed in 6.08s | 1 passed in 5.69s |
+| 20-vendor | B2 own engine is mandatory; sockets refused (`tests/test_dspy_boundary.py::test_dspy_uses_only_the_agents_engine_with_sockets_refused`) | 1 failed in 3.42s | 1 passed in 5.89s |
+| 21-import-wall | B3 kernel initializer does not expose DSPy (`tests/test_no_dspy_at_runtime.py`) | 1 failed in 5.27s | 1 passed in 2.99s |
+| 22-other-image | B4 no other image installs optimizer (`tests/test_dspy_images.py::test_only_deliberator_installs_optimizer_with_exact_exclusions`) | 1 failed in 1.29s | 1 passed in 1.04s |
+| 23-disk-exclusion | B4 diskcache excluded by name (`tests/test_dspy_images.py::test_only_deliberator_installs_optimizer_with_exact_exclusions`) | 1 failed in 1.25s | 1 passed in 1.05s |
+| 24-litellm-exclusion | B4 litellm excluded by name (`tests/test_dspy_images.py::test_only_deliberator_installs_optimizer_with_exact_exclusions`) | 1 failed in 1.29s | 1 passed in 1.08s |
+| 25-exact-exclusions | B4 no wider exclusion list (`tests/test_dspy_images.py::test_only_deliberator_installs_optimizer_with_exact_exclusions`) | 1 failed in 1.26s | 1 passed in 1.03s |
+| 26-audit-premise | B5 unsafe installation voids acceptance (`tests/test_dspy_images.py`) | 7 failed, 3 passed in 1.32s | 10 passed in 1.07s |
+| 27-audit-count | B5 accepted note counts actual installers (`tests/test_dspy_images.py`) | 2 failed, 8 passed in 1.28s | 10 passed in 1.05s |
+| 28-audit-note | B5 accepted note names package exclusion (`tests/test_dspy_images.py`) | 2 failed, 8 passed in 1.42s | 10 passed in 1.06s |
+| 29-golden | B6 installed DSPy reproduces the exact golden (`tests/test_guided_offline_scripts.py::test_the_golden_writer_produces_the_goldens_shape`) | 1 failed in 4.18s | 1 passed in 2.04s |
+| 30-stream | extra engine stream makes one completion (`tests/test_dspy_engine.py::test_stream_preserves_the_single_completion_and_does_not_own_the_client`) | 1 failed in 4.04s | 1 passed in 1.92s |
+| 31-caller-stop | extra engine uses caller's blank reason (`tests/test_dspy_engine.py::test_blank_engine_response_uses_the_callers_stop_reason`) | 1 failed in 3.99s | 1 passed in 1.94s |
+| 32-uncaused | extra uncaused library error remains loud (`tests/test_dspy_engine.py::test_unexpected_error_without_a_cause_is_preserved`) | 1 failed in 4.43s | 1 passed in 1.95s |
+| 33-reason | extra parser non-answer stays named (`tests/test_dspy_engine.py::test_unreadability_without_a_parser_reason_is_still_named`) | 1 failed in 4.14s | 1 passed in 1.92s |
 
-- A1 final green, implementation, all removals, golden regeneration, DLIB-NEV-10/v1.13/test-plan/rollups, guard mutation proofs and CI: **not done**.
-- Status BUILT here and in README: **not done**, because no implementation exists. Both remain SPEC to preserve LAW-02.
-- `git diff main -- pyproject.toml uv.lock` is empty. Both files are untouched; the planner owns them at merge.
-- No push, remote gate, merge, image build, deployment or live proof was performed.
+**Audit premise against the actual tracked images (synthetic advisory input, not an external audit):**
+
+```text
+SYNTHETIC audit input; actual 15 tracked Dockerfiles:
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+```
+
+**Regenerated golden — actual diff:**
+
+```diff
+diff --git a/tests/fixtures/deliberation_guided_golden.json b/tests/fixtures/deliberation_guided_golden.json
+index 66e32027..8e613b2f 100644
+--- a/tests/fixtures/deliberation_guided_golden.json
++++ b/tests/fixtures/deliberation_guided_golden.json
+@@ -4 +4 @@
+-  "dspy_version": "3.3.1",
++  "dspy_version": "3.4.0",
+```
+
+**Scope/removal proof (exit values pasted):**
+
+```text
+git grep -n "guided_system\|GUIDED_TURN_PREFIX" -- kernel contracts agents orchestration surfaces scripts tests
+scoped removal grep exit=1 (1 means no matches)
+git diff main -- pyproject.toml uv.lock
+dependency-file diff exit=0
+git diff -- agents/deliberator/agent.py kernel/__init__.py kernel/deliberation.py kernel/deliberation_prompts.py kernel/deliberation_verdicts.py kernel/dspy_optimizer.py agents/operator scripts/guided_turn_replay.py docs/STATE.md tests/fixtures/guided_turn_main_records.json tests/test_deliberation.py agents/deliberator/tests/test_judge_non_answer_fail_open.py agents/deliberator/tests/test_review_veto_semantics.py
+protected-path diff exit=0
+```
+
+Each diff above prints nothing. The three retired modules are removed. `pyproject.toml` and `uv.lock` are untouched; STATE is not edited on resume. All other Dockerfiles are byte-identical to the resumed HEAD.
+
+**Module line counts — actual output, all surviving touched modules < 200:**
+
+```text
+agents/deliberator/guided_turn.py: 54
+agents/deliberator/prompt_recipe.py: 75
+agents/deliberator/tests/dspy_fixtures.py: 80
+agents/deliberator/tests/dspy_served_probe.py: 71
+agents/deliberator/tests/test_dspy_concurrency.py: 72
+agents/deliberator/tests/test_dspy_runtime.py: 29
+agents/deliberator/tests/test_dspy_turn_parity.py: 87
+agents/deliberator/tests/test_guided_turn.py: 96
+kernel/deliberation_guided.py: 152
+kernel/deliberation_guided_format.py: 0 (removed)
+kernel/deliberation_guided_render.py: 46
+kernel/deliberation_program.py: 70
+kernel/dspy_engine.py: 88
+kernel/prompt_recipe.py: 91
+scripts/deliberation_guided_program.py: 0 (removed)
+scripts/dependency_audit_baseline.py: 50
+scripts/dependency_audit_rules.py: 172
+scripts/render_guided_turn_golden.py: 112
+tests/dspy_boundary_probe.py: 74
+tests/dspy_free_probe.py: 0 (removed)
+tests/dspy_image_probe.py: 59
+tests/test_deliberation_guided.py: 120
+tests/test_deliberation_guided_text.py: 160
+tests/test_dspy_boundary.py: 42
+tests/test_dspy_engine.py: 71
+tests/test_dspy_images.py: 97
+tests/test_dspy_recipe.py: 51
+tests/test_guided_offline_scripts.py: 137
+tests/test_no_dspy_at_runtime.py: 32
+tests/test_prompt_recipe.py: 185
+```
+
+**`make ci` — actual output and unavailable step:**
+
+Command: `make ci > .venv/s254-proof/make-ci-loopback.txt 2>&1`, run from `C:/Users/yury_/Downloads/project/ta-s254`. **Exit 2**, because the external dependency-advisory lookup is blocked. `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PYTHON_DOTENV_DISABLED=1`, `PYTHONUTF8=1`; the temporary `sitecustomize` guard permits local loopback IPC only and refuses external sockets and DNS. No sync command, dependency-file change or external access was used.
+
+Real output from the full run:
+
+```text
+Success: no issues found in 1159 source files
+TOTAL                                                           19979      0   4226      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4251 passed, 8 skipped, 2470 warnings in 312.20s (0:05:12) ==========
+uv run python scripts/check_dependency_audit.py
+RuntimeError: S254 no-network restriction: external sockets and DNS refused
+make: *** [Makefile:59: ci] Error 1
+MAKE_CI_LOOPBACK_EXIT=2
+```
+
+The remaining recipes were then run directly, with the same offline restrictions:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 11 new file(s)
+UNTRACKED_SECRETS_EXIT=0
+```
+
+Logs: `.venv/s254-proof/ci-detect-secrets.txt` and `ci-untracked-secrets.txt`. This is **14 of 15 recipes passed, not a full CI pass**:
+
+| CI recipe | Result / reason |
+| --- | --- |
+| 1. ruff | PASS |
+| 2. format check | PASS |
+| 3. mypy | PASS, 1159 source files |
+| 4. import-linter | PASS |
+| 5. module size | PASS; all touched modules < 200 |
+| 6. module headers | PASS |
+| 7. law coverage | PASS |
+| 8. PARAM/settings sync | PASS |
+| 9. sprint status | PASS; rerun on the final BUILT markers |
+| 10. markdown links | PASS; rerun on the final handback |
+| 11. version scheme | PASS; dependency files unchanged |
+| 12. pytest / coverage | PASS: 4251 passed, 8 skipped; 100.00% |
+| 13. dependency audit | **NOT RUN to completion:** attempted and blocked at external advisory lookup by the no-network restriction; acceptance premises are separately proven with synthetic input |
+| 14. detect-secrets | PASS, run directly after the blocked recipe |
+| 15. untracked secrets | PASS, run directly after the blocked recipe |
+
+**Final handback static checks (real output, exit 0):**
+
+```text
+uv run python scripts/check_sprint_status.py
+docs_seen=259 SPEC=11 BUILT=1 MERGED=247 UNMAPPED=0 MISSING=0
+FINAL_SPRINT_STATUS_EXIT=0
+uv run python scripts/check_markdown_links.py
+FINAL_MARKDOWN_LINKS_EXIT=0
+git diff --check
+DIFF_CHECK_EXIT=0
+```
+
+Logs: `.venv/s254-proof/final-sprint-status.txt` and `final-markdown-links.txt`. Final staged-file detect-secrets also passes; the commit hooks recheck the staged handback.
+
+The eight existing skips are .env isolation proofs (2), unset Celery/Postgres test configuration (3), missing optional SciPy (1), and disabled live feed tests (2). No S254/DSPy proof skips. No coverage floor was changed.
+
+**12-item handback checklist — met:**
+
+1. Original pre-code Law reading record retained.
+2. Both original Appendix outputs retained, 132/132 twice, with their worktree.
+3. Immutable main fixture already committed, with source and executed HEAD named.
+4. Original A1 red output retained.
+5. All A1-A7/B1-B7 rows name files, passing status and clauses.
+6. All 33 guarded-property mutations have red and restored-green output, one row each.
+7. Exactly DLIB-NEV-10, v1.13, S254/ADR-0032 Changelog, B2 citation, test-plan row and both rollups; existing 59 clauses unchanged.
+8. All three retired modules removed; corrected source-scoped grep prints nothing.
+9. Real writer regenerated the golden; pasted diff changes only its DSPy version value.
+10. `git diff main -- pyproject.toml uv.lock` prints nothing; neither file edited.
+11. Actual full CI log/exit recorded, every recipe accounted for and blocked advisory lookup named NOT RUN.
+12. Actual touched-module counts pasted, each < 200; Status BUILT in this spec and its README row.
 
 ---
 
 ## Return notes
 
-**not done — stopped before implementation on a spec contradiction.** Checklist 8 requires `git grep -n "guided_system\|GUIDED_TURN_PREFIX"` to be empty, but the spec itself contains those names and the literal command, as do the historical S246 handover and DL-252. The allowed runtime source removals cannot make that whole-repository search empty. Deleting or rewriting the historical records would be outside this sprint and still leave the command in its own handback. The handover explicitly says: "If something in the spec is wrong or blocked, record it in the handback (Return notes, 'not done') and stop; do not improvise." This is that stop.
+The planner's corrected command was followed on the same worktree/branch, with no pull. The original law-reading record, Appendix outputs, main fixture, A1 red/probe and DL-267 stand; none was recaptured or redone. The corrected source-scoped removal grep is empty, and B3 proves the actual 13 module CMDs plus the dispatcher script. The actual `ci:` target has 15 recipes, including sprint status; the older 14-step count was treated as a count correction, with every recipe accounted for.
 
-**Recommended spec correction:** scope that command to source: `git grep -n 'guided_system\|GUIDED_TURN_PREFIX' -- kernel agents scripts tests`. No correction or alternative implementation was made. Resume after the planner corrects this requirement; then implement D1/D3-D7 against the existing frozen fixture and A1 red proof.
+**Execution-profile correction:** The first `make ci` (`.venv/s254-proof/make-ci.txt`, exit 2) used an overly broad temporary socket/DNS block. It caused two existing loopback HTTP tests and Windows asyncio's local socket pair to fail, plus its destructor warning in a later test: 4 failed, 4247 passed, 8 skipped; 99.88% coverage. No repository code or tests were changed to compensate. The scratch guard now permits loopback addresses only and resolves them numerically; external TCP, UDP and DNS remain refused before access. The affected 18 tests then passed in 5.10s (`local-ipc-restored.txt`, exit 0). The full CI target was rerun with that corrected profile. This is a local test setup correction under the updated stop rule, not a change to a role's behavior or a law.
 
-The frozen fixture names source `9f4051ad2f52300fc2c4a87637b72e7464fc5f16` (local main at capture), executed worktree HEAD `ab88b9162b61c43b8405567b231e52c7e88af1bc`; their diff has only five docs paths and no runtime change. Main moved through documentation commits during the reading; no main file was edited here. `pyproject.toml` and `uv.lock` were not touched. No network was used and no branch was pushed. Commit hooks were attempted without bypass. The first attempt failed on the proof helper's untyped direct DSPy import, handback whitespace, and five public commit/prompt digests detected as high-entropy strings. The helper uses an ordinary dynamic import (never a skip), whitespace is corrected, and only those five fixture digests are recorded as baseline false positives. Final commit verification is reported in the chat.
+The immutable fixture still names source `9f4051ad2f52300fc2c4a87637b72e7464fc5f16` and executed worktree HEAD `ab88b9162b61c43b8405567b231e52c7e88af1bc`; their source equivalence was recorded before implementation. The existing five scoped false positives are public commit/prompt digests, not credentials. No `.env` was opened, no dependency file was edited, and STATE was not edited on resume.
+
+**Carry-forward / not done:** The full external dependency audit, remote CI/exact-SHA gate, push, merge, Docker build, deployment and live replay are not done under this handover's restrictions. The planner still owes D2 (DSPy in the dev group and the feature version/lock bump) at merge. Local main was not changed by this work. The runtime build, recorded-parity tests, law cycle and all guard proofs are complete; BUILT describes that state and does not claim remote/deployed/live proof.
 
 ---
 

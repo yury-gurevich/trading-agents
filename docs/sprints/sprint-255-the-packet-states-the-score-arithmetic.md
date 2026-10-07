@@ -814,6 +814,53 @@ Local `main` and the stored `origin/main` ref were `41916311b68e2f8b5eab2585a482
 
 ---
 
+## Planner's review and merge-time work — 2026-10-08 08:49 AEDT
+
+**The handback is accepted.** Re-measured by the planner, not read from the builder's logs. The builder's
+commit is `7f8843ba`.
+
+| Claim | Value | How it was measured |
+| --- | --- | --- |
+| The Appendix script | three nines | *[measured]* extracted from this spec on the branch and run in `../ta-s255`, no `.env` |
+| The sprint's tests | 48 passed, none skipped | *[measured]* the six `tests/test_score_arithmetic*.py` files, re-run by the planner |
+| The guards can fail | 9 properties of the planner's own choosing, broken one at a time, each red, each file restored byte for byte: the scale clause dropped from the first line; the tolerance widened to `1e-6`; the composite divided by all three weights; the renderer left out of `PROMPT_MODULES`; the fundamental names recorded sorted; a weight recorded as its default, not the one in force; a wrong threshold recorded; the lines put first, not last; an old record given a line | *[measured]* one script, one replacement per case |
+| A3's two frozen strings are what `main` builds | both equal, 3,327 and 2,614 bytes | *[measured]* the same lineage built in the main checkout at `41916311`, whose tree has no `context_arithmetic.py` and whose `Recommendation` has no `score_arithmetic` |
+| The branch rebuilds the nine recorded packets | **9 of 9 byte-equal**, and none gained a line | *[measured, live graph]* read-only, the branch's `build_veto_context` on the nine orders of EXP-019 |
+| Every recorded analyst run reads under the branch's contract | 85 of 85; 1,778 recommendations, none carrying `score_arithmetic` | *[measured, live graph]* `RecommendationSet.model_validate` |
+| Existing tests edited | none: every file of the diff under `tests/` is added | *[measured]* `git diff --name-status` against the merge base |
+| The protected files | an empty diff against `main` for the role prompts, the DSPy program and engine, the guided turn, the secrets baseline, the size baseline, the `Makefile` and the workflows | *[measured]* |
+| Windows `make ci`, on this commit's tree | exit 0, all 15 steps; 4,304 passed, 7 skipped, 100.00 %; the dependency audit ran: no unaccepted vulnerability, one accepted advisory re-checked | *[measured]* redirected to a file, the exit code read from the file |
+
+**Done by the planner on this branch.** Version `0.123.00`. `uv lock`: 180 packages before and after, and
+the only version that moved is this package's. The lock's other changed lines are the local uv writing
+dependency markers and wheel lists back as they were before Dependabot's `0f2cef72` rewrote them.
+
+**Read in the diff, and accepted as built.**
+
+- **The withheld line is also written on the two partial-lineage returns** (no `ScanRun`, no
+  `MarketData`), with the reason *no regime record*. The spec said the builder calls the renderer last.
+  The builder's reading is the better one: a record that carries its arithmetic never loses it without a
+  line saying so. An old record still adds nothing there (pinned).
+- **A short-history score records the seven constants and no names.** If such an order were ever debated,
+  the packet would read *the recorded sub-scores are incomplete*. Correct, and pinned.
+- **`scripts/replay_day.py` builds a regime without thresholds.** It is not the provider and nothing in a
+  replay is debated, so it is left as it is. A replay that one day renders packets would read *the
+  regime record carries no label thresholds*, which is true of it.
+- **The local run has 7 skips where the remote run has 8.** The builder installed SciPy into this
+  worktree's venv from its cache, so the forecaster's oracle test runs here. The lock does not install
+  it by default.
+
+**Not recorded on this branch, on purpose:** the remote gate for this commit and the comparison of the
+branch's open CodeQL alerts with `sprint-254-each-debater-turn-is-run-by-dspy`'s 127. A commit added
+above the gated one would be unproven, so both are recorded on `main`.
+
+**The merge is held** (operator, 2026-10-07). The corrected first line is measured on `gpt-5.5`
+(EXP-021, recorded on `main` after this branch was cut:
+54 of 54 right, 54 of 54 on the same side as the uncorrected line). It is not measured on Opus. Whether
+the merge goes on that evidence is the operator's decision.
+
+---
+
 ## Appendix — the reference shape, and the script behind the Measured table
 
 `recompute` is the self-check of decisions D4 and D5. `arithmetic_lines` is the text and the number

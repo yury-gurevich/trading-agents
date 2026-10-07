@@ -38,6 +38,12 @@ def test_only_deliberator_installs_optimizer_with_exact_exclusions() -> None:
         "diskcache",
         "litellm",
     }
+    # DSPy is in the dev group too (CI runs it), so no image may install that group.
+    assert all(
+        "--no-dev" in command.split()
+        for text in dockerfiles.values()
+        for command in sync_commands(text)
+    )
 
 
 @pytest.mark.parametrize(
@@ -52,12 +58,14 @@ def test_optimizer_installation_with_diskcache_excluded_preserves_acceptance(
 ) -> None:
     """DLIB-DEP-03: DL-184 / DL-199 acceptance survives exclusion by name (B5)."""
     errors, notes = evaluate(
-        REPORT, {"peer/Dockerfile": command, "other/Dockerfile": "RUN uv sync"}
+        REPORT,
+        {"peer/Dockerfile": command, "other/Dockerfile": "RUN uv sync --no-dev"},
     )
     assert errors == []
     assert len(notes) == 1
     assert "installed by 1 of 2 Dockerfiles" in notes[0]
     assert "each installing command excludes diskcache by name" in notes[0]
+    assert "the dev group carries it too" in notes[0]
 
 
 @pytest.mark.parametrize(
@@ -70,6 +78,11 @@ def test_optimizer_installation_with_diskcache_excluded_preserves_acceptance(
         "RUN uv sync --extra optimizer --no-install-package diskcache\n"
         "RUN uv sync --extra optimizer\n",
         "RUN uv sync --extra optimizer --no-install-package litellm\n",
+        # The dev group carries DSPy as well: a sync that installs it owes the same.
+        "RUN uv sync --frozen --extra runtime\n",
+        "RUN uv sync --extra runtime --no-install-package litellm\n",
+        "RUN uv sync --extra runtime --no-dev\nRUN uv sync --extra runtime\n",
+        "RUN uv sync --extra runtime # --no-dev\n",
     ],
 )
 def test_any_optimizer_command_without_diskcache_exclusion_voids_acceptance(

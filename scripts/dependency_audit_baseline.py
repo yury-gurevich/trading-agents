@@ -30,6 +30,10 @@ class AcceptedAdvisory:
     # installing command does not exclude the package by name. None means the
     # acceptance rests on other grounds only.
     reachable_only_via_extra: str | None = None
+    # True when the dev group pulls the package in as well (CI needs it to run
+    # the tests). A sync command without `--no-dev` then installs it exactly as
+    # one naming the extra would, and owes the same exclusion.
+    also_in_dev_group: bool = False
 
 
 ACCEPTED: tuple[AcceptedAdvisory, ...] = (
@@ -46,5 +50,6 @@ ACCEPTED: tuple[AcceptedAdvisory, ...] = (
             "diskcache publishes a fixed release, or the optimizer extra is dropped"
         ),
         reachable_only_via_extra="optimizer",
+        also_in_dev_group=True,
     ),
 )

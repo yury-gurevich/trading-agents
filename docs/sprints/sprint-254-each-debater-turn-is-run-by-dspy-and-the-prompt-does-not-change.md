@@ -832,6 +832,30 @@ The immutable fixture still names source `9f4051ad2f52300fc2c4a87637b72e7464fc5f
 
 ---
 
+## Planner's review and merge-time work — 2026-10-07 15:51 AEDT
+
+**The handback is accepted.** Re-measured by the planner, not read from the builder's logs:
+
+| Claim | Value | How it was measured |
+| --- | --- | --- |
+| A turn on the branch equals a turn on `main` | **168 of 168** rows byte-identical: the record or the exception, and the one call's system text, user text and tool schema | *[measured]* one script run in each tree (`main` at `967bebb0`, the branch at `a4d3c563`), the two dumps compared with `cmp`. The spec's 132 cases plus 36 the golden does not hold: fenced JSON, plain prose, non-ASCII text, CRLF line ends, a field written twice, a missing closing marker |
+| The system prompt hashes | the defender's and the challenger's SHA-256 are equal in both trees and equal the fixture's two values | *[measured]* same run |
+| Packages loaded by a served turn | `dspy` loaded on the branch; `litellm` and `diskcache` not loaded | *[measured]* same run |
+| The builder's planned tests | 368 passed | *[measured]* re-run by the planner |
+| The guards can fail | 4 of the builder's 33 re-broken by the planner, each red and then green: the Dockerfile without the `diskcache` exclusion, `num_retries=3`, `kernel/__init__.py` importing the engine, the JSON fallback left on | *[measured]* |
+
+**Decision D2, done by the planner on this branch.** `dspy>=3.4.0` in the `dev` group and in the
+`optimizer` extra; version `0.122.00`; `uv lock` added 4 lines and removed 2, and no package's version
+moved. The move opened a second route to `diskcache`, closed in the same commit
+([DL-268](../design-log.md)).
+
+**`make ci`, Windows, the environment synced with no extra (CI's):** exit 0, all 15 steps. 4,255 passed, 8 skipped, 100.00 % coverage. The dependency audit ran against the network, which the builder's sandbox could not do: no unaccepted vulnerability, 1 accepted advisory re-checked.
+
+**Still owed, in the order of "Sequencing after merge":** the remote gate for the pushed commit, the
+merge, the image check in the built container, the retag (not before the fidelity verdict), F1 and F2.
+
+---
+
 ## Appendix — the reference shape, and the script behind the Measured table
 
 The classes `StrictGuidedAdapter` and `ClientEngine` and the functions `run_program` and

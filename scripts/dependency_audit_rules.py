@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 _EXTRA: Final = re.compile(r"--extra[=\s]+([A-Za-z0-9._-]+)")
 _EXCLUDED: Final = re.compile(r"--no-install-package[=\s]+([A-Za-z0-9._-]+)")
+_NO_DEV: Final = re.compile(r"(?<!\S)--no-dev(?!\S)")
 BASELINE_FILE: Final = "scripts/dependency_audit_baseline.py"
 
 
@@ -73,6 +74,14 @@ def extras_installed_by(dockerfiles: Mapping[str, str]) -> dict[str, list[str]]:
     return installers
 
 
+def _installs(entry: AcceptedAdvisory, command: str) -> bool:
+    """Whether one sync command installs something that pulls the package in."""
+    extra = entry.reachable_only_via_extra
+    if extra and extra in _EXTRA.findall(command):
+        return True
+    return entry.also_in_dev_group and not _NO_DEV.search(command)
+
+
 def _match(entry: AcceptedAdvisory, findings: Sequence[Finding]) -> Finding | None:
     """Return the finding an acceptance answers for, matching aliases too."""
     names = {entry.vuln_id, *entry.aliases}
@@ -95,22 +104,19 @@ def _premise_errors(
             f"{entry.vuln_id}: accepted for {entry.package} but reported against "
             f"{found.package} - re-read the advisory before re-accepting it"
         )
-    extra = entry.reachable_only_via_extra
-    unsafe = (
-        [
-            name
-            for name, text in sorted(dockerfiles.items())
-            if any(
-                extra in _EXTRA.findall(c) and entry.package not in _EXCLUDED.findall(c)
-                for c in sync_commands(text)
-            )
-        ]
-        if extra
-        else []
-    )
+    unsafe = [
+        name
+        for name, text in sorted(dockerfiles.items())
+        if any(
+            _installs(entry, c) and entry.package not in _EXCLUDED.findall(c)
+            for c in sync_commands(text)
+        )
+    ]
     if unsafe:
+        via = f"the '{entry.reachable_only_via_extra}' extra"
+        via += " or the dev group" if entry.also_in_dev_group else ""
         errors.append(
-            f"{entry.vuln_id}: the '{extra}' extra is now installed by "
+            f"{entry.vuln_id}: {via} is now installed by "
             f"{', '.join(unsafe)} without excluding {entry.package}, so it reaches a "
             f"deployed container - the acceptance in {BASELINE_FILE} is void"
         )
@@ -131,6 +137,11 @@ def _accepted_note(
         if entry.reachable_only_via_extra
         else ""
     )
+    if entry.also_in_dev_group:
+        reach += (
+            "the dev group carries it too, and every sync passes --no-dev or "
+            "excludes it by name; "
+        )
     return (
         f"accepted: {entry.vuln_id} ({found.package} {found.version}) - "
         f"{reach}{entry.reason} [{entry.decision}] - "

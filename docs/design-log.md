@@ -10,6 +10,33 @@ and is marked CLOSED here.
 
 ---
 
+## DL-268 - DSPy in the dev group opens a second route to `diskcache`, so the audit's premise covers it - status: DECIDED and built (planner, 2026-10-07 15:51 AEDT), on S254's branch
+
+**What D2 changed.** DL-266's decision D2 puts `dspy` in the `dev` group so that CI can run the tests
+that execute it. From that commit `diskcache` is reachable through the group as well as through the
+`optimizer` extra. The acceptance's premise (DL-184, DL-199) named only the extra.
+
+**Measured.** All 15 tracked Dockerfiles pass `--no-dev` on their one `uv sync` line. Nothing checked
+it. A Dockerfile that dropped the flag would have installed DSPy, LiteLLM and `diskcache`, and the gate
+would still have printed the acceptance as holding.
+
+**Decision.** `AcceptedAdvisory` gains `also_in_dev_group`, set on the `diskcache` entry. A sync command
+that names the extra, or that does not pass `--no-dev`, must leave the package out by name. Otherwise
+the acceptance is void and the Dockerfile is named. The accepted note in the gate's output says so.
+Test B4 also asserts `--no-dev` on every tracked Dockerfile. Watched to fail: the rule change turned two
+of the builder's B5 cases red, because their second Dockerfile was a bare `uv sync`; the cases were then
+corrected, and four voiding cases were added.
+
+**Rejected.**
+
+- *Keep `dev` free of DSPy and have CI sync with `--extra optimizer`.* The premise would stay true as
+  written. But a bare `uv sync` in any worktree would remove DSPy and the suite would fail on import,
+  and the workflow and the `Makefile` would each have to name the extra.
+- *Leave the rule alone because every Dockerfile passes `--no-dev` today.* That is the state DL-199 was
+  written against: a premise that holds and that nobody re-measures.
+
+---
+
 ## DL-267 - S254 removal command matches its own specification - status: CORRECTED (planner, 2026-10-07 14:31 AEDT); found and recorded by the builder; the build resumes
 
 **Measured in `../ta-s254`, no `.env`, no network.** Both unmodified S254 Appendix runs give 132/132 identical outcomes and single vendor calls at installed DSPy 3.4.0, with zero disk-cache files and zero global history; A1 is red before implementation. Main's behavior is frozen in `tests/fixtures/guided_turn_main_records.json`.

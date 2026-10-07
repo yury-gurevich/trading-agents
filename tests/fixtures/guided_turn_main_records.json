@@ -1,0 +1,2603 @@
+{
+  "source_commit": "9f4051ad2f52300fc2c4a87637b72e7464fc5f16",
+  "executed_worktree_head": "ab88b9162b61c43b8405567b231e52c7e88af1bc",
+  "source_note": "Runtime paths are identical to local main; its later commits change documentation only.",
+  "operator_prompt_recipe_hash": "3fcfed8fe7d67a881da04268d7119c5aab55402a8458927c4bb600262c94c259",
+  "systems": {
+    "defender": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\nIn adhering to this structure, your objective is: \n        You are the DEFENDER in a decision review. Argue *for* the decision with the strongest, most honest case; be concrete and cite the evidence. For EVERY system parameter you invoke (e.g. max_daily_move_sigma, base_min_confidence, max_sector_pct), FIRST define what it means in THIS system in one clause ('<param> = <meaning>'), THEN reason from that definition. Do not assume a guardrail the definition does not state. Max ~5 sentences.",
+    "challenger": "Your input fields are:\n1. `decision` (str): the decision under test\n2. `context` (str): the evidence packet for this decision; every value you read comes from here\n3. `transcript` (str): the debate so far\nYour output fields are:\n1. `reasoning` (GuidedReasoning): \n2. `argument` (str): step 3: your turn, at most ~5 sentences, built only from your readings and gaps\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## decision ## ]]\n{decision}\n\n[[ ## context ## ]]\n{context}\n\n[[ ## transcript ## ]]\n{transcript}\n\n[[ ## reasoning ## ]]\n{reasoning}        # note: the value you produce must adhere to the JSON schema: {\"type\": \"object\", \"$defs\": {\"EvidenceReading\": {\"type\": \"object\", \"properties\": {\"bears_on\": {\"type\": \"string\", \"description\": \"how it bears on the decision under test\", \"enum\": [\"supports\", \"against\", \"neutral\"], \"title\": \"Bears On\"}, \"meaning_here\": {\"type\": \"string\", \"description\": \"one clause: what this measures in THIS system, not in general finance\", \"title\": \"Meaning Here\"}, \"metric\": {\"type\": \"string\", \"description\": \"the exact name as it appears in the evidence packet\", \"title\": \"Metric\"}, \"value\": {\"type\": \"string\", \"description\": \"the value copied exactly as the packet writes it\", \"title\": \"Value\"}}, \"required\": [\"metric\", \"value\", \"meaning_here\", \"bears_on\"], \"title\": \"EvidenceReading\"}}, \"description\": \"Read before you argue: each later step may use only what the earlier steps established.\", \"properties\": {\"gaps\": {\"type\": \"array\", \"description\": \"step 2: evidence the packet lacks, marks unavailable, or leaves unit/scope unknown\", \"items\": {\"type\": \"string\"}, \"title\": \"Gaps\"}, \"readings\": {\"type\": \"array\", \"description\": \"step 1: every value your argument relies on, read from the packet\", \"items\": {\"$ref\": \"#/$defs/EvidenceReading\"}, \"title\": \"Readings\"}}, \"required\": [\"readings\", \"gaps\"], \"title\": \"GuidedReasoning\"}\n\n[[ ## argument ## ]]\n{argument}\n\n[[ ## completed ## ]]\nIn adhering to this structure, your objective is: \n        You are the CHALLENGER in a decision review. Attack the decision: find its weakest assumptions, risks, and failure modes; do not be polite or hedge. If it is genuinely sound, give the single strongest objection. For EVERY system parameter you invoke (e.g. max_daily_move_sigma, base_min_confidence, max_sector_pct), FIRST define what it means in THIS system in one clause ('<param> = <meaning>'), THEN reason from that definition. Do not assume a guardrail the definition does not state. Max ~5 sentences. Compiled calibration from the existing Class-1 library: when grounding names an implementation-specific flaw, address that exact flaw before generic finance caution. Preserve these distinctions: pooled cross-sectional sigma is not per-name volatility; fixed-fraction sizing is not volatility-adjusted; Alpha158 weight 0.00 contributes nothing; LightGBM shadow output does not feed the live decision. For each attack, explicitly state why the exact flaw should force REVISE or OVERTURN rather than being dismissed as a policy preference.\n        \n        Use the examples as the compiled champion prompt. Follow the task\n        contract, preserve the required output shape, and prefer the\n        demonstrated reasoning pattern.\n        \n        Examples:\n        - inputs={\"case\": \"concentration\", \"context\": \"12-month momentum +0.7; RSI 60. Portfolio already holds INTC, AMD, CSCO, QCOM (all semis).\", \"decision\": \"Buy NVDA at market\", \"flaw_keywords\": [\"correlation\", \"concentration\", \"crowded\", \"sector\", \"semis\", \"semiconductor\"]}\n          expected_output=adding another semiconductor concentrates the book in one correlated sector\n          rationale=adding another semiconductor concentrates the book in one correlated sector\n        - inputs={\"case\": \"event-risk\", \"context\": \"momentum +0.5; RSI 58; stop -3%. Earnings are in 2 days and the -3% stop is not earnings-gap-aware.\", \"decision\": \"Buy AAPL at market\", \"flaw_keywords\": [\"earnings\", \"gap\", \"event\"]}\n          expected_output=an earnings gap can blow through the -3% stop overnight\n          rationale=an earnings gap can blow through the -3% stop overnight\n        - inputs={\"case\": \"pooled-sigma\", \"context\": \"ABC printed a +9% day; the batch validated clean. The gate's max_daily_move_sigma is POOLED cross-sectional over the whole batch, not per name (validate-once, 0.28.01); one 9% name does not trip it.\", \"decision\": \"ABC spiked +9% but the data-quality gate passed it \\u2014 trade the print.\", \"flaw_keywords\": [\"pooled\", \"cross-sectional\", \"per-name\", \"per name\", \"sigma\"]}\n          expected_output=the single-name 9% move cannot trip the data gate because the sigma is pooled cross-sectional, not per-name — the outlier passes unflagged\n          rationale=the single-name 9% move cannot trip the data gate because the sigma is pooled cross-sectional, not per-name — the outlier passes unflagged\n        - inputs={\"case\": \"fixed-fraction-size\", \"context\": \"position size = a fixed fraction of equity. Sizing is FIXED-FRACTION, not vol-adjusted or Kelly (quant-methods); a 2.5-beta name gets the same dollar size as a 0.5-beta name.\", \"decision\": \"Size this 2.5-beta name the same as a utility \\u2014 the rule is uniform.\", \"flaw_keywords\": [\"fixed-fraction\", \"vol-adjust\", \"volatility-adjust\", \"kelly\", \"beta\"]}\n          expected_output=fixed-fraction sizing is not vol-adjusted, so a high-beta name carries far more risk per position than a low-beta one at the same dollar size\n          rationale=fixed-fraction sizing is not vol-adjusted, so a high-beta name carries far more risk per position than a low-beta one at the same dollar size\n        - inputs={\"case\": \"alpha158-weight-zero\", \"context\": \"Alpha158 is part of the scoring stack. The Alpha158 pillar ships with WEIGHT = 0.00 (off by default, S68/Q2); it contributes nothing to the composite despite being 'enabled'.\", \"decision\": \"Alpha158 is enabled, so trust its contribution to the score.\", \"flaw_keywords\": [\"weight\", \"0.00\", \"zero\", \"disabled\", \"off\"]}\n          expected_output=the Alpha158 weight is 0.00, so although enabled it contributes nothing to the score — relying on it is relying on a disabled signal\n          rationale=the Alpha158 weight is 0.00, so although enabled it contributes nothing to the score — relying on it is relying on a disabled signal\n        - inputs={\"case\": \"lightgbm-shadow\", \"context\": \"the ML model's prediction aligns with the signal. The LightGBM price/return model runs in SHADOW mode (Q1) \\u2014 logged for IC only; it does NOT feed the live decision.\", \"decision\": \"The LightGBM model agrees, so let it confirm the trade.\", \"flaw_keywords\": [\"shadow\", \"does not feed\", \"ic \", \"advisory\", \"logged\"]}\n          expected_output=the LightGBM model is a shadow signal logged for IC only and does not feed the live decision, so 'it agrees' adds no real confirmation\n          rationale=the LightGBM model is a shadow signal logged for IC only and does not feed the live decision, so 'it agrees' adds no real confirmation"
+  },
+  "system_prompt_hashes": {
+    "defender": "2ed3b3090d5e00ee7616eda97bf17a769416344e6a848a2033cdbe560bbcb572",
+    "challenger": "7ad43de559dfac9af35b3400b5a01bd8bf9b5834ba1281025986bc939e28ecba"
+  },
+  "failure_stop_reasons": {
+    "stopped": "max_tokens",
+    "transport": "unknown",
+    "timeout": "unknown"
+  },
+  "answers": [
+    {
+      "name": "valid",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "no_completed_marker",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA."
+    },
+    {
+      "name": "preamble",
+      "completion": "Let me read the packet first.\n\n[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "empty_readings",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [], \"gaps\": []}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "bears_on_outside_enum",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "missing_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "malformed_json_trailing_comma",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "fenced_json",
+      "completion": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "header_with_inline_content",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]] A.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "indented_header",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n  [[ ## argument ## ]] A.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "first_section_wins",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## argument ## ]]\nB.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "unknown_header_between",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## notes ## ]]\nN.\n\n[[ ## argument ## ]]\nA."
+    },
+    {
+      "name": "multi_line_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n  A.\nB.\n\n  \n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "empty_argument",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "value_as_number",
+      "completion": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "reasoning_not_an_object",
+      "completion": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]"
+    },
+    {
+      "name": "no_sections",
+      "completion": "I uphold the decision."
+    },
+    {
+      "name": "blank",
+      "completion": ""
+    },
+    {
+      "name": "whitespace",
+      "completion": "   \n"
+    },
+    {
+      "name": "stopped",
+      "error": "LLMCompletionStoppedError"
+    },
+    {
+      "name": "transport",
+      "error": "RuntimeError"
+    },
+    {
+      "name": "timeout",
+      "error": "TimeoutError"
+    }
+  ],
+  "requests": [
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "buy AAPL (qty 12)",
+          "context": "confidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors"
+        },
+        "role": "defender",
+        "round_number": 1,
+        "transcript": []
+      },
+      "user": "[[ ## decision ## ]]\nbuy AAPL (qty 12)\n\n[[ ## context ## ]]\nconfidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors\n\n[[ ## transcript ## ]]\n(none yet)\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "buy MSFT (qty 3)",
+          "context": "\n  relative_strength: 5.87%\nearnings: 2026-10-19\n"
+        },
+        "role": "defender",
+        "round_number": 1,
+        "transcript": []
+      },
+      "user": "[[ ## decision ## ]]\nbuy MSFT (qty 3)\n\n[[ ## context ## ]]\n\n  relative_strength: 5.87%\nearnings: 2026-10-19\n\n\n[[ ## transcript ## ]]\n(none yet)\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "sell X (qty 1)",
+          "context": "c"
+        },
+        "role": "defender",
+        "round_number": 1,
+        "transcript": []
+      },
+      "user": "[[ ## decision ## ]]\nsell X (qty 1)\n\n[[ ## context ## ]]\nc\n\n[[ ## transcript ## ]]\n(none yet)\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "buy AAPL (qty 12)",
+          "context": "confidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors"
+        },
+        "role": "challenger",
+        "round_number": 1,
+        "transcript": [
+          {
+            "role": "defender",
+            "round": 1,
+            "text": "Readings: none\nGaps: none\nArgument: A.",
+            "reasoning": null,
+            "reasoning_error": null
+          }
+        ]
+      },
+      "user": "[[ ## decision ## ]]\nbuy AAPL (qty 12)\n\n[[ ## context ## ]]\nconfidence: 0.71 (floor 0.60, analyst)\npe: 30\natr_pct: 2.935\nsector: Semiconductors\n\n[[ ## transcript ## ]]\n[defender r1] Readings: none\nGaps: none\nArgument: A.\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "buy MSFT (qty 3)",
+          "context": "\n  relative_strength: 5.87%\nearnings: 2026-10-19\n"
+        },
+        "role": "challenger",
+        "round_number": 1,
+        "transcript": [
+          {
+            "role": "defender",
+            "round": 1,
+            "text": "Readings: none\nGaps: none\nArgument: A.",
+            "reasoning": null,
+            "reasoning_error": null
+          }
+        ]
+      },
+      "user": "[[ ## decision ## ]]\nbuy MSFT (qty 3)\n\n[[ ## context ## ]]\n\n  relative_strength: 5.87%\nearnings: 2026-10-19\n\n\n[[ ## transcript ## ]]\n[defender r1] Readings: none\nGaps: none\nArgument: A.\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "request": {
+        "request_id": "r",
+        "proposition": {
+          "decision": "sell X (qty 1)",
+          "context": "c"
+        },
+        "role": "challenger",
+        "round_number": 1,
+        "transcript": [
+          {
+            "role": "defender",
+            "round": 1,
+            "text": "Readings: none\nGaps: none\nArgument: A.",
+            "reasoning": null,
+            "reasoning_error": null
+          }
+        ]
+      },
+      "user": "[[ ## decision ## ]]\nsell X (qty 1)\n\n[[ ## context ## ]]\nc\n\n[[ ## transcript ## ]]\n[defender r1] Readings: none\nGaps: none\nArgument: A.\n\nRespond with the corresponding output fields, starting with the field `[[ ## reasoning ## ]]` (must be formatted as a valid Python GuidedReasoning), then `[[ ## argument ## ]]`, and then ending with the marker for `[[ ## completed ## ]]`."
+    }
+  ],
+  "cases": [
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "valid",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "preamble",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "first_turn",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "valid",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "preamble",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "later_turn_with_edges",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "valid",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "preamble",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "defender",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "defender",
+      "user_case": "empty_transcript",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "valid",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "preamble",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "first_turn",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "valid",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "preamble",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "later_turn_with_edges",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "valid",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "no_completed_marker",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "preamble",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "empty_readings",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings: none\nGaps: none\nArgument: A.",
+        "reasoning": {
+          "readings": [],
+          "gaps": []
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "bears_on_outside_enum",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"support\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.bears_on: Input should be 'supports', 'against' or 'neutral'"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "missing_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "missing field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "malformed_json_trailing_comma",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"],}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Illegal trailing comma before end of object: line 1 column 266 (char 265)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "fenced_json",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n```json\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n```\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "invalid JSON in reasoning: Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "header_with_inline_content",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "indented_header",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: ]] A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "first_section_wins",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "unknown_header_between",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "multi_line_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "Readings:\n- pe = 30: 0-100 banded sub-score of P/E (against)\n- atr_pct = 2.935: 14-day ATR as percent of close (neutral)\nGaps:\n- no holdings context\nArgument: A.\nB.",
+        "reasoning": {
+          "readings": [
+            {
+              "metric": "pe",
+              "value": "30",
+              "meaning_here": "0-100 banded sub-score of P/E",
+              "bears_on": "against"
+            },
+            {
+              "metric": "atr_pct",
+              "value": "2.935",
+              "meaning_here": "14-day ATR as percent of close",
+              "bears_on": "neutral"
+            }
+          ],
+          "gaps": [
+            "no holdings context"
+          ]
+        },
+        "reasoning_error": null
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "empty_argument",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": \"30\", \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\n\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "empty field: argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "value_as_number",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n{\"readings\": [{\"metric\": \"pe\", \"value\": 30, \"meaning_here\": \"0-100 banded sub-score of P/E\", \"bears_on\": \"against\"}, {\"metric\": \"atr_pct\", \"value\": \"2.935\", \"meaning_here\": \"14-day ATR as percent of close\", \"bears_on\": \"neutral\"}], \"gaps\": [\"no holdings context\"]}\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: readings.0.value: Input should be a valid string"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "reasoning_not_an_object",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "[[ ## reasoning ## ]]\n[1, 2]\n\n[[ ## argument ## ]]\nA.\n\n[[ ## completed ## ]]",
+        "reasoning": null,
+        "reasoning_error": "schema: (root): Input should be a valid dictionary or instance of GuidedReasoning"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "no_sections",
+      "outcome": {
+        "role": "challenger",
+        "round": 1,
+        "text": "I uphold the decision.",
+        "reasoning": null,
+        "reasoning_error": "missing field: reasoning, argument"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "blank",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "whitespace",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "kernel completion stopped: stop_reason=empty_debate_turn"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "stopped",
+      "outcome": {
+        "raised": "LLMCompletionStoppedError",
+        "text": "anthropic completion stopped: stop_reason=max_tokens"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "transport",
+      "outcome": {
+        "raised": "RuntimeError",
+        "text": "provider down"
+      }
+    },
+    {
+      "role": "challenger",
+      "user_case": "empty_transcript",
+      "answer": "timeout",
+      "outcome": {
+        "raised": "TimeoutError",
+        "text": "timed out"
+      }
+    }
+  ]
+}

@@ -10,6 +10,18 @@ and is marked CLOSED here.
 
 ---
 
+## DL-267 - S254 removal command matches its own specification - status: BLOCKED before implementation (builder, 2026-10-07)
+
+**Measured in `../ta-s254`, no `.env`, no network.** Both unmodified S254 Appendix runs give 132/132 identical outcomes and single vendor calls at installed DSPy 3.4.0, with zero disk-cache files and zero global history; A1 is red before implementation. Main's behavior is frozen in `tests/fixtures/guided_turn_main_records.json`.
+
+**Constraint.** S254 checklist 8 requires an unqualified `git grep` for the retired helper/prefix identifiers to be empty. The sprint document itself, DL-252 and the historical S246 handover contain those identifiers: the command returned 28 lines, exit 0, including its own checklist. Runtime source removals cannot satisfy it.
+
+**Roads not taken.** Deleting historical records or rewriting the handed-over requirement is outside scope. Silently narrowing the grep would claim a different proof. The handover explicitly requires a stop if the spec is wrong, so implementation is not done and S254 remains SPEC.
+
+**Proposed correction, not applied:** scope the removal grep to `kernel agents scripts tests`. The planner must correct the handover before the build resumes; D1-D7 are unchanged.
+
+---
+
 ## DL-266 - DSPy runs at run time: the offline placement is reversed, and the first build changes no prompt - status: DECIDED (operator, 2026-10-07 12:05 AEDT; [ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md)); first build SPEC as [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), work-queue 110
 
 **The direction.** The operator, on reading that the runtime is DSPy-free by design: *"May have been an

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-254-each-debater-turn-is-run-by-dspy`
-**Status:** SPEC
+**Status:** SPEC — stopped before implementation: checklist 8 has a self-matching removal command; not BUILT.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) (DSPy runs the LLM
@@ -464,15 +464,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Guided turn, engine and strict program | `agents/deliberator/laws/laws.md` and `test-plan.md` (whole); `docs/laws/conventions.md` and `drift-register.md` (whole) | DLIB-OUT-03/05/06, DLIB-NEV-07, DLIB-FAIL-01/04, DLIB-OBS-05/06 | Keep the client ledger, exact raw unreadable completion and named error, blank-turn exception, and provider failure unchanged. |
+| Prompt recipe | same law book and plan | DLIB-OBS-07 | Include the installed DSPy version and both new modules without moving the operator digest. |
+| Dockerfile and dependency acceptance | DL-184 and DL-199; DL-252 D1-D8; DL-266 D1-D7; ADR-0032 | DLIB-NEV-10 (owed); DLIB-OUT-03 | Keep diskcache outside every image; runtime DSPy uses only the agent client, with no repair, cache, history or retries. |
+| One law amendment and rollups | same law book, plan and conventions | DLIB-NEV-10 (new) | No existing clause makes the library-to-vendor prohibition; add exactly the specified clause, v1.13, Changelog, row and both rollups. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** YES: DLIB-NEV-10 is a new guarantee; no contracts change. The existing DLIB-NEV clauses do not state this prohibition. This reading record was written before any code change, on clean branch `sprint-254-each-debater-turn-is-run-by-dspy`, HEAD `ab88b9162b61c43b8405567b231e52c7e88af1bc`; local main/origin/main `dd2f08f6a7aec39458a11f536b89599ff60204e0` differs only in five documentation paths. No push, network, .env, dependency-file edit or merge is authorised.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None. v1.11's historical Changelog describes the retired renderer; the operative clauses govern the unchanged reasoning and failure semantics.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** The specified library-to-vendor guarantee is absent and is resolved by this sprint's explicitly owed DLIB-NEV-10. No additional undecided silence found. DLIB-DEP-03 and DLIB-OBS-02 are gray; this sprint does not claim to prove the whole dependency or spend-attribution clause.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** None. No law amendment or runtime implementation was made.
 
 ---
 
@@ -480,43 +483,118 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder)* | | | | |
+| A1 | `test_a_served_turn_runs_dspy_and_sends_mains_text` | `agents/deliberator/tests/test_dspy_runtime.py` | verified failing (red before implementation) | DLIB-OUT-06 |
+| A2 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-06, DLIB-NEV-07 (planned, not a proof) |
+| A3 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-FAIL-01, DLIB-FAIL-04 (planned, not a proof) |
+| A4 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-03 (planned, not a proof) |
+| A5 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OBS-06 (planned, not a proof) |
+| A6 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OBS-07 (planned, not a proof) |
+| A7 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-ORD-01, DLIB-OUT-06 (planned, not a proof) |
+| B1 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-03, DLIB-OBS-07 (planned, not a proof) |
+| B2 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-NEV-10 (owed) (planned, not a proof) |
+| B3 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-NEV-05 (planned, not a proof) |
+| B4 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | ADR-0032, DL-184 (planned, not a proof) |
+| B5 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DL-184, DL-199 (planned, not a proof) |
+| B6 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-OUT-06 (planned, not a proof) |
+| B7 | not done | not written / existing tests not run | not done: stopped on the spec contradiction | DLIB-FAIL-04 (planned, not a proof) |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** None. A1 uses `dspy_served_probe.py` to observe ChainOfThought execution in a fresh interpreter.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC — not built. Everything below is the builder's to fill.
+**Status:** SPEC — not built. The handover says to stop if the spec is wrong; checklist 8 cannot be satisfied by the scoped source edits.
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s254`, branch `sprint-254-each-debater-turn-is-run-by-dspy`, `.env` absent. `UV_OFFLINE=1`, `UV_NO_SYNC=1`; no network or LLM call. No bare `uv sync`.
 
-**Result:**
+**Result:** The unmodified Appendix passed twice at DSPy 3.4.0: 132/132 equal outcomes and 132/132 equal single wire calls, neither excluded package loaded, zero cache files and zero global-history calls. Main's 132 outcomes, six requests, two hashes and operator digest were captured before implementation. A1 is verified failing before implementation. The requested runtime build is **not done**.
 
-**Files changed:**
+**Files changed:** Only the sprint/README/INDEX status and reasoning records, STATE, A1 and its canned subprocess probe, `tests/fixtures/guided_turn_main_records.json`, and the five public digests' scoped `.secrets.baseline` false positives. No production module, law, Dockerfile, dependency file or audit rule changed.
 
-**Design decisions:**
+**Design decisions:** DL-266 D1-D7 are unchanged and not implemented. DL-267 records the newly measured checklist contradiction and the proposed source-scoped grep; the correction was not applied without a corrected handover.
 
 **The Appendix script's two outputs:**
 
+`C:/Users/yury_/Downloads/project/ta-s254`, `appendix-normal.txt`, exit 0:
+
+```text
+dspy 3.4.0; cases 132: same record or same exception 132, same single vendor call with the same text 132
+per role and user case: 17 parse cases, 2 blank completions, 3 failures; roles 2; user cases 3
+blocked: nothing | litellm loaded: False | diskcache loaded: False
+files in DSPy's cache directory: 0 | calls DSPy kept in its global history: 0
+```
+
+`C:/Users/yury_/Downloads/project/ta-s254`, `appendix-block.txt`, exit 0:
+
+```text
+dspy 3.4.0; cases 132: same record or same exception 132, same single vendor call with the same text 132
+per role and user case: 17 parse cases, 2 blank completions, 3 failures; roles 2; user cases 3
+blocked: ['diskcache', 'litellm'] | litellm loaded: False | diskcache loaded: False
+files in DSPy's cache directory: 0 | calls DSPy kept in its global history: 0
+```
+
 **Proof — the red run first:**
 
-**Proof — the green run:**
+`uv run --no-sync pytest agents/deliberator/tests/test_dspy_runtime.py --no-cov -q`, exit 1, before any runtime edit:
 
-**Guards planted:**
+```text
+F                                                                        [100%]
+================================== FAILURES ===================================
+______________ test_a_served_turn_runs_dspy_and_sends_mains_text ______________
+agents\deliberator\tests\test_dspy_runtime.py:28: in test_a_served_turn_runs_dspy_and_sends_mains_text
+    assert result.returncode == 0, result.stdout + result.stderr
+E   AssertionError: Traceback (most recent call last):
+E       File "<frozen runpy>", line 198, in _run_module_as_main
+E       File "<frozen runpy>", line 88, in _run_code
+E       File "C:\Users\yury_\Downloads\project\ta-s254\agents\deliberator\tests\dspy_served_probe.py", line 70, in <module>
+E         main()
+E         ~~~~^^
+E       File "C:\Users\yury_\Downloads\project\ta-s254\agents\deliberator\tests\dspy_served_probe.py", line 38, in main
+E         assert "dspy" in sys.modules, "a served deliberator must load DSPy"
+E                ^^^^^^^^^^^^^^^^^^^^^
+E     AssertionError: a served deliberator must load DSPy
+E
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\yury_\\Downloads\\project\\ta-s254\\.venv\\Scripts\\python.exe', '-m', 'agents.deli... deliberator must load DSPy"\n           ^^^^^^^^^^^^^^^^^^^^^\nAssertionError: a served deliberator must load DSPy\n').returncode
+=========================== short test summary info ===========================
+FAILED agents/deliberator/tests/test_dspy_runtime.py::test_a_served_turn_runs_dspy_and_sends_mains_text
+1 failed in 2.45s
+```
 
-**Module line counts:**
+**Proof — the green run:** not done: stopped before implementation. The Appendix proofs above are environment/reference proofs, not green tests of a changed runtime.
 
-**`make ci`:**
+**Guards planted:** A1 red only. A1 final green and every A2-A7/B1-B7 break-and-restore are not done, because implementation stopped at checklist 8.
+
+**Module line counts:** `agents/deliberator/tests/test_dspy_runtime.py`: 29; `agents/deliberator/tests/dspy_served_probe.py`: 71. No touched production modules.
+
+**`make ci`:** NOT RUN; no exit code or CI output file exists. The handover's explicit stop rule was followed before implementation. All 15 steps are NOT RUN for that reason: ruff, format, mypy, import-linter, module size, module header, law coverage, PARAM/settings sync, sprint status, markdown links, version scheme, pytest with coverage, dependency audit, detect-secrets, untracked secrets. A1 alone was run with `--no-cov` and failed as required. No gate bypass is claimed.
 
 **Not met / verified failing:**
+
+- Checklist 8 is **verified failing as written**: even after all its runtime identifiers are removed, its unqualified command still matches the sprint document itself and historical S246/design records. Actual output on the pre-implementation tree:
+
+  ```text
+  docs/design-log.md:1181:golden.** Three literals: `GUIDED_TURN_PREFIX` (DSPy's field-description and structure blocks, with the
+  docs/sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md:439:    tests/dspy_free_probe.py are gone; `git grep -n "guided_system\|GUIDED_TURN_PREFIX"` is empty.
+  REMOVAL_COMMAND_EXIT=0
+  MATCH_LINES=28
+  ```
+
+- A1 final green, implementation, all removals, golden regeneration, DLIB-NEV-10/v1.13/test-plan/rollups, guard mutation proofs and CI: **not done**.
+- Status BUILT here and in README: **not done**, because no implementation exists. Both remain SPEC to preserve LAW-02.
+- `git diff main -- pyproject.toml uv.lock` is empty. Both files are untouched; the planner owns them at merge.
+- No push, remote gate, merge, image build, deployment or live proof was performed.
 
 ---
 
 ## Return notes
 
-*(builder)*
+**not done — stopped before implementation on a spec contradiction.** Checklist 8 requires `git grep -n "guided_system\|GUIDED_TURN_PREFIX"` to be empty, but the spec itself contains those names and the literal command, as do the historical S246 handover and DL-252. The allowed runtime source removals cannot make that whole-repository search empty. Deleting or rewriting the historical records would be outside this sprint and still leave the command in its own handback. The handover explicitly says: "If something in the spec is wrong or blocked, record it in the handback (Return notes, 'not done') and stop; do not improvise." This is that stop.
+
+**Recommended spec correction:** scope that command to source: `git grep -n 'guided_system\|GUIDED_TURN_PREFIX' -- kernel agents scripts tests`. No correction or alternative implementation was made. Resume after the planner corrects this requirement; then implement D1/D3-D7 against the existing frozen fixture and A1 red proof.
+
+The frozen fixture names source `9f4051ad2f52300fc2c4a87637b72e7464fc5f16` (local main at capture), executed worktree HEAD `ab88b9162b61c43b8405567b231e52c7e88af1bc`; their diff has only five docs paths and no runtime change. Main moved through documentation commits during the reading; no main file was edited here. `pyproject.toml` and `uv.lock` were not touched. No network was used and no branch was pushed. Commit hooks were attempted without bypass. The first attempt failed on the proof helper's untyped direct DSPy import, handback whitespace, and five public commit/prompt digests detected as high-entropy strings. The helper uses an ordinary dynamic import (never a skip), whitespace is corrected, and only those five fixture digests are recorded as baseline false positives. Final commit verification is reported in the chat.
 
 ---
 

@@ -849,6 +849,21 @@ The immutable fixture still names source `9f4051ad2f52300fc2c4a87637b72e7464fc5f
 moved. The move opened a second route to `diskcache`, closed in the same commit
 ([DL-268](../design-log.md)).
 
+**A CodeQL error on the pushed branch, fixed before the merge.** The remote gate was proven for
+`da04677d` (CI, CodeQL, Security Findings). That gate reads `main`'s alerts, so it cannot see a
+branch's. The branch's open alerts were therefore compared with the last merged branch's 131, and two
+were new:
+
+- `py/unsafe-cyclic-import`, **error** level, on `kernel/deliberation_guided_render.py`. The renderer
+  imports `GuidedReasoning` for type checking only, and `kernel/deliberation_guided.py` imported the
+  renderer back for two re-exports. Nothing fails at run time, but `main` holds 0 open error-level
+  alerts and its security gate fails on a new one.
+- `py/implicit-string-concatenation-in-list`, a warning, on one B5 case.
+
+Fix: `kernel/deliberation_guided.py` no longer imports the renderer, and the two callers import
+`render_guided_text` and `render_transcript` from `kernel.deliberation_guided_render`. The B5 case
+joins its two lines with `+`. The 168-row comparison with `main` was re-run after the fix: identical.
+
 **`make ci`, Windows, the environment synced with no extra (CI's):** exit 0, all 15 steps. 4,255 passed, 8 skipped, 100.00 % coverage. The dependency audit ran against the network, which the builder's sandbox could not do: no unaccepted vulnerability, 1 accepted advisory re-checked.
 
 **Still owed, in the order of "Sequencing after merge":** the remote gate for the pushed commit, the

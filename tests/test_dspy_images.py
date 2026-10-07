@@ -76,7 +76,7 @@ def test_optimizer_installation_with_diskcache_excluded_preserves_acceptance(
         "RUN uv sync --extra optimizer\nRUN uv sync --no-install-package diskcache\n",
         "RUN uv sync --extra optimizer; uv sync --no-install-package diskcache\n",
         "RUN uv sync --extra optimizer --no-install-package diskcache\n"
-        "RUN uv sync --extra optimizer\n",
+        + "RUN uv sync --extra optimizer\n",
         "RUN uv sync --extra optimizer --no-install-package litellm\n",
         # The dev group carries DSPy as well: a sync that installs it owes the same.
         "RUN uv sync --frozen --extra runtime\n",

@@ -1,8 +1,10 @@
-"""The guided debate turn: its typed reasoning, its messages and its parser.
+"""The guided debate turn: its typed reasoning and its parser.
 
 Agent: kernel
 Role: define the reasoning a defender or challenger writes before its argument,
-      render its recorded text and parse a completion strictly (DL-252).
+      and parse a completion strictly (DL-252). The recorded text is rendered by
+      `kernel.deliberation_guided_render`, which reads these types and is not
+      imported here, so the two modules never form an import cycle.
 External I/O: none.
 """
 
@@ -14,9 +16,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
-
-from kernel.deliberation_guided_render import render_guided_text as render_guided_text
-from kernel.deliberation_guided_render import render_transcript as render_transcript
 
 if TYPE_CHECKING:
     from pydantic.config import JsonDict

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from contracts.deliberator import DebateTurnRecord
 from kernel.deliberation import CHALLENGER_SYSTEM, DEFENDER_SYSTEM, Turn
-from kernel.deliberation_guided import render_guided_text, render_transcript
+from kernel.deliberation_guided_render import render_guided_text, render_transcript
 from kernel.deliberation_program import ADAPTER, UnreadableTurnError, guided_program
 from kernel.dspy_engine import run_program
 

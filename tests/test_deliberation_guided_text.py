@@ -19,10 +19,9 @@ from kernel.deliberation_guided import (
     READ_FIRST,
     GuidedReasoning,
     parse_guided_turn,
-    render_guided_text,
-    render_transcript,
     unreadable,
 )
+from kernel.deliberation_guided_render import render_guided_text, render_transcript
 from kernel.deliberation_program import ADAPTER, guided_program
 
 _READINGS = [

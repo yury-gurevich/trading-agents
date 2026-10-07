@@ -11,6 +11,11 @@ general significance of an indicator in relation of other indicators"*) · work-
 **Cost:** capped at **$10** (operator, 2026-10-06: *"go ahead"*, on *"OK to spend up to $10 on it?"*).
 Estimate $7.70 for 70 calls; no new call starts once $9.00 is recorded.
 
+**Found 2026-10-07 20:37 AEDT, by the builder of
+[S255](../../sprints/sprint-255-the-packet-states-the-score-arithmetic.md):** arm B's first line says that inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. Four such keys are on a 0-1 scale: `technical_score`, `fundamental_score`, `sentiment_score` and `composite_score` (measured over 1,765 recorded recommendations: 20 distinct keys end in `_score`, and these four never exceed 1.0). The planner wrote the sentence and did not check it against the keys. The frozen cases and
+Appendix P are not edited: the run so far, and its remainder, measure that text. S255 ships the line with
+one clause added that excepts the four keys.
+
 ## 1. Why we needed this experiment
 
 The defender and the challenger are the only place a language model touches a decision, and their

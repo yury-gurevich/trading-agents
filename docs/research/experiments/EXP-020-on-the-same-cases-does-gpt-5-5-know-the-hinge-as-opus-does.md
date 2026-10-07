@@ -145,6 +145,12 @@ the target and their ratio) in 7 of 9 orders. The defender names the book's gate
 - **What this does not say.** Nothing about the judge. Nothing about a second round. It did not run the
   moved-input cases, so whether `gpt-5.5`'s answer follows a changed input is not measured. Each call was
   made once, so run-to-run agreement is not measured. Nine orders.
+- **A false clause in the text that was measured, found 2026-10-07 20:37 AEDT.** While pinning the lines for
+  [S255](../../sprints/sprint-255-the-packet-states-the-score-arithmetic.md), its builder found that
+  arm B's first line says that inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. Four such keys are on a 0-1 scale: `technical_score`, `fundamental_score`, `sentiment_score` and `composite_score` (measured over 1,765 recorded recommendations: 20 distinct keys end in `_score`, and these four never exceed 1.0).
+  The planner wrote the sentence. The results above stand as a measurement of that text: every answer was
+  right with it. S255 ships the line with one clause added that excepts the four keys. That corrected
+  line has not been read by a model in an experiment.
 
 ## 8. Recommended code changes, and how to implement them
 

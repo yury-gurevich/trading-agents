@@ -596,6 +596,14 @@ packet the two guess, and differently (5 of 36 on opposite sides). So the arithm
 vendor swap safe on this question. `gpt-5.5`'s defender writes twice Opus's output, and the fleet's cap would
 have cut 5 of its 16 typed turns: work-queue 111 now has a measured frequency and comes before step 3.
 
+**Found the same evening, 20:37 AEDT: the measured text has a false clause.** S255's builder stopped while
+pinning the first line: arm B's first line says that inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. Four such keys are on a 0-1 scale: `technical_score`, `fundamental_score`, `sentiment_score` and `composite_score` (measured over 1,765 recorded recommendations: 20 distinct keys end in `_score`, and these four never exceed 1.0).
+The planner wrote that sentence for EXP-019 and carried it into S255's spec as frozen text without checking it
+against the keys. Corrected on S255's branch: one clause excepts the four keys, and the other two lines are
+unchanged. **What it does to the gate:** EXP-019 and EXP-020 measured the uncorrected line, and every answer
+was right with it. The corrected line is not measured. *Not decided, the operator's:* whether the corrected
+text is measured again before S255 merges (arm B on `gpt-5.5` cost $3.44).
+
 **As it was proposed, before the run.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
 change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on
 both vendors cost 1.6 times as much on `gpt-5.5`, so about $0.20 a call: about $7 for the 36 calls that

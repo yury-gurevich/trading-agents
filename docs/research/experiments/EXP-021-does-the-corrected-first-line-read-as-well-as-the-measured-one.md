@@ -1,11 +1,11 @@
 # EXP-021 — Does the corrected first line read as well as the one that was measured?
 
-**Status:** PRE-REGISTERED 2026-10-07 · no paid call made before this commit
+**Status:** COMPLETE 2026-10-07 · **both bars met.** With the corrected line `gpt-5.5` answers 54 of 54 right and finds 10 of 10 hinges, and every answer is on the side it was on with the uncorrected line. Pre-registered at `dc949025`, before any paid call
 **Decision / origin:** [DL-264](../../design-log.md) amendment 7 and DL-270 on the branch of
 [S255](../../sprints/sprint-255-the-packet-states-the-score-arithmetic.md) (the operator, 2026-10-07, on the
 planner's proposal to measure the corrected text again: *"run it"*) · work-queue **107** · **Cost:** the same
 arm cost $3.44 in [EXP-020](EXP-020-on-the-same-cases-does-gpt-5-5-know-the-hinge-as-opus-does.md); no new
-call starts once $3.60 is recorded, so the total cannot pass $4.14
+call starts once $3.60 is recorded, so the total cannot pass $4.14. **Spent: $3.29** on 18 calls
 
 ## 1. Why we needed this experiment
 
@@ -67,15 +67,39 @@ Windows 10; EXP-019's `exp019_run.py` unchanged (sha256 `9c46a720f967…`), driv
 
 ## 6. Results
 
-Not yet run.
+All *[measured]*, from 18 calls for $3.29. Every call was read; none stopped or was refused.
+
+| Hypothesis | Bar | Result |
+| --- | --- | --- |
+| K1, the corrected text on `gpt-5.5` | at least 49 of 54 right; at least 8 of 10 hinges found | **54 of 54 right; 10 of 10 found.** Met |
+| K2, against the uncorrected line (EXP-020's arm B) | at least 90 % on the same side of 0.5 | **54 of 54.** Met |
+
+**Described, against EXP-020's arm B.**
+
+| | Calls | Output tokens, mean | Largest | Over 8,192 | Slowest | Mean cost |
+| --- | --- | --- | --- | --- | --- | --- |
+| Corrected line, defender | 9 | 5,661 | 7,085 | 0 | 63 s | $0.193 |
+| Corrected line, challenger | 9 | 4,529 | 6,435 | 0 | 60 s | $0.173 |
+| Uncorrected line, defender | 9 | 6,034 | 8,676 | 2 | 78 s | $0.206 |
+| Uncorrected line, challenger | 9 | 4,621 | 5,712 | 0 | 52 s | $0.176 |
 
 ## 7. Conclusions
 
-Not yet run.
+- **The corrected line reads as well as the one that was measured.** On `gpt-5.5` every answer is right, and
+  none changed sides. The text S255 ships has now been read by a model in an experiment.
+- **No defender turn passed the fleet's cap this time, against two of nine in EXP-020's arm B.** The same
+  orders, model and settings gave 8,676 tokens at most then and 7,085 now. That is run-to-run variation, not
+  an effect of the clause: over the 25 typed defender turns measured on `gpt-5.5`, 5 passed 8,192. Work-queue
+  111 stands.
+- **What this does not say.** The corrected line is not measured on Opus. EXP-019's remaining calls will
+  measure the uncorrected line on Opus, because its cases are frozen. Each call here was made once.
 
 ## 8. Recommended code changes, and how to implement them
 
-Not yet run.
+1. **S255 ships the corrected line**, as its spec already says. This result is the measurement that
+   ADR-0010 asks for on the vendor the fleet debates on today. Whether the merge still waits for Opus is the
+   operator's decision.
+2. **Nothing else.**
 
 ## Appendix P — Pre-registration (frozen)
 
@@ -91,7 +115,44 @@ ceiling; one call at a time; no new call from $3.60 recorded.
 
 ## Appendix R — Run record
 
-Not yet run.
+Run 2026-10-07, finished 20:59 AEDT, from `../ta-exp019` at `3391df9d`. The ledger, the prompts sent and
+these outputs are in OneDrive `trading-agents-data/exp021/`.
+
+**The run, `exp021_openai.py <dir>`:**
+
+```text
+corrected text, arm B: 9 units, 18 calls; model gpt-5.5, effort high, ceiling 16384; spent so far $0.0000; no new call from $3.60
+  TGT  : calls so far 2, spent $0.3253
+  C    : calls so far 4, spent $0.7175
+  DE   : calls so far 6, spent $1.0800
+  EMR  : calls so far 8, spent $1.3936
+  JNJ  : calls so far 10, spent $1.8516
+  UNP  : calls so far 12, spent $2.1550
+  MRK  : calls so far 14, spent $2.5471
+  AMGN : calls so far 16, spent $2.9081
+  GILD : calls so far 18, spent $3.2907
+done: 18 calls recorded, 18 parsed, 0 stopped, 0 wrote more than the fleet's 8192-token cap; total spent $3.2907
+RUN_EXIT=0
+```
+
+**The score, `exp021_score.py <exp021 dir> <exp020 dir>`:**
+
+```text
+exp021 arm B: right 54 of 54; true hinges found 10 of 10; unread 0
+  defender   calls 9 | output tokens mean 5661, max 7085, over the fleet's cap 0 | mean latency 52 s, max 63 s | mean cost $0.193
+  challenger calls 9 | output tokens mean 4529, max 6435, over the fleet's cap 0 | mean latency 42 s, max 60 s | mean cost $0.173
+  spend $3.2907 for 18 calls
+exp021 against exp020, arm B: answered by both 54; same side of 0.5 54
+```
+
+**The scorer on EXP-020's ledger, before the run** (the frozen scorer printed the same counts for it):
+
+```text
+exp020 arm B: right 54 of 54; true hinges found 10 of 10; unread 0
+  defender   calls 9 | output tokens mean 6034, max 8676, over the fleet's cap 2 | mean latency 55 s, max 78 s | mean cost $0.206
+  challenger calls 9 | output tokens mean 4621, max 5712, over the fleet's cap 0 | mean latency 43 s, max 52 s | mean cost $0.176
+  spend $3.4396 for 18 calls
+```
 
 ## Appendix S — Scripts
 

@@ -601,8 +601,10 @@ pinning the first line: arm B's first line says that inside `quant_metrics` *eac
 The planner wrote that sentence for EXP-019 and carried it into S255's spec as frozen text without checking it
 against the keys. Corrected on S255's branch: one clause excepts the four keys, and the other two lines are
 unchanged. **What it does to the gate:** EXP-019 and EXP-020 measured the uncorrected line, and every answer
-was right with it. The corrected line is not measured. *Not decided, the operator's:* whether the corrected
-text is measured again before S255 merges (arm B on `gpt-5.5` cost $3.44).
+was right with it. The corrected line is not measured. *Decided by the operator ("run it") and done,
+20:59 AEDT ([EXP-021](research/experiments/EXP-021-does-the-corrected-first-line-read-as-well-as-the-measured-one.md), $3.29):* with the corrected line `gpt-5.5` answers 54 of 54
+right, and all 54 are on the side they were on with the uncorrected line. The corrected text is measured on
+`gpt-5.5`. It is not measured on Opus, and EXP-019's remaining calls will measure the uncorrected line there.
 
 **As it was proposed, before the run.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
 change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on

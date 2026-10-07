@@ -1,0 +1,2768 @@
+{
+ "source": "The nine orders of EXP-019: every debate that stores its packet, 2026-10-01 to 2026-10-05. `recommendation` is the analyst's recorded payload, read from the live graph on 2026-10-07. `score_arithmetic` is what the analyst records from sprint 255 on. `arithmetic_lines` is the text EXP-019's arm B appended to the packet, frozen at its pre-registration.",
+ "vix_thresholds": {
+  "risk_on_at_or_below": 15.0,
+  "risk_off_from": 20.0,
+  "high_volatility_from": 25.0,
+  "extreme_volatility_from": 35.0
+ },
+ "orders": [
+  {
+   "ticker": "TGT",
+   "session": "2026-10-01",
+   "pm_run": "pm-run-afd0df4c52c1488ca5da5a040c73cfcd",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "TGT",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.608432985553772,
+    "technical_score": 0.5228571428571429,
+    "sentiment_score": 0.4943820224719101,
+    "fundamental_score": 0.5125,
+    "suggested_stop_pct": 0.04744199192217574,
+    "suggested_target_pct": 0.06725556674239877,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.372099596108787
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.35777048129416433
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 50.0
+     },
+     {
+      "name": "choppiness",
+      "value": 74.68835151101388
+     },
+     {
+      "name": "choppiness_score",
+      "value": 30.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5140549759229535
+     },
+     {
+      "name": "confidence",
+      "value": 0.608432985553772
+     },
+     {
+      "name": "current_ratio",
+      "value": 25.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 65.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 2.667883644012769
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 65.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.06725556674239877
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.5125
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 202.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -0.5621976170499424
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 45.0
+     },
+     {
+      "name": "net_margin",
+      "value": 30.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -0.510231516867157
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 50.0
+     },
+     {
+      "name": "obv",
+      "value": 104026790.0
+     },
+     {
+      "name": "obv_score",
+      "value": 70.0
+     },
+     {
+      "name": "pb",
+      "value": 40.0
+     },
+     {
+      "name": "pe",
+      "value": 60.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -4.42303115303071
+     },
+     {
+      "name": "revenue_growth",
+      "value": 45.0
+     },
+     {
+      "name": "roe",
+      "value": 80.0
+     },
+     {
+      "name": "rs_score",
+      "value": 40.0
+     },
+     {
+      "name": "rsi",
+      "value": 52.039082412914205
+     },
+     {
+      "name": "rsi2",
+      "value": 11.504424778760708
+     },
+     {
+      "name": "rsi2_score",
+      "value": 50.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 50.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 10.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 7.416666666666666
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 6.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 6.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.4943820224719101
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 22.203118913094944
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 43.31631949234362
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 50.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5228571428571429
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -56.68368050765638
+     },
+     {
+      "name": "williams_r_score",
+      "value": 50.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.372099596108787,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.04744199192217574,
+     "applied_target_pct": 0.06725556674239877,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.06725556674239877,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.06725556674239877,
+     "scaled_stop_pct": 0.04744199192217574,
+     "scaled_target_pct": 0.06725556674239877,
+     "favorable_excursion_pct": 0.06725556674239877,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "TGT cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.512 and a news-sentiment score of 0.494",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.roe",
+      "analyst.signal.ema_spread_pct",
+      "analyst.signal.golden_cross",
+      "analyst.signal.choppiness"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for TGT: technical sub-scores (14): mean 55.36; rs_score=40; technical_score=0.5229; fundamental sub-scores (8): pe=60, roe=80, net_margin=30, current_ratio=25, pb=40, debt_equity=65, eps_growth=65, revenue_growth=45; fundamental_score=0.5125; sentiment_score=0.4944; contributions to composite_score: technical 0.2614, fundamental 0.1537, sentiment 0.0989; composite_score=0.5141; confidence=0.6084; base_min_confidence_score=0.600; margin over the floor=+0.0084.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "C",
+   "session": "2026-10-01",
+   "pm_run": "pm-run-a3d89010a52142f9b45e968bff744a3b",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "C",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6408571428571428,
+    "technical_score": 0.49428571428571433,
+    "sentiment_score": 0.6726190476190476,
+    "fundamental_score": 0.6214285714285714,
+    "suggested_stop_pct": 0.05970157480314958,
+    "suggested_target_pct": 0.03942998832878416,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.985078740157479
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.0
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 75.0
+     },
+     {
+      "name": "choppiness",
+      "value": 45.095267072424534
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5680952380952381
+     },
+     {
+      "name": "confidence",
+      "value": 0.6408571428571428
+     },
+     {
+      "name": "debt_equity",
+      "value": 20.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": -0.7526901018948841
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 40.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 85.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.03942998832878416
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.6214285714285714
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 7.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -0.7009729358951433
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 25.0
+     },
+     {
+      "name": "net_margin",
+      "value": 55.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -3.9810737030033216
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "obv",
+      "value": 115101696.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 80.0
+     },
+     {
+      "name": "pe",
+      "value": 60.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -5.310839501872744
+     },
+     {
+      "name": "revenue_growth",
+      "value": 80.0
+     },
+     {
+      "name": "roe",
+      "value": 55.0
+     },
+     {
+      "name": "rs_score",
+      "value": 20.0
+     },
+     {
+      "name": "rsi",
+      "value": 24.39341421143847
+     },
+     {
+      "name": "rsi2",
+      "value": 0.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 80.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 7.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 4.666666666666667
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 8.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 10.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.6726190476190476
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 0.96015492216529
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 60.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 21.24496748219266
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 50.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.49428571428571433
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -78.75503251780735
+     },
+     {
+      "name": "williams_r_score",
+      "value": 50.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.985078740157479,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.05970157480314958,
+     "applied_target_pct": 0.03942998832878416,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.03942998832878416,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.03942998832878416,
+     "scaled_stop_pct": 0.05970157480314958,
+     "scaled_target_pct": 0.03942998832878416,
+     "favorable_excursion_pct": 0.03942998832878416,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "C cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.621 and a news-sentiment score of 0.673",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi",
+      "analyst.signal.eps_growth",
+      "analyst.signal.rsi2",
+      "analyst.signal.macd_histogram",
+      "analyst.signal.bollinger_position"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for C: technical sub-scores (14): mean 56.79; rs_score=20; technical_score=0.4943; fundamental sub-scores (7): pe=60, roe=55, net_margin=55, pb=80, debt_equity=20, eps_growth=85, revenue_growth=80; fundamental_score=0.6214; sentiment_score=0.6726; contributions to composite_score: technical 0.2471, fundamental 0.1864, sentiment 0.1345; composite_score=0.5681; confidence=0.6409; base_min_confidence_score=0.600; margin over the floor=+0.0409.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "DE",
+   "session": "2026-10-01",
+   "pm_run": "pm-run-a3d89010a52142f9b45e968bff744a3b",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "DE",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6094642857142858,
+    "technical_score": 0.5657142857142858,
+    "sentiment_score": 0.5833333333333334,
+    "fundamental_score": 0.3875,
+    "suggested_stop_pct": 0.04888199502442822,
+    "suggested_target_pct": 0.05607623365829795,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.444099751221411
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.0844480458780855
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 75.0
+     },
+     {
+      "name": "choppiness",
+      "value": 41.107958273182504
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5157738095238096
+     },
+     {
+      "name": "confidence",
+      "value": 0.6094642857142858
+     },
+     {
+      "name": "current_ratio",
+      "value": 25.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 20.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 3.6035744833530274
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 20.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.05607623365829795
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.3875
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -4.747591392963852
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 45.0
+     },
+     {
+      "name": "net_margin",
+      "value": 55.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -2.5676697695766895
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "obv",
+      "value": 8251477.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "pe",
+      "value": 30.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -4.301749509808461
+     },
+     {
+      "name": "revenue_growth",
+      "value": 60.0
+     },
+     {
+      "name": "roe",
+      "value": 80.0
+     },
+     {
+      "name": "rs_score",
+      "value": 40.0
+     },
+     {
+      "name": "rsi",
+      "value": 46.08783908470196
+     },
+     {
+      "name": "rsi2",
+      "value": 0.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 65.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 7.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 6.0
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 4.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.5833333333333334
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 13.695536011254028
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 30.067392431311585
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 50.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5657142857142858
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -69.93260756868841
+     },
+     {
+      "name": "williams_r_score",
+      "value": 50.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.444099751221411,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.04888199502442822,
+     "applied_target_pct": 0.05607623365829795,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.05607623365829795,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.05607623365829795,
+     "scaled_stop_pct": 0.04888199502442822,
+     "scaled_target_pct": 0.05607623365829795,
+     "favorable_excursion_pct": 0.05607623365829795,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "DE cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.388 and a news-sentiment score of 0.583",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi2",
+      "analyst.signal.roe",
+      "analyst.signal.bollinger_position",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.ema_spread_pct"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for DE: technical sub-scores (14): mean 60.71; rs_score=40; technical_score=0.5657; fundamental sub-scores (8): pe=30, roe=80, net_margin=55, current_ratio=25, pb=20, debt_equity=20, eps_growth=20, revenue_growth=60; fundamental_score=0.3875; sentiment_score=0.5833; contributions to composite_score: technical 0.2829, fundamental 0.1162, sentiment 0.1167; composite_score=0.5158; confidence=0.6095; base_min_confidence_score=0.600; margin over the floor=+0.0095.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "EMR",
+   "session": "2026-10-01",
+   "pm_run": "pm-run-a3d89010a52142f9b45e968bff744a3b",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "EMR",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6151753043478261,
+    "technical_score": 0.58928,
+    "sentiment_score": 0.4782608695652174,
+    "fundamental_score": 0.45,
+    "suggested_stop_pct": 0.048270795232389474,
+    "suggested_target_pct": 0.049908675378231016,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.413539761619474
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.8804384816628639
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 30.0
+     },
+     {
+      "name": "choppiness",
+      "value": 46.05764855102059
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5252921739130435
+     },
+     {
+      "name": "confidence",
+      "value": 0.6151753043478261
+     },
+     {
+      "name": "current_ratio",
+      "value": 25.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 65.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 1.3336713564195213
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 45.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.049908675378231016
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.45
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "geometric_pattern",
+      "value": 0.33
+     },
+     {
+      "name": "geometric_pattern_score",
+      "value": 59.9
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 15.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": 0.8475931881269416
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 75.0
+     },
+     {
+      "name": "net_margin",
+      "value": 55.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": 2.7360065321236333
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 30.0
+     },
+     {
+      "name": "obv",
+      "value": 93069951.0
+     },
+     {
+      "name": "obv_score",
+      "value": 70.0
+     },
+     {
+      "name": "pb",
+      "value": 40.0
+     },
+     {
+      "name": "pe",
+      "value": 30.0
+     },
+     {
+      "name": "relative_strength",
+      "value": 6.590014847227721
+     },
+     {
+      "name": "revenue_growth",
+      "value": 45.0
+     },
+     {
+      "name": "roe",
+      "value": 55.0
+     },
+     {
+      "name": "rs_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi",
+      "value": 61.52456647398844
+     },
+     {
+      "name": "rsi2",
+      "value": 61.85383244206757
+     },
+     {
+      "name": "rsi2_score",
+      "value": 50.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 50.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 7.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 5.75
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 4.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.4782608695652174
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 9.734632082414803
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 89.17558212712397
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 35.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.58928
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -10.824417872876024
+     },
+     {
+      "name": "williams_r_score",
+      "value": 25.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.413539761619474,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.048270795232389474,
+     "applied_target_pct": 0.049908675378231016,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.049908675378231016,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.049908675378231016,
+     "scaled_stop_pct": 0.048270795232389474,
+     "scaled_target_pct": 0.049908675378231016,
+     "favorable_excursion_pct": 0.049908675378231016,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "EMR cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.450 and a news-sentiment score of 0.478",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.macd_histogram",
+      "analyst.signal.current_ratio",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.ema_spread_pct",
+      "analyst.signal.williams_r"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "geometric_pattern_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for EMR: technical sub-scores (15): mean 53.66; rs_score=80; technical_score=0.5893; fundamental sub-scores (8): pe=30, roe=55, net_margin=55, current_ratio=25, pb=40, debt_equity=65, eps_growth=45, revenue_growth=45; fundamental_score=0.4500; sentiment_score=0.4783; contributions to composite_score: technical 0.2946, fundamental 0.1350, sentiment 0.0957; composite_score=0.5253; confidence=0.6152; base_min_confidence_score=0.600; margin over the floor=+0.0152.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "JNJ",
+   "session": "2026-10-01",
+   "pm_run": "pm-run-a3d89010a52142f9b45e968bff744a3b",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "JNJ",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6748392857142858,
+    "technical_score": 0.5457142857142857,
+    "sentiment_score": 0.9999999999999999,
+    "fundamental_score": 0.50625,
+    "suggested_stop_pct": 0.038609868442853856,
+    "suggested_target_pct": 0.03452272448641941,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 1.9304934221426928
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.0
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 75.0
+     },
+     {
+      "name": "choppiness",
+      "value": 53.80192363138586
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.6247321428571428
+     },
+     {
+      "name": "confidence",
+      "value": 0.6748392857142858
+     },
+     {
+      "name": "current_ratio",
+      "value": 50.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 65.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 1.2883969805120234
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 20.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.03452272448641941
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.50625
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -1.181934762986503
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 25.0
+     },
+     {
+      "name": "net_margin",
+      "value": 80.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -3.4918544656998787
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "obv",
+      "value": 46738355.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "pe",
+      "value": 30.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -5.860680427007714
+     },
+     {
+      "name": "revenue_growth",
+      "value": 60.0
+     },
+     {
+      "name": "roe",
+      "value": 80.0
+     },
+     {
+      "name": "rs_score",
+      "value": 20.0
+     },
+     {
+      "name": "rsi",
+      "value": 34.09926470588245
+     },
+     {
+      "name": "rsi2",
+      "value": 0.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 65.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 6.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 3.3333333333333335
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 0.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 6.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.9999999999999999
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 7.10658794957717
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 1.9526627218937294
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 65.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5457142857142857
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -98.04733727810627
+     },
+     {
+      "name": "williams_r_score",
+      "value": 75.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 1.9304934221426928,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.038609868442853856,
+     "applied_target_pct": 0.03452272448641941,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.03452272448641941,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.03452272448641941,
+     "scaled_stop_pct": 0.038609868442853856,
+     "scaled_target_pct": 0.03452272448641941,
+     "favorable_excursion_pct": 0.03452272448641941,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "JNJ cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.506 and a news-sentiment score of 1.000",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi2",
+      "analyst.signal.sentiment",
+      "analyst.signal.roe",
+      "analyst.signal.macd_histogram",
+      "analyst.signal.bollinger_position"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for JNJ: technical sub-scores (14): mean 63.21; rs_score=20; technical_score=0.5457; fundamental sub-scores (8): pe=30, roe=80, net_margin=80, current_ratio=50, pb=20, debt_equity=65, eps_growth=20, revenue_growth=60; fundamental_score=0.5062; sentiment_score=1.0000; contributions to composite_score: technical 0.2729, fundamental 0.1519, sentiment 0.2000; composite_score=0.6247; confidence=0.6748; base_min_confidence_score=0.600; margin over the floor=+0.0748.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "UNP",
+   "session": "2026-10-02",
+   "pm_run": "pm-run-70eda413761b497ca0501f068af4cb1e",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "UNP",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6447857142857143,
+    "technical_score": 0.5142857142857142,
+    "sentiment_score": 0.8,
+    "fundamental_score": 0.525,
+    "suggested_stop_pct": 0.035018686215322746,
+    "suggested_target_pct": 0.04122179634630428,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 1.7509343107661373
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.46247192992781266
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 50.0
+     },
+     {
+      "name": "choppiness",
+      "value": 46.095510580539596
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5746428571428571
+     },
+     {
+      "name": "confidence",
+      "value": 0.6447857142857143
+     },
+     {
+      "name": "current_ratio",
+      "value": 25.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 45.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": -1.6550511628566793
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 25.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 65.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.04122179634630428
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.525
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": 0.15385966479943392
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 60.0
+     },
+     {
+      "name": "net_margin",
+      "value": 80.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": 0.7680069557728292
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 50.0
+     },
+     {
+      "name": "obv",
+      "value": 58994228.0
+     },
+     {
+      "name": "obv_score",
+      "value": 70.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "pe",
+      "value": 60.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -3.3027325375587946
+     },
+     {
+      "name": "revenue_growth",
+      "value": 45.0
+     },
+     {
+      "name": "roe",
+      "value": 80.0
+     },
+     {
+      "name": "rs_score",
+      "value": 40.0
+     },
+     {
+      "name": "rsi",
+      "value": 40.21301093839948
+     },
+     {
+      "name": "rsi2",
+      "value": 100.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 20.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 65.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 2.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.8
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 5.103673170935275
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 49.579416130628225
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 50.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5142857142857142
+     },
+     {
+      "name": "turnaround",
+      "value": 0.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 50.0
+     },
+     {
+      "name": "williams_r",
+      "value": -50.42058386937178
+     },
+     {
+      "name": "williams_r_score",
+      "value": 50.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 1.7509343107661373,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.035018686215322746,
+     "applied_target_pct": 0.04122179634630428,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.04122179634630428,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.04122179634630428,
+     "scaled_stop_pct": 0.035018686215322746,
+     "scaled_target_pct": 0.04122179634630428,
+     "favorable_excursion_pct": 0.04122179634630428,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "UNP cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.525 and a news-sentiment score of 0.800",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi2",
+      "analyst.signal.roe",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.ema_spread_pct",
+      "analyst.signal.golden_cross"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for UNP: technical sub-scores (14): mean 54.29; rs_score=40; technical_score=0.5143; fundamental sub-scores (8): pe=60, roe=80, net_margin=80, current_ratio=25, pb=20, debt_equity=45, eps_growth=65, revenue_growth=45; fundamental_score=0.5250; sentiment_score=0.8000; contributions to composite_score: technical 0.2571, fundamental 0.1575, sentiment 0.1600; composite_score=0.5746; confidence=0.6448; base_min_confidence_score=0.600; margin over the floor=+0.0448.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "MRK",
+   "session": "2026-10-05",
+   "pm_run": "pm-run-379d1c848dfb45d1a6b01a50a036b726",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "MRK",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.617815,
+    "technical_score": 0.5514666666666667,
+    "sentiment_score": 0.7166666666666666,
+    "fundamental_score": 0.36875,
+    "suggested_stop_pct": 0.049509715596142506,
+    "suggested_target_pct": 0.040433350802787926,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.4754857798071255
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.0
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 75.0
+     },
+     {
+      "name": "choppiness",
+      "value": 44.943206944228535
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5296916666666667
+     },
+     {
+      "name": "confidence",
+      "value": 0.617815
+     },
+     {
+      "name": "current_ratio",
+      "value": 50.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 45.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 2.7762867583475566
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 20.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.040433350802787926
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.36875
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "geometric_pattern",
+      "value": 0.7
+     },
+     {
+      "name": "geometric_pattern_score",
+      "value": 29.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 15.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -1.19841384407118
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 45.0
+     },
+     {
+      "name": "net_margin",
+      "value": 30.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -4.636144971425712
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "obv",
+      "value": 130689765.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "pe",
+      "value": 30.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -7.779991485720094
+     },
+     {
+      "name": "revenue_growth",
+      "value": 45.0
+     },
+     {
+      "name": "roe",
+      "value": 55.0
+     },
+     {
+      "name": "rs_score",
+      "value": 20.0
+     },
+     {
+      "name": "rsi",
+      "value": 40.68391056554145
+     },
+     {
+      "name": "rsi2",
+      "value": 9.333333333333442
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 65.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 9.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 5.0
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 4.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 10.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.7166666666666666
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 13.389123208894302
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 5.010155721056071
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 80.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5514666666666667
+     },
+     {
+      "name": "turnaround",
+      "value": 1.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 75.0
+     },
+     {
+      "name": "williams_r",
+      "value": -94.98984427894392
+     },
+     {
+      "name": "williams_r_score",
+      "value": 75.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.4754857798071255,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.049509715596142506,
+     "applied_target_pct": 0.040433350802787926,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.040433350802787926,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.040433350802787926,
+     "scaled_stop_pct": 0.049509715596142506,
+     "scaled_target_pct": 0.040433350802787926,
+     "favorable_excursion_pct": 0.040433350802787926,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "MRK cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.369 and a news-sentiment score of 0.717",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.stochastic_k",
+      "analyst.signal.rsi2",
+      "analyst.signal.pb",
+      "analyst.signal.bollinger_position",
+      "analyst.signal.sma_distance_pct"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "geometric_pattern_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for MRK: technical sub-scores (15): mean 63.93; rs_score=20; technical_score=0.5515; fundamental sub-scores (8): pe=30, roe=55, net_margin=30, current_ratio=50, pb=20, debt_equity=45, eps_growth=20, revenue_growth=45; fundamental_score=0.3688; sentiment_score=0.7167; contributions to composite_score: technical 0.2757, fundamental 0.1106, sentiment 0.1433; composite_score=0.5297; confidence=0.6178; base_min_confidence_score=0.600; margin over the floor=+0.0178.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "AMGN",
+   "session": "2026-10-05",
+   "pm_run": "pm-run-379d1c848dfb45d1a6b01a50a036b726",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "AMGN",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6682797619047619,
+    "technical_score": 0.5371428571428571,
+    "sentiment_score": 0.873015873015873,
+    "fundamental_score": 0.56875,
+    "suggested_stop_pct": 0.047871925582978286,
+    "suggested_target_pct": 0.04583058388332983,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.3935962791489143
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.5886356066547836
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 50.0
+     },
+     {
+      "name": "choppiness",
+      "value": 36.06706157483887
+     },
+     {
+      "name": "choppiness_score",
+      "value": 75.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.6137996031746032
+     },
+     {
+      "name": "confidence",
+      "value": 0.6682797619047619
+     },
+     {
+      "name": "current_ratio",
+      "value": 50.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 20.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 1.2652728372290998
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "eps_growth",
+      "value": 85.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.04583058388332983
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.56875
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 8.0
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 14.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": 0.9096477521076198
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 75.0
+     },
+     {
+      "name": "net_margin",
+      "value": 80.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -0.7370531272838079
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 50.0
+     },
+     {
+      "name": "obv",
+      "value": 46908975.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "pe",
+      "value": 60.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -8.435854505395902
+     },
+     {
+      "name": "revenue_growth",
+      "value": 60.0
+     },
+     {
+      "name": "roe",
+      "value": 80.0
+     },
+     {
+      "name": "rs_score",
+      "value": 20.0
+     },
+     {
+      "name": "rsi",
+      "value": 67.73523685918238
+     },
+     {
+      "name": "rsi2",
+      "value": 0.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 50.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 11.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 10.5
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 3.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 12.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.873015873015873
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 10.428442517224816
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 54.70938039516601
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 50.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5371428571428571
+     },
+     {
+      "name": "turnaround",
+      "value": 1.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 75.0
+     },
+     {
+      "name": "williams_r",
+      "value": -45.290619604833985
+     },
+     {
+      "name": "williams_r_score",
+      "value": 50.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.3935962791489143,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.047871925582978286,
+     "applied_target_pct": 0.04583058388332983,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.04583058388332983,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.04583058388332983,
+     "scaled_stop_pct": 0.047871925582978286,
+     "scaled_target_pct": 0.04583058388332983,
+     "favorable_excursion_pct": 0.04583058388332983,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "AMGN cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.569 and a news-sentiment score of 0.873",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi2",
+      "analyst.signal.eps_growth",
+      "analyst.signal.macd_histogram",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.ema_spread_pct"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "pe",
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "eps_growth",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for AMGN: technical sub-scores (14): mean 62.14; rs_score=20; technical_score=0.5371; fundamental sub-scores (8): pe=60, roe=80, net_margin=80, current_ratio=50, pb=20, debt_equity=20, eps_growth=85, revenue_growth=60; fundamental_score=0.5687; sentiment_score=0.8730; contributions to composite_score: technical 0.2686, fundamental 0.1706, sentiment 0.1746; composite_score=0.6138; confidence=0.6683; base_min_confidence_score=0.600; margin over the floor=+0.0683.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  },
+  {
+   "ticker": "GILD",
+   "session": "2026-10-05",
+   "pm_run": "pm-run-379d1c848dfb45d1a6b01a50a036b726",
+   "base_min_confidence": 0.6,
+   "recommendation": {
+    "ticker": "GILD",
+    "action": "buy",
+    "exit_trigger": null,
+    "confidence": 0.6276919999999999,
+    "technical_score": 0.5873066666666666,
+    "sentiment_score": 0.75,
+    "fundamental_score": 0.3416666666666666,
+    "suggested_stop_pct": 0.04750595114627474,
+    "suggested_target_pct": 0.04101463189907901,
+    "quant_metrics": [
+     {
+      "name": "atr_pct",
+      "value": 2.375297557313737
+     },
+     {
+      "name": "atr_pct_score",
+      "value": 55.0
+     },
+     {
+      "name": "bollinger_position",
+      "value": 0.1664716734805597
+     },
+     {
+      "name": "bollinger_position_score",
+      "value": 75.0
+     },
+     {
+      "name": "choppiness",
+      "value": 54.515951658301745
+     },
+     {
+      "name": "choppiness_score",
+      "value": 50.0
+     },
+     {
+      "name": "composite_score",
+      "value": 0.5461533333333333
+     },
+     {
+      "name": "confidence",
+      "value": 0.6276919999999999
+     },
+     {
+      "name": "current_ratio",
+      "value": 50.0
+     },
+     {
+      "name": "debt_equity",
+      "value": 20.0
+     },
+     {
+      "name": "ema_spread_pct",
+      "value": 2.5856220583389375
+     },
+     {
+      "name": "ema_spread_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "favorable_excursion_horizon_days",
+      "value": 10.0
+     },
+     {
+      "name": "favorable_excursion_lookback_windows",
+      "value": 120.0
+     },
+     {
+      "name": "favorable_excursion_pct",
+      "value": 0.04101463189907901
+     },
+     {
+      "name": "favorable_excursion_sample_count",
+      "value": 120.0
+     },
+     {
+      "name": "fundamental_score",
+      "value": 0.3416666666666666
+     },
+     {
+      "name": "fundamentals_available",
+      "value": 6.0
+     },
+     {
+      "name": "geometric_pattern",
+      "value": 0.46
+     },
+     {
+      "name": "geometric_pattern_score",
+      "value": 36.2
+     },
+     {
+      "name": "golden_cross",
+      "value": 1.0
+     },
+     {
+      "name": "golden_cross_score",
+      "value": 75.0
+     },
+     {
+      "name": "history_bars",
+      "value": 203.0
+     },
+     {
+      "name": "indicators_available",
+      "value": 15.0
+     },
+     {
+      "name": "macd_histogram",
+      "value": -1.0228523172667305
+     },
+     {
+      "name": "macd_histogram_score",
+      "value": 45.0
+     },
+     {
+      "name": "net_margin",
+      "value": 30.0
+     },
+     {
+      "name": "nw_deviation_pct",
+      "value": -2.864350905057104
+     },
+     {
+      "name": "nw_deviation_pct_score",
+      "value": 70.0
+     },
+     {
+      "name": "obv",
+      "value": -12232900.0
+     },
+     {
+      "name": "obv_score",
+      "value": 35.0
+     },
+     {
+      "name": "pb",
+      "value": 20.0
+     },
+     {
+      "name": "relative_strength",
+      "value": -4.817820116326132
+     },
+     {
+      "name": "revenue_growth",
+      "value": 60.0
+     },
+     {
+      "name": "roe",
+      "value": 25.0
+     },
+     {
+      "name": "rs_score",
+      "value": 40.0
+     },
+     {
+      "name": "rsi",
+      "value": 46.02570204664441
+     },
+     {
+      "name": "rsi2",
+      "value": 0.0
+     },
+     {
+      "name": "rsi2_score",
+      "value": 80.0
+     },
+     {
+      "name": "rsi_score",
+      "value": 65.0
+     },
+     {
+      "name": "sentiment_articles",
+      "value": 11.0
+     },
+     {
+      "name": "sentiment_batch_weighted_articles",
+      "value": 10.0
+     },
+     {
+      "name": "sentiment_negative_words",
+      "value": 4.0
+     },
+     {
+      "name": "sentiment_positive_words",
+      "value": 11.0
+     },
+     {
+      "name": "sentiment_score",
+      "value": 0.75
+     },
+     {
+      "name": "sma_distance_pct",
+      "value": 5.703034257379167
+     },
+     {
+      "name": "sma_distance_pct_score",
+      "value": 75.0
+     },
+     {
+      "name": "stochastic_k",
+      "value": 16.12634641846116
+     },
+     {
+      "name": "stochastic_k_score",
+      "value": 65.0
+     },
+     {
+      "name": "technical_score",
+      "value": 0.5873066666666666
+     },
+     {
+      "name": "turnaround",
+      "value": 1.0
+     },
+     {
+      "name": "turnaround_score",
+      "value": 75.0
+     },
+     {
+      "name": "williams_r",
+      "value": -83.87365358153885
+     },
+     {
+      "name": "williams_r_score",
+      "value": 75.0
+     }
+    ],
+    "stop_target_evidence": {
+     "mode": "scaled",
+     "counterfactual_mode": "flat",
+     "atr_pct": 2.375297557313737,
+     "volatility_present": true,
+     "volatility_fallback": false,
+     "applied_stop_pct": 0.04750595114627474,
+     "applied_target_pct": 0.04101463189907901,
+     "counterfactual_stop_pct": 0.05,
+     "counterfactual_target_pct": 0.04101463189907901,
+     "flat_stop_pct": 0.05,
+     "flat_target_pct": 0.04101463189907901,
+     "scaled_stop_pct": 0.04750595114627474,
+     "scaled_target_pct": 0.04101463189907901,
+     "favorable_excursion_pct": 0.04101463189907901,
+     "favorable_excursion_horizon_days": 10,
+     "favorable_excursion_sample_count": 120,
+     "favorable_excursion_lookback_windows": 120
+    },
+    "rationale": {
+     "summary": "GILD cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover). and a fundamental score of 0.342 and a news-sentiment score of 0.750",
+     "evidence_refs": [
+      "analyst.technical_score",
+      "provider.market_data",
+      "provider.regime",
+      "analyst.fundamental_score",
+      "analyst.sentiment_score",
+      "analyst.signal.rsi2",
+      "analyst.signal.pb",
+      "analyst.signal.bollinger_position",
+      "analyst.signal.sma_distance_pct",
+      "analyst.signal.ema_spread_pct"
+     ]
+    }
+   },
+   "score_arithmetic": {
+    "technical_weight": 0.5,
+    "fundamental_weight": 0.3,
+    "sentiment_weight": 0.2,
+    "alpha158_weight": 0.0,
+    "relative_strength_weight": 0.2,
+    "confidence_floor": 0.3,
+    "confidence_span": 0.6,
+    "technical_sub_scores": [
+     "atr_pct_score",
+     "bollinger_position_score",
+     "choppiness_score",
+     "ema_spread_pct_score",
+     "geometric_pattern_score",
+     "golden_cross_score",
+     "macd_histogram_score",
+     "nw_deviation_pct_score",
+     "obv_score",
+     "rsi2_score",
+     "rsi_score",
+     "sma_distance_pct_score",
+     "stochastic_k_score",
+     "turnaround_score",
+     "williams_r_score"
+    ],
+    "fundamental_sub_scores": [
+     "roe",
+     "net_margin",
+     "current_ratio",
+     "pb",
+     "debt_equity",
+     "revenue_growth"
+    ]
+   },
+   "arithmetic_lines": "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral; technical_score = 0.80 x (mean of the technical sub-scores / 100) + 0.20 x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; composite_score = 0.50 x technical_score + 0.30 x fundamental_score + 0.20 x sentiment_score, divided by the sum of the weights of the pillars that are present; confidence = 0.30 + 0.60 x composite_score; a pillar score of 0.50 is neutral; an order is recommended only if confidence >= base_min_confidence_score.\nScore arithmetic for GILD: technical sub-scores (15): mean 63.41; rs_score=40; technical_score=0.5873; fundamental sub-scores (6): roe=25, net_margin=30, current_ratio=50, pb=20, debt_equity=20, revenue_growth=60; fundamental_score=0.3417; sentiment_score=0.7500; contributions to composite_score: technical 0.2937, fundamental 0.1025, sentiment 0.1500; composite_score=0.5462; confidence=0.6277; base_min_confidence_score=0.600; margin over the floor=+0.0277.\nRegime, the rule for every order: vix_index only selects the regime label (risk_on at or below 15, risk_off from 20, high_volatility from 25, extreme_volatility from 35, neutral otherwise). The label is printed and changes no number: base_min_confidence_score, base_stop_loss_pct, base_take_profit_pct and base_max_holding_days are the same constants under every label, and the VIX is not an input to any score."
+  }
+ ]
+}

@@ -3194,6 +3194,30 @@ Recommended: the retag.
 then there is no retag unless a live defect forces one, and any build is diffed against the
 decision paths first. At the retag `main` differed from `d526faf4` in 0 decision-path files.
 
+**Read, 2026-10-08 10:32 AEDT: INSUFFICIENT again, and for a different reason.** The replay ran from a
+worktree pinned at `d526faf4` over an export of 64 sessions. The four sessions on the fleet's unchanged
+decision code are clean, as planned: `sched-2026-10-02`, `-10-05`, `-10-06`, `-10-07`. On them the replay
+agrees with the fleet on every row: scanner 100 of 100, analyst 148 of 148, PM 4 of 4, and 143 of 143 PM
+hold passthroughs, which are counted beside the verdict and never pooled. Unexplained differences: 0. The
+scanner's floor is met (4 of 4 clean sessions) and the analyst's (148 of 100 tickers). **The PM's is not:
+4 judged recommendations against a floor of 10.** The four sessions held four buys in all (one on 10-02,
+three on 10-05), and the last two nights placed none because every name the scanner passed was already
+held. Outputs: OneDrive `trading-agents-data/fidelity/2026-10-08/`.
+
+**What it means.** EXP-014's frozen gate asks for a PASS, so no arm starts. The rule is not narrowed
+after reading its result (decision 1 above). A PASS needs six more judged recommendations on the same
+decision code. *[estimated, not measured]* at one buy a session or fewer, with the book at 36 names, that
+is one to three more weeks.
+
+**Open, the operator's call: hold the fleet still, or deploy and restart the count.** Four merged sprints
+wait for a retag (S252 to S255), and two of them change decision paths (S253 scores a short-history
+candidate differently; S255 adds fields in `contracts/`). So a retag starts the count again on the new
+code: four clean sessions and ten judged recommendations from zero. Holding keeps the four recommendations
+already counted and keeps four sprints, and every later decision-path change, off the fleet until the
+floor is reached. Recommended: the retag. The PM's floor is slow to reach on any code while the book is
+this full, so holding buys about a week of the experiment's start at the price of every deploy in
+between.
+
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 
 ---

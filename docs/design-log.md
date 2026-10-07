@@ -10,6 +10,55 @@ and is marked CLOSED here.
 
 ---
 
+## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); the five-minute lock APPLIED live 2026-10-08 08:52 AEDT; the fix is work-queue 112
+
+**How it was found.** Sizing work-queue 111 (the output cap on `gpt-5.5`), the planner looked at what a
+longer turn meets on its way back. A served peer receives its request under a message lock, runs the model
+call, publishes the reply, and only then completes the message.
+
+**Measured, no LLM call.**
+
+- The two request subscriptions the debaters serve from, `deliberator-proponent.requests` and
+  `deliberator-opponent.requests`, have a lock of **one minute**. Nothing sets it: `create_subscription` is
+  called with the vendor's default. No code renews a lock, and no code catches a lost one.
+- The repo's own receiver and `serve_once`, on disposable topics on the live namespace with that default
+  lock and a handler that takes 70 seconds: the reply is published, then `serve_once` raises
+  `MessageLockLostError`. `serve_loop` catches nothing, so in a container the peer's process ends. A
+  second consumer, as a restarted process would be, receives the same request again: the handler runs a
+  **second** time and a second reply is published. The topics were deleted afterwards.
+- The same check with a five-minute lock: served once, no error, one reply, nothing redelivered.
+- The ledger keys a call by agent and correlation id and returns the first record when the key exists
+  (`kernel/llm_ledger.py`). So a turn served twice is one `LLMCall`: the second, paid call is not recorded.
+  The planner's first reading, *"1,387 calls, no id served twice"*, therefore proved nothing and is
+  withdrawn.
+- How long turns take: on Opus the debaters' calls average 41 to 51 seconds. On `gpt-5.5` the defender's
+  production turn took 58.1 and 59.8 seconds in the one debate measured, and its typed turn averages 66
+  seconds with a slowest of 118. In the live records 4 served turns passed 60 seconds, all on 2026-08-19,
+  all `gpt-5.5`.
+
+**What it means.** On Opus the lock is rarely reached. On `gpt-5.5` about half of the defender's turns
+reach it. Each one that does: the debate gets its reply, the peer then dies, restarts and makes the same
+call again, unrecorded; its second reply is an orphan; and the manager's next request to that peer waits
+behind the repeat, against a 120-second wait, so that order can fail open. Raising the output cap
+(work-queue 111) makes turns longer, so this comes first.
+
+**Options.**
+
+- **Live, now:** set the lock of the two request subscriptions to five minutes, the vendor's maximum. One
+  setting on each, reversible, measured above to remove the failure for any turn under five minutes. It
+  changes production infrastructure, so it is the operator's to approve.
+- **The fix (work-queue 112):** subscriptions are created with an explicit lock; a served peer renews its
+  lock while the handler runs, or settles the message before a long handler and relies on the claim check;
+  a lost lock is caught and recorded as a fault instead of ending the process; and the ledger records a
+  repeat instead of hiding it. Which of these, and in what order, is for the sprint's spec.
+
+**Applied live, 2026-10-08 08:52 AEDT (21:52 UTC, 38 minutes before the scheduled run).** The operator, asked whether to apply it: *"not sure. make decision"*. The planner applied it: the failure and the remedy were both measured, the change is one setting on each of two subscriptions, and it is undone by setting it back. `lockDuration` is `PT5M` on `deliberator-proponent.requests` and `deliberator-opponent.requests` (subscription `agent`). Read before and after: of each subscription's 24 fields, two differ, `lockDuration` and `updatedAt`. The three debater apps were at 0 replicas and both subscriptions held 0 messages. Live only: no code, no image and no deploy record; a subscription created again would have the default again. To undo: `az servicebus topic subscription update -g trading-agents --namespace-name trading-agents-bus --topic-name <topic> -n agent --lock-duration PT1M`. Snapshots are in OneDrive `trading-agents-data/wq112-2026-10-07/`.
+
+**Not taken.** Lowering the model's effort so that turns finish sooner: it changes what the debaters write,
+to work around a transport setting. Catching the error alone: the turn would still be served twice.
+
+---
+
 ## DL-270 - S255's frozen sentence includes normalized pillar metrics in its 0-100 claim - status: STOP (builder, 2026-10-07 17:49 AEDT)
 
 **Constraint found while pinning the text, no network or LLM call.** The Appendix's first line says
@@ -627,7 +676,23 @@ on Opus for the same order (6,363 and 7,738 tokens against 2,334 and 2,853) and 
 (work-queue 111). **Direction:** a check of what the roles understand is run on both vendors, on the same
 frozen cases, and compared answer by answer.
 
-**Proposed, not yet funded.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
+**Run, 19:10 AEDT ([EXP-020](research/experiments/EXP-020-on-the-same-cases-does-gpt-5-5-know-the-hinge-as-opus-does.md), $6.52, the operator approved $7).** With the arithmetic `gpt-5.5`
+answers 54 of 54 hinge questions right and is on Opus's side of 0.5 in 45 of 45 answers both gave. On today's
+packet the two guess, and differently (5 of 36 on opposite sides). So the arithmetic is also what makes a
+vendor swap safe on this question. `gpt-5.5`'s defender writes twice Opus's output, and the fleet's cap would
+have cut 5 of its 16 typed turns: work-queue 111 now has a measured frequency and comes before step 3.
+
+**Found the same evening, 20:37 AEDT: the measured text has a false clause.** S255's builder stopped while
+pinning the first line: arm B's first line says that inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. Four such keys are on a 0-1 scale: `technical_score`, `fundamental_score`, `sentiment_score` and `composite_score` (measured over 1,765 recorded recommendations: 20 distinct keys end in `_score`, and these four never exceed 1.0).
+The planner wrote that sentence for EXP-019 and carried it into S255's spec as frozen text without checking it
+against the keys. Corrected on S255's branch: one clause excepts the four keys, and the other two lines are
+unchanged. **What it does to the gate:** EXP-019 and EXP-020 measured the uncorrected line, and every answer
+was right with it. The corrected line is not measured. *Decided by the operator ("run it") and done,
+20:59 AEDT ([EXP-021](research/experiments/EXP-021-does-the-corrected-first-line-read-as-well-as-the-measured-one.md), $3.29):* with the corrected line `gpt-5.5` answers 54 of 54
+right, and all 54 are on the side they were on with the uncorrected line. The corrected text is measured on
+`gpt-5.5`. It is not measured on Opus, and EXP-019's remaining calls will measure the uncorrected line there.
+
+**As it was proposed, before the run.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
 change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on
 both vendors cost 1.6 times as much on `gpt-5.5`, so about $0.20 a call: about $7 for the 36 calls that
 answer H1, about $10.50 for all 52. It can run now, because that account is funded. A stop at the output cap

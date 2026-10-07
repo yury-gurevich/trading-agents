@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-255-the-packet-states-the-score-arithmetic`
 **Status:** SPEC
-**Build disposition:** STOP under the explicit handover rule: the frozen text's universal 0-100 claim cannot be pinned to the normalized pillar metrics (`DLIB-NEV-09`, [DL-270](../design-log.md), DRIFT-103). Partial prototype retained in the worktree; not BUILT.
+**Build disposition:** RESUMES after the planner's correction of 2026-10-07 20:35 AEDT (the section before the handover). The builder stopped, rightly: the first line called every key ending in `_score` a 0-100 band score, and four are on a 0-1 scale (`DLIB-NEV-09`, [DL-270](../design-log.md), DRIFT-103). The clause is corrected. Partial prototype retained in the worktree; not BUILT.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-269](../design-log.md) (decisions D1 to D7 this sprint builds) · work-queue **107** ·
@@ -83,7 +83,8 @@ guarantees, name it in the Law reading record, cite it, and do not add a duplica
 | `agents/deliberator/context.py` and the new `context_arithmetic.py` | `agents/deliberator/laws/laws.md` + `test-plan.md` | `DLIB-OUT-07` (the record carries the packet the roles were given); `DLIB-NEV-08` (no verdict for a comparison no agent enforces); `DLIB-NEV-09` (every statement about the code is pinned by a test); the new `DLIB-OUT-08` |
 | `agents/deliberator/prompt_recipe.py` | same | `DLIB-OBS-07`: the digest identifies the code that rendered the prompt, so the new module joins it |
 
-⚠️ **The three lines are frozen text.** They are what EXP-019 measures. If a sentence cannot be pinned
+⚠️ **The three lines are frozen text.** They are EXP-019's arm B with one clause of the first line
+corrected (the planner's correction, below). If a sentence cannot be pinned
 to the code as written, or a number cannot be reproduced from the record, stop and report. Do not
 reword a line to make it pass.
 
@@ -120,7 +121,8 @@ cannot be re-run in a worktree. The Appendix script reproduces the rows marked *
 | Where a deliberator can read the constants today | nowhere. They are tunables in `agents/analyst/settings.py` and `agents/provider/settings.py`; no contract field and no run record carries them, and an agent may not import another | *[measured]* `git grep` over `contracts kernel agents orchestration` |
 | The stated rule reproduces the recorded numbers | **1,765 of 1,765** recommendations that carry quant metrics (85 analyst runs, 2026-07-20 to 2026-10-06): recomputed confidence and `technical_score` within 1e-9 of the record; the largest difference is 1.1e-16. Thirteen older recommendations carry no quant metrics | *[measured, live graph]* |
 | The same, on the nine orders of EXP-019 | 9 of 9 | *[measured, Appendix]* |
-| Lines built from the record against EXP-019 arm B's | **9 of 9 byte-equal** | *[measured, Appendix]* |
+| Lines built from the record against EXP-019 arm B's | **9 of 9 byte-equal**, as first measured. Since the correction: the second and third lines are arm B's byte for byte, and the first is arm B's with one clause inserted, 9 of 9 | *[measured, Appendix]* |
+| Which keys ending in `_score` are on a 0-1 scale | exactly four of the 20 recorded: `technical_score`, `fundamental_score`, `sentiment_score`, `composite_score`. The other 16 are band scores, observed between 20 and 80 | *[measured, live graph]* 1,765 recommendations, 2026-10-07 |
 | Where arm B put the lines | at the end: its packet is the recorded packet, a newline, the three lines | *[measured, read]* `exp019_run.py` in the experiment's Appendix S |
 | Today's code rebuilds the nine recorded packets | 9 of 9 byte-equal | *[measured, live graph]* `build_veto_context` on `main` at `78c9b419` |
 | What the lines add | 1,579 to 1,601 characters, to a packet of about 9,500 | *[measured]* the fixture |
@@ -200,7 +202,7 @@ make, or a place where you had to depart from one of these, with the reason.
 | --- | --- | --- |
 | D1 | `contracts/analyst.py` gains a frozen `ScoreArithmetic` with nine fields: `technical_weight`, `fundamental_weight`, `sentiment_weight`, `alpha158_weight`, `relative_strength_weight`, `confidence_floor`, `confidence_span`, `technical_sub_scores: tuple[str, ...]`, `fundamental_sub_scores: tuple[str, ...]`. `Recommendation.score_arithmetic: ScoreArithmetic \| None = None`. The names are the `quant_metrics` names that were averaged; the fundamental names are in the order they were averaged | see the road not taken |
 | D2 | `contracts/provider.py` gains a frozen `VixThresholds` with `risk_on_at_or_below`, `risk_off_from`, `high_volatility_from`, `extreme_volatility_from`. `RegimeContext.vix_thresholds: VixThresholds \| None = None` | thresholds read in the deliberator: they are the provider's tunables |
-| D3 | The deliberator appends three lines to the end of the packet, in this order: the rule, this order's numbers, the regime rule. The text and the number formats are the Appendix script's `arithmetic_lines`, which is byte for byte EXP-019's `block` | a place inside the packet: arm B appended |
+| D3 | The deliberator appends three lines to the end of the packet, in this order: the rule, this order's numbers, the regime rule. The text and the number formats are the Appendix script's `arithmetic_lines`: EXP-019's `block` with the scale clause of its first line corrected | a place inside the packet: arm B appended |
 | D4 | The lines are printed only if all of these hold, checked in this order; the first that fails is the reason on one line, `Score arithmetic: withheld; <reason>.` (1) the regime record exists: *no regime record*; (2) it carries thresholds: *the regime record carries no label thresholds*; (3) the alpha158 pillar took no part (no `alpha158_score` metric): *the alpha158 pillar is active*; (4) at least one technical sub-score is named and every named sub-score is among the metrics: *the recorded sub-scores are incomplete*; (5) `rs_score` is among the metrics: *this order has no rs_score*; (6) the rule reproduces the record: *the stated rule does not reproduce the recorded confidence_score*. A recommendation with `score_arithmetic` of `None`, or no recommendation, adds no line at all | raising: the builder runs inside the order's fault boundary, so an exception would fail the order open |
 | D5 | "Reproduces" means the recomputed confidence and the recomputed `technical_score` are each within `1e-9` of the recorded value | comparing the printed four decimals: it hides a real difference |
 | D6 | Both new fields are optional and default to `None`. No reader is changed to require them | a required field: 85 recorded analyst runs would stop validating |
@@ -226,7 +228,8 @@ make, or a place where you had to depart from one of these, with the reason.
 
 1. **Read the laws** (MUST RULE above) and write the Law reading record.
 2. **Run the Appendix script** in your worktree and paste its output into the Closeout. It must print
-   `lines equal to EXP-019 arm B's 9, rule reproduces the recorded confidence and technical_score 9`.
+   `lines equal to the fixture's 9, second and third lines equal to EXP-019 arm B's 9, rule reproduces the
+   recorded confidence and technical_score 9`.
    If it does not, stop and report: your tree differs from the one this spec was measured in.
 3. **Plant the failing test first** (A1) and watch it fail. Paste the red output.
 4. **Implement** D1 to D7.
@@ -251,7 +254,7 @@ make, or a place where you had to depart from one of these, with the reason.
 | A6 | 🪤 The stated rule is the analyst's rule | The analyst's own output for candidates with three pillars, with no fundamentals, and with no news, under default and moved weights | For each, the deliberator's recomputation is within `1e-9` of the analyst's confidence and `technical_score`, and the lines are printed, not withheld (`DLIB-NEV-09`, `ANLZ-OUT-10`) |
 | A7 | The provider records the thresholds it used | A regime built under default and under moved thresholds, with a VIX on each side of each threshold | `vix_thresholds` holds the four values in force, and the label is the one those values select (`PROV-OUT-02`) |
 | A8 | 🪤 The regime sentences are true | Regimes under every label; one candidate scored under two different regime labels | The four `base_*` values are equal under every label; the candidate's confidence and scores are equal under both labels (`DLIB-NEV-09`) |
-| A9 | 🪤 The two remaining sentences are true | The analyst's neutral constants; recommendations on each side of the floor | A band score of 50 is the analyst's neutral value; an order is a buy only when its confidence is at least `base_min_confidence` (`DLIB-NEV-09`) |
+| A9 | 🪤 The remaining sentences are true | The analyst's neutral constants; recommendations on each side of the floor; the analyst's own output for the candidates of A6 | A band score of 50 is the analyst's neutral value; an order is a buy only when its confidence is at least `base_min_confidence`; **every recorded key ending in `_score` is either one of the four the first line names, with a value between 0 and 1, or a band score between 0 and 100** (`DLIB-NEV-09`) |
 | B1 | 🪤 Every reader reads an old record and a new one | A recorded payload without the fields and the same payload with them, for `RecommendationSet` and `RegimeContext` | Both validate; the PM's, the forecaster's and the provider's existing tests pass with no edit |
 | B2 | 🪤 The recipe digest follows the new module | The module's source, then a changed copy | The deliberator's digest differs; the operator agent's digest does not (`DLIB-OBS-07`) |
 | B3 | No score moves | The analyst's existing tests | They pass with no edit to an expected score, confidence, action or rationale |
@@ -340,6 +343,79 @@ Owed by the planner, in this order:
    debated order's recorded packet ends with the three lines and none is withheld; no order fails open.
    The packet is about 1,600 characters longer, so the output tokens of each turn are read against the
    8,192 cap (work-queue 111).
+
+---
+
+## Planner's correction, 2026-10-07 20:35 AEDT — and how the build resumes
+
+**The defect was the spec's, and before that the experiment's.** The first of the three lines said that
+inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. The planner wrote that
+sentence for EXP-019's arm B and carried it into this spec as frozen text without checking it against the
+keys. Four keys ending in `_score` are on a 0-1 scale. The builder found it while pinning the sentence
+and stopped, as the handover told it to ([DL-270](../design-log.md), DRIFT-103).
+
+**Measured after the stop, on the live graph:** over 1,765 recorded recommendations there are 20 distinct
+keys ending in `_score`. Exactly four never exceed 1.0: `technical_score`, `fundamental_score`,
+`sentiment_score` and `composite_score`. The other 16 are band scores, observed between 20 and 80.
+
+**The correction.** One clause is inserted in the first line, after *"is a 0-100 band score in which 50
+is neutral"*:
+
+```text
+, except technical_score, fundamental_score, sentiment_score and composite_score, which are on a 0-1 scale
+```
+
+Nothing else in the three lines changes. The second and third lines are EXP-019's byte for byte.
+
+**What the planner changed on this branch:** the fixture (`arithmetic_lines` carries the corrected first
+line; `exp019_arm_b_lines` keeps the experiment's text); the Appendix script and its expected output;
+decision D3's wording; test A9, which now also pins the corrected clause; the Measured table.
+
+**What stands from the first pass, and is not redone:** the Law reading record, DRIFT-102, DL-270, A1's red
+run, and the partial prototype in the worktree.
+
+**The stop rule, made narrower.** Stop when a sentence is *false* in the code, as this one was. A pin that
+is true but indirect is not a reason to stop: write it, say in Return notes why it is the best pin the
+code allows, and continue. For *"50 is neutral"*: the analyst's `_NEUTRAL` constants are 50, and
+`signal_selection` gives a band score of 50 a contribution of zero; for `rs_score`, 50 / 100 is the
+neutral 0.50 of a pillar.
+
+**The gate.** The corrected line is not the line EXP-019 and EXP-020 measured. Whether the corrected text
+is measured again before the merge is the operator's decision, and it does not hold the build.
+
+### Resume — paste this to Codex
+
+```text
+Sprint 255, resumed. Same worktree and branch: ../ta-s255,
+sprint-255-the-packet-states-the-score-arithmetic. The planner has committed on top of your 97697370:
+pull nothing, read `git log -3` and the spec's section "Planner's correction". Your stop was right. The
+sentence was false, and it was the planner's: four keys ending in _score are on a 0-1 scale
+(technical_score, fundamental_score, sentiment_score, composite_score; measured over 1,765 recorded
+recommendations).
+
+The first line now carries one more clause, after "is a 0-100 band score in which 50 is neutral":
+  , except technical_score, fundamental_score, sentiment_score and composite_score, which are on a 0-1 scale
+Nothing else in the three lines changed. The fixture's `arithmetic_lines` is the corrected text, so your
+A1 is red again until your renderer prints the clause. The Appendix script is corrected: run it again and
+paste its output; it must print three nines.
+
+Everything from your first pass stands and is not redone: the Law reading record, DRIFT-102, DL-270,
+A1's first red run, and your uncommitted prototype, which the planner did not touch.
+
+Continue from Step 4 of the spec (implement D1 to D7), then Steps 5 to 8. Test A9 now also pins the
+corrected clause: every recorded key ending in _score is either one of those four, with a value between
+0 and 1, or a band score between 0 and 100. Close DRIFT-103 in the register when A9 passes.
+
+The stop rule is narrower now: stop when a sentence is FALSE in the code. A pin that is true but
+indirect is not a reason to stop: write it, say why in Return notes, continue. For "50 is neutral" pin
+the analyst's _NEUTRAL constants and signal_selection's zero contribution at 50; for rs_score, 50 / 100
+is the neutral 0.50.
+
+Unchanged rules: no network, no .env, do not touch pyproject.toml or uv.lock, do not push, do not merge,
+no LLM call in any test, no prompt and no other packet line changes, no score changes. New: do not edit
+docs/STATE.md again; put intent and results in the spec's Closeout. Set Status to BUILT (spec and README
+row) only when the 12-item checklist is met.
+```
 
 ---
 
@@ -638,8 +714,9 @@ untouched, with the planner's merge-time bump still owed.
 ## Appendix — the reference shape, and the script behind the Measured table
 
 `recompute` is the self-check of decisions D4 and D5. `arithmetic_lines` is the text and the number
-formats of decision D3. Expected output: `orders 9: lines equal to EXP-019 arm B's 9, rule reproduces
-the recorded confidence and technical_score 9`.
+formats of decision D3, with the first line's corrected clause. Expected output: `orders 9: lines equal to
+the fixture's 9, second and third lines equal to EXP-019 arm B's 9, rule reproduces the recorded confidence
+and technical_score 9`.
 
 ```python
 """S255 reference shape and its proof: the score arithmetic rendered from recorded values.
@@ -647,8 +724,9 @@ the recorded confidence and technical_score 9`.
 Run from the sprint's worktree; no `.env`, no network, no LLM call:
   PYTHONPATH=. uv run --no-sync python <this file>
 It reads tests/fixtures/score_arithmetic_nine_orders.json: the nine orders of EXP-019, each with the
-recommendation the analyst recorded, the arithmetic the analyst will record from this sprint on, and
-the three lines EXP-019's arm B added to the packet.
+recommendation the analyst recorded, the arithmetic the analyst will record from this sprint on, the
+three lines EXP-019's arm B added to the packet, and those lines with the first one's scale clause
+corrected (DL-270), which is the text this sprint ships.
 """
 
 from __future__ import annotations
@@ -684,13 +762,14 @@ def recompute(rec: Recommendation, sa: dict) -> dict:
 
 
 def arithmetic_lines(rec: Recommendation, sa: dict, floor: float, vix: dict) -> list[str]:
-    """The three lines, byte for byte what EXP-019's arm B appended to the packet."""
+    """The three lines: EXP-019 arm B's, with the first line's scale clause corrected (DL-270)."""
     r = recompute(rec, sa)
     q, rsw = r["q"], sa["relative_strength_weight"]
     rule = (
         "Score arithmetic, the rule for every order (definitions from the analyst's code, the same for every "
         "reviewer): inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band "
-        f"score in which 50 is neutral; technical_score = {1 - rsw:.2f} x (mean of the technical sub-scores / 100) + "
+        "score in which 50 is neutral, except technical_score, fundamental_score, sentiment_score and composite_score, "
+        f"which are on a 0-1 scale; technical_score = {1 - rsw:.2f} x (mean of the technical sub-scores / 100) + "
         f"{rsw:.2f} x (rs_score / 100); fundamental_score = (mean of the fundamental sub-scores) / 100; "
         f"composite_score = {sa['technical_weight']:.2f} x technical_score + {sa['fundamental_weight']:.2f} x "
         f"fundamental_score + {sa['sentiment_weight']:.2f} x sentiment_score, divided by the sum of the weights of "
@@ -728,7 +807,7 @@ def arithmetic_lines(rec: Recommendation, sa: dict, floor: float, vix: dict) -> 
     return [rule, f"Score arithmetic for {rec.ticker}: " + "; ".join(parts) + ".", regime]
 
 
-equal = reproduced = 0
+equal = unchanged = reproduced = 0
 for order in fixture["orders"]:
     rec = Recommendation.model_validate(order["recommendation"])
     sa = order["score_arithmetic"]
@@ -739,9 +818,10 @@ for order in fixture["orders"]:
     )
     lines = arithmetic_lines(rec, sa, order["base_min_confidence"], fixture["vix_thresholds"])
     equal += "\n".join(lines) == order["arithmetic_lines"]
+    unchanged += lines[1:] == order["exp019_arm_b_lines"].split("\n")[1:]
     if "\n".join(lines) != order["arithmetic_lines"]:
         print("DIFF", order["ticker"])
 n = len(fixture["orders"])
-print(f"orders {n}: lines equal to EXP-019 arm B's {equal}, rule reproduces the recorded confidence and "
-      f"technical_score {reproduced}")
+print(f"orders {n}: lines equal to the fixture's {equal}, second and third lines equal to EXP-019 arm B's "
+      f"{unchanged}, rule reproduces the recorded confidence and technical_score {reproduced}")
 ```

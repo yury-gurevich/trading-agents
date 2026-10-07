@@ -30,6 +30,16 @@ guard plants and CI; retain status SPEC and record the partial prototype. `DRIFT
 defect. The planner must resolve the frozen wording and its experimental status before the build
 can resume. No new text has been substituted.
 
+**Corrected, 20:35 AEDT (planner).** The defect was the planner's: the sentence was written for EXP-019's arm B
+and carried into the spec as frozen text without being checked against the keys. Measured over 1,765
+recorded recommendations: 20 distinct keys end in `_score`, and exactly four are on a 0-1 scale
+(`technical_score`, `fundamental_score`, `sentiment_score`, `composite_score`; the builder named three, the
+composite is the fourth). The first line gains one clause that excepts them. The second and third lines
+are unchanged. *Not taken:* removing the scale claim altogether, because the model needs it to read the
+sub-scores; and leaving the line as measured, because it is false. The corrected line is not the line
+the two experiments measured: measuring it again before the merge is the operator's decision. The stop
+rule is narrowed to a sentence that is false in the code.
+
 **Roads not taken.** Do not exclude the pillar keys from `quant_metrics`: that would change an
 existing packet line and stored evidence outside scope. Do not rescale them: that would change
 scores. Do not silently narrow the pin to indicator sub-scores: the sentence says every key.

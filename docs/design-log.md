@@ -10,6 +10,48 @@ and is marked CLOSED here.
 
 ---
 
+## DL-269 - the analyst and the provider record the constants they used, and the packet states the score arithmetic only when it reproduces the record - status: DECIDED (planner, 2026-10-07 18:19 AEDT); SPEC as [S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md), work-queue 107
+
+**The question.** Step 2 of DL-264 amendment 5 puts the score arithmetic in the packet. EXP-019's arm B is
+that text. How does production print it?
+
+**Measured, no LLM call.** The weights, the floor and the span are the analyst's tunables, and the VIX
+thresholds are the provider's. No contract field and no run record carries any of them, and an agent may
+not import another. Built from the recorded recommendations, the lines equal arm B's for 9 of 9 orders. The
+stated rule reproduces the recorded confidence and `technical_score` for 1,765 of 1,765 recommendations that
+carry quant metrics (largest difference 1.1e-16). EXP-019's nine orders all have three pillars and a
+relative-strength score. The analyst's code has branches they do not exercise: no `rs_score` (946 of 1,765,
+none since 2026-09-04), an absent pillar (33), and a fourth pillar that a setting can switch on (0).
+
+**Decided.**
+
+- **D1.** The analyst records on each recommendation the seven constants it used and the names of the
+  sub-scores it averaged into the technical and the fundamental score (`Recommendation.score_arithmetic`).
+- **D2.** The provider records on the regime context the four VIX thresholds its label was selected with.
+- **D3.** The deliberator ends the packet with arm B's three lines, built from those two records.
+- **D4.** The lines are printed only when the stated rule reproduces this order's recorded confidence.
+  Otherwise one line says why they are withheld. The branches the experiment did not measure are withheld,
+  not stated. A record that predates the fields adds no line, so a rebuilt old packet is unchanged.
+- **D5.** "Reproduces" is within 1e-9 on the confidence and on `technical_score`.
+- **D6.** Both fields are optional. A reader on older code ignores a field it does not know (measured).
+- **D7.** The new module joins the deliberator's recipe digest.
+
+**Rejected.**
+
+- *The weights and the sub-score lists hard-coded in the deliberator*, as the experiment's script has them.
+  A deploy that changes a weight would make the packet state a false rule, and a new indicator would fall
+  out of a list kept in another agent.
+- *The weights as extra `quant_metrics` entries.* It changes a line the model already reads.
+- *The regime line without its thresholds.* It is not the text that was measured.
+- *A rule stated for the unmeasured branches now.* It would be text no experiment has read.
+- *All of step 2 as one sprint.* The withheld facts (work-queue 98) need their inventory re-measured and
+  their definitions written; the risk figures are not measured at all. Each is its own sprint.
+
+**The gate.** A change to the evidence a model reads is within ADR-0010. The merge waits for EXP-019's
+verdict (operator, 2026-10-07). The build needs no model call, so it does not wait.
+
+---
+
 ## DL-268 - DSPy in the dev group opens a second route to `diskcache`, so the audit's premise covers it - status: DECIDED and built (planner, 2026-10-07 15:51 AEDT), on S254's branch
 
 **What D2 changed.** DL-266's decision D2 puts `dspy` in the `dev` group so that CI can run the tests
@@ -527,6 +569,32 @@ of prompt quality (EXP-019, a GEPA run) is not plumbing, and stays on the model 
 
 **Not decided.** Who writes the revised quantity: the defender, inside the bounds, or code from a typed
 directive. How many rounds the cycle may take, against what each costs.
+
+🧭 **AMENDMENT 7, 2026-10-07 18:19 AEDT — step 2 is three pieces and the arithmetic goes first; the quality checks are to be read on both vendors.**
+
+**Step 2, split.** Read against the code, "facts in the packet" is three pieces at different stages. The
+score arithmetic is measured and prototyped, and is packaged as
+[S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md) (DL-269). The withheld facts (work-queue 98) rest on an inventory of 30
+September and have no definitions written. The risk figures have no measurement. The last two follow as
+their own sprints, each after its measuring.
+
+**The operator, on EXP-019's remainder:** *"$2.80 is ok."* The run resumes on Opus when that account is
+funded (2026-10-11).
+
+**The operator, the same hour:** *"maybe we should continue testing on OpenAI to get confidence tat if we
+HAVE TO swap from anthropic to openai again it will give up comparable results."* Amendment 6 recorded the
+planner's reading that a judgement of prompt quality stays on the model production is meant to run. That
+reading is too narrow. The fleet debates on `gpt-5.5` this week, a forced swap can happen again, and the
+first real debate on it already showed one difference: the defender writes 2.7 times the output it writes
+on Opus for the same order (6,363 and 7,738 tokens against 2,334 and 2,853) and reaches 94 % of the cap
+(work-queue 111). **Direction:** a check of what the roles understand is run on both vendors, on the same
+frozen cases, and compared answer by answer.
+
+**Proposed, not yet funded.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
+change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on
+both vendors cost 1.6 times as much on `gpt-5.5`, so about $0.20 a call: about $7 for the 36 calls that
+answer H1, about $10.50 for all 52. It can run now, because that account is funded. A stop at the output cap
+counts as an unread answer, as the pre-registration already says.
 
 ---
 

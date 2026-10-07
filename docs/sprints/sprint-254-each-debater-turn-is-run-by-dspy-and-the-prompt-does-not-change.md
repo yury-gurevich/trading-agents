@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-254-each-debater-turn-is-run-by-dspy`
-**Status:** SPEC — stopped before implementation: checklist 8 has a self-matching removal command; not BUILT.
+**Status:** SPEC — the build resumes: checklist 8 was the planner's defect and is corrected (2026-10-07 14:31 AEDT, DL-267); not BUILT.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) (DSPy runs the LLM
@@ -257,7 +257,7 @@ you had to depart from one of these, with the reason.
 | A7 | Concurrent turns do not cross | Four turns served from plain threads sharing the programs, each with its own client and its own packet | Each client received only its own packet, and each turn parsed |
 | B1 | 🪤 The turn needs neither package | A separate interpreter in which `diskcache` and `litellm` cannot be imported, DSPy's cache directory pointed at an empty folder | The turn completes, the folder is still empty, and DSPy's global history is empty |
 | B2 | 🪤 DSPy reaches no vendor by itself | A turn served with every socket connection refused | It completes through the client alone, and the LM the program ran on carries our engine (`DLIB-NEV-10`) |
-| B3 | 🪤 No other agent loads DSPy | Each of the other fourteen entrypoints imported in an interpreter where `dspy` cannot be imported | All fourteen import; the deliberator's does not |
+| B3 | 🪤 No other image's code loads DSPy | What each of the other fourteen Dockerfiles' `CMD` runs (thirteen `agents.<name>.entrypoint` modules and `scripts/dispatch_scheduled_run.py`), imported in an interpreter where `dspy` cannot be imported | All fourteen import; the deliberator's entrypoint does not |
 | B4 | 🪤 The images | Every Dockerfile's `uv sync` line | Only `agents/deliberator/Dockerfile` names the `optimizer` extra, and it names `--no-install-package diskcache` and `--no-install-package litellm` |
 | B5 | 🪤 The audit's premise | A Dockerfile text that installs the extra without leaving `diskcache` out; one that leaves it out | The first voids the acceptance and names the Dockerfile; the second keeps it, and the accepted note says how many Dockerfiles install the extra and that each leaves the package out |
 | B6 | The golden is the installed DSPy's | The golden writer run on the installed DSPy | Its output equals the committed golden exactly, and the golden's `dspy_version` equals the installed version |
@@ -354,6 +354,53 @@ Owed by the planner, in this order:
 
 ---
 
+## Planner's correction, 2026-10-07 14:31 AEDT — and how the build resumes
+
+**The defect was the spec's.** Checklist item 8 asked for a whole-repository `git grep` to print
+nothing. The spec contains the pattern, and so do DL-252 and S246's spec, so no build could satisfy it.
+The planner wrote the command without running it. Codex stopped on it as the handover told it to, before
+implementing ([DL-267](../design-log.md)).
+
+**What stands from the first pass, and is not redone:** the Law reading record; the Appendix script's
+two outputs (132 of 132); `tests/fixtures/guided_turn_main_records.json`; test A1 and its probe,
+verified failing; DL-267.
+
+**What the planner changed on this branch:**
+
+- Checklist item 8 is scoped to the code trees: `kernel contracts agents orchestration surfaces scripts tests`.
+- Checklist item 9 names the one value that may change. Test B3 names the fourteen things it imports.
+- The stop rule: a wrong command, count or path with a plain intent is corrected and recorded, not
+  stopped on.
+- `main`'s documentation commits are merged in, and `docs/STATE.md` is `main`'s. The builder adds
+  nothing to `STATE.md` from here: intent and results go in the Closeout below.
+
+### Resume — paste this to Codex
+
+```text
+Sprint 254, resumed. Same worktree and branch: ../ta-s254, sprint-254-each-debater-turn-is-run-by-dspy.
+The planner has committed on top of your 03ca1c72: pull nothing, just read `git log -3` and the spec's
+section "Planner's correction". Your stop was right; the defect was the spec's (checklist 8), and it
+is corrected: the removal grep is scoped to
+  kernel contracts agents orchestration surfaces scripts tests
+Everything from your first pass stands and is not redone: the Law reading record, the two Appendix
+outputs, tests/fixtures/guided_turn_main_records.json, A1 and its probe, DL-267.
+
+Continue from Step 5 of the spec (implement D1 and D3-D7), then Steps 6 to 9. The handover block in
+the spec is unchanged except for checklist items 8 and 9, test B3's wording, and the stop rule, which
+now reads: a wrong command, count or path whose intent is plain from Scope and Success factors is NOT
+a reason to stop; follow the intent, record the correction in Return notes, continue. Stop only when
+a behaviour, a law or the spec's invariant is in question, or a measurement the spec relies on does
+not reproduce.
+
+Unchanged rules: no network, no .env, never a bare `uv sync`, do not touch pyproject.toml or uv.lock,
+do not push, no LLM call in any test, the judge is not touched, no prompt text and no recorded field
+changes. New: do not edit docs/STATE.md; put intent and results in the spec's Closeout. Replace the
+"not done" rows of the Test plan results as you prove each one, and set Status to BUILT (spec and
+README row) only when the 12-item checklist is met.
+```
+
+---
+
 ## Handover — paste this to Codex
 
 ```text
@@ -372,6 +419,10 @@ step as NOT RUN in the handback.
 
 This handover is complete: nobody will send you follow-up messages. If something in the spec is wrong
 or blocked, record it in the handback (Return notes, "not done") and stop; do not improvise.
+A wrong command, count or path whose intent is plain from the spec's Scope and Success factors is NOT
+a reason to stop: follow the intent, record the correction in Return notes, and continue. Stop only
+when a behaviour, a law or the invariant marked with the warning sign is in question, or when a
+measurement the spec relies on does not reproduce.
 
 What and why: since S246 the deliberator copies DSPy's prompt text. DSPy renders offline into
 tests/fixtures/deliberation_guided_golden.json and three kernel modules reproduce it byte for byte.
@@ -436,8 +487,10 @@ Handback checklist (the handback is returned against these, one by one):
  6. Every guard's break-and-restore stated, one line per guard.
  7. DLIB-NEV-10, v1.13, Changelog, test-plan row, both rollups; no other clause edited.
  8. kernel/deliberation_guided_format.py, scripts/deliberation_guided_program.py and
-    tests/dspy_free_probe.py are gone; `git grep -n "guided_system\|GUIDED_TURN_PREFIX"` is empty.
- 9. The regenerated golden's diff pasted: one line.
+    tests/dspy_free_probe.py are gone, and this command prints nothing (code trees only; the docs
+    keep the names as history):
+    git grep -n "guided_system\|GUIDED_TURN_PREFIX" -- kernel contracts agents orchestration surfaces scripts tests
+ 9. The regenerated golden's diff pasted: its dspy_version value is the only change.
 10. `git diff main -- pyproject.toml uv.lock` is empty, and you say so.
 11. make ci output file named, exit code stated, every NOT RUN step named with its reason.
 12. Module line counts for every touched module; Status BUILT here and in the README row.

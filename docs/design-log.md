@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-267 - S254 removal command matches its own specification - status: BLOCKED before implementation (builder, 2026-10-07)
+## DL-267 - S254 removal command matches its own specification - status: CORRECTED (planner, 2026-10-07 14:31 AEDT); found and recorded by the builder; the build resumes
 
 **Measured in `../ta-s254`, no `.env`, no network.** Both unmodified S254 Appendix runs give 132/132 identical outcomes and single vendor calls at installed DSPy 3.4.0, with zero disk-cache files and zero global history; A1 is red before implementation. Main's behavior is frozen in `tests/fixtures/guided_turn_main_records.json`.
 
@@ -19,6 +19,13 @@ and is marked CLOSED here.
 **Roads not taken.** Deleting historical records or rewriting the handed-over requirement is outside scope. Silently narrowing the grep would claim a different proof. The handover explicitly requires a stop if the spec is wrong, so implementation is not done and S254 remains SPEC.
 
 **Proposed correction, not applied:** scope the removal grep to `kernel agents scripts tests`. The planner must correct the handover before the build resumes; D1-D7 are unchanged.
+
+**Corrected, 14:31 AEDT (planner).** The defect was the spec's: the planner wrote the removal command without
+running it on the tree. Checklist item 8 is now scoped to `kernel contracts agents orchestration surfaces scripts tests`. Three more
+wordings that a literal reading could trip on were fixed in the same pass: item 9 (the golden's one changed
+value), test B3 (the fourteen things it imports), and the stop rule, under which a wrong command with a plain
+intent is corrected and recorded, not stopped on. The first pass stands: the law reading, the two Appendix
+outputs, `main`'s frozen records and A1's red run.
 
 ---
 
@@ -67,6 +74,13 @@ and runs in a worktree with no `.env`.
 | Packages `uv.lock` reaches only through LiteLLM or `diskcache` | 33, of which **8 are loaded by DSPy anyway** (`attrs`, `jsonschema`, `jsonschema-specifications`, `referencing`, `rpds-py`, `pygments`, `pyyaml`, `rich`) |
 | `uv sync --no-install-package` in the Dockerfiles' `uv==0.4.29` | present |
 | CI's environment | no DSPy: `uv sync` with no extra |
+
+**Measured again at 12:24 AEDT, after the spec, with the two packages not installed at all.** The rows above
+made them unimportable inside an environment that had them. In a fresh environment holding the deliberator
+image's package set less `litellm` and `diskcache` (96 requirement lines from the lock, installed without
+dependency resolution), the same script gives 132 of 132, and the deliberator's entrypoint imports beside
+DSPy. *[not measured]* The Linux image itself: the local Docker daemon did not answer, so the first proof
+of the built image is the build workflow's entrypoint smoke after the merge.
 
 So the three reasons of 2026-09-30 are each met with DSPy in the image: the image leaves `diskcache`
 out, the call goes through our client and never through LiteLLM, and the golden pins the wire text.
@@ -126,6 +140,12 @@ runs is a direction, not a build detail.
 ---
 
 ## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
+
+🔁 **2026-10-07 12:20 AEDT (operator): *"Keep it on OpenAi whilst we are plumbing."*** The debate stays on
+`gpt-5.5` while the DSPy runtime and the debate workflow are built (ADR-0032; DL-264 amendments 5 and 6), not
+only until the top-up of 2026-10-11. The restore steps below are kept for the day the operator calls for
+them, and are not run before. The live-only state therefore lasts longer than this entry assumed: a full
+`up` still reverts it, which is what work-queue 109 fixes.
 
 **What the operator decided, in order.** Asked to top up the Anthropic account after EXP-019 emptied it
 (DL-264 amendment 3): *"No, no funds until coming Sunday"*. Then: *"re-wire for Chat GPT and get the
@@ -392,6 +412,86 @@ and issues directives, and a revision loop) and asked for it to be filed as rese
   model, they are not.
 - **Not taken:** a model that writes the trading plan, a judge inside the loop it rules on, and the generic
   parameter list.
+
+🧭 **AMENDMENT 5, 2026-10-07 12:15 AEDT — the prototype is the shape to build, adapted; amendment 4's "not taken" was the wrong reading.**
+
+**The direction.** The operator, on the prototype of amendment 4: *"it does not have to be implemented
+VERBATUM. It can bee adpted to our needs."* Amendment 4 sorted its parts into taken and not taken. Read as
+a shape to adapt, each part has a form here. The part-by-part table is in
+[R010](research/debate-pipeline-prototype/INDEX.md).
+
+**What the adapted debate is.** Three typed roles and a loop. The defender argues for the order the
+pipeline wrote. Each of the challenger's points carries a reading, a severity, and whether it is about
+this order or about every order. The judge returns a ruling built point by point, with directives. After
+round 1 the judge states what is still open, round 2 must answer each point, and the judge rules. Risk
+figures are computed in code and shown to all three. This is goals (a) and (b) of this entry in one
+design: the directive is what makes a reply a recorded step, and the point-by-point ruling is the
+qualified answer.
+
+**The one part not carried over, on purpose.** In the prototype the loop revises the plan. Here a ruling
+can stop a buy and change nothing else (ADR-0029 decision 1: the model may subtract, never add). So the
+loop improves the debate and the ruling, not the order. Letting a ruling shrink an order is a
+capital-risk decision, and it stays the operator's to reopen.
+
+**The order of work.** Each step is its own change, and a changed prompt passes ADR-0010's gate with its
+budget stated first.
+
+1. **DSPy in the deliberator's process**, with no prompt changed: [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), specced
+   ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).
+2. **Facts in the packet**, all computed in code: the score arithmetic (work-queue 107), the withheld
+   facts (work-queue 98), risk figures for the order and for the book, each with a definition
+   (work-queue 97 c). Building it needs no model call. Its paid check is EXP-019's arm B.
+3. **The debaters' typed turn:** what the order hinges on, and for the challenger a severity and a scope
+   on each point. After EXP-019's verdict.
+4. **The judge's typed ruling**, point by point, with directives and a probability for each ruling. The
+   judge is told what each ruling does (ADR-0029 decisions 2 and 3).
+5. **The loop:** the judge's open points after round 1, an answer to each in round 2, and an early end
+   when none is open. *[ASSUMED, not measured]* an order with no open point then costs 3 calls where it
+   costs 5 today, and one with open points costs 6.
+6. **The register** for directives about the system (ADR-0029 decision 4).
+7. **One offline program** composing the three predictors, for evaluation and GEPA (work-queue 97 d).
+
+Steps 2 and 3 keep the operator's order of 2026-10-06: the debaters first. Step 1 does not wait for the
+Anthropic account. Steps 3 to 5 each need a paid replay.
+
+**Not decided.** How many points a ruling may hold. Whether the judge's statement of open points is its
+own call or part of its ruling. Which risk figures the book supports today: nothing is measured.
+
+🧭 **AMENDMENT 6, 2026-10-07 12:20 AEDT — the loop that revises the plan is the workflow, and it is carried; amendment 5's exclusion is withdrawn. The debate stays on OpenAI while this is plumbed.**
+
+**The direction.** Amendment 5 said the prototype's loop *revises the plan*, and left that part out. The
+operator: *"the workflow is what we are after."* The planner reads this as: the cycle itself is the thing
+to build. A proposal is critiqued, the judge sends it back with directives, the proposal is revised, and it
+goes round until the judge accepts or the rounds run out. A loop in which only the arguments change is not
+that workflow. 🪰 If the operator meant the process without a changed order, the revision step below is
+dropped and the rest stands.
+
+**What a revision can be here.** The model may subtract, never add: the founding constraint is kept. So a
+revised order is the same ticker and side with a smaller quantity, or no order. Nothing else about an order
+is a model's to move: the stop and the target are measured from volatility (ADR-0019, ADR-0031), and the
+entry is the session's (ADR-0018). The judge's directive is typed. The revised order is checked in code
+against those bounds and run again through the PM's own gates, and the next round debates the revised
+order.
+
+**Shadow first.** While the workflow is being built, the revised order is recorded beside the original and
+the original is what executes. `revise` therefore still changes no order, ADR-0029 stands as written, and
+the plumbing reverses no law clause. Each revision is scored against what the unrevised order went on to
+do. Making a revision binding is a capital-risk decision: it needs that ledger, an ADR that amends
+ADR-0029, and a law cycle (`DLIB-NEV-02`, `DLIB-OUT-04`). It is the operator's, and it is not part of the
+plumbing. *Why not binding at once:* 34 of the last 34 rulings are `revise`, 19 of them on sizing, which
+EXP-012 measured and closed. A binding revision today would shrink every order on a ground already
+answered.
+
+**The order of work, changed in two places.** Step 5, the loop, now includes the revision, in shadow:
+directives, a revised order, the code's re-check, the next round, the judge's acceptance. A new last step
+is added: the revision becomes binding, on the operator's decision.
+
+**Vendor.** The operator, in the same message: *"Keep it on OpenAi whilst we are plumbing."* See DL-265's
+note. Every live check and replay of the plumbing runs on `gpt-5.5`. *[the planner's reading]* A judgement
+of prompt quality (EXP-019, a GEPA run) is not plumbing, and stays on the model production is meant to run.
+
+**Not decided.** Who writes the revised quantity: the defender, inside the bounds, or code from a typed
+directive. How many rounds the cycle may take, against what each costs.
 
 ---
 

@@ -167,6 +167,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | [sprint-252](sprint-252-every-finder-fetches-only-its-pending-work.md) | 🟠 **Every pending-work finder in the fleet fetches only its pending work** — work-queue 101 and 106 (DRIFT-097), the method of [DL-246](../design-log.md) | **MERGED 2026-10-02** `0.121.03`, tag `v0.121.03`, GATE PROVEN `dd22b348`; F1 passed; not deployed (retag after the fidelity verdict); F2 owed |
 | [sprint-253](sprint-253-a-runs-snapshot-counts-what-the-broker-filled.md) | 🟠 **A run's snapshot counts the positions the broker opened and closed** — work-queue 106 (DRIFT-099, DRIFT-096; [DL-262](../design-log.md)) | **MERGED 2026-10-02** `0.121.02`, tag `v0.121.02`, GATE PROVEN `4152ebd2`; F1 passed; not deployed (retag after the fidelity verdict); F2 owed |
 | [chore-three-scripts-leave-the-size-baseline](chore-three-scripts-leave-the-size-baseline.md) | 🟢 **Three frozen oversize scripts leave the size baseline** — `check_worktrees.py`, `retrain_return_model_helpers.py`, `remediation_gate.py` split under 200 with byte-identical output; `LEGACY_MAX_LINES` 15 to 12 | **SPEC** — packaged 2026-10-03; tooling only, no bump, nothing to deploy |
+| [sprint-254](sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md) | 🟠 **Each debater turn is run by DSPy, and the model reads the same prompt as before** — work-queue 110 ([ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), [DL-266](../design-log.md)) | **SPEC 2026-10-07** for Codex, worktree `../ta-s254`; not built |
 
 ---
 

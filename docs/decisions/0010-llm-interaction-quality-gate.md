@@ -10,6 +10,9 @@ tags: [llm, prompts, dspy, evoprompt, quality-gate, champion-challenger, operato
 **Status:** Accepted
 **Date:** 2026-06-20
 **Deciders:** Operator
+**Amended 2026-10-07 by [ADR-0032](0032-dspy-runs-the-llm-roles-at-run-time.md):** decision 3's *offline*
+placement applies to optimiser runs only. DSPy itself runs in the agent's process. Decisions 1, 2, 4 and 5
+are unchanged.
 
 ---
 

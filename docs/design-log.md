@@ -10,6 +10,109 @@ and is marked CLOSED here.
 
 ---
 
+## DL-266 - DSPy runs at run time: the offline placement is reversed, and the first build changes no prompt - status: DECIDED (operator, 2026-10-07 12:05 AEDT; [ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md)); first build SPEC as [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), work-queue 110
+
+**The direction.** The operator, on reading that the runtime is DSPy-free by design: *"May have been an
+experiment, i do not know but from the very beginning i intended it to be an active participant. Revert
+this decision and let's put dspy back where it belongs."*
+
+**How the offline placement came about** (read from the record, 2026-10-07). No step was the operator's
+decision about where DSPy runs.
+
+1. **2026-06-20, ADR-0010.** DSPy adopted, with optimisation *"offline, behind a `PromptOptimizer`
+   port"*. The reason given was that the evaluation gate must not depend on the tool.
+2. **2026-07-02 (`33eb1cd5`).** `dspy` landed in an optional `optimizer` extra that no Dockerfile
+   installs.
+3. **2026-09-20, DL-184.** A new advisory against `diskcache`, which arrives only through `dspy`, was
+   accepted by the planner on the premise that no container installs it.
+4. **2026-09-30, DL-250 and S246 (DL-252).** The operator asked for the guided chain of thought to be
+   recorded. DL-250 left the placement open between (a) DSPy in the image and (b) DSPy offline with a
+   parity-tested runtime parser. The S246 spec chose (b) for three reasons: the advisory, LiteLLM on
+   the live call path, and a DSPy upgrade silently changing a live prompt.
+
+**The operator's question the same hour:** *"there was a security issue with dspy. maybe decision to
+pause was because of it?"* Partly. The offline placement is three months older than the advisory. The
+advisory then became the first of the three reasons in step 4. It is against `diskcache`, not DSPy's
+own code, and it is still unfixed: 5.6.3, the affected release, is the latest on PyPI today.
+
+**Measured before deciding how** *[2026-10-07; DSPy 3.4.0, the lock's version; no LLM call, no
+network; `main` at `02e4f865`]*. A guided turn was run by `dspy.ChainOfThought` through an engine that
+wraps our own `LLMClient`, and compared with `main`'s `guided_turn`. The script is in S254's Appendix
+and runs in a worktree with no `.env`.
+
+| What | Measured |
+| --- | --- |
+| The new turn against `main`'s, over both roles × 3 user cases × (17 parse cases, 2 blank completions, a stopped call, a transport error, a timeout) | **132 of 132** give the same `DebateTurnRecord` or raise the same exception |
+| What the vendor client receives | 132 of 132: exactly one call, with `main`'s system and user text |
+| The same with `litellm` and `diskcache` unimportable | 132 of 132; neither is loaded even when importable |
+| Files written to DSPy's cache directory, disk cache off | 0 |
+| Calls DSPy keeps in memory with `disable_history=True` | 0 |
+| A failure of our client | arrives as `LMUnexpectedError` with our exception as `__cause__`; the client is called once |
+| A reasoning with a trailing comma | DSPy's own parse repairs it; `parse_guided_turn` refuses it (DL-252 D6) |
+| Four plain threads sharing one program, each in its own `dspy.context` | 4 of 4 correct |
+| Loading DSPy beside the deliberator (planner's Windows machine) | import + 0.9 to 1.4 s; 58 → 83 MB at import, about 120 MB after a turn; first turn + 2.3 s once, later turns + 7 ms. The container has 1.0 Gi |
+| Packages the `optimizer` extra adds to the deliberator image's 56 | 41 |
+| Packages `uv.lock` reaches only through LiteLLM or `diskcache` | 33, of which **8 are loaded by DSPy anyway** (`attrs`, `jsonschema`, `jsonschema-specifications`, `referencing`, `rpds-py`, `pygments`, `pyyaml`, `rich`) |
+| `uv sync --no-install-package` in the Dockerfiles' `uv==0.4.29` | present |
+| CI's environment | no DSPy: `uv sync` with no extra |
+
+So the three reasons of 2026-09-30 are each met with DSPy in the image: the image leaves `diskcache`
+out, the call goes through our client and never through LiteLLM, and the golden pins the wire text.
+
+**The planner's decisions under the operator's direction** (delegated technical decisions; S254 builds
+D1 and D3 to D7, the planner does D2 at merge).
+
+- **D1 — the engine and the program live in `kernel/`**, in modules `kernel/__init__.py` never
+  imports. *Rejected:* `agents/deliberator/`, because the judge and later roles would need them moved.
+- **D2 — `dspy` goes in the `dev` group, so CI has it, and stays in the `optimizer` extra the one
+  Dockerfile names.** *Rejected:* a base dependency (fourteen images would carry a library they never
+  run); a renamed extra (churn in every recorded command for no behaviour).
+- **D3 — strict JSON is kept: a `ChatAdapter` subclass, JSON fallback off, whose `parse` is
+  `parse_guided_turn`.** *Rejected for this sprint:* DSPy's own parse. It repairs JSON, and
+  `DLIB-OUT-06` records the reasoning *"exactly as the model wrote it"*. Whether to accept a repair
+  and record that it happened is a later decision.
+- **D4 — the image leaves out exactly `diskcache` and `litellm`.** *Rejected:* the extra whole
+  (against DL-184); a list computed from the lock (8 of its 33 are loaded, so `import dspy` would
+  break); a list of what one probe never loaded (not proof). The unused remainder is a later chore.
+- **D5 — the caller sees the client's own exception.** The one function that runs a program re-raises
+  `LMUnexpectedError.__cause__`, and a blank completion raises `empty_debate_turn` inside the engine.
+  *Rejected:* letting DSPy's wrapper reach `fault_boundary`, which would name DSPy's class as the
+  fail-open reason.
+- **D6 — the prompt-recipe digest covers the installed DSPy version.** *Rejected:* hashing DSPy's
+  source tree.
+- **D7 — DSPy is imported and the programs built when the agent module is imported; each turn builds
+  its own `dspy.LM` around its own client (`cache=False`, `num_retries=0`) and enters `dspy.context`
+  with the history off in the serving thread.** *Rejected:* a lazy import, which lets a broken image
+  start, activate and fail its first debate at night.
+
+**What the first build is, and is not.** S254 changes who renders and who calls. The model reads the
+same bytes and the graph records the same fields, and that is its proof. The judge, `dspy.History`,
+`dspy.Refine`, typed weights (work-queue 107) and a loaded optimised program each follow as their own
+change; a changed prompt still passes ADR-0010's gate.
+
+**The operator's prototype, read against this.** The operator, the same hour: *"there is a prototype of
+code suggested to me. Can you take it into consideration"*. The only prototype on file is
+[R010](research/debate-pipeline-prototype/INDEX.md), so this reading is of that one. Its shape is three
+callable roles, each returning typed JSON, composed by a plain loop in which the judge's directives feed
+the next round. That is the shape of a DSPy program: three predictors and a `forward()`. With DSPy in
+the runtime the same three predictors serve twice. In production each runs in its own container and the
+manager's `_debate` is the loop, as today. Offline they compose into one `dspy.Module` whose `forward()`
+is that loop, which is what `Evaluate` and GEPA run. So R010 sets the order of work after S254: the
+judge's ruling becomes typed and carries directives, then a later-round turn takes the other side's
+points and those directives as a typed input and must answer them (DL-264, goals a and b). What R010's
+reading ruled out stays ruled out: a model that writes the plan, a judge inside the loop it rules on,
+and risk figures computed by a model.
+
+**Not decided.** Whether a repaired reasoning is accepted. When the operator agent's prompts move.
+Whether LiteLLM's unused dependencies are trimmed from the image.
+
+**The planner's miss.** DL-250 asked the placement question and S246's spec answered it inside a
+"road not taken" paragraph. It reversed nothing the operator had said, but it settled something the
+operator cared about without putting it to them. A choice about where a framework the operator named
+runs is a direction, not a build detail.
+
+---
+
 ## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
 
 **What the operator decided, in order.** Asked to top up the Anthropic account after EXP-019 emptied it
@@ -1050,6 +1153,9 @@ that raise unreachable.
 **Open, for the builder (next free DL).** The episode token (recommended: the first-sight snapshot's key; not the run id, a clock, a uuid or a counter), the subject's exact format, how the open episode is found, and how an unresolved suffix-less Flag is treated at upgrade (recommended: as the open episode).
 
 ## DL-252 - each debater turn is a DSPy-rendered guided turn, reproduced without DSPy, parsed strictly, and recorded with its packet - status: DECIDED (builder, 2026-09-30; S246)
+
+🔁 **Reversed in part, 2026-10-07 ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).** DSPy now runs in the deliberator's
+process. D1's frozen literals are retired by S254. D2, D3, D5, D6, D7 and D8 stand.
 
 **Why.** DL-250's amendment (the operator, 2026-09-30) asks for the *guided* reasoning, the structure
 `dspy.ChainOfThought(..., rationale_field_type=GuidedReasoning)` imposes, recorded so it can be scored
@@ -5512,6 +5618,10 @@ until a deploy carries it. No run has yet executed under `binding`.
 ---
 
 ## DL-184 - a vulnerability that reaches no container is accepted, not chased - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
+
+🔁 **2026-10-07 ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).** DSPy is to enter the deliberator image. The premise below
+is kept by leaving `diskcache` out of that image by name, and the audit will check the package and
+not the extra's name (S254). Until S254 merges, nothing below has changed.
 
 **The break.** `make ci` step 10 (`pip-audit`) began failing 2026-09-20 with **no change to any
 dependency file** - a newly published advisory, **PYSEC-2026-2447** (CVE-2025-69872,

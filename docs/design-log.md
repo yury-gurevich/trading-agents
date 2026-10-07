@@ -56,6 +56,13 @@ and runs in a worktree with no `.env`.
 | `uv sync --no-install-package` in the Dockerfiles' `uv==0.4.29` | present |
 | CI's environment | no DSPy: `uv sync` with no extra |
 
+**Measured again at 12:24 AEDT, after the spec, with the two packages not installed at all.** The rows above
+made them unimportable inside an environment that had them. In a fresh environment holding the deliberator
+image's package set less `litellm` and `diskcache` (96 requirement lines from the lock, installed without
+dependency resolution), the same script gives 132 of 132, and the deliberator's entrypoint imports beside
+DSPy. *[not measured]* The Linux image itself: the local Docker daemon did not answer, so the first proof
+of the built image is the build workflow's entrypoint smoke after the merge.
+
 So the three reasons of 2026-09-30 are each met with DSPy in the image: the image leaves `diskcache`
 out, the call goes through our client and never through LiteLLM, and the golden pins the wire text.
 

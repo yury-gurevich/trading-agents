@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-254-each-debater-turn-is-run-by-dspy`
-**Status:** MERGED 2026-10-07 — `0.122.00`, fast-forwarded to `228e16c1`, tag `v0.122.00`, GATE PROVEN `228e16c1` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,255 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s254`; merged with the planner's dependency layout (DSPy in the dev group, the audit's premise widened, [DL-268](../design-log.md)) and with an import cycle that CodeQL reported as an error on the branch removed; deliberator laws v1.13 (28 / 60, new `DLIB-NEV-10`); the planner's own comparison with `main`: 168 of 168 turns byte-identical; `main`'s own runs are green (CI, CodeQL, Security Findings, *Build and push agent images* 15 / 15): the built deliberator image installed 94 packages with `dspy==3.4.0` and neither `diskcache` nor `litellm` (the installer's list, and the image scan's 95 package rows), its real entrypoint ran to the master handshake, and it is 60.5 MB compressed against `s251`'s 42.5 MB; **not deployed**: the image-only retag waits for the fidelity verdict (2026-10-08); owed: the retag, F1, F2.
+**Status:** MERGED 2026-10-07 — `0.122.00`, fast-forwarded to `228e16c1`, tag `v0.122.00`, GATE PROVEN `228e16c1` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,255 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s254`; merged with the planner's dependency layout (DSPy in the dev group, the audit's premise widened, [DL-268](../design-log.md)) and with an import cycle that CodeQL reported as an error on the branch removed; deliberator laws v1.13 (28 / 60, new `DLIB-NEV-10`); the planner's own comparison with `main`: 168 of 168 turns byte-identical; `main`'s own runs are green (CI, CodeQL, Security Findings, *Build and push agent images* 15 / 15): the built deliberator image installed 94 packages with `dspy==3.4.0` and neither `diskcache` nor `litellm` (the installer's list, and the image scan's 95 package rows), its real entrypoint ran to the master handshake, and it is 60.5 MB compressed against `s251`'s 42.5 MB; **not deployed**: the image-only retag waits for the fidelity verdict (2026-10-08); **F1 PASS** 2026-10-07 (one real debate on `gpt-5.5`: 4 of 4 guided turns read, all three system prompt hashes equal the last debate night's, ruling `revise`, $0.79; the defender's turn reached 94 % of the output cap, work-queue 111); owed: the retag, F2.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) (DSPy runs the LLM
@@ -866,8 +866,21 @@ joins its two lines with `+`. The 168-row comparison with `main` was re-run afte
 
 **`make ci`, Windows, the environment synced with no extra (CI's):** exit 0, all 15 steps. 4,255 passed, 8 skipped, 100.00 % coverage. The dependency audit ran against the network, which the builder's sandbox could not do: no unaccepted vulnerability, 1 accepted advisory re-checked.
 
+**F1, 2026-10-07 17:18 AEDT: PASS** (the operator approved the spend; [functionality-checks](../laws/functionality-checks.md)). One real debate through the merged code on OpenAI
+`gpt-5.5` with the fleet's settings, on GILD's recorded packet from `sched-2026-10-05`, writes kept in memory:
+
+| Claim | Value | How it was measured |
+| --- | --- | --- |
+| Both debaters' turns carry readings | 4 of 4 turns read: 17, 7, 12 and 7 readings, no `reasoning_error` | *[measured]* the four `DebateTurnRecord`s |
+| The system prompt hashes | equal the last debate night's for the defender, the challenger and the judge | *[measured]* the five `LLMCall`s of this debate against the 15 of `pm-run-379d1c84…` in the live graph |
+| The recipe digest | new: `d421485fb40ee7b4e4002c9d7151bc761e2891f1a8172ee6785d965f2b8bb33c` | *[measured]* on this checkout, every module with LF line ends. *[ASSUMED]* the image gives the same value: F2 reads it |
+| One vendor call per turn, through our client | 5 `LLMCall`s for 5 calls, each with the vendor's token counts; DSPy's global history 0; `litellm` and `diskcache` not loaded | *[measured]* |
+| The judge | JSON read, `revise` (Opus ruled `revise` on the night) | *[measured]* |
+| Latency and cost | slowest call 59.8 s against 120 s; $0.79 for the order | *[measured]* vendor token counts priced from `orchestration/packs/llm_pricing.json` |
+| 🔴 Output against the cap | the defender's turns wrote 6,363 and 7,738 tokens against `max_tokens` 8,192 | *[measured]* filed as work-queue 111; the prompt and the client are unchanged by this sprint |
+
 **Still owed, in the order of "Sequencing after merge":** the remote gate for the pushed commit, the
-merge, the image check in the built container, the retag (not before the fidelity verdict), F1 and F2.
+merge and the image check are done (above and in the Status line); the retag (not before the fidelity verdict) and F2 remain.
 
 ---
 

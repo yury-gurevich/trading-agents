@@ -168,6 +168,14 @@ runs is a direction, not a build detail.
 
 ## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
 
+🔁 **2026-10-07 17:18 AEDT, a second measured debate (S254's F1).** The same GILD packet through the merged code, `gpt-5.5`, the fleet's settings:
+**$0.79** against $0.66 the day before, so a debated buy costs $0.66 to $0.79 and three a night about $2.40. All of the
+difference is output: 22,195 output tokens. **Discovered constraint:** the defender's two turns wrote 6,363 and 7,738
+output tokens against a cap of 8,192, and on this vendor the model's reasoning tokens count against the cap. A turn over
+it stops with `length` and fails its order open. Opus peaked near 3,000. The cap is bounded at 8,192 in the settings, so
+raising it is a code change: work-queue 111. *Not taken:* lowering the effort to `medium` live tonight. It would change
+what the debaters write on a vendor whose rulings are already not pooled with Opus's, on one observation.
+
 🔁 **2026-10-07 12:20 AEDT (operator): *"Keep it on OpenAi whilst we are plumbing."*** The debate stays on
 `gpt-5.5` while the DSPy runtime and the debate workflow are built (ADR-0032; DL-264 amendments 5 and 6), not
 only until the top-up of 2026-10-11. The restore steps below are kept for the day the operator calls for

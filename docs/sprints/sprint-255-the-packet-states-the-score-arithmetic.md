@@ -4,6 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-255-the-packet-states-the-score-arithmetic`
 **Status:** SPEC
+**Build disposition:** STOP under the explicit handover rule: the frozen text's universal 0-100 claim cannot be pinned to the normalized pillar metrics (`DLIB-NEV-09`, [DL-270](../design-log.md), DRIFT-103). Partial prototype retained in the worktree; not BUILT.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-269](../design-log.md) (decisions D1 to D7 this sprint builds) · work-queue **107** ·
@@ -262,7 +263,7 @@ No test may skip when a dependency is missing. A skipped proof is not a proof.
 
 ## Success factors
 
-- [ ] The nine recorded orders render EXP-019 arm B's three lines byte for byte.
+- [x] The nine recorded orders render EXP-019 arm B's three lines byte for byte (A1 prototype only).
 - [ ] The three lines are the end of the packet, and every earlier line is unchanged.
 - [ ] A recommendation without `score_arithmetic` gets today's packet.
 - [ ] Each of the six conditions withholds the lines in one line that names it, and never raises.
@@ -270,10 +271,10 @@ No test may skip when a dependency is missing. A skipped proof is not a proof.
 - [ ] The provider records the four thresholds in force.
 - [ ] Every sentence of the three lines has a pin that fails when the code it describes changes.
 - [ ] The recipe digest covers the new module; the operator agent's digest does not move.
-- [ ] `pyproject.toml`, `uv.lock`, the role prompts and the DSPy modules are untouched.
+- [x] `pyproject.toml`, `uv.lock`, the role prompts and the DSPy modules are untouched.
 - [ ] Law cycle done in three books, or an existing clause named in a new one's place.
 - [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
+- [x] Every touched module < 200 lines (measured counts below; formatting gate not run).
 - [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
@@ -449,16 +450,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| Analyst contracts and score/recommendation construction | `agents/analyst/laws/laws.md` and `test-plan.md`, whole files (LOCKED v1.8); `docs/laws/conventions.md` and `drift-register.md`, whole files | `ANLZ-OUT-02`, `ANLZ-OUT-03`, `ANLZ-TYP-01`, `ANLZ-IDM-01`, `ANLZ-NEV-03`; new `ANLZ-OUT-10` | No duplicate guarantee exists. Record the settings and the actual averaged sub-score names without changing existing values. `ANLZ-OUT-07/08` and `ANLZ-OBS-01/02/03` remain gray; this sprint does not claim their full proof. |
+| Provider contract and regime construction | `agents/provider/laws/laws.md` and `test-plan.md`, whole files (LOCKED v1.8) | `PROV-OUT-02`, `PROV-NEV-07`, `PROV-FAIL-01` | Amend only `PROV-OUT-02` to include the thresholds used. Its existing proof is green; `PROV-TYP-01` remains gray. |
+| Deliberator packet and recipe digest | `agents/deliberator/laws/laws.md` and `test-plan.md`, whole files (LOCKED v1.13) | `DLIB-OUT-07`, `DLIB-NEV-05/08/09`, `DLIB-OBS-07`; new `DLIB-OUT-08` | The existing clauses are green or structural, but none promises the arithmetic lines. Add the named clause and pin every code statement in tests that may import both agents. |
+| Decisions and workflow | `docs/design-log.md`: DL-269 and DL-264 amendments 5, 6 and 7; sprint brief whole; worktree `CLAUDE.md` and `AGENTS.md`; docs, sprints and laws indexes | D1-D7, LAW-02, LAW-06 | Follow the decided design. Work only in `../ta-s255`; no network, LLM, version edit, push or merge. Active tracker is `docs/STATE.md`. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by
-the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** YES: two additive optional contract fields and three named guarantees. Owed: analyst v1.9 / `ANLZ-OUT-10`, provider v1.9 / amended `PROV-OUT-02`, deliberator v1.14 / `DLIB-OUT-08`, three Changelog lines, cited test-plan rows and both rollups. `DLIB-NEV-09` is obeyed, not amended.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** Initial book reading found no contradictory scoped amendment. Source pinning then found that the frozen first line cannot satisfy `DLIB-NEV-09`: it describes every `quant_metrics` key ending in `_score` as a 0-100 band with neutral 50, but the code also records normalized pillar scores under such keys (neutral 0.50). This triggered the explicit STOP; see DL-270 / DRIFT-103. The short AGENTS gate count is 14, while CLAUDE and the actual `ci:` target name 15; use the target. The element map's `ANLZ-OUT-03` governs rejection; the recommendation fields are in `ANLZ-OUT-02` and `ANLZ-TYP-01`.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** The current books do not require recorded score constants, recorded VIX thresholds, or their packet rendering. D1-D7 settle that silence; DRIFT-102 records the three additions. No additional design choice has been made before code.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Reading boundary:** This record was written before the Appendix extraction, A1 or any source/test change. The worktree started clean at `41af388f6beac807b91854e6206dcc941fbfdd5b` (planner fixture); local `main` and `origin/main` were `ace8d6289484f4bb6f707725db171fb0e2531e8a`. `.env` is absent. `pyproject.toml` and `uv.lock` are explicitly excluded; the planner owns the bump at merge.
+
+**Clauses that were ⬜ and are now proven:** None. No law book was amended or marked green. The A1 text-equality test cites the planned `DLIB-OUT-08`, but that clause's full guarantee and the other required pins are not proven.
 
 ---
 
@@ -466,59 +471,167 @@ the builder*
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to be filled by the builder* | | not done | |
-| A2 | | | not done | |
-| A3 | | | not done | |
-| A4 | | | not done | |
-| A5 | | | not done | |
-| A6 | | | not done | |
-| A7 | | | not done | |
-| A8 | | | not done | |
-| A9 | | | not done | |
-| B1 | | | not done | |
-| B2 | | | not done | |
-| B3 | | | not done | |
-| B4 | | | not done | |
+| A1 | `test_nine_orders_render_the_measured_text` | `tests/test_score_arithmetic.py` | PASS: 9 of 9 whole strings; partial prototype | `DLIB-OUT-08` (planned clause, not yet authored) |
+| A2 | Not written | Not done | not done: explicit STOP | Owed `DLIB-OUT-08`, `DLIB-OUT-07` |
+| A3 | Not written; two main packets frozen before implementation | `tests/fixtures/score_arithmetic_main_packets.json` (preparation only) | not done: explicit STOP | Owed `DLIB-OUT-08` |
+| A4 | Not written | Not done | not done: explicit STOP | Owed `DLIB-OUT-08`, `DLIB-NEV-09` |
+| A5 | Not written | Not done | not done: explicit STOP | Owed `ANLZ-OUT-10` |
+| A6 | Not written | Not done | not done: explicit STOP | Owed `DLIB-NEV-09`, `ANLZ-OUT-10` |
+| A7 | Not written | Not done | not done: explicit STOP | Owed `PROV-OUT-02` |
+| A8 | Not written | Not done | not done: explicit STOP | Owed `DLIB-NEV-09` |
+| A9 | Not written; the universal frozen sentence is false in code | `.tools/s255/statement-pin.txt` (diagnostic only) | not done; frozen sentence pin verified failing | `DLIB-NEV-09` is the binding stop clause |
+| B1 | Existing reader suites not run | Not done | not done: explicit STOP | Owed compatibility proof under the three named clauses |
+| B2 | Not written | Not done | not done: explicit STOP | Owed `DLIB-OBS-07` |
+| B3 | Existing analyst suite not run | Not done | not done: explicit STOP | Owed `ANLZ-IDM-01`, `ANLZ-OUT-10` |
+| B4 | Protected-file diff empty; S254 parity tests not run | Protected files listed below | not done: only the read-only diff was checked | Owed `DLIB-OUT-06`, `DLIB-NEV-09` |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** None. `tests/score_arithmetic_support.py` and the new main-packet fixture are preparation for A2/A3, not additional passing proofs. No existing test file was edited.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC. Nothing below is filled until the build hands back.
+**Status:** SPEC — STOP; not BUILT. This is a failure handback under the spec's explicit stop rule.
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s255`, branch `sprint-255-the-packet-states-the-score-arithmetic`; `.env` absent. All Python runs used offline/no-sync settings. No LLM, external feed, database or remote-gate call was made.
 
-**Result:** *to be filled by the builder*
+**Result:** The Appendix passes 9/9 equality and 9/9 reproduction. A1 failed before implementation and the partial prototype then printed 9 of 9 orders equal. The frozen first line cannot be pinned to the analyst's normalized pillar metrics, so the build stopped. Only the stop record is committed; the source/test prototype remains uncommitted in this worktree for review. This is not a completed production implementation.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:** Stop record: this handover, `docs/STATE.md`, `docs/design-log.md`, `docs/laws/drift-register.md`, `docs/sprints/README.md`. Uncommitted prototype: `contracts/analyst.py`, `contracts/provider.py`, `agents/analyst/domain/scoring.py`, `agents/analyst/domain/recommend.py`, new `agents/analyst/domain/score_arithmetic.py`, `agents/provider/agent.py`, new `agents/provider/regime_arithmetic.py`, `agents/deliberator/context.py`, `agents/deliberator/prompt_recipe.py`, new `agents/deliberator/context_arithmetic.py`, `tests/test_score_arithmetic.py`, `tests/score_arithmetic_support.py`, `tests/fixtures/score_arithmetic_main_packets.json`. The planner's `score_arithmetic_nine_orders.json` is unchanged.
 
-**Design decisions:** recorded as [DL-269](../design-log.md) (the planner's D1 to D7). A decision the
-spec did not make goes in DL-270.
+**Design decisions:** D1-D7 remain [DL-269](../design-log.md). [DL-270](../design-log.md) records the stop and the roads not taken; no frozen wording was replaced.
 
-**The Appendix script's output:** *to be filled by the builder*
+**The Appendix script's output:** Run in `C:\Users\yury_\Downloads\project\ta-s255`, `.env` absent; `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PYTHONPATH=.`, `uv run --no-sync python .tools/s255/reference.py`, exit 0. The Python block was extracted without edits from this Appendix.
 
-**Proof — the red run first:** *to be filled by the builder*
+```text
+orders 9: lines equal to EXP-019 arm B's 9, rule reproduces the recorded confidence and technical_score 9
+```
 
-**Proof — the green run:** *to be filled by the builder*
+**Proof — the red run first:** A1 run before any implementation: `uv run --no-sync pytest tests/test_score_arithmetic.py -q -s --no-cov`, offline, output `.tools/s255/a1-red.txt`, exit 1.
 
-**Guards planted:** *to be filled by the builder*
+```text
+F
+================================== FAILURES ===================================
+__________________ test_nine_orders_render_the_measured_text __________________
 
-**Module line counts:** *to be filled by the builder*
+tests\test_score_arithmetic.py:23: in test_nine_orders_render_the_measured_text
+    from agents.deliberator.context_arithmetic import arithmetic_lines
+E   ModuleNotFoundError: No module named 'agents.deliberator.context_arithmetic'
+=========================== short test summary info ===========================
+FAILED tests/test_score_arithmetic.py::test_nine_orders_render_the_measured_text
+1 failed in 12.20s
+```
 
-**`make ci`:** *to be filled by the builder*
+**Proof — the green run:** Same A1 command as the red run, output `.tools/s255/a1-green.txt`, exit 0. This is only the nine-order text-equality proof.
+
+```text
+9 of 9 orders equal
+.
+1 passed in 1.96s
+A1 green exit=0
+```
+
+**Frozen-sentence diagnostic (exit 0, not a passing sentence pin):** `.tools/s255/statement-pin.txt`:
+
+```text
+Frozen sentence: inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band score in which 50 is neutral
+Fixture ticker: TGT
+quant_metrics fundamental_score=0.5125; corresponding pillar=0.5125
+quant_metrics sentiment_score=0.4943820224719101; corresponding pillar=0.4943820224719101
+quant_metrics technical_score=0.5228571428571429; corresponding pillar=0.5228571428571429
+Analyst neutral band: 50.0
+Analyst normalizes its technical neutral band to: 0.5
+```
+
+The scoring code divides each raw pillar by 100 and writes those normalized results under the same
+`*_score` names in `metrics`. A test limited to the indicator sub-score names would not prove the
+universal sentence the packet states.
+
+**Guards planted:** The initial A1 red is recorded above. DL-70 break-and-restore mutations are not done because the explicit stop was reached:
+
+- A1 byte equality: mutation and restoration not done.
+- A2 append-only packet text: mutation and restoration not done.
+- A3 legacy/no-recommendation packet identity: mutation and restoration not done.
+- D4(1) missing regime: mutation and restoration not done.
+- D4(2) missing thresholds: mutation and restoration not done.
+- D4(3) active alpha158: mutation and restoration not done.
+- D4(4) incomplete/empty named sub-scores: mutation and restoration not done.
+- D4(5) missing `rs_score`: mutation and restoration not done.
+- D4(6)/D5 confidence and technical tolerance: mutation and restoration not done.
+- A5 seven constants and actual ordered sub-score names: mutation and restoration not done.
+- A6 present-pillar arithmetic pins: mutation and restoration not done.
+- A7 recorded thresholds and classification: mutation and restoration not done.
+- A8 regime policy and score invariance: mutation and restoration not done.
+- A9 neutral units and buy floor: mutation and restoration not done; universal units sentence verified false.
+- B1 old/new readers: mutation and restoration not done.
+- B2 deliberator-only digest coverage: mutation and restoration not done.
+- B3 existing scoring expectations: mutation and restoration not done.
+- B4 protected role instructions and S254 parity: mutation and restoration not done.
+
+**Module line counts:** Measured with `Path.read_text(...).splitlines()` on every touched Python module of the retained prototype; every count is below 200. No size baseline changed.
+
+```text
+agents/analyst/domain/recommend.py 184
+agents/analyst/domain/score_arithmetic.py 38
+agents/analyst/domain/scoring.py 187
+agents/deliberator/context.py 135
+agents/deliberator/context_arithmetic.py 144
+agents/deliberator/prompt_recipe.py 77
+agents/provider/agent.py 191
+agents/provider/regime_arithmetic.py 24
+contracts/analyst.py 134
+contracts/provider.py 186
+tests/score_arithmetic_support.py 74
+tests/test_score_arithmetic.py 45
+```
+
+**`make ci`:** NOT RUN after the explicit stop. Intended output file `ci.txt` was not created; no CI exit code exists and no green claim is made. All 15 target steps are NOT RUN: ruff lint, ruff format, mypy, import-linter, module-size gate, module-header gate, law-coverage gate, PARAM/settings sync, sprint-status gate, markdown links, version scheme, full pytest/coverage, dependency audit, detect-secrets, untracked secrets. The reason for each is the binding stop on an unpinnable frozen sentence; the dependency audit additionally requires network, which this handover forbids. The separate raw line-count measurement is not a run of the size gate.
 
 **`make gate-ran`:** owed by the planner after the push.
 
-**Not met / verified failing:** *to be filled by the builder*
+**Not met / verified failing:** Sentence pin under `DLIB-NEV-09`: verified failing. A2-A9, B1-B4, law cycle, all mutation guards and CI: not done. Analyst stays v1.8 (no `ANLZ-OUT-10` amendment); provider stays v1.8 (no `PROV-OUT-02` amendment); deliberator stays v1.13 (no `DLIB-OUT-08` amendment). All three Changelog lines, law test-plan rows and both rollups are not done; no other clause was edited. BUILT status is not earned here or in README. Version bump, push, remote gate, merge, deploy and live F1/F2 are not done and remain the planner's scope.
+
+**Protected-file proof:** This exact command printed nothing (exit 0):
+
+```text
+git diff main -- pyproject.toml uv.lock kernel/deliberation_prompts.py kernel/deliberation_program.py kernel/dspy_engine.py agents/deliberator/guided_turn.py
+```
+
+`pyproject.toml` and `uv.lock` are untouched. The planner owns the version bump at merge.
+
+**Existing test files edited:** None. Both Python test/support files above and the main-packet fixture are new.
+
+**Recorded arithmetic size:** On the planner's TGT order, `len(rec.score_arithmetic.model_dump_json().encode("utf-8"))` printed `586` bytes; output `.tools/s255/handback-measures.txt`.
+
+**Main-packet freeze before implementation:** The five original packet renderer files matched `main` (`git diff --exit-code main -- ...`, empty, exit 0). The two synthetic packets were then frozen:
+
+```text
+Frozen main packets before implementation: {'recommendation': 3327, 'no_recommendation': 2614}
+```
+
+Their compatibility assertion is not done; the freeze itself is preparation only.
 
 ---
 
 ## Return notes
 
-*To be filled by the builder: where scope moved and why, what you disagreed with after reading the
-laws, and what the next sprint should know that is not obvious from the diff.*
+The build stopped at the spec's explicit condition: a sentence of the frozen three lines cannot be
+pinned to the code as written. DL-270 and DRIFT-103 contain the defect and the ruled-out workarounds.
+The source/test prototype is uncommitted and retained only for review; the committed handback is a
+stop record, not a release or a BUILT sprint. The planner must resolve the frozen sentence and its
+relationship to EXP-019 before further build work.
+
+The invocation corrections were routine and did not change the Appendix: the first reference run
+omitted PowerShell's `PYTHONPATH=.` equivalent and failed to import `contracts`; adding it produced
+the required 9 and 9. The first A1 green attempt omitted `Provenance.run_id` in the newly written
+test; adding the fixture run id produced the pasted pass. No existing test expectation changed.
+The repo's short AGENTS says 14 CI steps; the actual target and CLAUDE have 15. The element map's
+recommendation-field citation is `ANLZ-OUT-02` / `ANLZ-TYP-01`, while `ANLZ-OUT-03` governs rejection.
+
+No claim is made about EXP-019's verdict, other vendors, 1,765 live recommendations, live packets,
+deployment or remote gate results: those are planner measurements or owed stages. No frozen
+experiment script/data or role instruction was touched. `pyproject.toml` and `uv.lock` remain
+untouched, with the planner's merge-time bump still owed.
 
 ---
 

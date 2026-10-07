@@ -203,3 +203,10 @@ clause is **false in code**, not merely untested — the rest were demoted in ea
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*
+
+## S255 score arithmetic records
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-102 | New `ANLZ-OUT-10`, amended `PROV-OUT-02`, new `DLIB-OUT-08` | A packet states the score arithmetic from recorded constants only when it reproduces the recommendation, with every code statement pinned. | Whole-book reading before code: no clause requires the analyst's constants and averaged sub-score names, the provider's VIX thresholds, or these three packet lines. | law gap (silence) | **DECIDED (S255, DL-269 D1-D7, 2026-10-07).** A local prototype renders A1 9/9, but the law cycle and full proof are **not done**: the build stopped on DRIFT-103. No clause, Changelog or rollup has been amended; no live proof claimed. |
+| DRIFT-103 | `DLIB-NEV-09`; S255's frozen first line | Every statement about the scoring code can be pinned to it, including the claimed units and neutral value of every `quant_metrics` key ending in `_score`. | The text calls every such key a 0-100 band score with neutral 50; `scoring.py` also records normalized pillar metrics under `technical_score`, `fundamental_score`, `sentiment_score`. TGT's fixture values are 0.5228571428571429, 0.5125 and 0.4943820224719101; the normalized neutral is 0.50. | proposed-text contradiction | **OPEN (S255 explicit STOP, 2026-10-07; [DL-270](../design-log.md)).** The arithmetic reproduces 9/9 and the prototype is byte-equal 9/9, but the universal sentence cannot be pinned. No frozen line, existing metric, score or law has been changed to make it true. The planner must resolve the wording and experiment implications before the build resumes. |

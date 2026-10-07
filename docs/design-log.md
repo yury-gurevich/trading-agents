@@ -10,6 +10,33 @@ and is marked CLOSED here.
 
 ---
 
+## DL-270 - S255's frozen sentence includes normalized pillar metrics in its 0-100 claim - status: STOP (builder, 2026-10-07 17:49 AEDT)
+
+**Constraint found while pinning the text, no network or LLM call.** The Appendix's first line says
+"inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band
+score in which 50 is neutral". The analyst's [scoring code](../agents/analyst/domain/scoring.py)
+also writes its normalized `technical_score`, `fundamental_score` and `sentiment_score` into
+`metrics`, and the recommendation retains them as `quant_metrics`.
+
+**Measured on the planner's TGT fixture:** `fundamental_score=0.5125`,
+`sentiment_score=0.4943820224719101`, `technical_score=0.5228571428571429`; each equals its normalized
+recommendation pillar. The analyst's neutral band of 50 is divided by 100 to produce the neutral
+pillar of 0.50. The sentence's universal claim cannot be pinned to that code under `DLIB-NEV-09`.
+The Appendix still prints 9/9 equal blocks and 9/9 reproduced records; A1's prototype renders
+9 of 9 orders equal. Numerical parity does not prove this sentence's units.
+
+**Decision under the handover's explicit stop rule:** stop further implementation, law amendments,
+guard plants and CI; retain status SPEC and record the partial prototype. `DRIFT-103` names the
+defect. The planner must resolve the frozen wording and its experimental status before the build
+can resume. No new text has been substituted.
+
+**Roads not taken.** Do not exclude the pillar keys from `quant_metrics`: that would change an
+existing packet line and stored evidence outside scope. Do not rescale them: that would change
+scores. Do not silently narrow the pin to indicator sub-scores: the sentence says every key.
+Do not reword the three lines: EXP-019's text is frozen and the sprint expressly forbids it.
+
+---
+
 ## DL-269 - the analyst and the provider record the constants they used, and the packet states the score arithmetic only when it reproduces the record - status: DECIDED (planner, 2026-10-07 18:19 AEDT); SPEC as [S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md), work-queue 107
 
 **The question.** Step 2 of DL-264 amendment 5 puts the score arithmetic in the packet. EXP-019's arm B is

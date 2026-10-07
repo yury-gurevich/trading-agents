@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); a live mitigation is proposed and waits for the operator; the fix is work-queue 112
+## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); the five-minute lock APPLIED live 2026-10-08 08:52 AEDT; the fix is work-queue 112
 
 **How it was found.** Sizing work-queue 111 (the output cap on `gpt-5.5`), the planner looked at what a
 longer turn meets on its way back. A served peer receives its request under a message lock, runs the model
@@ -51,6 +51,8 @@ behind the repeat, against a 120-second wait, so that order can fail open. Raisi
   lock while the handler runs, or settles the message before a long handler and relies on the claim check;
   a lost lock is caught and recorded as a fault instead of ending the process; and the ledger records a
   repeat instead of hiding it. Which of these, and in what order, is for the sprint's spec.
+
+**Applied live, 2026-10-08 08:52 AEDT (21:52 UTC, 38 minutes before the scheduled run).** The operator, asked whether to apply it: *"not sure. make decision"*. The planner applied it: the failure and the remedy were both measured, the change is one setting on each of two subscriptions, and it is undone by setting it back. `lockDuration` is `PT5M` on `deliberator-proponent.requests` and `deliberator-opponent.requests` (subscription `agent`). Read before and after: of each subscription's 24 fields, two differ, `lockDuration` and `updatedAt`. The three debater apps were at 0 replicas and both subscriptions held 0 messages. Live only: no code, no image and no deploy record; a subscription created again would have the default again. To undo: `az servicebus topic subscription update -g trading-agents --namespace-name trading-agents-bus --topic-name <topic> -n agent --lock-duration PT1M`. Snapshots are in OneDrive `trading-agents-data/wq112-2026-10-07/`.
 
 **Not taken.** Lowering the model's effort so that turns finish sooner: it changes what the debaters write,
 to work around a transport setting. Catching the error alone: the turn would still be served twice.

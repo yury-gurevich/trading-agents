@@ -568,7 +568,30 @@ FAILED agents/deliberator/tests/test_dspy_runtime.py::test_a_served_turn_runs_ds
 
 **Module line counts:** `agents/deliberator/tests/test_dspy_runtime.py`: 29; `agents/deliberator/tests/dspy_served_probe.py`: 71. No touched production modules.
 
-**`make ci`:** NOT RUN; no exit code or CI output file exists. The handover's explicit stop rule was followed before implementation. All 15 steps are NOT RUN for that reason: ruff, format, mypy, import-linter, module size, module header, law coverage, PARAM/settings sync, sprint status, markdown links, version scheme, pytest with coverage, dependency audit, detect-secrets, untracked secrets. A1 alone was run with `--no-cov` and failed as required. No gate bypass is claimed.
+**`make ci`:** NOT RUN; no `make ci` exit code or output file exists. The handover's explicit stop rule was followed before implementation. The successful commit hooks did run and pass ruff, format, mypy, import-linter, module size, module header, law coverage and detect-secrets. The other seven CI steps are **NOT RUN** because the build stopped: PARAM/settings sync, sprint status, markdown links, version scheme, pytest with coverage, dependency audit, untracked secrets. A1 alone was run with `--no-cov` and failed as required. These commit checks are not a full CI pass.
+
+**Commit hooks (real output, `.venv/s254-proof/commit-final.txt`, exit 0):**
+
+```text
+Ruff lint................................................................Passed
+Ruff format..............................................................Passed
+mypy.....................................................................Passed
+trim trailing whitespace.................................................Passed
+fix end of files.........................................................Passed
+check yaml...........................................(no files to check)Skipped
+check toml...........................................(no files to check)Skipped
+check for added large files..............................................Passed
+check for merge conflicts................................................Passed
+debug statements (python)................................................Passed
+detect private key.......................................................Passed
+markdownlint-cli2........................................................Passed
+Detect secrets...........................................................Passed
+module size (warn 150 / hard block 200)..................................Passed
+coding-agent module header (Agent:/Role:)................................Passed
+law coverage ledger......................................................Passed
+import-linter (agents are islands).......................................Passed
+COMMIT_EXIT=0
+```
 
 **Not met / verified failing:**
 

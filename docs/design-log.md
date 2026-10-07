@@ -115,6 +115,12 @@ runs is a direction, not a build detail.
 
 ## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
 
+🔁 **2026-10-07 12:20 AEDT (operator): *"Keep it on OpenAi whilst we are plumbing."*** The debate stays on
+`gpt-5.5` while the DSPy runtime and the debate workflow are built (ADR-0032; DL-264 amendments 5 and 6), not
+only until the top-up of 2026-10-11. The restore steps below are kept for the day the operator calls for
+them, and are not run before. The live-only state therefore lasts longer than this entry assumed: a full
+`up` still reverts it, which is what work-queue 109 fixes.
+
 **What the operator decided, in order.** Asked to top up the Anthropic account after EXP-019 emptied it
 (DL-264 amendment 3): *"No, no funds until coming Sunday"*. Then: *"re-wire for Chat GPT and get the
 pipeline going"*. And, watching it being done: *"that SHOULD be a configurational change and a trigger"*.
@@ -424,6 +430,42 @@ Anthropic account. Steps 3 to 5 each need a paid replay.
 
 **Not decided.** How many points a ruling may hold. Whether the judge's statement of open points is its
 own call or part of its ruling. Which risk figures the book supports today: nothing is measured.
+
+🧭 **AMENDMENT 6, 2026-10-07 12:20 AEDT — the loop that revises the plan is the workflow, and it is carried; amendment 5's exclusion is withdrawn. The debate stays on OpenAI while this is plumbed.**
+
+**The direction.** Amendment 5 said the prototype's loop *revises the plan*, and left that part out. The
+operator: *"the workflow is what we are after."* The planner reads this as: the cycle itself is the thing
+to build. A proposal is critiqued, the judge sends it back with directives, the proposal is revised, and it
+goes round until the judge accepts or the rounds run out. A loop in which only the arguments change is not
+that workflow. 🪰 If the operator meant the process without a changed order, the revision step below is
+dropped and the rest stands.
+
+**What a revision can be here.** The model may subtract, never add: the founding constraint is kept. So a
+revised order is the same ticker and side with a smaller quantity, or no order. Nothing else about an order
+is a model's to move: the stop and the target are measured from volatility (ADR-0019, ADR-0031), and the
+entry is the session's (ADR-0018). The judge's directive is typed. The revised order is checked in code
+against those bounds and run again through the PM's own gates, and the next round debates the revised
+order.
+
+**Shadow first.** While the workflow is being built, the revised order is recorded beside the original and
+the original is what executes. `revise` therefore still changes no order, ADR-0029 stands as written, and
+the plumbing reverses no law clause. Each revision is scored against what the unrevised order went on to
+do. Making a revision binding is a capital-risk decision: it needs that ledger, an ADR that amends
+ADR-0029, and a law cycle (`DLIB-NEV-02`, `DLIB-OUT-04`). It is the operator's, and it is not part of the
+plumbing. *Why not binding at once:* 34 of the last 34 rulings are `revise`, 19 of them on sizing, which
+EXP-012 measured and closed. A binding revision today would shrink every order on a ground already
+answered.
+
+**The order of work, changed in two places.** Step 5, the loop, now includes the revision, in shadow:
+directives, a revised order, the code's re-check, the next round, the judge's acceptance. A new last step
+is added: the revision becomes binding, on the operator's decision.
+
+**Vendor.** The operator, in the same message: *"Keep it on OpenAi whilst we are plumbing."* See DL-265's
+note. Every live check and replay of the plumbing runs on `gpt-5.5`. *[the planner's reading]* A judgement
+of prompt quality (EXP-019, a GEPA run) is not plumbing, and stays on the model production is meant to run.
+
+**Not decided.** Who writes the revised quantity: the defender, inside the bounds, or code from a typed
+directive. How many rounds the cycle may take, against what each costs.
 
 ---
 

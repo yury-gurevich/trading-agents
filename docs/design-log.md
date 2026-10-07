@@ -590,7 +590,13 @@ on Opus for the same order (6,363 and 7,738 tokens against 2,334 and 2,853) and 
 (work-queue 111). **Direction:** a check of what the roles understand is run on both vendors, on the same
 frozen cases, and compared answer by answer.
 
-**Proposed, not yet funded.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
+**Run, 19:10 AEDT ([EXP-020](research/experiments/EXP-020-on-the-same-cases-does-gpt-5-5-know-the-hinge-as-opus-does.md), $6.52, the operator approved $7).** With the arithmetic `gpt-5.5`
+answers 54 of 54 hinge questions right and is on Opus's side of 0.5 in 45 of 45 answers both gave. On today's
+packet the two guess, and differently (5 of 36 on opposite sides). So the arithmetic is also what makes a
+vendor swap safe on this question. `gpt-5.5`'s defender writes twice Opus's output, and the fleet's cap would
+have cut 5 of its 16 typed turns: work-queue 111 now has a measured frequency and comes before step 3.
+
+**As it was proposed, before the run.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
 change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on
 both vendors cost 1.6 times as much on `gpt-5.5`, so about $0.20 a call: about $7 for the 36 calls that
 answer H1, about $10.50 for all 52. It can run now, because that account is funded. A stop at the output cap

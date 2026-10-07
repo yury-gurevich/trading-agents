@@ -27,7 +27,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-OUT-01 | Response carries validated facts + quality record + provenance for the requested fields. | happy | `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` | 🟩 |
-| PROV-OUT-02 | Regime request → regime context + FMP `^VIX` inputs/freshness + provenance. | happy | `test_fmp_vix.py::test_fmp_vix_uses_same_session_bar_as_measured; test_sources.py::test_market_source_routes_regime_to_fmp_vix; test_provider_agent.py::test_get_regime_maps_vix_to_policy_and_graph` | 🟩 |
+| PROV-OUT-02 | Regime request → regime context + FMP `^VIX` inputs/freshness + the VIX thresholds its label was selected with + provenance. | happy + below/at/above default and moved thresholds | `test_fmp_vix.py::test_fmp_vix_uses_same_session_bar_as_measured; test_sources.py::test_market_source_routes_regime_to_fmp_vix; test_provider_agent.py::test_get_regime_maps_vix_to_policy_and_graph`; `tests/test_score_arithmetic_regime.py::test_provider_records_the_thresholds_at_every_classification_boundary` | 🟩 |
 | PROV-OUT-03a | Clean feed → SUCCESS quality. | success | `test_domain.py::test_integrity_clean_short_window_has_no_notes` | 🟩 |
 | PROV-OUT-03b | Stale/missing feed → DEGRADED, flagged, still a valid (non-empty-silent) response. | degraded | `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing` | 🟩 |
 | PROV-OUT-03c | Boundary failure → typed FAULT, recorded. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |

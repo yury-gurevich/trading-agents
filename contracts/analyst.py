@@ -49,6 +49,20 @@ class StopTargetEvidence(_Frozen):
     favorable_excursion_lookback_windows: int | None = Field(default=None, ge=1)
 
 
+class ScoreArithmetic(_Frozen):
+    """Constants and ordered sub-scores used for this recommendation's confidence."""
+
+    technical_weight: float = Field(allow_inf_nan=False)
+    fundamental_weight: float = Field(allow_inf_nan=False)
+    sentiment_weight: float = Field(allow_inf_nan=False)
+    alpha158_weight: float = Field(allow_inf_nan=False)
+    relative_strength_weight: float = Field(allow_inf_nan=False)
+    confidence_floor: float = Field(allow_inf_nan=False)
+    confidence_span: float = Field(allow_inf_nan=False)
+    technical_sub_scores: tuple[str, ...]
+    fundamental_sub_scores: tuple[str, ...]
+
+
 class Recommendation(_Frozen):
     ticker: Ticker
     action: Action
@@ -65,6 +79,7 @@ class Recommendation(_Frozen):
     )
     """Full bounded ScoreBreakdown.metrics payload that supported the recommendation."""
     stop_target_evidence: StopTargetEvidence | None = None
+    score_arithmetic: ScoreArithmetic | None = None
     rationale: Explanation
 
 

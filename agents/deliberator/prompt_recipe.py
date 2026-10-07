@@ -33,6 +33,7 @@ import dspy  # type: ignore[import-untyped]
 
 from agents.deliberator import (
     context,
+    context_arithmetic,
     context_market,
     context_pm,
     context_stop,
@@ -51,13 +52,14 @@ from kernel.prompt_recipe import recipe_digest
 
 #: Every module whose source can change the text of a deliberation prompt.
 #: `kernel.deliberation` renders the judge's turn and `kernel.deliberation_prompts`
-#: holds the champion role prompts; the five `context*` modules build the
+#: holds the champion role prompts; the six `context*` modules build the
 #: CONTEXT / EVIDENCE block interpolated into it. S246's debaters are asked
 #: through `guided_turn` and DSPy's program/engine; the installed DSPy version
 #: is part of this recipe. `kernel.deliberation_guided_render` and
 #: `kernel.deliberation_guided` shapes the turn text every later prompt quotes.
 PROMPT_MODULES = (
     context,
+    context_arithmetic,
     context_market,
     context_pm,
     context_stop,

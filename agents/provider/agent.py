@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from agents.provider.domain.integrity import degraded_quality, validate_bars
 from agents.provider.domain.regime import classify_regime
 from agents.provider.market_fields import collect_optional_fields
+from agents.provider.regime_arithmetic import record_thresholds
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import RegimeInputs
 from agents.provider.store import write_market_snapshot, write_regime
@@ -163,6 +164,7 @@ class ProviderAgent(AgentBase):
             base_stop_loss_pct=self._settings.base_stop_loss_pct,
             base_take_profit_pct=self._settings.base_take_profit_pct,
             base_max_holding_days=self._settings.base_max_holding_days,
+            vix_thresholds=record_thresholds(self._settings),
             provenance=provenance,
         )
 

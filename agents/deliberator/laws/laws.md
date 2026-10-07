@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.14 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -64,6 +64,11 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   turn or the order.
 + **DLIB-OUT-07** -- Each debated order's record carries the decision and the
   evidence packet the roles were given.
+
++ **DLIB-OUT-08** -- When the analyst's record carries its score arithmetic, each debated order's
+  evidence packet states it: the rule, this order's numbers and the regime rule, computed only from
+  recorded values, and only when that rule reproduces the recorded confidence. Otherwise the packet
+  says in one line why it is withheld.
 
 ## Prohibitions (`NEV`)
 
@@ -306,3 +311,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   Defender and challenger turns now execute DSPy through that client; their
   transmitted text and recorded outcomes are unchanged. One clause added and
   proven, 27 / 59 -> 28 / 60; no other clause changes.
+
++ v1.14 -- S255 / DL-269 (2026-10-07). Adds and proves `DLIB-OUT-08`: arithmetic from recorded
+  settings is appended only after unrounded confidence and technical-score reproduction, otherwise
+  one first-failure reason is appended. Old records add nothing. `DLIB-NEV-09` is obeyed, not amended,
+  with source pins including the planner's corrected scale clause (DL-270 / DRIFT-103). One clause
+  added and proven: 28 / 60 -> 29 / 61.

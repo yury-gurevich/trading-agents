@@ -15,6 +15,7 @@ from agents.analyst.domain.relative_strength import (
     compute_relative_strength,
     score_relative_strength,
 )
+from agents.analyst.domain.score_arithmetic import record_arithmetic
 from agents.analyst.domain.sentiment_rules import score_sentiment
 from agents.analyst.domain.signal_selection import (
     Signal,
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from agents.analyst.settings import AnalystSettings
+    from contracts.analyst import ScoreArithmetic
     from contracts.provider import OHLCVBar
     from contracts.scanner import Candidate
 
@@ -45,6 +47,7 @@ class ScoreBreakdown:
     alpha158_score: float | None = None
     top_signals: tuple[str, ...] = ()
     rejection_reason: str | None = None
+    score_arithmetic: ScoreArithmetic | None = None
 
 
 def score_candidate(
@@ -68,6 +71,7 @@ def score_candidate(
             metrics={"history_bars": float(len(rows))},
             alpha158_score=alpha_score,
             rejection_reason="insufficient_market_history",
+            score_arithmetic=record_arithmetic(settings, {}, {}),
         )
 
     raw, tmetrics = score_technical(rows, settings)
@@ -126,6 +130,7 @@ def score_candidate(
         sentiment_score=sentiment,
         alpha158_score=alpha_score,
         top_signals=tuple(signal.name for signal in selected),
+        score_arithmetic=record_arithmetic(settings, tmetrics, fmetrics),
     )
 
 

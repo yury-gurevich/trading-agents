@@ -102,6 +102,15 @@ RUN_REQUEST_BENCHMARK_TICKER_PROP = "benchmark_ticker"
 RUN_REQUEST_REQUESTED_AT_PROP = "requested_at"
 
 
+class VixThresholds(_Frozen):
+    """The provider's thresholds in force when it selected the regime label."""
+
+    risk_on_at_or_below: float = Field(allow_inf_nan=False)
+    risk_off_from: float = Field(allow_inf_nan=False)
+    high_volatility_from: float = Field(allow_inf_nan=False)
+    extreme_volatility_from: float = Field(allow_inf_nan=False)
+
+
 class RegimeContext(_Frozen):
     """Market regime + the policy inputs every downstream agent reads."""
 
@@ -114,6 +123,7 @@ class RegimeContext(_Frozen):
     base_stop_loss_pct: float = Field(ge=0.0, le=1.0)
     base_take_profit_pct: float = Field(ge=0.0, le=1.0)
     base_max_holding_days: int = Field(ge=1)
+    vix_thresholds: VixThresholds | None = None
     provenance: Provenance
 
 

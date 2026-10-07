@@ -381,6 +381,50 @@ and issues directives, and a revision loop) and asked for it to be filed as rese
 - **Not taken:** a model that writes the trading plan, a judge inside the loop it rules on, and the generic
   parameter list.
 
+🧭 **AMENDMENT 5, 2026-10-07 12:15 AEDT — the prototype is the shape to build, adapted; amendment 4's "not taken" was the wrong reading.**
+
+**The direction.** The operator, on the prototype of amendment 4: *"it does not have to be implemented
+VERBATUM. It can bee adpted to our needs."* Amendment 4 sorted its parts into taken and not taken. Read as
+a shape to adapt, each part has a form here. The part-by-part table is in
+[R010](research/debate-pipeline-prototype/INDEX.md).
+
+**What the adapted debate is.** Three typed roles and a loop. The defender argues for the order the
+pipeline wrote. Each of the challenger's points carries a reading, a severity, and whether it is about
+this order or about every order. The judge returns a ruling built point by point, with directives. After
+round 1 the judge states what is still open, round 2 must answer each point, and the judge rules. Risk
+figures are computed in code and shown to all three. This is goals (a) and (b) of this entry in one
+design: the directive is what makes a reply a recorded step, and the point-by-point ruling is the
+qualified answer.
+
+**The one part not carried over, on purpose.** In the prototype the loop revises the plan. Here a ruling
+can stop a buy and change nothing else (ADR-0029 decision 1: the model may subtract, never add). So the
+loop improves the debate and the ruling, not the order. Letting a ruling shrink an order is a
+capital-risk decision, and it stays the operator's to reopen.
+
+**The order of work.** Each step is its own change, and a changed prompt passes ADR-0010's gate with its
+budget stated first.
+
+1. **DSPy in the deliberator's process**, with no prompt changed: [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), specced
+   ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).
+2. **Facts in the packet**, all computed in code: the score arithmetic (work-queue 107), the withheld
+   facts (work-queue 98), risk figures for the order and for the book, each with a definition
+   (work-queue 97 c). Building it needs no model call. Its paid check is EXP-019's arm B.
+3. **The debaters' typed turn:** what the order hinges on, and for the challenger a severity and a scope
+   on each point. After EXP-019's verdict.
+4. **The judge's typed ruling**, point by point, with directives and a probability for each ruling. The
+   judge is told what each ruling does (ADR-0029 decisions 2 and 3).
+5. **The loop:** the judge's open points after round 1, an answer to each in round 2, and an early end
+   when none is open. *[ASSUMED, not measured]* an order with no open point then costs 3 calls where it
+   costs 5 today, and one with open points costs 6.
+6. **The register** for directives about the system (ADR-0029 decision 4).
+7. **One offline program** composing the three predictors, for evaluation and GEPA (work-queue 97 d).
+
+Steps 2 and 3 keep the operator's order of 2026-10-06: the debaters first. Step 1 does not wait for the
+Anthropic account. Steps 3 to 5 each need a paid replay.
+
+**Not decided.** How many points a ruling may hold. Whether the judge's statement of open points is its
+own call or part of its ruling. Which risk figures the book supports today: nothing is measured.
+
 ---
 
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)

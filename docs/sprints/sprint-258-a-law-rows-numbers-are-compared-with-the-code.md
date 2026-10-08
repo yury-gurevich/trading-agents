@@ -746,3 +746,64 @@ git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager a
 - The shared generated commit hook points at the main checkout's venv. Use an ignored worktree-local copy with only `INSTALL_PYTHON` redirected to `ta-s258/.venv`, keeping the same pre-commit hook runner/config; leave the shared hook untouched. This keeps the commit's interpreter in the authorized worktree.
 - The shared `main` ref advanced independently during the build. Required protected-path comparisons with current `main` still print nothing; STATE is unchanged against the sprint's starting HEAD. No rebase, merge or main-checkout edit was made here.
 - `pyproject.toml`, `uv.lock` and `docs/STATE.md` are untouched. The planner bumps PATCH and syncs the lock at merge, moves the execution label in both rollups, runs the live audit/CVE self-test and remote gates, and performs F1. Work-queue 114 remains open for the eight rows, whose text and paths are unchanged here. No push, merge or deploy.
+
+---
+
+## Planner's review and merge-time work — 2026-10-08 20:40 AEDT
+
+**The handback against the checklist.** All ten items are met. Item 9 names two things as NOT RUN, the
+dependency audit and the live vulnerability case of the gate self-test; both need the network. The planner
+runs the whole gate below.
+
+**Re-measured by the planner, not read from the builder's logs.** Everything here ran in `../ta-s258` on
+the builder's commit `a06a5f98`, before `main` was merged in (the merge-in brought documents only).
+
+- Both scope commands of item 7 print nothing, against `main` and against the commit the worktree was cut
+  from. Nineteen files changed: three modules edited and six new, one test edited and six test files new,
+  the execution book, and two documents. Every one is UTF-8 with LF endings.
+- **The built reader reads every row.** A count of the planner's own, over the built functions, gives the
+  numbers this spec was written from: 16 books; 235 rows with a settings field; 235 Value cells agree (177
+  in backticks, 45 in backticks and quotes, 9 a dash, 4 the bare word `empty`); 164 rows have a bound in
+  code, of which 156 state the same set (the 152, and the four execution rows) and 8 are excused by their
+  exact text; 71 have no bound on either side. A second detector, written without the built regular
+  expressions, looked in every Type cell for a bound symbol, a bracketed pair of numbers, a word such as
+  "max" or "at least", and a number the reader had not turned into a bound. It found nothing the reader
+  missed (its one hit is the enum member `max` in `operator.effort`).
+- **Thirteen wrong numbers planted in real rows and real settings, one at a time.** The step was run as a
+  subprocess with a `cp1252` pipe each time. Each exits 1 with the expected `[FAIL]` lines naming the row,
+  none raises, each was restored, and the tree is clean: the deliberator's `max_tokens` Value back at
+  `8192`; its upper bound back at `8192`; `execution.alpaca_timeout` with its upper bound dropped (the
+  line prints with `?` in place of the symbol); a string default changed; a secret's dash replaced by a
+  value; an excused row edited and still wrong (two lines); an excused row reconciled with its entry left
+  behind; an excused row's Value changed (the entry does not excuse it); an entry deleted while its row is
+  still wrong; an interval's upper number changed; a strict bound written as inclusive; and, in code, the
+  deliberator's default and then its bound changed with the law left alone.
+- **Ten pieces of the comparison removed, one at a time.** Each turns the step's 73 tests red and each was
+  restored: bounds never compared (23 tests fail); only the stated bounds compared, so a missing side
+  passes (4); a differing Value not a failure (19); an unreadable Value skipped (15); a stale or edited
+  excused entry tolerated (4); an entry excusing any text (2); an interval's open side read as closed (3);
+  the numeric failures kept out of the report (56); output through plain `print` (2); an execution row put
+  back at 120 (3).
+- The one existing test the builder edited is the one this spec named. The edit was read: it asserts three
+  warnings in place of two, that the third names exactly the eight rows, and that the list equals the
+  eight texts written out in the test's own helper.
+- The code is the decided design, D1 to D5, and nothing more.
+
+**Changed by the planner at merge.**
+
+- `main` had moved by one commit of documents (the design log, the work queue, `docs/STATE.md`) and was
+  merged in with no conflict. The builder wrote no design-log entry, so nothing was renumbered.
+- The version is `0.123.03`. `uv lock` changed the version line only; 180 packages before and after.
+- The execution book's row in `docs/laws/INDEX.md` and in `docs/laws/ledger.md` reads v1.13 (S258,
+  DL-276), `PARAM` only, 40 / 66 unchanged.
+
+**Accepted as built, with the limits known.**
+
+- The code's bounds are read from the field itself. A rail enforced by a validator function is not seen.
+- When one Type cell states the same side twice, the reader keeps the last (`≥ 0, ≥ 5` reads 5). No row
+  does this.
+- Two numbers written with no space after the comma (`[1,100]`) read as one grouped number, so no bound
+  is read from them. Against a field that has bounds this fails. Against a field with none it would pass.
+  No row is written so; the second detector above would have shown it.
+- The builder's wider type check of `scripts` and `tests` found 43 errors. The gate's type check covers the
+  package trees and not those two, by configuration, so nothing is owed here.

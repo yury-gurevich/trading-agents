@@ -10,6 +10,70 @@ and is marked CLOSED here.
 
 ---
 
+## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT; SPEC as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md), work-queue 111); MEASURED and open for the grace (work-queue 113)
+
+**The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
+the effort. Sizing the first one means asking what a longer turn meets next. DL-271 answered for the
+message lock. This entry answers for the two bounds after it.
+
+**Measured, 2026-10-08, no LLM call.**
+
+- **A turn's time follows its output.** Over the 49 typed first turns kept from EXP-020 and EXP-021
+  (`gpt-5.5`, effort `high`) the speed is 86 to 117 output tokens a second, median 109. The defender's
+  turns: median 6,726 tokens, largest 11,556, 5 of 25 over 8,192. The challenger's: largest 7,320, none
+  over. So a turn that used a whole cap would take up to 96 seconds at 8,192, 143 at 12,288 and 191 at
+  16,384.
+- **What Anthropic's client accepts.** Version 0.120.2 refuses a non-streaming request above 21,333
+  output tokens, for every model (measured offline: 21,333 allowed, 21,334 refused). The adapter does not
+  stream. A bound above that would let a setting fail every Opus turn.
+- **Where the numbers live.** No app sets the cap, so the code's default is the fleet's. The wait (120
+  seconds) comes from the tunables pack, and the pack is fidelity decision code: an edit starts the count
+  again.
+- **A prototype of the two bounds and the default:** on a prototype of the two bounds and the default, the parameter step passes and exactly two existing tests fail, both because they pin the old cap (4,301 pass).
+- **A debated order, in seconds of model time.** Opus with guided turns, since 2026-09-30: median 146,
+  largest 160 (9 orders in 4 runs). `gpt-5.5`: 188, one order, S254's F1. The record lands about 60
+  seconds later than the model time alone (49 to 69 over the four runs).
+
+**Decided, for the cap and the wait (S257).**
+
+| # | Decision | Ruled out, and why |
+| --- | --- | --- |
+| D1 | The cap's default and upper bound go to 16,384 | **Lowering the effort to `medium`:** it changes what the debaters write to work around a number, and needs a paid measurement. **12,288:** 6 % above the largest turn already measured. **A higher bound or none:** Anthropic's client refuses it. **Raising the bound and leaving the default:** the fleet reads the default |
+| D2 | The reason for the ceiling is a named constant in the Anthropic adapter, held by a test | **Calling the vendor's client in a test:** it is installed only in the `llm` extra, not where CI runs |
+| D3 | The wait's upper bound goes to 300 seconds | **Leaving it at 120:** a turn at the new cap can take 191 seconds, so the failure would move from the cap to the wait |
+| D4 | The fleet's wait goes to 240 seconds on the manager's live app at the deploy, on the operator's word. The pack is not edited | **Editing the pack:** it starts the fidelity count again, and a full `up` would also undo the week's vendor switch (DL-265) |
+
+**Found: the night has a capacity, and past it no buy is placed (work-queue 113).** *[the whole mechanism
+read]* The manager debates one order at a time and writes one `DeliberationRun` for the whole batch, at
+the end. Execution holds a buy-carrying run for 1,800 seconds from the PM run. Its posture is `binding`
+(the default; no app sets it), so when the grace ends with no record, every buy is dropped and only the
+sells go. At the measured times that is about **11 debated buys a night on Opus and 9 on `gpt-5.5`**
+(1,740 seconds over 146 and over 188; the second from one order). The typed turn of step 3 would make it
+about 7 on `gpt-5.5`, and the loop of step 5 adds calls to each order. *[measured, the live graph]* Of 90
+PM runs, 15 approved nine or more buys: five nights (2026-08-08, -10, -14, -19 and 2026-09-28, with 18,
+18, 9, 9 and 12) and four undated runs of 15. The last 25 runs approved 0 to 4, except the 12. The 12 of
+2026-09-28 were debated on the shorter turns of the time; the same night today would end with none
+placed, on either vendor. The three grace faults on record are from August, under a 900-second grace.
+
+**Ways out of the capacity, not decided.**
+
+- **A longer grace.** The bound allows 3,600 seconds and the agents' scale window runs to 00:30 UTC, so
+  there is room. The value lives in the tunables pack (the fidelity count again), and the daily brief's
+  last tick is at 23:50 UTC: a night that used the whole hour would end after it. Not measured.
+- **A verdict applied per order as it lands**, so a night that runs out of time keeps the reviews it has.
+- **More than one debate at a time.** Raising the manager's fan-out does nothing while each peer serves
+  one turn at a time; it needs peers that serve in parallel. After S256 a request is settled when taken,
+  so two replicas on one subscription cannot serve the same turn.
+
+**Also moved here from work-queue 111:** a request message has no time to live (DL-272). A request whose
+caller stopped waiting is served when a peer next takes it, and it is served ahead of the live ones.
+
+**Not measured.** A production turn on `gpt-5.5` with S255's longer packet: the first debated buy will show
+it. Whether a larger cap changes what Opus writes: its largest turn is 4,846 tokens, and the account is
+empty until 2026-10-11.
+
+---
+
 ## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); SPEC as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md), work-queue 112
 
 **The question.** DL-271 measured the defect and listed four parts of a fix without

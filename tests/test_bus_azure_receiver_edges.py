@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
 from tests.bus_azure_receiver_helpers import FailingPublishBus, settings
 
 from kernel import (
@@ -26,7 +27,8 @@ def test_bus_request_consumer_factory_uses_settings_default_subscription() -> No
     assert consumer.poll() == []
 
 
-def test_reply_publish_failure_without_pending_source_does_not_raise() -> None:
+def test_reply_publish_failure_propagates_to_the_serve_boundary() -> None:
+    """DLIB-IDM-04 / DLIB-NEV-06: the serve loop owns reply-fault containment."""
     consumer = AzureServiceBusRequestConsumer(
         FailingPublishBus(),
         InMemoryGraphStore(),
@@ -42,4 +44,5 @@ def test_reply_publish_failure_without_pending_source_does_not_raise() -> None:
         payload={"ok": True},
     )
 
-    consumer.reply(notice)
+    with pytest.raises(RuntimeError, match="publish unavailable"):
+        consumer.reply(notice)

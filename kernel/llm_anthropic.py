@@ -23,6 +23,10 @@ from kernel.llm_anthropic_responses import (
 if TYPE_CHECKING:
     from kernel.llm_tokens import LLMUsage
 
+# Anthropic 0.120.2, measured offline 2026-10-08 (DL-274 D2): non-streaming
+# requests require 3,600 s * max_tokens / 128,000 <= 600 s.
+NONSTREAMING_MAX_TOKENS = 21_333
+
 
 class ConfigurationError(RuntimeError):
     """Raised when the Anthropic client cannot be constructed safely."""

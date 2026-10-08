@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.16 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -65,6 +65,11 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-OUT-07** -- Each debated order's record carries the decision and the
   evidence packet the roles were given.
 
++ **DLIB-OUT-08** -- When the analyst's record carries its score arithmetic, each debated order's
+  evidence packet states it: the rule, this order's numbers and the regime rule, computed only from
+  recorded values, and only when that rule reproduces the recorded confidence. Otherwise the packet
+  says in one line why it is withheld.
+
 ## Prohibitions (`NEV`)
 
 + **DLIB-NEV-01** -- Never originates an order.
@@ -81,6 +86,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-NEV-09** -- Never tells a debate role how this system's code behaves
   unless a test pins that statement to the code it describes.
 
++ **DLIB-NEV-10** -- Never lets a library that builds or parses a role's prompt
+  reach a model vendor except through the agent's own LLM client.
+
 ## State & Effects (`STA`)
 
 + **DLIB-STA-01** -- The manager is stateless between polls; graph state is the
@@ -95,6 +103,12 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-IDM-02** -- LLM outputs are non-deterministic but bounded by role,
   model, max rounds, prompt hashes, response hashes, and timestamps.
 + **DLIB-IDM-03** -- Manager writes use the PM run id as the deliberation id.
++ **DLIB-IDM-04** -- A served debate-turn request is settled when the peer takes it,
+  before the model is called, and a peer takes one request at a time. One delivery is therefore
+  served at most once, however long the turn takes. A turn whose peer stops mid-call, or whose
+  reply cannot be published, is not served again by the bus: its order fails open on the
+  manager's wait (`DLIB-NEV-06`, `DLIB-OBS-03`), and a reply that could not be published is
+  recorded as a `Fault`.
 
 ## Ordering & Concurrency (`ORD`)
 
@@ -171,6 +185,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   rendered its prompt, so whether a stored prompt hash is comparable to the
   current renderer is answerable without replaying the call. A call whose
   renderer was not recorded reads as unknown, never as the current one.
++ **DLIB-OBS-08** -- Every completion is its own `LLMCall` row. A completion under
+  a request id that already has a row is recorded under that row's key with a `:repeat-N`
+  suffix, N from 1. No row is overwritten, merged or left out.
 
 ## Performance Envelope (`PERF`)
 
@@ -210,8 +227,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
-| `max_tokens` | `8192` | int >= 64 <= 8192 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8) |
-| `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |
+| `max_tokens` | `16384` | int >= 64 <= 16384 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8); on gpt-5.5 reasoning counts against the cap, a defender reached 7,738 tokens in production and 11,556 in the typed turn, and the unused cap costs nothing (DL-274 D1) |
+| `request_timeout_seconds` | `30.0` | float >= 1 <= 300 | YES | Bounds peer RPC wait; a turn at the cap can take about 190 seconds at the slowest measured output rate on gpt-5.5 (DL-274 D3) |
 | `debate_concurrency` | `4` | int >= 1 <= 25 | YES | Manager fan-out over independent PM-approved orders, bounded by the vendor rate limit because each concurrent order holds one in-flight completion per peer role |
 | `poll_interval_seconds` | `60` | int >= 1 <= 300 | YES | Bounds manager idle polling |
 | `proponent_identity` | `deliberator-proponent` | string | YES | Manager peer target |
@@ -297,3 +314,24 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   Why: the idle finder downloaded completed `DeliberationRun` transcripts through per-run walks.
   The payload case and orderless-candidate test prove the bound; existing manager tests prove the
   graph trigger. `TRG-01` moves gray to green, 26 / 59 -> 27 / 59; no other clause changes.
+
++ v1.13 -- S254 / ADR-0032 (2026-10-07). Adds and proves `DLIB-NEV-10`:
+  prompt libraries reach model vendors only through the agent's own LLM client.
+  Defender and challenger turns now execute DSPy through that client; their
+  transmitted text and recorded outcomes are unchanged. One clause added and
+  proven, 27 / 59 -> 28 / 60; no other clause changes.
+
++ v1.14 -- S255 / DL-269 (2026-10-07). Adds and proves `DLIB-OUT-08`: arithmetic from recorded
+  settings is appended only after unrounded confidence and technical-score reproduction, otherwise
+  one first-failure reason is appended. Old records add nothing. `DLIB-NEV-09` is obeyed, not amended,
+  with source pins including the planner's corrected scale clause (DL-270 / DRIFT-103). One clause
+  added and proven: 28 / 60 -> 29 / 61.
++ v1.15 -- S256 / DL-272 (2026-10-08). Adds `DLIB-IDM-04` (settle a served
+  request before model work, one per pass; lost replies fault without redelivery) and
+  `DLIB-OBS-08` (every completion is a separate append-only row, including repeated
+  request ids). The old after-reply settlement let expired locks crash peers and hid
+  their second paid completion. No other clause changes.
++ v1.16 -- S257 / DL-274 (2026-10-08). PARAM-only: `max_tokens` defaults to
+  16,384 with the same ceiling, below Anthropic's 21,333 non-streaming limit;
+  `request_timeout_seconds` may reach 300, still defaulting to 30. Measured
+  gpt-5.5 reasoning needs the cap and can take about 190 seconds at it. No clause changes.

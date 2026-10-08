@@ -1,7 +1,7 @@
 """The runtime renders and parses what DSPy renders and parses (S246 B1, B2).
 
 Agent: kernel
-Role: prove `kernel.deliberation_guided` byte-identical to DSPy 3.3.1's golden,
+Role: prove DSPy's current rendering byte-identical to the recorded golden,
       with strict JSON as the one named deviation (DL-252 D1, D6).
 External I/O: reads tests/fixtures/deliberation_guided_golden.json.
 """
@@ -11,13 +11,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import dspy
 import pytest
 
-from kernel.deliberation_guided import guided_system, guided_user, parse_guided_turn
-from kernel.deliberation_guided_format import (
-    GUIDED_TURN_PREFIX,
-    GUIDED_USER_REQUIREMENTS,
-)
+from kernel.deliberation_guided import parse_guided_turn
+from kernel.deliberation_program import ADAPTER, guided_program
 
 GOLDEN = json.loads(
     (Path(__file__).parent / "fixtures" / "deliberation_guided_golden.json").read_text(
@@ -49,21 +47,28 @@ def _named(cases: list[dict[str, object]]) -> list[object]:
 def test_the_golden_was_written_by_dspy_and_covers_the_spec_table() -> None:
     """A hand-made golden proves nothing: it names its generator and its rows."""
     assert GOLDEN["generator"] == "scripts/render_guided_turn_golden.py"
-    assert GOLDEN["dspy_version"] == "3.3.1"
+    assert GOLDEN["dspy_version"] == dspy.__version__
     assert {case["name"] for case in _cases("parse")} >= _SPEC_ROWS
     assert {case["name"] for case in _cases("parse")} >= DEVIATIONS
 
 
 def test_the_frozen_prefix_and_requirements_are_dspys() -> None:
     """DLIB-OUT-06: the field-description, structure and reminder text are DSPy's."""
-    assert GOLDEN["prefix"] == GUIDED_TURN_PREFIX
-    assert GOLDEN["requirements"] == GUIDED_USER_REQUIREMENTS
+    signature = guided_program("Argue.").predict.signature
+    assert GOLDEN["prefix"] == (
+        ADAPTER.format_field_description(signature)
+        + "\n"
+        + ADAPTER.format_field_structure(signature)
+        + "\n"
+    )
+    assert GOLDEN["requirements"] == ADAPTER.user_message_output_requirements(signature)
 
 
 @pytest.mark.parametrize("case", _named(_cases("system")))
 def test_the_system_message_is_byte_identical_to_dspys(case: dict[str, str]) -> None:
     """DLIB-OUT-06 / DLIB-OBS-06: one frozen system string per role prompt, DSPy's."""
-    assert guided_system(case["instructions"]) == case["rendered"]
+    signature = guided_program(case["instructions"]).predict.signature
+    assert ADAPTER.format_system_message(signature) == case["rendered"]
 
 
 @pytest.mark.parametrize("case", _named(_cases("user")))
@@ -71,7 +76,11 @@ def test_the_user_message_is_byte_identical_to_dspys(case: dict[str, object]) ->
     """DLIB-OUT-06: the turn is asked for in DSPy's own words and sections."""
     inputs = case["inputs"]
     assert isinstance(inputs, dict)
-    assert guided_user(**inputs) == case["rendered"]
+    signature = guided_program("Argue.").predict.signature
+    assert (
+        ADAPTER.format_user_message_content(signature, inputs, main_request=True)
+        == case["rendered"]
+    )
 
 
 @pytest.mark.parametrize(

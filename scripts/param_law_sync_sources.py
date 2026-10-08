@@ -44,6 +44,8 @@ class ParamRow:
     name: str
     tunable: str
     location: Location
+    value: str
+    type_cell: str
 
 
 def settings_field_locations(root: Path, agent: str) -> dict[str, Location]:
@@ -86,7 +88,7 @@ def param_rows(root: Path, agent: str) -> dict[str, ParamRow]:
         if len(cells) < 4 or not cells[0].startswith("`"):
             continue
         name = cells[0].strip("`")
-        rows[name] = ParamRow(name, cells[3], Location(path, index))
+        rows[name] = ParamRow(name, cells[3], Location(path, index), cells[1], cells[2])
     return rows
 
 

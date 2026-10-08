@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.deliberator.context_arithmetic import arithmetic_lines
 from agents.deliberator.context_market import market_lines, regime_context
 from agents.deliberator.context_pm import (
     order_lines,
@@ -61,18 +62,31 @@ def build_veto_context(
     lines.extend(_analyst_lines(recs, intent.ticker))
     scan = _first(graph.ancestors(analyst, max_depth=1, edge_types={_ANALYZED_EDGE}))
     if scan is None:
-        return "\n".join((*lines, "Lineage: no ScanRun linked to this AnalystRun."))
+        return "\n".join(
+            (
+                *lines,
+                "Lineage: no ScanRun linked to this AnalystRun.",
+                *arithmetic_lines(rec, None, intent.ticker),
+            )
+        )
     candidates = CandidateSet.model_validate(scan.props["candidate_set"])
     lines.extend(_scanner_lines(candidates, intent.ticker))
     market_node = _first(
         graph.descendants(scan, max_depth=1, edge_types={_DERIVED_FROM})
     )
     if market_node is None:
-        return "\n".join((*lines, "Lineage: no MarketData linked to this ScanRun."))
+        return "\n".join(
+            (
+                *lines,
+                "Lineage: no MarketData linked to this ScanRun.",
+                *arithmetic_lines(rec, None, intent.ticker),
+            )
+        )
     market = MarketData.model_validate(market_node.props["snapshot"])
     lines.extend(market_lines(market, intent.ticker))
     regime = regime_context(graph, market_node)
     lines.extend(regime_gate_lines(regime, rec, intent))
+    lines.extend(arithmetic_lines(rec, regime, intent.ticker))
     return "\n".join(lines)
 
 

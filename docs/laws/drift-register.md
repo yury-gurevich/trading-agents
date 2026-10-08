@@ -203,3 +203,16 @@ clause is **false in code**, not merely untested — the rest were demoted in ea
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*
+
+## Operator (`OPR`) — S256
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-104 | `OPR-IDM-02` | Duplicate identical interpret calls produce separate CommandAudit and LLMCall nodes, with no deduplication. | Read before S256 code: request correlation hashes actor/channel/text when no request id is supplied; operator store reuses `audit:{correlation_id}` and `intent:{correlation_id}` while making a fresh model call. The shared ledger returned the original row and lost the repeat's paid tokens. | stale-law + code-drift | **CORRECTED (S256 / DL-272, operator v1.4, 2026-10-08).** The clause now states one correlation/audit/intent and a separate row per model call; the kernel appends the first free `:repeat-N` row. `agents/operator/tests/test_operator_agent.py::test_same_command_shares_audit_and_intent_and_records_each_call` proves the whole claim; the store wrapper test proves the repeat key. No other operator clause changes. |
+
+## S255 score arithmetic records
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-102 | New `ANLZ-OUT-10`, amended `PROV-OUT-02`, new `DLIB-OUT-08` | A packet states the score arithmetic from recorded constants only when it reproduces the recommendation, with every code statement pinned. | Whole-book reading before code: no clause requires the analyst's constants and averaged sub-score names, the provider's VIX thresholds, or these three packet lines. | law gap (silence) | **CORRECTED (S255 / DL-269, 2026-10-07).** Analyst v1.9 adds `ANLZ-OUT-10`, provider v1.9 amends `PROV-OUT-02`, deliberator v1.14 adds `DLIB-OUT-08`; three Changelog entries, cited test-plan rows and both rollups pass the law-coverage gate. All 48 sprint tests pass after 27 red/restored guard and source-pin plants. Only the named clauses changed; no live or remote proof claimed. |
+| DRIFT-103 | `DLIB-NEV-09`; S255's frozen first line | Every statement about the scoring code can be pinned to it, including the claimed units and neutral value of every `quant_metrics` key ending in `_score`. | The text calls every such key a 0-100 band score with neutral 50; `scoring.py` also records normalized pillar metrics under `technical_score`, `fundamental_score`, `sentiment_score`. TGT's fixture values are 0.5228571428571429, 0.5125 and 0.4943820224719101; the normalized neutral is 0.50. | proposed-text contradiction | **CLOSED (S255, 2026-10-07; [DL-270](../design-log.md)).** The planner corrected the clause in `8195b21b`; A9 passes: `tests/test_score_arithmetic_pins.py::test_recorded_score_keys_obey_the_corrected_four_exceptions` pins all nine recorded orders and the actual default/moved A6 outputs. Exactly the four named keys are unit scores; other recorded `_score` keys and fundamental sub-scores are bands. Neutral constants and zero signal contribution are pinned separately. The original stop and its red proof remain in the sprint record; no score changes and no live remeasurement claimed. |

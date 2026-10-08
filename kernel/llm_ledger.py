@@ -114,17 +114,18 @@ def write_llm_call(
     system_prompt_hash: str = "",
     prompt_recipe_hash: str = RECIPE_UNKNOWN,
 ) -> Node:
-    """Write one idempotent shared LLM call ledger node.
+    """Append this completion under the first free shared LLM call ledger key.
 
     ``token_source`` defaults to ``estimated`` so a caller that does not pass
     it cannot silently present a word count as a vendor measurement, and
     ``prompt_recipe_hash`` defaults to ``unknown`` for the same reason: an
     unrecorded renderer must read as unrecorded, never as *this* renderer.
     """
-    key = f"llmcall:{calling_agent}:{correlation_id}"
-    current = graph.get_node("LLMCall", key)
-    if current is not None:
-        return current
+    first = f"llmcall:{calling_agent}:{correlation_id}"
+    key, repeat = first, 0
+    while graph.get_node("LLMCall", key) is not None:
+        repeat += 1
+        key = f"{first}:repeat-{repeat}"
     return graph.merge_node(
         "LLMCall",
         key,

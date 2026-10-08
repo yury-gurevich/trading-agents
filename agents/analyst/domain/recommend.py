@@ -171,6 +171,7 @@ def _build_recommendation(
         suggested_target_pct=None if stop_target is None else stop_target.target_pct,
         quant_metrics=_quant_metrics(score),
         stop_target_evidence=None if stop_target is None else stop_target.evidence,
+        score_arithmetic=score.score_arithmetic,
         rationale=Explanation(summary=summary, evidence_refs=evidence_refs),
     )
 

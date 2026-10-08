@@ -72,8 +72,8 @@ class AzureServiceBusSettings(AgentSettings):
         unit="seconds",
     )
     receive_max_messages: int = tunable(
-        10,
-        why="Maximum request envelopes pulled from a subscription per poll pass.",
+        1,
+        why="A taken request is already settled, so each pass takes one request.",
         ge=1,
         le=100,
     )

@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -107,6 +107,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   carrying different widths, or missing inputs) is a fault and an empty result with the reason
   `held position stop threshold unavailable`, never a guessed stop. *(DRIFT-074; ADR-0017, S230 /
   DL-223.)*
+
+- **ANLZ-OUT-10** — Each recommendation that carries quant metrics also records the constants its
+  confidence was computed with (the pillar weights, the relative-strength weight, the confidence
+  floor and span) and the names of the sub-scores averaged into its technical and fundamental scores.
 
 ---
 
@@ -419,3 +423,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   Proven by `test_analyst_domain.py::test_sufficient_history_scores_from_technical_composite` and
   `::test_score_candidate_reports_insufficient_history`. One clause added and proven: 27 / 50 →
   28 / 51.
+
+- v1.9 — amendment (S255 / DL-269, 2026-10-07). Adds and proves `ANLZ-OUT-10`: every scored
+  recommendation records its active constants and the ordered names actually averaged. No existing
+  metric, score, confidence, action or rationale changes. One clause added and proven: 28 / 51 → 29 / 52.

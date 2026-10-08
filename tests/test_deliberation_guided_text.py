@@ -19,11 +19,10 @@ from kernel.deliberation_guided import (
     READ_FIRST,
     GuidedReasoning,
     parse_guided_turn,
-    render_guided_text,
-    render_transcript,
     unreadable,
 )
-from kernel.deliberation_guided_format import GUIDED_TURN_PREFIX
+from kernel.deliberation_guided_render import render_guided_text, render_transcript
+from kernel.deliberation_program import ADAPTER, guided_program
 
 _READINGS = [
     {
@@ -152,5 +151,9 @@ def test_the_frozen_prefix_states_the_models_own_schema() -> None:
     schema = type_first(TypeAdapter(GuidedReasoning).json_schema())
     rendered = json.dumps(schema, ensure_ascii=False)
 
-    assert f"must adhere to the JSON schema: {rendered}\n" in GUIDED_TURN_PREFIX
+    signature = guided_program("Argue.").predict.signature
+    assert (
+        f"must adhere to the JSON schema: {rendered}\n"
+        in ADAPTER.format_system_message(signature)
+    )
     assert json.dumps(READ_FIRST) in rendered

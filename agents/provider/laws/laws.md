@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -81,7 +81,8 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   consumer reads the facts from the store by reference; the message itself stays small.
 - `PROV-OUT-02` — For a regime request → a **regime context**: the classification, the inputs behind
   it (including usable `^VIX`, the `^VIX` bar date, and whether that input is `measured`,
-  `prior_session`, or `missing`), **and the regime-derived policy defaults** (stop / target / holding
+  `prior_session`, or `missing`), the VIX thresholds its label was selected with, **and the
+  regime-derived policy defaults** (stop / target / holding
   baselines) that downstream agents read, plus provenance. *(DRIFT-004 — PRD strong-guide, adopted;
   DRIFT-067 — FMP `^VIX` freshness evidence corrected.)*
 - `PROV-OUT-03` — The output space is **total**: **SUCCESS** (clean), **DEGRADED** (partial/stale/
@@ -499,3 +500,7 @@ status:
   `PROV-OUT-04` (DRIFT-040): narrowed to the `MarketSnapshot`'s fetch time and fallback flag, with
   the serving vendor and any transformation named as not recorded (work-queue 105); ⬜ → 🟩. No
   clause added: 22 / 67 → 24 / 67.
+
+- **v1.9 — S255 / DL-269 (2026-10-07).** Amends and re-proves only `PROV-OUT-02`: the regime
+  also carries the four VIX thresholds from the settings used to select its label. Default and moved
+  threshold boundaries are pinned. No classification or policy change; no new clause: 24 / 67 unchanged.

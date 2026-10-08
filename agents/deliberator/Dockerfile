@@ -7,7 +7,7 @@ FROM dhi.io/python:3.13-dev AS build
 WORKDIR /app
 RUN python -m pip install --no-cache-dir "uv==0.4.29"
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --extra runtime --extra azure --extra llm --no-dev
+RUN uv sync --frozen --extra runtime --extra azure --extra llm --extra optimizer --no-install-package diskcache --no-install-package litellm --no-dev
 COPY kernel/ kernel/
 COPY contracts/ contracts/
 COPY agents/deliberator/ agents/deliberator/

@@ -20,7 +20,6 @@ from kernel.envelope import AgentMessage
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from uuid import UUID
 
     from kernel.bus import MessageBus
     from kernel.graph import GraphStore
@@ -71,10 +70,9 @@ class AzureServiceBusRequestConsumer:
         self._reply_topic = reply_topic
         self._receiver = receiver
         self._client: object | None = None
-        self._pending: dict[UUID, object] = {}
 
     def poll(self) -> list[AgentMessage]:
-        """Receive ready events and return their claim-checked request envelopes."""
+        """Resolve and settle ready events before returning request envelopes."""
         requests: list[AgentMessage] = []
         for raw in self._receive_messages():
             try:
@@ -84,24 +82,13 @@ class AzureServiceBusRequestConsumer:
             except (RuntimeError, TypeError, ValueError, ValidationError):
                 self._reject(raw)
                 continue
-            self._pending[request.id] = raw
+            self._complete(raw)
             requests.append(request)
         return requests
 
     def reply(self, response: AgentMessage) -> None:
-        """Publish a claim-checked response and ack/abandon the source message."""
-        correlation_id = response.correlation_id
-        raw = self._pending.get(correlation_id) if correlation_id is not None else None
-        try:
-            self._publish_response(response)
-        except Exception:
-            if raw is not None and correlation_id is not None:
-                self._reject(raw)
-                self._pending.pop(correlation_id, None)
-            return
-        if raw is not None and correlation_id is not None:
-            self._complete(raw)
-            self._pending.pop(correlation_id, None)
+        """Publish a claim-checked response; its request was settled when taken."""
+        self._publish_response(response)
 
     def _receive_messages(self) -> list[object]:
         """Pull a batch from the injected receiver or the live SDK receiver."""
@@ -153,7 +140,7 @@ class AzureServiceBusRequestConsumer:
         return f"{response.recipient}{self._settings.reply_topic_suffix}"
 
     def _complete(self, raw: object) -> None:
-        """Complete a successfully served request message."""
+        """Complete a decoded request message before it is served."""
         assert self._receiver is not None
         self._receiver.complete_message(raw)
 

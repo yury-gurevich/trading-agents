@@ -110,17 +110,16 @@ def test_openai_returns_the_assistant_text(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_max_tokens_default_is_its_own_ceiling() -> None:
-    """S246 (DL-252 D8): the guided readings need room; the default is the ceiling.
+    """DLIB-DEP-04: S257 (DL-274 D1) keeps the default at its own ceiling.
 
-    It sat at 4,096 below an 8,192 ceiling until the debaters began writing their
-    readings before the argument; billing is per generated token, so the raised
-    cap costs nothing unless used, and it can still be tuned down.
+    Guided readings and gpt-5.5 reasoning need room; billing is per generated
+    token, so the raised cap costs nothing unless used and can still be tuned down.
     """
     row = {item.name: item for item in describe(DeliberatorSettings)}["max_tokens"]
 
-    assert row.default == 8192
+    assert row.default == 16384
     assert row.minimum == 64
-    assert row.maximum == 8192
+    assert row.maximum == 16384
 
 
 def _hide_sdk(monkeypatch: pytest.MonkeyPatch, missing: str) -> None:

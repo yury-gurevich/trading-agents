@@ -1,8 +1,7 @@
-"""The guided turn's offline scripts run without DSPy installed (S246 B11).
+"""The guided turn's offline instruments use real DSPy and canned completions.
 
 Agent: tooling
-Role: prove the golden writer produces the golden's shape through an injected
-      fake `dspy`, that the committed golden was rendered from today's cases, and
+Role: prove the real golden writer matches the committed cases and bytes, and
       that the live-check instrument prints one line per turn with a fake LLM.
 External I/O: writes one JSON file under tmp_path.
 """
@@ -11,10 +10,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
 
-from scripts.deliberation_guided_program import guided_program, load_dspy
 from scripts.guided_turn_golden_cases import PARSE_CASES, SYSTEM_CASES, USER_CASES
 from scripts.guided_turn_replay import latest_subjects, replay, summary
 from scripts.render_guided_turn_golden import build_golden, write_golden
@@ -22,6 +19,7 @@ from tests.veto_context_fixtures import intent, linked_graph, order_set
 
 from kernel import InMemoryGraphStore
 from kernel.deliberation_guided import GuidedReasoning
+from kernel.deliberation_program import guided_program
 
 if TYPE_CHECKING:
     from kernel.llm import LLMClient
@@ -34,91 +32,35 @@ GOLDEN = json.loads(
 )
 
 
-class _Field:
-    def __init__(self, *, desc: str) -> None:
-        self.desc = desc
-
-
-class _Signature:
-    instructions = ""
-
-    @classmethod
-    def with_instructions(cls, text: str) -> type:
-        return type(cls.__name__, (cls,), {"instructions": text})
-
-
-class _ChainOfThought:
-    def __init__(self, signature: type, rationale_field_type: type) -> None:
-        self.predict = SimpleNamespace(signature=(signature, rationale_field_type))
-
-
-class _Adapter:
-    def format_field_description(self, signature: object) -> str:
-        return "D"
-
-    def format_field_structure(self, signature: object) -> str:
-        return "S"
-
-    def format_system_message(self, signature: tuple[type, type]) -> str:
-        return f"SYS:{signature[0].instructions}"  # type: ignore[attr-defined]
-
-    def user_message_output_requirements(self, signature: object) -> str:
-        return "REQ"
-
-    def format_user_message_content(
-        self, signature: object, inputs: dict[str, str], main_request: bool
-    ) -> str:
-        return f"USER:{inputs['decision']}:{main_request}"
-
-    def parse(self, signature: object, completion: str) -> dict[str, object]:
-        if "[[ ## argument ## ]]" not in completion:
-            raise ValueError("no argument section")
-        return {"reasoning": GuidedReasoning(readings=[], gaps=[]), "argument": "A."}
-
-
-def _fake_dspy() -> ModuleType:
-    dspy = ModuleType("dspy")
-    dspy.Signature = _Signature  # type: ignore[attr-defined]
-    dspy.InputField = _Field  # type: ignore[attr-defined]
-    dspy.OutputField = _Field  # type: ignore[attr-defined]
-    dspy.ChainOfThought = _ChainOfThought  # type: ignore[attr-defined]
-    dspy.ChatAdapter = _Adapter  # type: ignore[attr-defined]
-    dspy.__version__ = "fake"  # type: ignore[attr-defined]
-    return dspy
-
-
 def test_the_program_is_the_spec_signature_with_the_typed_reasoning() -> None:
-    """The program asks for GuidedReasoning before the argument, on the role prompt."""
-    dspy = _fake_dspy()
-    program = guided_program("Argue.", dspy)
-    signature, rationale = program.predict.signature  # type: ignore[attr-defined]
-
-    assert load_dspy(dspy) is dspy
-    assert rationale is GuidedReasoning
+    """DLIB-OUT-06: real DSPy asks for the unchanged typed reasoning first."""
+    signature = guided_program("Argue.").predict.signature
     assert signature.instructions == "Argue."
-    assert signature.argument.desc.startswith("step 3: your turn")
-    assert [signature.decision.desc, signature.transcript.desc] == [
+    assert signature.output_fields["reasoning"].annotation is GuidedReasoning
+    assert (
+        signature.fields["argument"]
+        .json_schema_extra["desc"]
+        .startswith("step 3: your turn")
+    )
+    assert [
+        signature.fields[n].json_schema_extra["desc"]
+        for n in ("decision", "transcript")
+    ] == [
         "the decision under test",
         "the debate so far",
     ]
 
 
 def test_the_golden_writer_produces_the_goldens_shape(tmp_path: Path) -> None:
-    """Every case is rendered or parsed, and a refusal is recorded by its type."""
-    written = json.loads(
-        write_golden(tmp_path / "golden.json", _fake_dspy()).read_text("utf-8")
+    """DLIB-OUT-06: real DSPy reproduces every golden byte, without an LLM."""
+    path = write_golden(tmp_path / "golden.json")
+    assert json.loads(path.read_text("utf-8")) == build_golden() == GOLDEN
+    assert (
+        path.read_bytes()
+        == (
+            Path(__file__).parent / "fixtures" / "deliberation_guided_golden.json"
+        ).read_bytes()
     )
-
-    assert written == build_golden(_fake_dspy())
-    assert list(written) == list(GOLDEN)
-    assert (written["prefix"], written["requirements"]) == ("D\nS\n", "REQ")
-    assert [case["rendered"] for case in written["system"]] == [
-        f"SYS:{text}" for _, text in SYSTEM_CASES
-    ]
-    assert written["user"][0]["rendered"] == "USER:buy AAPL (qty 12):True"
-    by_name = {case["name"]: case["dspy"] for case in written["parse"]}
-    assert by_name["valid"]["parsed"] is True
-    assert by_name["no_sections"] == {"parsed": False, "error": "ValueError"}
 
 
 def test_the_committed_golden_was_rendered_from_todays_cases() -> None:

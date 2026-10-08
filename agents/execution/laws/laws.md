@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -388,13 +388,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
 | `stage` | `"paper"` | `str` — config-file only | NO (config) | Stage is set by the operator in the config file, not in code; promotion requires `promote_stage` |
-| `slippage_bps` | `0` | `int ≥ 0, ≤ 100` (basis points) | YES | Simulated slippage on paper fills; 0 = no adjustment |
-| `min_promotion_runs` | `10` | `int ≥ 1` | YES | Minimum completed runs before promotion past "broker_shadow" is allowed |
-| `min_approval_rate` | `0.70` | `float ∈ (0, 1]` | YES | Minimum fraction of approved (non-gate-rejected) fills over min_promotion_runs |
+| `slippage_bps` | `0` | `int ≥ 0, ≤ 1000` (basis points) | YES | Simulated slippage on paper fills; 0 = no adjustment |
+| `min_promotion_runs` | `10` | `int ≥ 3, ≤ 200` | YES | Minimum completed runs before promotion past "broker_shadow" is allowed |
+| `min_approval_rate` | `0.70` | `float ≥ 0.0, ≤ 1.0` | YES | Minimum fraction of approved (non-gate-rejected) fills over min_promotion_runs |
 | `alpaca_api_key` | — | `SecretStr` | NO (secret) | Alpaca paper API key; never logged or returned |
 | `alpaca_secret_key` | — | `SecretStr` | NO (secret) | Alpaca paper secret key; never logged or returned |
 | `alpaca_base_url` | `"https://paper-api.alpaca.markets"` | `str` | YES (environment) | Alpaca base URL; switch to live URL only when stage=live* and operator-approved |
-| `alpaca_timeout` | `15` | `int ≥ 1, ≤ 120` (seconds) | YES | Per-order broker call timeout; bounded latency budget per submission |
+| `alpaca_timeout` | `15` | `int ≥ 1, ≤ 60` (seconds) | YES | Per-order broker call timeout; bounded latency budget per submission |
 | `order_price_tolerance_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — switching it changes which formula runs, not a value within one |
 | `order_price_tolerance_bps` | `50` | `int ≥ 0, ≤ 500` (bps) | YES | Bounds entry and discretionary-exit orders near the PM's decided price so after-close decisions do not trade at an unevaluated open (ADR-0018) |
 | `scaled_order_price_tolerance_atr_multiplier` | `0.50` | `float ≥ 0.0, ≤ 2.0` (ratio) | YES | Challenger band near half of decision-time daily ATR; observed overnight gaps cluster at 0.3–0.6× ATR |
@@ -519,3 +519,4 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   finders listed their entire labels and the submit trigger was constitutional silence (DRIFT-100,
   corrected). Payload/grace tests and the existing submit-anchor test prove the new clause;
   39 / 65 -> 40 / 66. No broker, posture, grace, exit or protective-stop policy changes.
+- **v1.13 — S258 / DL-276 (2026-10-08).** PARAM only: reconciles the bounds of `slippage_bps`, `min_promotion_runs`, `min_approval_rate` and `alpaca_timeout` with settings; no clause, default or code bound changes.

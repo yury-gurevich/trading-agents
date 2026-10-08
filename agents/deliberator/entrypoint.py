@@ -70,6 +70,7 @@ def serve_peer(
         consumer_from_env(settings.identity, graph),
         bus,
         poll_interval=PEER_SERVE_IDLE_SLEEP_SECONDS,
+        sink=GraphFaultSink(graph, CollectingFaultSink()),
     )
 
 

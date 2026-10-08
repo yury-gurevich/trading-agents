@@ -16,13 +16,11 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from scripts.deliberation_guided_program import guided_program, load_dspy
+import dspy  # type: ignore[import-untyped]
 from scripts.guided_turn_golden_cases import PARSE_CASES, SYSTEM_CASES, USER_CASES
 
-if TYPE_CHECKING:
-    from types import ModuleType
+from kernel.deliberation_program import guided_program
 
 GOLDEN = Path("tests/fixtures/deliberation_guided_golden.json")
 COMMAND = (
@@ -31,13 +29,12 @@ COMMAND = (
 )
 
 
-def build_golden(dspy_module: ModuleType | None = None) -> dict[str, object]:
+def build_golden() -> dict[str, object]:
     """Return every rendering and parse the runtime must reproduce."""
-    dspy = load_dspy(dspy_module)
     adapter = dspy.ChatAdapter()
     # The instructions reach only the system message's last block, so one
     # signature serves the prefix, every user message and every parse.
-    signature = _signature(dspy, "Argue.")
+    signature = _signature("Argue.")
     return {
         "generator": "scripts/render_guided_turn_golden.py",
         "command": COMMAND,
@@ -53,9 +50,7 @@ def build_golden(dspy_module: ModuleType | None = None) -> dict[str, object]:
             {
                 "name": name,
                 "instructions": instructions,
-                "rendered": adapter.format_system_message(
-                    _signature(dspy, instructions)
-                ),
+                "rendered": adapter.format_system_message(_signature(instructions)),
             }
             for name, instructions in SYSTEM_CASES
         ],
@@ -80,9 +75,8 @@ def build_golden(dspy_module: ModuleType | None = None) -> dict[str, object]:
     }
 
 
-def _signature(dspy: ModuleType, instructions: str) -> object:
-    program = guided_program(instructions, dspy)
-    return program.predict.signature  # type: ignore[attr-defined]
+def _signature(instructions: str) -> type[dspy.Signature]:
+    return guided_program(instructions).predict.signature
 
 
 def _parsed(adapter: object, signature: object, completion: str) -> dict[str, object]:
@@ -97,11 +91,11 @@ def _parsed(adapter: object, signature: object, completion: str) -> dict[str, ob
     }
 
 
-def write_golden(path: Path, dspy_module: ModuleType | None = None) -> Path:
+def write_golden(path: Path) -> Path:
     """Write the golden as UTF-8 JSON, keys in the order built."""
-    text = json.dumps(build_golden(dspy_module), indent=2, ensure_ascii=False)
+    text = json.dumps(build_golden(), indent=2, ensure_ascii=False)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text + "\n", encoding="utf-8")
+    path.write_text(text + "\n", encoding="utf-8", newline="\n")
     return path
 
 

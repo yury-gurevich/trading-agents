@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from tests.bus_azure_receiver_helpers import (
     FailingPublishBus,
     FakeReceiver,
@@ -138,7 +139,8 @@ def test_poll_is_empty_without_receiver_or_connection_string() -> None:
     assert consumer.poll() == []
 
 
-def test_reply_abandons_pending_message_when_publish_fails() -> None:
+def test_reply_failure_does_not_abandon_a_settled_request() -> None:
+    """DLIB-IDM-04: a failed publish cannot redeliver a request already taken."""
     graph = InMemoryGraphStore()
     setup_bus = AzureServiceBusBus(settings=settings())
     message = request()
@@ -154,10 +156,12 @@ def test_reply_abandons_pending_message_when_publish_fails() -> None:
     )
 
     assert consumer.poll() == [message]
-    consumer.reply(response(message))
+    with pytest.raises(RuntimeError, match="publish unavailable"):
+        consumer.reply(response(message))
 
-    assert receiver.abandoned == [raw]
-    assert receiver.completed == []
+    assert receiver.abandoned == []
+    assert receiver.dead_lettered == []
+    assert receiver.completed == [raw]
 
 
 def test_reply_without_pending_request_publishes_custom_ready_topic() -> None:

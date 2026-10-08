@@ -27,9 +27,13 @@ class AcceptedAdvisory:
     reason: str
     retire_when: str
     # The sole optional extra that pulls the package in. The audit fails if any
-    # Dockerfile installs it, because then the "reaches no container" premise is
-    # false. None means the acceptance rests on other grounds only.
+    # installing command does not exclude the package by name. None means the
+    # acceptance rests on other grounds only.
     reachable_only_via_extra: str | None = None
+    # True when the dev group pulls the package in as well (CI needs it to run
+    # the tests). A sync command without `--no-dev` then installs it exactly as
+    # one naming the extra would, and owes the same exclusion.
+    also_in_dev_group: bool = False
 
 
 ACCEPTED: tuple[AcceptedAdvisory, ...] = (
@@ -39,12 +43,13 @@ ACCEPTED: tuple[AcceptedAdvisory, ...] = (
         aliases=("GHSA-w8v5-vhqr-4h9v", "CVE-2025-69872"),
         decision="DL-184",
         reason=(
-            "no fix release exists, nothing imports dspy, and the attack needs "
-            "write access to the cache directory - which is code execution already"
+            "no fix release exists; every deployed optimizer installation "
+            "excludes diskcache by name (S254, DL-266, ADR-0032)"
         ),
         retire_when=(
             "diskcache publishes a fixed release, or the optimizer extra is dropped"
         ),
         reachable_only_via_extra="optimizer",
+        also_in_dev_group=True,
     ),
 )

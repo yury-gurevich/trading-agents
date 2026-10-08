@@ -39,13 +39,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
     from types import ModuleType
 
 RECIPE_UNKNOWN = "unknown"
 
 
-def recipe_digest(modules: Iterable[ModuleType]) -> str:
+def recipe_digest(
+    modules: Iterable[ModuleType], *, versions: Mapping[str, str] | None = None
+) -> str:
     """Hash the source of every module that shapes a prompt, name included.
 
     The module's dotted name is hashed alongside its bytes, so moving code
@@ -63,6 +65,11 @@ def recipe_digest(modules: Iterable[ModuleType]) -> str:
         digest.update(module.__name__.encode("utf-8"))
         digest.update(b"\0")
         digest.update(source)
+        digest.update(b"\0")
+    for name, version in sorted((versions or {}).items()):
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(version.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()
 

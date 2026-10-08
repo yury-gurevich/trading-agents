@@ -10,6 +10,989 @@ and is marked CLOSED here.
 
 ---
 
+## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); not proven on the fleet; work-queue 113
+
+**The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
+time, is said there to need peers that serve in parallel. Is that built?
+
+**It is built, and switched off on purpose.** *[measured, read]* [S172](sprints/sprint-172-independent-debates-run-independently.md) gave the manager
+`debate_concurrency`: a thread for each order, replies routed among the waits by correlation id.
+`infra/deploy-agents.ps1` gives each debater as many replicas as the pack's
+`DELIBERATOR_DEBATE_CONCURRENCY`. The pack says 1 ([DL-153](design-log.md)). At K=4 one fleet run lost
+six replies and failed two of fifteen orders open ([DL-140](design-log.md)); a second run of the same
+build was clean; both reached 1.5 to 1.8 lanes of a possible four ([DL-145](design-log.md)). The cause
+was not found, and [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md), written to find it, is still a spec. DL-153 left the dial at 1 because
+serial debates then fitted 21 orders into execution's wait. Today they fit about 7 (DL-274's amendment).
+
+**Measured 2026-10-08, no LLM call.** The repo's own request consumer and `serve_once` on disposable
+topics of the live namespace, four consumers on one subscription as four replicas would be, a handler
+that sleeps five seconds as a turn would. Each configuration run twice, with the same result.
+
+| The requests | Taking 10 a pass (the default before S256) | Taking 1 a pass (the default since S256) |
+| --- | --- | --- |
+| Eight already queued when the four consumers start | one consumer took all eight and served them in turn, three served none; the last began after 44 s; 0.8 lanes | two each; the last began after 6.9 s; 3.35 lanes |
+| Four at a time, arriving at idle consumers, three waves | one each | one each |
+
+So a debater that found requests waiting used to take up to ten of them and serve them one after another
+while the other replicas idled. A request at the back waited several turns, longer than the manager's
+wait, and its reply arrived for nobody: the orphaned replies and the fail-opens of DL-140. When requests
+met idle replicas it did not happen: the clean run of DL-145. Fewer lanes than replicas fits both.
+[S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) changed the number taken a pass from ten to one for another reason (a taken request is
+settled at once, so nothing is gained by holding more), and that has been on the fleet since `s257`.
+
+**Not shown.** That K above 1 is correct on the fleet today. Not measured here: the manager's reply
+routing with real debates in flight, whether the debater apps scale to K replicas (never measured:
+DL-145's watcher failed), and the vendor's rate limit with K calls in flight.
+
+**Plan (planner). Nothing changes on the fleet without the operator's word.**
+
+1. A harness that runs the production manager and the production peers over disposable topics with a
+   canned model, and reports lanes, orphaned replies and fail-opens at K = 1 to 4, at no cost. Committed
+   this time: DL-145 records that the apparatus was lost twice. The next sprint for Codex after S258.
+2. Then one fleet proof at K=3, on a seeded run with execution and the portfolio manager held at zero.
+   Its debates are paid, so it is the operator's call.
+3. K=3 would take a night on `gpt-5.5` from about 7 debated buys to at most about 21; the largest night on
+   record approved 18. The value lives in the tunables pack, a fidelity decision path, so until the count
+   allows a pack edit it would be a live setting on three apps.
+
+**Ruled out for now.** Turning the dial for tonight's run: six F2s are owed on it and K above 1 is
+unproven on the fleet. A longer wait alone: the brief's last tick caps it near 3,000 seconds, about 12
+buys. A verdict applied per order as it lands stays open: it is the half that degrades gracefully when a
+night still does not fit.
+
+---
+
+## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); BUILT and MERGED as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md) `0.123.03` (2026-10-08), work-queue 114 open for the eight rows
+
+**The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and
+its Tunable cell and nothing else. What should it compare, and what does it find when it does?
+
+**Measured (2026-10-08, `main` `60a19e29`, a worktree with no `.env`; a prototype on no branch).** The
+step covers 16 books and 235 rows that have a settings field. Value cells are written four ways (177 in
+backticks, 45 in backticks and double quotes, 9 a dash for a secret, 4 the bare word `empty`), and all 235
+agree with the code's default once each form is read. Bounds are written four ways: `≥` and `≤`, `>=` and
+`<=`, `>` and `<`, and intervals such as `[0.0, 1.0]` and `(0, 1]`. 164 rows have a bound in code. 152
+state the same bounds. **12 do not:** 8 state a different number or strictness, 3 state one side where the
+code has two, 1 states none. Four are in the execution book (`slippage_bps`, `min_promotion_runs`,
+`min_approval_rate`, `alpaca_timeout`), six in the portfolio manager's (`starting_cash`,
+`max_position_pct`, `max_positions`, `cash_buffer_pct`, `min_order_quantity`, `price_lookback_days`), one
+in the scanner's (`min_average_volume`) and one in the analyst's (`scaled_stop_atr_multiplier`). The
+prototype exits 1 on today's books naming exactly the four execution rows, exits 0 once they are
+rewritten, and exits 1 on each of six planted wrong rows, the first of them the row S257's builder
+planted. Against the whole suite it fails exactly one existing test, which pins the number of warnings;
+the gate self-test passes 31 of 31. Printing a law's `≥` raises `UnicodeEncodeError` on this machine when
+stdout is redirected (`cp1252`), which is how `make ci` is always run.
+
+**Correction of my amendment to DL-275.** I wrote there that 23 rows state a numeric bound, 41 bounds in
+all, that all 41 equal the code's, and that a widened step would pass as the books stand. The script
+behind it read one notation of the four. It reported no disagreement because it could not read the rows
+that disagree. The Value half of that amendment stands.
+
+**Decisions.**
+
+- **D1.** The Value cell is compared with the field's default for every row with a settings field, by
+  reading rules that cover every form in use. A cell that cannot be read is a failure, not a skip.
+- **D2.** The Type cell's bounds are compared with the field's, in every notation in use. The set of
+  bounds stated must be the set the field has, each number equal.
+- **D3.** For the twelve rows the law follows the code. No settings file changes. The four execution
+  rows are rewritten by S258.
+- **D4.** The other eight are excused by a recorded list: a row's Type cell exactly as written today. An
+  entry excuses a bounds disagreement only while the cell equals the record, and an entry that is no
+  longer needed fails the gate. They are rewritten, and the entries deleted, at the first deploy that
+  restarts the fidelity count or after [DL-237](design-log.md)'s verdict.
+- **D5.** A failure names the row, what the law states and what the code has, and no line may raise on a
+  console that cannot encode a law's symbols.
+- **D6.** Work-queue 114 stays open until the eight rows are rewritten.
+
+**Why eight rows wait.** The fidelity check calls a session clean only when no file differs under its
+decision paths between the deployed commit and the replayed one, and it counts every file under
+`agents/portfolio_manager/`, `agents/scanner/` and `agents/analyst/`, a law book included
+(`scripts/replay_fidelity_git.py`). The count restarted on 2026-10-08 and needs four clean sessions and
+ten judged recommendations. A row of text is not worth that.
+
+**Ruled out.** Rewriting all twelve now (above). Teaching the fidelity check to ignore law books: it
+narrows a rule fixed before its result was known. Changing the code's bounds to match the books: it
+changes what a setting may be set to, on no evidence. Comparing only the bounds a row states: three rows
+state one side of two. A warning that leaves the gate green: work-queue 33 removed a baseline of 57
+divergences for that reason. A case in the gate self-test: its file is frozen at its size.
+
+**Not measured.** Whether each code bound is the intended rail. The tunables' `why` texts do not say. A
+rail that looks wrong is a drift-register row and its own decision, not part of this.
+
+**Built as decided (2026-10-08 20:55 AEDT, S258 merged as `0.123.03`).** D1 to D5 were built with no
+departure, and the planner's own count over the built reader gives the numbers above. Three limits of
+the reader are accepted, and no row meets any of them today: a rail enforced by a validator function
+is not seen; a Type cell that states the same side twice is read by its last statement; and two
+numbers written with no space after the comma read as one grouped number, which fails against a field
+that has bounds and would pass against a field that has none.
+
+---
+
+## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08); confirmed by the planner, the gap measured and filed as work-queue 114
+
+**Found while planting guards.** S257 says the PARAM gate fails until the two numeric rows follow the
+settings. With the implemented settings unchanged, reverting only the `max_tokens` row to default
+8,192 and upper bound 8,192 made A1 fail, but `python scripts/check_param_law_sync.py` still exited 0.
+The mutation was restored byte for byte. Evidence: `.tools/s257/guards.txt` from the initial run
+(preserved as `.tools/s257/guards-initial.txt`), G07. Read `scripts/param_law_sync_sources.py`:
+`ParamRow` stores the name and Tunable cell, not Value or Type; `scripts/param_law_sync.py` compares
+name presence and the tunable family, with separate default/envelope warnings.
+
+**Decision.** Keep the gate unchanged. A1 and A4 pin the two complete numeric row prefixes, and their
+plants must fail on old values; B2 still runs the shared checker and plants a tunable-declaration
+mismatch that the checker actually enforces. Record the spec correction in Return notes. This changes
+no guarantee and needs no law clause or contract change.
+
+**Ruled out.** Widening the repository-wide checker to compare numeric defaults and bounds would
+change proof for every agent, discover unrelated old-row divergences and exceed S257's settings-only
+scope. Treating its exit 0 as numeric proof would hide the observed survivor. The scoped literal tests
+already supply that proof without changing a production decision.
+
+**Amendment (planner, 2026-10-08 16:27 AEDT): confirmed, and the gap is measured.** The same plant
+on the built tree: with the cap's law row back at 8,192, `scripts/check_param_law_sync.py` exits 0. The
+claim in S257's spec was the planner's, and it was never run in its failing direction: the prototype ran
+the step only with the rows already changed. Then every cell the step skips was read on `main`
+(`7309b858`), in all 16 law books it covers. Of 235 `PARAM` rows that have a settings field, the Value
+cell equals the code's default in 220; the other 15 are written in a form a number comparison cannot read
+(four `Decimal`s, one `Decimal(...)` literal, one date, nine secrets shown as a dash) and each equals the
+code when read by eye. 23 rows state a numeric bound in the Type cell, 41 bounds in all, and all 41 equal
+the code's. So the second reason above for leaving the step alone, that widening it would find old
+disagreements, is not borne out: there is none today, and a widened step would pass as the books stand.
+The first reason holds: it is a change to a shared gate and was not S257's to make. Filed as work-queue
+114.
+
+🩹 **Corrected the same evening (DL-276).** The count of bounds above read one notation of the four the
+books use. Read in all of them, twelve rows state bounds the code does not enforce. The conclusion that a
+widened step would pass as the books stand is withdrawn; the builder's second reason was right.
+
+---
+
+## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a and F1b passed, deployed `s257` 2026-10-08 with the manager's wait at 240 seconds, work-queue 111; MEASURED and open for the grace (work-queue 113)
+
+**The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
+the effort. Sizing the first one means asking what a longer turn meets next. DL-271 answered for the
+message lock. This entry answers for the two bounds after it.
+
+**Measured, 2026-10-08, no LLM call.**
+
+- **A turn's time follows its output.** Over the 49 typed first turns kept from EXP-020 and EXP-021
+  (`gpt-5.5`, effort `high`) the speed is 86 to 117 output tokens a second, median 109. The defender's
+  turns: median 6,726 tokens, largest 11,556, 5 of 25 over 8,192. The challenger's: largest 7,320, none
+  over. So a turn that used a whole cap would take up to 96 seconds at 8,192, 143 at 12,288 and 191 at
+  16,384.
+- **What Anthropic's client accepts.** Version 0.120.2 refuses a non-streaming request above 21,333
+  output tokens, for every model (measured offline: 21,333 allowed, 21,334 refused). The adapter does not
+  stream. A bound above that would let a setting fail every Opus turn.
+- **Where the numbers live.** No app sets the cap, so the code's default is the fleet's. The wait (120
+  seconds) comes from the tunables pack, and the pack is fidelity decision code: an edit starts the count
+  again.
+- **A prototype of the two bounds and the default:** on a prototype of the two bounds and the default, the parameter step passes and exactly two existing tests fail, both because they pin the old cap (4,301 pass).
+- **A debated order, in seconds of model time.** Opus with guided turns, since 2026-09-30: median 146,
+  largest 160 (9 orders in 4 runs). `gpt-5.5`: 188, one order, S254's F1. The record lands about 60
+  seconds later than the model time alone (49 to 69 over the four runs).
+
+**Decided, for the cap and the wait (S257).**
+
+| # | Decision | Ruled out, and why |
+| --- | --- | --- |
+| D1 | The cap's default and upper bound go to 16,384 | **Lowering the effort to `medium`:** it changes what the debaters write to work around a number, and needs a paid measurement. **12,288:** 6 % above the largest turn already measured. **A higher bound or none:** Anthropic's client refuses it. **Raising the bound and leaving the default:** the fleet reads the default |
+| D2 | The reason for the ceiling is a named constant in the Anthropic adapter, held by a test | **Calling the vendor's client in a test:** it is installed only in the `llm` extra, not where CI runs |
+| D3 | The wait's upper bound goes to 300 seconds | **Leaving it at 120:** a turn at the new cap can take 191 seconds, so the failure would move from the cap to the wait |
+| D4 | The fleet's wait goes to 240 seconds on the manager's live app at the deploy, on the operator's word. The pack is not edited | **Editing the pack:** it starts the fidelity count again, and a full `up` would also undo the week's vendor switch (DL-265) |
+
+**Found: the night has a capacity, and past it no buy is placed (work-queue 113).** *[the whole mechanism
+read]* The manager debates one order at a time and writes one `DeliberationRun` for the whole batch, at
+the end. Execution holds a buy-carrying run for 1,800 seconds from the PM run. Its posture is `binding`
+(the default; no app sets it), so when the grace ends with no record, every buy is dropped and only the
+sells go. At the measured times that is about **11 debated buys a night on Opus and 9 on `gpt-5.5`**
+(1,740 seconds over 146 and over 188; the second from one order). The typed turn of step 3 would make it
+about 7 on `gpt-5.5`, and the loop of step 5 adds calls to each order. *[measured, the live graph]* Of 90
+PM runs, 15 approved nine or more buys: five nights (2026-08-08, -10, -14, -19 and 2026-09-28, with 18,
+18, 9, 9 and 12) and four undated runs of 15. The last 25 runs approved 0 to 4, except the 12. The 12 of
+2026-09-28 were debated on the shorter turns of the time; the same night today would end with none
+placed, on either vendor. The three grace faults on record are from August, under a 900-second grace.
+
+**Ways out of the capacity, not decided.**
+
+- **A longer grace.** The bound allows 3,600 seconds and the agents' scale window runs to 00:30 UTC, so
+  there is room. The value lives in the tunables pack (the fidelity count again), and the daily brief's
+  last tick is at 23:50 UTC: a night that used the whole hour would end after it. Not measured.
+- **A verdict applied per order as it lands**, so a night that runs out of time keeps the reviews it has.
+- **More than one debate at a time.** Raising the manager's fan-out does nothing while each peer serves
+  one turn at a time; it needs peers that serve in parallel. After S256 a request is settled when taken,
+  so two replicas on one subscription cannot serve the same turn.
+
+**Also moved here from work-queue 111:** a request message has no time to live (DL-272). A request whose
+caller stopped waiting is served when a peer next takes it, and it is served ahead of the live ones.
+
+**Not measured.** A production turn on `gpt-5.5` with S255's longer packet: the first debated buy will show
+it. Whether a larger cap changes what Opus writes: its largest turn is 4,846 tokens, and the account is
+empty until 2026-10-11.
+
+**Amendment (planner, 2026-10-08 18:31 AEDT): F1b, one real debate at the new cap.** The merged code
+on `gpt-5.5` at `high` effort, the cap at 16,384 and the wait at 240 seconds, on GILD's recorded packet of
+`sched-2026-10-05` (the packet S254's F1 used; it predates S255's three lines). The defender's first turn
+wrote 10,658 output tokens in 93.8 seconds, 114 tokens a second. The cap of 8,192 would have cut it and
+failed the order open, and it ran longer than the 60-second lock that S256 stopped depending on. The other
+calls: the challenger's 5,630 tokens in 52.8 s, the defender's 4,828 in 42.0 s, the challenger's 3,714 in
+34.8 s, the judge's 574 in 7.1 s. Every call ended on `stop`; the ruling was `revise`, as on the night.
+The order took 231 seconds from the first request to the ruling, against 188 seconds on 2026-10-07 with
+the same packet. That is the number work-queue 113 divides execution's 1,800-second wait by: 7 debated
+buys a night on this vendor where 188 seconds gave 9. One measurement. $0.88.
+
+**Amendment (planner, 2026-10-08 18:52 AEDT): D4 applied.** The fleet was retagged to `s257` between
+07:35 and 07:42 UTC, and `DELIBERATOR_REQUEST_TIMEOUT_SECONDS` went from 120 to 240 on
+`deliberator-manager` between 07:44 and 07:45 UTC: the one field that differs between the app's two
+snapshots. The manager activated on that revision; the code before S257 refuses a value above 120 at
+start-up. The value is live only. The tunables pack still says 120, so a full `up` puts 120 back, and a
+rollback to an older image must set 120 first. The two debaters keep 120: the setting bounds the manager's
+wait for a served reply.
+
+---
+
+## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); BUILT and MERGED as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) `0.123.01` (`b3f1ee1f`, 2026-10-08), F1 passed, deployed `s257` 2026-10-08; work-queue 112
+
+**The question.** DL-271 measured the defect and listed four parts of a fix without
+choosing between them: an explicit lock, a renewal or an early settlement, a caught lost lock, a visible
+repeat. This entry chooses.
+
+**Measured, 2026-10-08, no LLM call.**
+
+- **The whole mechanism, read.** `serve_once` polls, runs the handler, then replies; `reply` publishes and
+  only then completes the message. One poll takes up to ten requests, all locked from the moment they are
+  received and handled one after another, so the third has waited two turns before it starts. A reply that
+  cannot be published abandons the request, which is then delivered and served again. `write_llm_call`
+  returns the first row for a key that exists.
+- **A reproduction with no network** (the Appendix of the spec) prints all five of these on `main`.
+- **A prototype of the decisions below, on the live namespace:** disposable topics, the default one-minute
+  lock, a 70-second handler. The request is served once, with no error and one reply, and a second
+  consumer is given nothing. `main`'s code on the same check raised `MessageLockLostError` and served the
+  request twice (DL-271).
+- **The prototype against the whole suite:** five existing tests fail and 4,298 pass. The five assert the
+  behaviour being removed.
+- **Who is served.** Only the deliberator's manager sends to a request topic, to its two peers. The
+  supervisor, the operator, the researcher and the forecaster run the same loop and receive nothing.
+- **The record.** 4 of 1,130 debater calls took more than 60 seconds, all on 2026-08-19 on `gpt-5.5`. The
+  manager has recorded no reply that nobody was waiting for, in 90 runs.
+
+**Decided.**
+
+| # | Decision | Ruled out, and why |
+| --- | --- | --- |
+| D1 | A served request is settled when it is taken, before its handler runs. `reply` only publishes | **Renewing the lock** (the vendor's `AutoLockRenewer`): a second thread on a synchronous receiver's connection, provable only on the live service, and it keeps the redelivery that makes the second paid call. **An explicit five-minute lock alone:** the vendor's maximum, not applied to a subscription that exists, and a batch still ages under it. **Catching the lost lock:** the request is still served again |
+| D2 | One request a pass: `receive_max_messages` defaults to 1 | **Settling each request just before its own handler:** a third method on the consumer protocol, for a batch that buys nothing when requests are handled in turn. **Deleting the tunable:** more surface for no gain |
+| D3 | A reply that cannot be published is a `Fault`, and the loop serves the next request. The two debater peers pass a graph sink; the other served agents keep the in-memory one | **Letting the error end the process:** the next request waits for a restart. **Swallowing it, as today:** silent |
+| D4 | A completion under a ledger key that exists is its own row, under that key plus `:repeat-N`. No new property | **One row with a repeat count and summed tokens:** rewrites an audit row and loses the second call's hash and latency. **Keying by the bus message's id:** changes every key and reader. **A `repeat_of` property:** new graph vocabulary for what the key already says |
+| D5 | Nothing changes on any subscription. The five-minute lock set by hand on 2026-10-08 stays | **Setting it back:** it costs nothing where it is, and it protects the older code after a rollback |
+| D6 | `OPR-IDM-02` is rewritten to what the code does: duplicate commands share one `CommandAudit` and one `Intent`, and each model call is its own `LLMCall` row | **Leaving it:** the clause said two of each, the code has always written one, and the test that proves `OPR-IDM-03` counted one `LLMCall` for two paid calls |
+
+**What D1 gives up.** The bus no longer serves a turn again after its peer stopped mid-call or its reply
+could not be published. That order fails open when the manager's wait ends, as a timed-out turn does
+today. With the five-minute lock on the live subscriptions a redelivery already arrives after the
+manager's 120-second wait, so the fleet as it stands gives up nothing. *[ASSUMED, from the vendor's
+documentation, not measured]* A locked message is not freed when its receiver disconnects; nothing above
+depends on it.
+
+**Found on the way, not fixed here.** A request message has no time to live: the manager sets none and the
+subscriptions keep a message forever. A request whose caller has stopped waiting is served whenever a peer
+next takes it, a paid call with no reader. No instance is recorded. It is noted on work-queue 111, which
+changes the wait.
+
+**Not decided.** Whether the other four served agents should record their failed replies: nothing sends to
+them today.
+
+---
+
+## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); the five-minute lock APPLIED live 2026-10-08 08:52 AEDT; the fix is work-queue 112
+
+**How it was found.** Sizing work-queue 111 (the output cap on `gpt-5.5`), the planner looked at what a
+longer turn meets on its way back. A served peer receives its request under a message lock, runs the model
+call, publishes the reply, and only then completes the message.
+
+**Measured, no LLM call.**
+
+- The two request subscriptions the debaters serve from, `deliberator-proponent.requests` and
+  `deliberator-opponent.requests`, have a lock of **one minute**. Nothing sets it: `create_subscription` is
+  called with the vendor's default. No code renews a lock, and no code catches a lost one.
+- The repo's own receiver and `serve_once`, on disposable topics on the live namespace with that default
+  lock and a handler that takes 70 seconds: the reply is published, then `serve_once` raises
+  `MessageLockLostError`. `serve_loop` catches nothing, so in a container the peer's process ends. A
+  second consumer, as a restarted process would be, receives the same request again: the handler runs a
+  **second** time and a second reply is published. The topics were deleted afterwards.
+- The same check with a five-minute lock: served once, no error, one reply, nothing redelivered.
+- The ledger keys a call by agent and correlation id and returns the first record when the key exists
+  (`kernel/llm_ledger.py`). So a turn served twice is one `LLMCall`: the second, paid call is not recorded.
+  The planner's first reading, *"1,387 calls, no id served twice"*, therefore proved nothing and is
+  withdrawn.
+- How long turns take: on Opus the debaters' calls average 41 to 51 seconds. On `gpt-5.5` the defender's
+  production turn took 58.1 and 59.8 seconds in the one debate measured, and its typed turn averages 66
+  seconds with a slowest of 118. In the live records 4 served turns passed 60 seconds, all on 2026-08-19,
+  all `gpt-5.5`.
+
+**What it means.** On Opus the lock is rarely reached. On `gpt-5.5` about half of the defender's turns
+reach it. Each one that does: the debate gets its reply, the peer then dies, restarts and makes the same
+call again, unrecorded; its second reply is an orphan; and the manager's next request to that peer waits
+behind the repeat, against a 120-second wait, so that order can fail open. Raising the output cap
+(work-queue 111) makes turns longer, so this comes first.
+
+**Options.**
+
+- **Live, now:** set the lock of the two request subscriptions to five minutes, the vendor's maximum. One
+  setting on each, reversible, measured above to remove the failure for any turn under five minutes. It
+  changes production infrastructure, so it is the operator's to approve.
+- **The fix (work-queue 112):** subscriptions are created with an explicit lock; a served peer renews its
+  lock while the handler runs, or settles the message before a long handler and relies on the claim check;
+  a lost lock is caught and recorded as a fault instead of ending the process; and the ledger records a
+  repeat instead of hiding it. Which of these, and in what order, is for the sprint's spec.
+
+**Applied live, 2026-10-08 08:52 AEDT (21:52 UTC, 38 minutes before the scheduled run).** The operator, asked whether to apply it: *"not sure. make decision"*. The planner applied it: the failure and the remedy were both measured, the change is one setting on each of two subscriptions, and it is undone by setting it back. `lockDuration` is `PT5M` on `deliberator-proponent.requests` and `deliberator-opponent.requests` (subscription `agent`). Read before and after: of each subscription's 24 fields, two differ, `lockDuration` and `updatedAt`. The three debater apps were at 0 replicas and both subscriptions held 0 messages. Live only: no code, no image and no deploy record; a subscription created again would have the default again. To undo: `az servicebus topic subscription update -g trading-agents --namespace-name trading-agents-bus --topic-name <topic> -n agent --lock-duration PT1M`. Snapshots are in OneDrive `trading-agents-data/wq112-2026-10-07/`.
+
+**Not taken.** Lowering the model's effort so that turns finish sooner: it changes what the debaters write,
+to work around a transport setting. Catching the error alone: the turn would still be served twice.
+
+---
+
+## DL-270 - S255's frozen sentence includes normalized pillar metrics in its 0-100 claim - status: STOP (builder, 2026-10-07 17:49 AEDT)
+
+**Constraint found while pinning the text, no network or LLM call.** The Appendix's first line says
+"inside quant_metrics each key ending in _score, and each fundamental sub-score, is a 0-100 band
+score in which 50 is neutral". The analyst's [scoring code](../agents/analyst/domain/scoring.py)
+also writes its normalized `technical_score`, `fundamental_score` and `sentiment_score` into
+`metrics`, and the recommendation retains them as `quant_metrics`.
+
+**Measured on the planner's TGT fixture:** `fundamental_score=0.5125`,
+`sentiment_score=0.4943820224719101`, `technical_score=0.5228571428571429`; each equals its normalized
+recommendation pillar. The analyst's neutral band of 50 is divided by 100 to produce the neutral
+pillar of 0.50. The sentence's universal claim cannot be pinned to that code under `DLIB-NEV-09`.
+The Appendix still prints 9/9 equal blocks and 9/9 reproduced records; A1's prototype renders
+9 of 9 orders equal. Numerical parity does not prove this sentence's units.
+
+**Decision under the handover's explicit stop rule:** stop further implementation, law amendments,
+guard plants and CI; retain status SPEC and record the partial prototype. `DRIFT-103` names the
+defect. The planner must resolve the frozen wording and its experimental status before the build
+can resume. No new text has been substituted.
+
+**Corrected, 20:35 AEDT (planner).** The defect was the planner's: the sentence was written for EXP-019's arm B
+and carried into the spec as frozen text without being checked against the keys. Measured over 1,765
+recorded recommendations: 20 distinct keys end in `_score`, and exactly four are on a 0-1 scale
+(`technical_score`, `fundamental_score`, `sentiment_score`, `composite_score`; the builder named three, the
+composite is the fourth). The first line gains one clause that excepts them. The second and third lines
+are unchanged. *Not taken:* removing the scale claim altogether, because the model needs it to read the
+sub-scores; and leaving the line as measured, because it is false. The corrected line is not the line
+the two experiments measured: measuring it again before the merge is the operator's decision. The stop
+rule is narrowed to a sentence that is false in the code.
+
+**Roads not taken.** Do not exclude the pillar keys from `quant_metrics`: that would change an
+existing packet line and stored evidence outside scope. Do not rescale them: that would change
+scores. Do not silently narrow the pin to indicator sub-scores: the sentence says every key.
+Do not reword the three lines: EXP-019's text is frozen and the sprint expressly forbids it.
+
+---
+
+## DL-269 - the analyst and the provider record the constants they used, and the packet states the score arithmetic only when it reproduces the record - status: DECIDED (planner, 2026-10-07 18:19 AEDT); SPEC as [S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md), work-queue 107
+
+**The question.** Step 2 of DL-264 amendment 5 puts the score arithmetic in the packet. EXP-019's arm B is
+that text. How does production print it?
+
+**Measured, no LLM call.** The weights, the floor and the span are the analyst's tunables, and the VIX
+thresholds are the provider's. No contract field and no run record carries any of them, and an agent may
+not import another. Built from the recorded recommendations, the lines equal arm B's for 9 of 9 orders. The
+stated rule reproduces the recorded confidence and `technical_score` for 1,765 of 1,765 recommendations that
+carry quant metrics (largest difference 1.1e-16). EXP-019's nine orders all have three pillars and a
+relative-strength score. The analyst's code has branches they do not exercise: no `rs_score` (946 of 1,765,
+none since 2026-09-04), an absent pillar (33), and a fourth pillar that a setting can switch on (0).
+
+**Decided.**
+
+- **D1.** The analyst records on each recommendation the seven constants it used and the names of the
+  sub-scores it averaged into the technical and the fundamental score (`Recommendation.score_arithmetic`).
+- **D2.** The provider records on the regime context the four VIX thresholds its label was selected with.
+- **D3.** The deliberator ends the packet with arm B's three lines, built from those two records.
+- **D4.** The lines are printed only when the stated rule reproduces this order's recorded confidence.
+  Otherwise one line says why they are withheld. The branches the experiment did not measure are withheld,
+  not stated. A record that predates the fields adds no line, so a rebuilt old packet is unchanged.
+- **D5.** "Reproduces" is within 1e-9 on the confidence and on `technical_score`.
+- **D6.** Both fields are optional. A reader on older code ignores a field it does not know (measured).
+- **D7.** The new module joins the deliberator's recipe digest.
+
+**Rejected.**
+
+- *The weights and the sub-score lists hard-coded in the deliberator*, as the experiment's script has them.
+  A deploy that changes a weight would make the packet state a false rule, and a new indicator would fall
+  out of a list kept in another agent.
+- *The weights as extra `quant_metrics` entries.* It changes a line the model already reads.
+- *The regime line without its thresholds.* It is not the text that was measured.
+- *A rule stated for the unmeasured branches now.* It would be text no experiment has read.
+- *All of step 2 as one sprint.* The withheld facts (work-queue 98) need their inventory re-measured and
+  their definitions written; the risk figures are not measured at all. Each is its own sprint.
+
+**The gate.** A change to the evidence a model reads is within ADR-0010. The merge waits for EXP-019's
+verdict (operator, 2026-10-07). The build needs no model call, so it does not wait.
+
+---
+
+## DL-268 - DSPy in the dev group opens a second route to `diskcache`, so the audit's premise covers it - status: DECIDED and built (planner, 2026-10-07 15:51 AEDT), on S254's branch
+
+**What D2 changed.** DL-266's decision D2 puts `dspy` in the `dev` group so that CI can run the tests
+that execute it. From that commit `diskcache` is reachable through the group as well as through the
+`optimizer` extra. The acceptance's premise (DL-184, DL-199) named only the extra.
+
+**Measured.** All 15 tracked Dockerfiles pass `--no-dev` on their one `uv sync` line. Nothing checked
+it. A Dockerfile that dropped the flag would have installed DSPy, LiteLLM and `diskcache`, and the gate
+would still have printed the acceptance as holding.
+
+**Decision.** `AcceptedAdvisory` gains `also_in_dev_group`, set on the `diskcache` entry. A sync command
+that names the extra, or that does not pass `--no-dev`, must leave the package out by name. Otherwise
+the acceptance is void and the Dockerfile is named. The accepted note in the gate's output says so.
+Test B4 also asserts `--no-dev` on every tracked Dockerfile. Watched to fail: the rule change turned two
+of the builder's B5 cases red, because their second Dockerfile was a bare `uv sync`; the cases were then
+corrected, and four voiding cases were added.
+
+**Rejected.**
+
+- *Keep `dev` free of DSPy and have CI sync with `--extra optimizer`.* The premise would stay true as
+  written. But a bare `uv sync` in any worktree would remove DSPy and the suite would fail on import,
+  and the workflow and the `Makefile` would each have to name the extra.
+- *Leave the rule alone because every Dockerfile passes `--no-dev` today.* That is the state DL-199 was
+  written against: a premise that holds and that nobody re-measures.
+
+---
+
+## DL-267 - S254 removal command matches its own specification - status: CORRECTED (planner, 2026-10-07 14:31 AEDT); found and recorded by the builder; the build resumes
+
+**Measured in `../ta-s254`, no `.env`, no network.** Both unmodified S254 Appendix runs give 132/132 identical outcomes and single vendor calls at installed DSPy 3.4.0, with zero disk-cache files and zero global history; A1 is red before implementation. Main's behavior is frozen in `tests/fixtures/guided_turn_main_records.json`.
+
+**Constraint.** S254 checklist 8 requires an unqualified `git grep` for the retired helper/prefix identifiers to be empty. The sprint document itself, DL-252 and the historical S246 handover contain those identifiers: the command returned 28 lines, exit 0, including its own checklist. Runtime source removals cannot satisfy it.
+
+**Roads not taken.** Deleting historical records or rewriting the handed-over requirement is outside scope. Silently narrowing the grep would claim a different proof. The handover explicitly requires a stop if the spec is wrong, so implementation is not done and S254 remains SPEC.
+
+**Proposed correction, not applied:** scope the removal grep to `kernel agents scripts tests`. The planner must correct the handover before the build resumes; D1-D7 are unchanged.
+
+**Corrected, 14:31 AEDT (planner).** The defect was the spec's: the planner wrote the removal command without
+running it on the tree. Checklist item 8 is now scoped to `kernel contracts agents orchestration surfaces scripts tests`. Three more
+wordings that a literal reading could trip on were fixed in the same pass: item 9 (the golden's one changed
+value), test B3 (the fourteen things it imports), and the stop rule, under which a wrong command with a plain
+intent is corrected and recorded, not stopped on. The first pass stands: the law reading, the two Appendix
+outputs, `main`'s frozen records and A1's red run.
+
+---
+
+## DL-266 - DSPy runs at run time: the offline placement is reversed, and the first build changes no prompt - status: DECIDED (operator, 2026-10-07 12:05 AEDT; [ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md)); first build SPEC as [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), work-queue 110
+
+**The direction.** The operator, on reading that the runtime is DSPy-free by design: *"May have been an
+experiment, i do not know but from the very beginning i intended it to be an active participant. Revert
+this decision and let's put dspy back where it belongs."*
+
+**How the offline placement came about** (read from the record, 2026-10-07). No step was the operator's
+decision about where DSPy runs.
+
+1. **2026-06-20, ADR-0010.** DSPy adopted, with optimisation *"offline, behind a `PromptOptimizer`
+   port"*. The reason given was that the evaluation gate must not depend on the tool.
+2. **2026-07-02 (`33eb1cd5`).** `dspy` landed in an optional `optimizer` extra that no Dockerfile
+   installs.
+3. **2026-09-20, DL-184.** A new advisory against `diskcache`, which arrives only through `dspy`, was
+   accepted by the planner on the premise that no container installs it.
+4. **2026-09-30, DL-250 and S246 (DL-252).** The operator asked for the guided chain of thought to be
+   recorded. DL-250 left the placement open between (a) DSPy in the image and (b) DSPy offline with a
+   parity-tested runtime parser. The S246 spec chose (b) for three reasons: the advisory, LiteLLM on
+   the live call path, and a DSPy upgrade silently changing a live prompt.
+
+**The operator's question the same hour:** *"there was a security issue with dspy. maybe decision to
+pause was because of it?"* Partly. The offline placement is three months older than the advisory. The
+advisory then became the first of the three reasons in step 4. It is against `diskcache`, not DSPy's
+own code, and it is still unfixed: 5.6.3, the affected release, is the latest on PyPI today.
+
+**Measured before deciding how** *[2026-10-07; DSPy 3.4.0, the lock's version; no LLM call, no
+network; `main` at `02e4f865`]*. A guided turn was run by `dspy.ChainOfThought` through an engine that
+wraps our own `LLMClient`, and compared with `main`'s `guided_turn`. The script is in S254's Appendix
+and runs in a worktree with no `.env`.
+
+| What | Measured |
+| --- | --- |
+| The new turn against `main`'s, over both roles × 3 user cases × (17 parse cases, 2 blank completions, a stopped call, a transport error, a timeout) | **132 of 132** give the same `DebateTurnRecord` or raise the same exception |
+| What the vendor client receives | 132 of 132: exactly one call, with `main`'s system and user text |
+| The same with `litellm` and `diskcache` unimportable | 132 of 132; neither is loaded even when importable |
+| Files written to DSPy's cache directory, disk cache off | 0 |
+| Calls DSPy keeps in memory with `disable_history=True` | 0 |
+| A failure of our client | arrives as `LMUnexpectedError` with our exception as `__cause__`; the client is called once |
+| A reasoning with a trailing comma | DSPy's own parse repairs it; `parse_guided_turn` refuses it (DL-252 D6) |
+| Four plain threads sharing one program, each in its own `dspy.context` | 4 of 4 correct |
+| Loading DSPy beside the deliberator (planner's Windows machine) | import + 0.9 to 1.4 s; 58 → 83 MB at import, about 120 MB after a turn; first turn + 2.3 s once, later turns + 7 ms. The container has 1.0 Gi |
+| Packages the `optimizer` extra adds to the deliberator image's 56 | 41 |
+| Packages `uv.lock` reaches only through LiteLLM or `diskcache` | 33, of which **8 are loaded by DSPy anyway** (`attrs`, `jsonschema`, `jsonschema-specifications`, `referencing`, `rpds-py`, `pygments`, `pyyaml`, `rich`) |
+| `uv sync --no-install-package` in the Dockerfiles' `uv==0.4.29` | present |
+| CI's environment | no DSPy: `uv sync` with no extra |
+
+**Measured again at 12:24 AEDT, after the spec, with the two packages not installed at all.** The rows above
+made them unimportable inside an environment that had them. In a fresh environment holding the deliberator
+image's package set less `litellm` and `diskcache` (96 requirement lines from the lock, installed without
+dependency resolution), the same script gives 132 of 132, and the deliberator's entrypoint imports beside
+DSPy. *[not measured]* The Linux image itself: the local Docker daemon did not answer, so the first proof
+of the built image is the build workflow's entrypoint smoke after the merge.
+
+So the three reasons of 2026-09-30 are each met with DSPy in the image: the image leaves `diskcache`
+out, the call goes through our client and never through LiteLLM, and the golden pins the wire text.
+
+**The planner's decisions under the operator's direction** (delegated technical decisions; S254 builds
+D1 and D3 to D7, the planner does D2 at merge).
+
+- **D1 — the engine and the program live in `kernel/`**, in modules `kernel/__init__.py` never
+  imports. *Rejected:* `agents/deliberator/`, because the judge and later roles would need them moved.
+- **D2 — `dspy` goes in the `dev` group, so CI has it, and stays in the `optimizer` extra the one
+  Dockerfile names.** *Rejected:* a base dependency (fourteen images would carry a library they never
+  run); a renamed extra (churn in every recorded command for no behaviour).
+- **D3 — strict JSON is kept: a `ChatAdapter` subclass, JSON fallback off, whose `parse` is
+  `parse_guided_turn`.** *Rejected for this sprint:* DSPy's own parse. It repairs JSON, and
+  `DLIB-OUT-06` records the reasoning *"exactly as the model wrote it"*. Whether to accept a repair
+  and record that it happened is a later decision.
+- **D4 — the image leaves out exactly `diskcache` and `litellm`.** *Rejected:* the extra whole
+  (against DL-184); a list computed from the lock (8 of its 33 are loaded, so `import dspy` would
+  break); a list of what one probe never loaded (not proof). The unused remainder is a later chore.
+- **D5 — the caller sees the client's own exception.** The one function that runs a program re-raises
+  `LMUnexpectedError.__cause__`, and a blank completion raises `empty_debate_turn` inside the engine.
+  *Rejected:* letting DSPy's wrapper reach `fault_boundary`, which would name DSPy's class as the
+  fail-open reason.
+- **D6 — the prompt-recipe digest covers the installed DSPy version.** *Rejected:* hashing DSPy's
+  source tree.
+- **D7 — DSPy is imported and the programs built when the agent module is imported; each turn builds
+  its own `dspy.LM` around its own client (`cache=False`, `num_retries=0`) and enters `dspy.context`
+  with the history off in the serving thread.** *Rejected:* a lazy import, which lets a broken image
+  start, activate and fail its first debate at night.
+
+**What the first build is, and is not.** S254 changes who renders and who calls. The model reads the
+same bytes and the graph records the same fields, and that is its proof. The judge, `dspy.History`,
+`dspy.Refine`, typed weights (work-queue 107) and a loaded optimised program each follow as their own
+change; a changed prompt still passes ADR-0010's gate.
+
+**The operator's prototype, read against this.** The operator, the same hour: *"there is a prototype of
+code suggested to me. Can you take it into consideration"*. The only prototype on file is
+[R010](research/debate-pipeline-prototype/INDEX.md), so this reading is of that one. Its shape is three
+callable roles, each returning typed JSON, composed by a plain loop in which the judge's directives feed
+the next round. That is the shape of a DSPy program: three predictors and a `forward()`. With DSPy in
+the runtime the same three predictors serve twice. In production each runs in its own container and the
+manager's `_debate` is the loop, as today. Offline they compose into one `dspy.Module` whose `forward()`
+is that loop, which is what `Evaluate` and GEPA run. So R010 sets the order of work after S254: the
+judge's ruling becomes typed and carries directives, then a later-round turn takes the other side's
+points and those directives as a typed input and must answer them (DL-264, goals a and b). What R010's
+reading ruled out stays ruled out: a model that writes the plan, a judge inside the loop it rules on,
+and risk figures computed by a model.
+
+**Not decided.** Whether a repaired reasoning is accepted. When the operator agent's prompts move.
+Whether LiteLLM's unused dependencies are trimmed from the image.
+
+**The planner's miss.** DL-250 asked the placement question and S246's spec answered it inside a
+"road not taken" paragraph. It reversed nothing the operator had said, but it settled something the
+operator cared about without putting it to them. A choice about where a framework the operator named
+runs is a direction, not a build detail.
+
+---
+
+## DL-265 - the Anthropic account is empty until Sunday 2026-10-11, so the debate runs on OpenAI for the week; the switch took five live changes where it should take one - status: DONE live (operator, 2026-10-06); the one-switch fix is work-queue 109
+
+🔁 **2026-10-07 17:18 AEDT, a second measured debate (S254's F1).** The same GILD packet through the merged code, `gpt-5.5`, the fleet's settings:
+**$0.79** against $0.66 the day before, so a debated buy costs $0.66 to $0.79 and three a night about $2.40. All of the
+difference is output: 22,195 output tokens. **Discovered constraint:** the defender's two turns wrote 6,363 and 7,738
+output tokens against a cap of 8,192, and on this vendor the model's reasoning tokens count against the cap. A turn over
+it stops with `length` and fails its order open. Opus peaked near 3,000. The cap is bounded at 8,192 in the settings, so
+raising it is a code change: work-queue 111. *Not taken:* lowering the effort to `medium` live tonight. It would change
+what the debaters write on a vendor whose rulings are already not pooled with Opus's, on one observation.
+
+🔁 **2026-10-07 12:20 AEDT (operator): *"Keep it on OpenAi whilst we are plumbing."*** The debate stays on
+`gpt-5.5` while the DSPy runtime and the debate workflow are built (ADR-0032; DL-264 amendments 5 and 6), not
+only until the top-up of 2026-10-11. The restore steps below are kept for the day the operator calls for
+them, and are not run before. The live-only state therefore lasts longer than this entry assumed: a full
+`up` still reverts it, which is what work-queue 109 fixes.
+
+**What the operator decided, in order.** Asked to top up the Anthropic account after EXP-019 emptied it
+(DL-264 amendment 3): *"No, no funds until coming Sunday"*. Then: *"re-wire for Chat GPT and get the
+pipeline going"*. And, watching it being done: *"that SHOULD be a configurational change and a trigger"*.
+
+**What stood in the way** *[measured 2026-10-06, read in the code and on the fleet]*.
+
+- **Each deliberator must pass both vendors' probes.** The credential-test pack lists `anthropic` and
+  `openai` for all three, and the fleet check counts every failing probe, required or not
+  (`agents/master/credential_test.py`, `fleet_preflight.py`). Setting the provider alone would have left
+  them refused.
+- **The operator agent has no provider setting** and its only probe is `anthropic`. One refused agent
+  makes the run degraded, and a degraded run holds its buys whoever is missing.
+- **The tunables pack is a fidelity decision path** (`scripts/replay_fidelity_git.py`). Changing the
+  provider there and recording a deploy would have reset the clean-session count two days before the
+  verdict of 2026-10-08.
+- **Without the switch:** the September drain's four recorded failures read `degraded` under today's
+  code (4 of 4), and no degraded run has ever been placed (0 of 84 `RunRequest`s), so four nights would
+  have run a path proven only by unit tests, with no buys.
+
+**What was changed, live only, 12:30 to 12:50 UTC.**
+
+| App | Change | Everything else |
+| --- | --- | --- |
+| `master` | `MASTER_CREDENTIAL_TESTS_B64` = the repo pack without the four `anthropic` probes (8 of 12 tests remain) | image `s251`, resources, scale, secrets, ingress and identity equal the snapshot |
+| `deliberator-manager`, `-proponent`, `-opponent` | `DELIBERATOR_LLM_PROVIDER=openai`; the models resolve to `gpt-5.5` | the same |
+
+No code moved and no `DeployRecord` was written: the fleet's deployed commit is still `d526faf4`. The
+snapshots and the temporary declaration are in OneDrive `trading-agents-data/rewire-2026-10-06/`.
+
+**Proven.**
+
+- **The vendor.** The fleet's own probes, run with the fleet's keys: `openai` passed, `anthropic` failed.
+- **The debate, offline.** One full debate on `gpt-5.5` through the production functions, on GILD's
+  recorded packet: 4 of 4 guided turns read, the slowest call 54 s against the 120 s limit, the judge's
+  JSON read (`revise`). **$0.66 for the order.**
+- **The fleet, live.** The master and the three deliberators were woken under their own rule names. The
+  fleet check **passed twice with 0 failures over all 15 agent types**; each deliberator reached
+  `state active` with `openai` declared, tested and passed; 0 escalations, 0 faults, no run and no
+  debate written. The four wake windows were restored and equal their snapshots.
+
+**What it means for the week.**
+
+- **A debated buy costs about $0.66**, so three buys a night are about $2 and twelve about $8, on the
+  OpenAI account, whose balance the planner cannot read.
+- **The model change is ungated.** DL-24's gate needs an Anthropic judge, which has no credit. `gpt-5.5`
+  ruled on 136 orders in August and September. This week's rulings are its own and are not to be pooled
+  with `claude-opus-5`'s.
+- **The operator agent activates unchecked** and its chat fails on use until the account is funded.
+- 🪤 **The state is live only.** The pack still says `anthropic`, so any full `up` puts both changes back.
+- **EXP-019 does not move.** It is pre-registered on `claude-opus-5`; another model is another experiment.
+
+**To restore, after the top-up and a fresh probe of the Anthropic key:** set
+`DELIBERATOR_LLM_PROVIDER=anthropic` on the three deliberators and the master's
+`MASTER_CREDENTIAL_TESTS_B64` from the repo pack, then compare each app with its snapshot.
+
+**Ruled out.**
+
+- *Change the pack and run a full `up`.* It resets the fidelity count, and the state is temporary.
+- *Mark the probes not required.* The fleet check counts them anyway.
+- *Leave the operator agent's probe.* The run would be degraded and the buys held.
+- *Fire a test run now.* It would decide today's as-of again with three orders already queued for the open.
+
+**Owed.** The morning check of `sched-2026-10-06`, the first run on OpenAI: a normal posture, the run's
+`role_models`, buys submitted, the night's cost. The restore after Sunday. Work-queue **109**.
+
+---
+
+## DL-264 - the debaters answer each other only by habit, and the judge has given every debate since 2026-09-17 the same ruling on the same closed grounds - status: MEASURED (planner, 2026-10-06 21:50 AEDT); direction DECIDED (operator, 2026-10-06: the debaters first, and whether they can weigh the evidence; work-queue 107)
+
+**The operator's focus (2026-10-06).** *"How our trio of experts can be made to produce a) discussion
+b) qualified answer to the debate issues."* This entry measures where the three roles stand on both. It
+adds to DL-250 (do the roles understand the evidence), work-queue 75 (one-sided examples) and
+[ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) (what a ruling binds). It
+re-opens none of them.
+
+**Measured.** *[2026-10-06, read-only, no LLM call]* All 88 `DeliberationRun`s. The denominator is every
+order with recorded turns that did not fail open: **243 orders in 42 runs**. 🪰 The "names the other
+side" and "concedes" rows are word matches, so they are upper bounds on engagement, not proof of it.
+
+| What | Measured |
+| --- | --- |
+| Rulings since 2026-09-17 | **34 of 34 `revise`**, over 11 runs (one is the planner-fired test run of 2026-10-01). Last `uphold` 2026-09-15, last `overturn` 2026-09-01 |
+| What those 34 rationales rest on | `reward_risk` or its zero threshold **30**, sizing **19**, correlation **10**, sentiment or news **2** |
+| The judge's rationale | median **230** characters (49 to 740); names the defender in **14 of 243** (6 %), and in 2 of the last 34 |
+| Who speaks last | the challenger, in **73 of 73** debates since 2026-09-01 |
+| Round 2 names the other side | defender 136 of 235 (58 %), challenger 100 of 243 (41 %) |
+| Round 2 concedes something | defender 63 of 235 (27 %), challenger 53 of 243 (22 %) |
+| Guided turns whose reasoning could not be read | 1 of 36 (a challenger round 2 wrote its `argument` inside the reasoning JSON) |
+
+Forty older records (2026-08-07 and 08-08) list their turns out of order. Not investigated; every
+record since 2026-09-01 is in order.
+
+**One debate read in full: GILD, `sched-2026-10-05`** (4 turns, each about 4,000 characters).
+
+- **There is an exchange.** The defender's round 2 opens on the challenger's claim (*"the only risk
+  check with a non-zero threshold is the one it barely cleared"*), answers it with four gates from the
+  packet, answers the sizing and the confidence points, and concedes one gap (no fill-price re-check).
+  The challenger's round 2 answers the defender's "scaled beats flat" with the packet's own numbers
+  (the target is the same in both modes; the stop is 2.00 ATR against a 1.73 ATR target).
+- **The last turn adds a point nobody can answer:** the confidence floor rejected 0 of 37 candidates.
+- **The ruling restates the challenger's last turn.** It names `reward_risk`, the skew, the sizing
+  headroom and the sector slot, and addresses none of the defender's three answers.
+- **The contested points are about the gates and the bracket.** The stock's own evidence
+  (fundamentals, sentiment 0.750, beta) is read in round 1 and the sentiment is never contested.
+- **Every demand is a change to the system** (*"set threshold_reward_risk_ratio above 0"*,
+  *"re-check sizing at fill"*). No one acting on one order can make it.
+
+**Why, read in the code.**
+
+1. **Nothing asks for a reply.** A guided turn is `readings`, `gaps`, `argument`
+   (`kernel/deliberation_guided.py`), and the role prompts say *argue for* and *attack*
+   (`kernel/deliberation_prompts.py`). Answering the other side is the model's habit. It is not a
+   recorded step, so it cannot be scored, and it is absent from about half of round-2 turns.
+2. **The challenger closes.** `_debate` (`agents/deliberator/poll.py`) asks the defender, then the
+   challenger, in each round, and the judge reads the transcript straight after the challenger's
+   last turn.
+3. **The judge is asked for one line and has been shown one ruling.** `JUDGE_SYSTEM` asks for
+   `{"ruling", "rationale": "<one line>"}`. All six of its examples rule `revise`. It is told not to
+   uphold when the challenger "catches a grounded implementation-specific flaw", and the challenger is
+   told to find one and to say why it forces REVISE or OVERTURN. The ruling has no place to list the
+   contested points, say who prevailed on each and on which reading, or say what would have to change.
+4. **The issues are about the system, and they are closed.** The floor of 0 on `reward_risk` (ADR-0027
+   Correction 2, EXP-011), fixed-fraction sizing (EXP-012) and the correlation cutoff (EXP-008) are
+   each measured and decided. No role is told so. ADR-0029's decisions 2, 3 and 4 (a block names a
+   fact about this order; the judge is told what each ruling does; a `revise` lands in a register,
+   deduplicated by ground) were sequenced after S214, are not built, and are not in the work queue.
+   Since S214 a `revise` does not block. **So for three weeks the debate has changed no order, and
+   its finding has had no reader.**
+
+**What the two goals need, as far as the measurement shows.** Not decided; the direction is the
+operator's.
+
+- **(a) A discussion** needs replying to be a recorded step: a turn after the first lists the other
+  side's points and answers each (concede, rebut with a reading, or name it as a matter for the
+  system, not this order). The last word must not open a new point, or the defender gets a closing
+  reply.
+- **(b) A qualified answer** needs the ruling to be built from the issues: each contested issue, both
+  positions, the judge's finding, the reading it rests on, and whether the issue is about this order
+  or about every order. An issue about every order goes to ADR-0029's register with its standing
+  answer, and that answer is given to all three roles as a definition (DL-250's rule: true of every
+  order, the same for every role).
+
+**Not measured.** Whether a reply answers the point it names (it needs a typed record or a reader);
+what a closing turn would cost; whether ADR-0029's tests 1 to 5 were ever read as a set (test 3 feared
+`overturn` above 20 %; it reads 0 of 34).
+
+🧭 **AMENDMENT, 2026-10-06 22:24 AEDT — the operator's direction: the debaters first, and whether they can weigh the
+evidence.**
+
+**The direction.** *"I would start with deliberators. Why? They are the source of data for the rest of
+the process. … If the source is bad then the rest of the data is a 'fruit of a poison tree'."* And
+what to concentrate on: *"Can we make LLM understand and assign 'weights' to the quant values we send
+them. … Can they be made to understand not only the value, but general significance of an indicator in
+relation of other indicators. … I want to make sure the decisions are made based on facts."* The
+planner had proposed starting with the judge. The order is now the defender and the challenger, then
+the judge, and the first question is significance, ahead of the reply step and the issue-built ruling
+above.
+
+**Measured the same day** ([rounds-and-weights](research/dspy/rounds-and-weights.md); no LLM call).
+
+- **The system has weights, and no role is shown them.** Confidence = 0.30 + 0.60 × (0.50 × technical
+  + 0.30 × fundamental + 0.20 × sentiment). The VIX is not in the score: it selects the regime, which
+  sets the floor and the base stop and target. The packet prints the scores with no weight and no
+  formula.
+- **GILD cleared its floor only on the sentiment score** (0.628 against 0.600; 0.598 with sentiment at
+  a neutral 0.50). The debate spent two rounds on *"an undisclosed mapping"* between two numbers that
+  one line of code relates, and named the sentiment score once.
+- **Nine debates store their packet.** The code's weights reproduce the confidence in 9 of 9. Five
+  would fail the floor with one pillar set to neutral. In the three that hinge on sentiment, the
+  judge's ruling mentions sentiment in none.
+
+**DSPy, read at 3.4.0 and probed offline** (the operator: *"Read it and tell me what you think"*). The
+site has no example of roles arguing. `dspy.History` carries rounds as real message pairs, where we
+paste one text block. The experimental decision types (`Score`, `Choice`, `Noul`) with `ReAnchor` make
+a stated weight a typed number that can be compared and calibrated, and they work beside S246's guided
+reasoning, as top-level fields only. They record a weight. They do not make it right.
+
+**The planner's answer to the question.** A model will state a weight for anything, so a stated weight
+proves nothing by itself. It can be checked against two references that exist today at no cost: the
+code's arithmetic (which pillar this order hinges on), and a changed input (do the weight and the
+argument follow it). Whether the code's own weights are right is a third question that only outcomes
+answer, and fundamentals and sentiment have no history in the replay cache (DL-232).
+
+**Next step, proposed (not approved: it spends money).** One pre-registered experiment on recorded
+packets before any production change, EXP-019: the two debaters' first turns with typed weights, on
+today's packet and on the packet plus the arithmetic, each with the hinge value moved. The call count
+and the dollar budget are stated in the pre-registration. After it, the packet states the arithmetic
+(with work-queue 98) and the turn records its weights. Work-queue **107**.
+
+**Finance models from Hugging Face** (the operator: *"may be relevant or not"*).
+
+- **Not for the three roles' reasoning.** No model knows what our keys mean in this system, which is
+  the measured defect. *[assumed, not measured]* A smaller model is also weaker at the strict typed
+  output the harness depends on.
+- **Relevant in one place this entry measured.** The sentiment score decided 3 of 9 orders. It is a
+  word count over headlines, and GILD's list includes headlines about other companies. Scoring it with
+  a finance-tuned model is the existing champion–challenger track.
+- **A later arm, not a first step.** All three roles run one model (`claude-opus-5`, read from the run
+  record), so they may share blind spots. A second model family as one debater can be an arm of the
+  same experiment.
+
+🪰 The last section is the planner's knowledge of those models, not a survey made today.
+
+🩹 **CORRECTION and AMENDMENT 2, 2026-10-06 22:57 AEDT — the VIX sets nothing; the experiment is approved and
+pre-registered.**
+
+**Correction.** The amendment above says the VIX *"selects the regime, which sets the floor and the base stop
+and target"*. That is what the packet's `Regime:` line suggests, and it is wrong. *[measured 2026-10-06, the
+whole mechanism read]* `classify_regime` turns the VIX into a label. The provider then builds every
+`RegimeContext` from four settings constants (`agents/provider/agent.py`), the same under every label. The
+label is read only to be printed: the analyst's summary sentences, the packet and the trace. **In today's code a
+large VIX changes no score, no floor, no stop and no target.** On the operator's own example (*"a large VIX or
+great company data?"*) the code gives the VIX no weight at all, so any weight a debater puts on it is the
+debater's own. EXP-013 measured that scaling risk down under stress loses; nothing tells the debaters so.
+
+**Approved.** Operator, 2026-10-06: *"go ahead"*, on *"OK to spend up to $10 on it?"*.
+[EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md) is pre-registered: nine
+recorded packets and four with the relative-strength band moved; today's packet against the packet plus the
+arithmetic; each debater answers, with a probability, whether the order hinges on each pillar; the bars are set
+before the run. Estimate $7.70; no call starts after $9.00.
+
+**Not decided.** Whether the packet's `Regime:` line should stop presenting four constants as the regime's. It
+belongs with work-queue 107's packet change.
+
+🔴 **AMENDMENT 3, 2026-10-06 23:14 AEDT — EXP-019 was stopped by an empty LLM account, and it is the fleet's account too.**
+
+**What happened.** After 31 of the 52 planned calls ($3.91) the vendor refused the next four: *"Your credit
+balance is too low to access the Anthropic API"*. The fleet's `anthropic-api-key` is the same key as the
+planner's (compared by hash), so the three deliberators and the operator agent have no credit either.
+*[by S227's design, not tested tonight]* A run whose only failing checks are the LLM agents proceeds with its
+buys held.
+
+**The planner's miss.** The spend was approved; the balance was never asked about, and the planner cannot read
+it. A paid experiment draws on the same balance as the nightly debate. The planner's standing rule from now:
+ask what the balance can carry before a paid run, and count the fleet's night first.
+
+**Interim, not a verdict** ([EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md), Appendix R; phase 2 has not run). With the arithmetic in the
+packet, 45 of the 45 answers given are right. On today's packet 34 of 45 are, and all 11 errors are false
+alarms: a debater today names more pillars as decisive than are.
+
+**Found by an arm-B turn, and checked against the packet: MRK was approved on a rival's good news.** MRK's
+order on `sched-2026-10-05` cleared its floor only on its sentiment score (0.7167; neutral gives 0.5918). 7 of
+its 20 headlines are about Vaxcyte's pneumococcal vaccine trial win, two of them *"Takes Aim at Pfizer and
+Merck"*, and the word count reads *spikes*, *soars*, *win* and *success* as good news for Merck. The live debate
+that night ruled `revise` on the `reward_risk` gate and never raised it. The challenger given the arithmetic
+found it in one turn. Filed as work-queue **108**.
+
+**Owed by the operator:** the top-up, before the fleet check that precedes `sched-2026-10-06` (22:30 UTC).
+**Owed by the planner after it:** the remaining 21 calls (about $2.80), on the operator's word that the balance
+can carry them.
+
+📎 **AMENDMENT 4, 2026-10-07 00:00 AEDT — the operator's prototype is filed as R010, and two of its ideas feed the two goals.**
+
+The operator supplied a generic debate-pipeline prototype (a proponent, an opponent, a judge that computes risk
+and issues directives, and a revision loop) and asked for it to be filed as research:
+[R010](research/debate-pipeline-prototype/INDEX.md). The planner's reading, not a decision:
+
+- **For goal (b), a ruling needs a reader.** The prototype's judge issues directives that the next round must
+  answer. Here the reader cannot be a model that rewrites the order (ADR-0017, ADR-0022). It is ADR-0029's
+  register for a point about the system, and the other debater's next turn for a point about this order.
+- **For decisions that rest on facts, risk figures belong in the packet.** The prototype has the judge compute
+  VaR and expected shortfall. Computed in code and defined, they are evidence (work-queue 98). Computed by a
+  model, they are not.
+- **Not taken:** a model that writes the trading plan, a judge inside the loop it rules on, and the generic
+  parameter list.
+
+🧭 **AMENDMENT 5, 2026-10-07 12:15 AEDT — the prototype is the shape to build, adapted; amendment 4's "not taken" was the wrong reading.**
+
+**The direction.** The operator, on the prototype of amendment 4: *"it does not have to be implemented
+VERBATUM. It can bee adpted to our needs."* Amendment 4 sorted its parts into taken and not taken. Read as
+a shape to adapt, each part has a form here. The part-by-part table is in
+[R010](research/debate-pipeline-prototype/INDEX.md).
+
+**What the adapted debate is.** Three typed roles and a loop. The defender argues for the order the
+pipeline wrote. Each of the challenger's points carries a reading, a severity, and whether it is about
+this order or about every order. The judge returns a ruling built point by point, with directives. After
+round 1 the judge states what is still open, round 2 must answer each point, and the judge rules. Risk
+figures are computed in code and shown to all three. This is goals (a) and (b) of this entry in one
+design: the directive is what makes a reply a recorded step, and the point-by-point ruling is the
+qualified answer.
+
+**The one part not carried over, on purpose.** In the prototype the loop revises the plan. Here a ruling
+can stop a buy and change nothing else (ADR-0029 decision 1: the model may subtract, never add). So the
+loop improves the debate and the ruling, not the order. Letting a ruling shrink an order is a
+capital-risk decision, and it stays the operator's to reopen.
+
+**The order of work.** Each step is its own change, and a changed prompt passes ADR-0010's gate with its
+budget stated first.
+
+1. **DSPy in the deliberator's process**, with no prompt changed: [S254](sprints/sprint-254-each-debater-turn-is-run-by-dspy-and-the-prompt-does-not-change.md), specced
+   ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).
+2. **Facts in the packet**, all computed in code: the score arithmetic (work-queue 107), the withheld
+   facts (work-queue 98), risk figures for the order and for the book, each with a definition
+   (work-queue 97 c). Building it needs no model call. Its paid check is EXP-019's arm B.
+3. **The debaters' typed turn:** what the order hinges on, and for the challenger a severity and a scope
+   on each point. After EXP-019's verdict.
+4. **The judge's typed ruling**, point by point, with directives and a probability for each ruling. The
+   judge is told what each ruling does (ADR-0029 decisions 2 and 3).
+5. **The loop:** the judge's open points after round 1, an answer to each in round 2, and an early end
+   when none is open. *[ASSUMED, not measured]* an order with no open point then costs 3 calls where it
+   costs 5 today, and one with open points costs 6.
+6. **The register** for directives about the system (ADR-0029 decision 4).
+7. **One offline program** composing the three predictors, for evaluation and GEPA (work-queue 97 d).
+
+Steps 2 and 3 keep the operator's order of 2026-10-06: the debaters first. Step 1 does not wait for the
+Anthropic account. Steps 3 to 5 each need a paid replay.
+
+**Not decided.** How many points a ruling may hold. Whether the judge's statement of open points is its
+own call or part of its ruling. Which risk figures the book supports today: nothing is measured.
+
+🧭 **AMENDMENT 6, 2026-10-07 12:20 AEDT — the loop that revises the plan is the workflow, and it is carried; amendment 5's exclusion is withdrawn. The debate stays on OpenAI while this is plumbed.**
+
+**The direction.** Amendment 5 said the prototype's loop *revises the plan*, and left that part out. The
+operator: *"the workflow is what we are after."* The planner reads this as: the cycle itself is the thing
+to build. A proposal is critiqued, the judge sends it back with directives, the proposal is revised, and it
+goes round until the judge accepts or the rounds run out. A loop in which only the arguments change is not
+that workflow. 🪰 If the operator meant the process without a changed order, the revision step below is
+dropped and the rest stands.
+
+**What a revision can be here.** The model may subtract, never add: the founding constraint is kept. So a
+revised order is the same ticker and side with a smaller quantity, or no order. Nothing else about an order
+is a model's to move: the stop and the target are measured from volatility (ADR-0019, ADR-0031), and the
+entry is the session's (ADR-0018). The judge's directive is typed. The revised order is checked in code
+against those bounds and run again through the PM's own gates, and the next round debates the revised
+order.
+
+**Shadow first.** While the workflow is being built, the revised order is recorded beside the original and
+the original is what executes. `revise` therefore still changes no order, ADR-0029 stands as written, and
+the plumbing reverses no law clause. Each revision is scored against what the unrevised order went on to
+do. Making a revision binding is a capital-risk decision: it needs that ledger, an ADR that amends
+ADR-0029, and a law cycle (`DLIB-NEV-02`, `DLIB-OUT-04`). It is the operator's, and it is not part of the
+plumbing. *Why not binding at once:* 34 of the last 34 rulings are `revise`, 19 of them on sizing, which
+EXP-012 measured and closed. A binding revision today would shrink every order on a ground already
+answered.
+
+**The order of work, changed in two places.** Step 5, the loop, now includes the revision, in shadow:
+directives, a revised order, the code's re-check, the next round, the judge's acceptance. A new last step
+is added: the revision becomes binding, on the operator's decision.
+
+**Vendor.** The operator, in the same message: *"Keep it on OpenAi whilst we are plumbing."* See DL-265's
+note. Every live check and replay of the plumbing runs on `gpt-5.5`. *[the planner's reading]* A judgement
+of prompt quality (EXP-019, a GEPA run) is not plumbing, and stays on the model production is meant to run.
+
+**Not decided.** Who writes the revised quantity: the defender, inside the bounds, or code from a typed
+directive. How many rounds the cycle may take, against what each costs.
+
+🧭 **AMENDMENT 7, 2026-10-07 18:19 AEDT — step 2 is three pieces and the arithmetic goes first; the quality checks are to be read on both vendors.**
+
+**Step 2, split.** Read against the code, "facts in the packet" is three pieces at different stages. The
+score arithmetic is measured and prototyped, and is packaged as
+[S255](sprints/sprint-255-the-packet-states-the-score-arithmetic.md) (DL-269). The withheld facts (work-queue 98) rest on an inventory of 30
+September and have no definitions written. The risk figures have no measurement. The last two follow as
+their own sprints, each after its measuring.
+
+**The operator, on EXP-019's remainder:** *"$2.80 is ok."* The run resumes on Opus when that account is
+funded (2026-10-11).
+
+**The operator, the same hour:** *"maybe we should continue testing on OpenAI to get confidence tat if we
+HAVE TO swap from anthropic to openai again it will give up comparable results."* Amendment 6 recorded the
+planner's reading that a judgement of prompt quality stays on the model production is meant to run. That
+reading is too narrow. The fleet debates on `gpt-5.5` this week, a forced swap can happen again, and the
+first real debate on it already showed one difference: the defender writes 2.7 times the output it writes
+on Opus for the same order (6,363 and 7,738 tokens against 2,334 and 2,853) and reaches 94 % of the cap
+(work-queue 111). **Direction:** a check of what the roles understand is run on both vendors, on the same
+frozen cases, and compared answer by answer.
+
+**Run, 19:10 AEDT ([EXP-020](research/experiments/EXP-020-on-the-same-cases-does-gpt-5-5-know-the-hinge-as-opus-does.md), $6.52, the operator approved $7).** With the arithmetic `gpt-5.5`
+answers 54 of 54 hinge questions right and is on Opus's side of 0.5 in 45 of 45 answers both gave. On today's
+packet the two guess, and differently (5 of 36 on opposite sides). So the arithmetic is also what makes a
+vendor swap safe on this question. `gpt-5.5`'s defender writes twice Opus's output, and the fleet's cap would
+have cut 5 of its 16 typed turns: work-queue 111 now has a measured frequency and comes before step 3.
+
+**Found the same evening, 20:37 AEDT: the measured text has a false clause.** S255's builder stopped while
+pinning the first line: arm B's first line says that inside `quant_metrics` *each key ending in `_score`* is a 0-100 band score. Four such keys are on a 0-1 scale: `technical_score`, `fundamental_score`, `sentiment_score` and `composite_score` (measured over 1,765 recorded recommendations: 20 distinct keys end in `_score`, and these four never exceed 1.0).
+The planner wrote that sentence for EXP-019 and carried it into S255's spec as frozen text without checking it
+against the keys. Corrected on S255's branch: one clause excepts the four keys, and the other two lines are
+unchanged. **What it does to the gate:** EXP-019 and EXP-020 measured the uncorrected line, and every answer
+was right with it. The corrected line is not measured. *Decided by the operator ("run it") and done,
+20:59 AEDT ([EXP-021](research/experiments/EXP-021-does-the-corrected-first-line-read-as-well-as-the-measured-one.md), $3.29):* with the corrected line `gpt-5.5` answers 54 of 54
+right, and all 54 are on the side they were on with the uncorrected line. The corrected text is measured on
+`gpt-5.5`. It is not measured on Opus, and EXP-019's remaining calls will measure the uncorrected line there.
+
+**As it was proposed, before the run.** EXP-019's frozen cases on `gpt-5.5`, with the runner's vendor as the only
+change. *[estimated, not measured]* On Opus a call cost $0.126 (31 calls, $3.91). The one debate measured on
+both vendors cost 1.6 times as much on `gpt-5.5`, so about $0.20 a call: about $7 for the 36 calls that
+answer H1, about $10.50 for all 52. It can run now, because that account is funded. A stop at the output cap
+counts as an unread answer, as the pre-registration already says.
+
+---
+
 ## DL-263 - the window is computed in one pure reporter module over one listing of each label, a count that cannot be computed is absent, and positions_held reuses RPT-OUT-07's snapshot selection - status: DECIDED (builder, 2026-10-02; S253, under DL-262)
 
 **Question.** DL-262 decided what the book metrics read. How is it built so `result.py` (154) and
@@ -780,6 +1763,9 @@ that raise unreachable.
 **Open, for the builder (next free DL).** The episode token (recommended: the first-sight snapshot's key; not the run id, a clock, a uuid or a counter), the subject's exact format, how the open episode is found, and how an unresolved suffix-less Flag is treated at upgrade (recommended: as the open episode).
 
 ## DL-252 - each debater turn is a DSPy-rendered guided turn, reproduced without DSPy, parsed strictly, and recorded with its packet - status: DECIDED (builder, 2026-09-30; S246)
+
+🔁 **Reversed in part, 2026-10-07 ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).** DSPy now runs in the deliberator's
+process. D1's frozen literals are retired by S254. D2, D3, D5, D6, D7 and D8 stand.
 
 **Why.** DL-250's amendment (the operator, 2026-09-30) asks for the *guided* reasoning, the structure
 `dspy.ChainOfThought(..., rationale_field_type=GuidedReasoning)` imposes, recorded so it can be scored
@@ -2500,6 +3486,32 @@ Recommended: the retag.
 2026-10-08 from a worktree pinned at `d526faf4`, and EXP-014 runs from the same worktree. Until
 then there is no retag unless a live defect forces one, and any build is diffed against the
 decision paths first. At the retag `main` differed from `d526faf4` in 0 decision-path files.
+
+**Read, 2026-10-08 10:32 AEDT: INSUFFICIENT again, and for a different reason.** The replay ran from a
+worktree pinned at `d526faf4` over an export of 64 sessions. The four sessions on the fleet's unchanged
+decision code are clean, as planned: `sched-2026-10-02`, `-10-05`, `-10-06`, `-10-07`. On them the replay
+agrees with the fleet on every row: scanner 100 of 100, analyst 148 of 148, PM 4 of 4, and 143 of 143 PM
+hold passthroughs, which are counted beside the verdict and never pooled. Unexplained differences: 0. The
+scanner's floor is met (4 of 4 clean sessions) and the analyst's (148 of 100 tickers). **The PM's is not:
+4 judged recommendations against a floor of 10.** The four sessions held four buys in all (one on 10-02,
+three on 10-05), and the last two nights placed none because every name the scanner passed was already
+held. Outputs: OneDrive `trading-agents-data/fidelity/2026-10-08/`.
+
+**What it means.** EXP-014's frozen gate asks for a PASS, so no arm starts. The rule is not narrowed
+after reading its result (decision 1 above). A PASS needs six more judged recommendations on the same
+decision code. *[estimated, not measured]* at one buy a session or fewer, with the book at 36 names, that
+is one to three more weeks.
+
+**Open, the operator's call: hold the fleet still, or deploy and restart the count.** Four merged sprints
+wait for a retag (S252 to S255), and two of them change decision paths (S253 scores a short-history
+candidate differently; S255 adds fields in `contracts/`). So a retag starts the count again on the new
+code: four clean sessions and ten judged recommendations from zero. Holding keeps the four recommendations
+already counted and keeps four sprints, and every later decision-path change, off the fleet until the
+floor is reached. Recommended: the retag. The PM's floor is slow to reach on any code while the book is
+this full, so holding buys about a week of the experiment's start at the price of every deploy in
+between.
+
+**Resolved, 2026-10-08 11:34 AEDT: the operator chose the retag** (*"go for it"*). The fleet runs `s255`, built from `fec365a1` (`v0.123.00`), since 00:40 UTC. The fidelity count starts again on that code: four clean sessions, the first of them `sched-2026-10-08`, and ten judged PM recommendations. It is read from a worktree pinned at `fec365a1`, and EXP-014 runs from the same worktree. *Given up:* the four recommendations already counted on `d526faf4`. Until the next read, any build is diffed against the decision paths before it is deployed.
 
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 
@@ -5242,6 +6254,10 @@ until a deploy carries it. No run has yet executed under `binding`.
 ---
 
 ## DL-184 - a vulnerability that reaches no container is accepted, not chased - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
+
+🔁 **2026-10-07 ([ADR-0032](decisions/0032-dspy-runs-the-llm-roles-at-run-time.md), DL-266).** DSPy is to enter the deliberator image. The premise below
+is kept by leaving `diskcache` out of that image by name, and the audit will check the package and
+not the extra's name (S254). Until S254 merges, nothing below has changed.
 
 **The break.** `make ci` step 10 (`pip-audit`) began failing 2026-09-20 with **no change to any
 dependency file** - a newly published advisory, **PYSEC-2026-2447** (CVE-2025-69872,

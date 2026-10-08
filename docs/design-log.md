@@ -10,6 +10,59 @@ and is marked CLOSED here.
 
 ---
 
+## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); SPEC as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md), work-queue 112
+
+**The question.** DL-271 measured the defect and listed four parts of a fix without
+choosing between them: an explicit lock, a renewal or an early settlement, a caught lost lock, a visible
+repeat. This entry chooses.
+
+**Measured, 2026-10-08, no LLM call.**
+
+- **The whole mechanism, read.** `serve_once` polls, runs the handler, then replies; `reply` publishes and
+  only then completes the message. One poll takes up to ten requests, all locked from the moment they are
+  received and handled one after another, so the third has waited two turns before it starts. A reply that
+  cannot be published abandons the request, which is then delivered and served again. `write_llm_call`
+  returns the first row for a key that exists.
+- **A reproduction with no network** (the Appendix of the spec) prints all five of these on `main`.
+- **A prototype of the decisions below, on the live namespace:** disposable topics, the default one-minute
+  lock, a 70-second handler. The request is served once, with no error and one reply, and a second
+  consumer is given nothing. `main`'s code on the same check raised `MessageLockLostError` and served the
+  request twice (DL-271).
+- **The prototype against the whole suite:** five existing tests fail and 4,298 pass. The five assert the
+  behaviour being removed.
+- **Who is served.** Only the deliberator's manager sends to a request topic, to its two peers. The
+  supervisor, the operator, the researcher and the forecaster run the same loop and receive nothing.
+- **The record.** 4 of 1,130 debater calls took more than 60 seconds, all on 2026-08-19 on `gpt-5.5`. The
+  manager has recorded no reply that nobody was waiting for, in 90 runs.
+
+**Decided.**
+
+| # | Decision | Ruled out, and why |
+| --- | --- | --- |
+| D1 | A served request is settled when it is taken, before its handler runs. `reply` only publishes | **Renewing the lock** (the vendor's `AutoLockRenewer`): a second thread on a synchronous receiver's connection, provable only on the live service, and it keeps the redelivery that makes the second paid call. **An explicit five-minute lock alone:** the vendor's maximum, not applied to a subscription that exists, and a batch still ages under it. **Catching the lost lock:** the request is still served again |
+| D2 | One request a pass: `receive_max_messages` defaults to 1 | **Settling each request just before its own handler:** a third method on the consumer protocol, for a batch that buys nothing when requests are handled in turn. **Deleting the tunable:** more surface for no gain |
+| D3 | A reply that cannot be published is a `Fault`, and the loop serves the next request. The two debater peers pass a graph sink; the other served agents keep the in-memory one | **Letting the error end the process:** the next request waits for a restart. **Swallowing it, as today:** silent |
+| D4 | A completion under a ledger key that exists is its own row, under that key plus `:repeat-N`. No new property | **One row with a repeat count and summed tokens:** rewrites an audit row and loses the second call's hash and latency. **Keying by the bus message's id:** changes every key and reader. **A `repeat_of` property:** new graph vocabulary for what the key already says |
+| D5 | Nothing changes on any subscription. The five-minute lock set by hand on 2026-10-08 stays | **Setting it back:** it costs nothing where it is, and it protects the older code after a rollback |
+| D6 | `OPR-IDM-02` is rewritten to what the code does: duplicate commands share one `CommandAudit` and one `Intent`, and each model call is its own `LLMCall` row | **Leaving it:** the clause said two of each, the code has always written one, and the test that proves `OPR-IDM-03` counted one `LLMCall` for two paid calls |
+
+**What D1 gives up.** The bus no longer serves a turn again after its peer stopped mid-call or its reply
+could not be published. That order fails open when the manager's wait ends, as a timed-out turn does
+today. With the five-minute lock on the live subscriptions a redelivery already arrives after the
+manager's 120-second wait, so the fleet as it stands gives up nothing. *[ASSUMED, from the vendor's
+documentation, not measured]* A locked message is not freed when its receiver disconnects; nothing above
+depends on it.
+
+**Found on the way, not fixed here.** A request message has no time to live: the manager sets none and the
+subscriptions keep a message forever. A request whose caller has stopped waiting is served whenever a peer
+next takes it, a paid call with no reader. No instance is recorded. It is noted on work-queue 111, which
+changes the wait.
+
+**Not decided.** Whether the other four served agents should record their failed replies: nothing sends to
+them today.
+
+---
+
 ## DL-271 - a debater turn slower than the 60-second message lock crashes its peer and is served again, and the ledger cannot show the second call - status: MEASURED (planner, 2026-10-07 21:58 AEDT); the five-minute lock APPLIED live 2026-10-08 08:52 AEDT; the fix is work-queue 112
 
 **How it was found.** Sizing work-queue 111 (the output cap on `gpt-5.5`), the planner looked at what a

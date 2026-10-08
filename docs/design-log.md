@@ -10,6 +10,64 @@ and is marked CLOSED here.
 
 ---
 
+## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); SPEC [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), packaged for Codex; work-queue 113
+
+**The question.** [DL-277](design-log.md) measured the request side alone: four consumers on one
+subscription and a handler that sleeps. Step 1 of its plan is a committed harness on the production
+manager and debaters together. What must it be, and does DL-277's result hold with the manager in it?
+
+**Measured 2026-10-09, no LLM call.** A prototype on no branch (S260's Appendix; the file and its outputs
+are in OneDrive `trading-agents-data/s260-2026-10-09/`). Between a transport and a canned model that
+sleeps, everything is the repository's code as the fleet calls it: `review_pm_node`,
+`ServiceBusPeerClient` and its reply inbox, `AzureServiceBusRequestConsumer`, `serve_once`,
+`DeliberatorAgent`. Two transports: a stand-in bus in the process, and three disposable topics on the
+live namespace, run before that morning's scheduled run began and deleted after each configuration.
+
+| Run | Stand-in bus | Disposable live topics |
+| --- | --- | --- |
+| Four at once, four replicas up late, 1 request a pass | 10 runs of 10: 4 of 4 debated, nothing lost, four replicas served the first four turns | the same counts (turns of 8 s, a wait of 20 s) |
+| The same, 10 requests a pass | 10 of 10: 2 of 4 failed open, 2 replies nobody took (1 dead-lettered, 1 unread), one replica served all four | the same counts |
+| Four at once, one replica | 10 of 10: 2 of 4 failed open | not run |
+| One at a time against four at once, 16 turns | lanes 1.00 against 2.30 at turns of 0.5 s | 186.6 s against 48.8 s at turns of 10 s: 3.8 times faster, both clean |
+| 1,600 turns at four at once | 25 runs of 25 clean, no exception from the shared in-memory graph | not run |
+
+The fleet's three debate subscriptions read the same before and after every live configuration.
+
+**Decided (D1 to D9 of S260).** The harness lives under `scripts/` and ships in no image. The manager's
+peer client gains one optional argument, the bus it publishes on, as its reply receiver can already be
+supplied; nothing else in shipped code changes. A run is clean when every order was really debated, none
+failed open, no reply went untaken, none answered another request, no turn was served twice and no
+replica raised. Lanes are reported and not judged. The live transport makes its three topics from a
+random run id, refuses a fleet topic's name, counts the fleet's subscriptions before and after, and
+deletes what it made. Four timed tests hold the result on the stand-in bus, with the September setting
+as the planted failure.
+
+**Ruled out.** Scripts kept outside the repository: the September apparatus was lost twice
+([DL-145](design-log.md)). A harness that runs only live: the builder has no network and CI could not
+hold the result. Stand-in manager or debaters: they bypass the inbox and the consumer, where the replies
+were lost. A process for each replica: it needs Postgres as the shared graph, so writes to the production
+spine. A harness manager under another name: a debater admits `deliberator-manager` alone, and that list
+is in `contracts/`, a fidelity decision path; the reply topic is made disposable through the settings'
+suffix instead. Judging lanes: at a canned turn of a second the pickup below dominates.
+
+**Found on the way. Nothing decided, nothing changed.**
+
+- A reply taken by a sibling's receive call reaches its owner when the owner's own call returns: up to
+  one second (`REPLY_RECEIVE_SLICE_SECONDS`), about half a second a turn at four at once. Against turns of
+  40 to 230 seconds that is under 2 %.
+- At ten a pass one turn of four started after its caller had given up. A request has no time to live
+  (already in work-queue 113's row); the harness counts such turns.
+- The first guided turn in a fresh process takes 2.4 seconds, the import of DSPy. A debater replica pays
+  it once after each start.
+- The fleet's reply subscription `deliberator-manager.reply` holds 7 dead-lettered messages (read
+  2026-10-09 22:08 UTC). Not read further.
+
+**Not shown.** Anything on the fleet: Postgres as the claim-check store, replicas scaling out, the
+vendor's rate limit with several calls in flight. Step 2 of DL-277's plan, one paid proof at three at
+once, stands and is the operator's call. The dial stays at 1.
+
+---
+
 ## DL-278 - a build with a re-run job cannot be proven to the deploy record, and a tag the fleet has pulled is not pushed again - status: DECIDED (planner, 2026-10-08 22:50 AEDT); the reader's fix is work-queue 115
 
 **What happened.** The `s259` build (run `37767377219`) pushed fifteen images and failed one job: the

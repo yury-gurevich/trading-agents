@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it`
-**Status:** SPEC
+**Status:** BUILT — local memory proof; dependency audit and live transport NOT RUN
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-279](../design-log.md) (decisions D1 to D9 this sprint builds) ·
@@ -272,22 +272,22 @@ No test may skip when a dependency is missing. A skipped proof is not a proof.
 
 ## Success factors
 
-- [ ] On the memory transport four debates at once are clean with the settings' own default (A1), and
+- [x] On the memory transport four debates at once are clean with the settings' own default (A1), and
       the same run with ten requests a pass fails open and is reported not clean (A2).
-- [ ] Too few replicas (A3), a mismatched reply (A5) and each term of the rule alone (A6) are reported
+- [x] Too few replicas (A3), a mismatched reply (A5) and each term of the rule alone (A6) are reported
       not clean.
-- [ ] `ServiceBusPeerClient` publishes on a supplied bus and is unchanged without one (A7); no
+- [x] `ServiceBusPeerClient` publishes on a supplied bus and is unchanged without one (A7); no
       existing test is edited (B1).
-- [ ] The command prints the report and returns 0, 1 or 2 as D9 says (A8).
-- [ ] The live transport refuses a fleet topic name and imports without the Azure SDK (A9, A10); the
+- [x] The command prints the report and returns 0, 1 or 2 as D9 says (A8).
+- [x] The live transport refuses a fleet topic name and imports without the Azure SDK (A9, A10); the
       handback says plainly that it was not run.
-- [ ] The four timed tests pass twenty times of twenty.
-- [ ] Nothing under a fidelity decision path, `kernel/`, `orchestration/`, `infra/`, `pyproject.toml`
+- [x] The four timed tests pass twenty times of twenty.
+- [x] Nothing under a fidelity decision path, `kernel/`, `orchestration/`, `infra/`, `pyproject.toml`
       or `uv.lock` is touched; in `agents/` only `agents/deliberator/servicebus_peer_client.py` and,
       if you put A7 there, one new test file.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
 
@@ -480,9 +480,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | test_four_debates_lose_no_reply | tests/test_debate_lanes_timed.py | PASS | DLIB-IDM-04 / DLIB-OBS-04 |
+| A2 | test_september_setting_loses_replies | tests/test_debate_lanes_timed.py | PASS | DLIB-FAIL-01 / DLIB-NEV-06 / DLIB-OBS-04 |
+| A3 | test_four_lanes_need_four_replicas | tests/test_debate_lanes_timed.py | PASS | DLIB-FAIL-01 |
+| A4 | test_one_debate_at_a_time | tests/test_debate_lanes_timed.py | PASS | DLIB-DEP-02 / DLIB-OBS-04 |
+| A5 | test_another_requests_reply_is_counted | tests/test_debate_lanes_reporting.py | PASS | DLIB-NEV-06 |
+| A6 | test_each_rule_term_alone_makes_the_report_not_clean (7 cases) | tests/test_debate_lanes_reporting.py | PASS | DLIB-FAIL-01 / DLIB-OBS-04 |
+| A7 | test_manager_publisher_can_be_supplied (supplied and absent bus) | tests/test_debate_lanes_peer_bus.py | PASS | DLIB-DEP-02 |
+| A8 | test_command_reports_and_returns_the_counted_result; test_bad_argument_returns_two_without_a_report | tests/test_debate_lanes_command.py | PASS | DLIB-FAIL-01 / DLIB-OBS-04; DL-279 |
+| A9 | test_disposable_names_hold_the_run_id; test_fleet_or_unrelated_topic_is_refused; test_live_without_connection_string_returns_two_and_creates_nothing | tests/test_debate_lanes_transport.py | PASS | DL-279 (tooling) |
+| A10 | test_live_module_imports_with_the_azure_sdk_refused | tests/test_debate_lanes_transport.py; tests/debate_lanes_import_probe.py | PASS | DL-279 (tooling) |
+| B1 | whole existing suite without edits | Makefile ci target / pytest testpaths | PASS — 4436 passed, 8 skipped; 100.00% coverage; eight pre-existing skips listed below | existing test citations unchanged |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** D6 synthetic lifecycle/cleanup (`tests/test_debate_lanes_live_lifecycle.py`); D8 actual first-poll completion, manager identity and competing-receiver semantics (`tests/test_debate_lanes_startup.py`); D5 environment isolation and D3 memory without a production-count field; D9 literal command defaults. These hold the specified setup and teardown without adding a production guarantee.
 
 ---
 
@@ -490,53 +500,287 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Intent recorded before the first code change, 2026-10-09:** Work only in `../ta-s260` on the specified sprint branch, initially clean at `main` `10770f91`. Read the complete spec and then this worktree's `CLAUDE.md`, the complete law files above, and DL-279 / DL-277. First reproduce the Appendix table, then record A1/A2/A7 red before D1-D9. Prove each guard by breaking and restoring it, run A1-A4 twenty times, run the two commands and redirected `make ci`, and commit a local handback. Success is the spec's counts and scope checks. Do not change the version/lock, STATE, fidelity paths, kernel, any existing test, or any production default. Live, push, merge and remote proof are not authorized.
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT — local memory proof; not remotely gated, merged, deployed or live-proven
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s260`, branch `sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it`; `.env` absent. Original base `10770f91bf531eda99cc105f8e80abdfe22fabb0`. The law-reading and intent record was committed as `2fe980679286ad34661f9e605560e56af7f4e0eb` before code. All runs used `UV_OFFLINE=1`; a gitignored proof guard allowed loopback IPC and refused external DNS/TCP/UDP. CI additionally stopped pip-audit immediately when it attempted external I/O, and prohibited HTTP/HTTPS git fetching. No saved advisory report substituted for the audit.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** The repository now runs the production manager and debaters together on a competing memory bus and reports the durable counts, timing, request/reply identity and loss. Four concurrent debates complete cleanly at the settings' own one-request default; the ten-request reproduction records two real debates, two fail-opens and two untaken replies. The two required commands returned 0 and 1 respectively. All 34 guard plants failed and passed after restoration; A1-A4 passed twenty consecutive times (80/80). The whole suite passed without any existing test edited, at 100.00% coverage. This is local BUILT proof; the dependency audit did not complete and the live transport was NOT RUN.
 
-**Files changed:** <list>
+**Files changed:** `agents/deliberator/servicebus_peer_client.py` (only the optional constructor bus and its type import); `scripts/debate_lanes.py`, `debate_lanes_live.py`, `debate_lanes_memory.py`, `debate_lanes_model.py`, `debate_lanes_observers.py`, `debate_lanes_report.py`, `debate_lanes_scene.py`; `tests/test_debate_lanes_command.py`, `test_debate_lanes_live_lifecycle.py`, `test_debate_lanes_peer_bus.py`, `test_debate_lanes_reporting.py`, `test_debate_lanes_startup.py`, `test_debate_lanes_timed.py`, `test_debate_lanes_transport.py`, `debate_lanes_import_probe.py`; this spec, `docs/design-log.md`, `docs/sprints/README.md` and `docs/sprints/INDEX.md`.
 
-**Design decisions:** recorded as [`DL-NNN`](../design-log.md) — <one line + where the rejected
-alternatives are>
+**Design decisions:** [`DL-279`](../design-log.md) and D1-D9 remain the binding choices. [`DL-281`](../design-log.md) records the missing default concurrency list as `[1, 2, 3, 4]`, with requiring the flag or defaulting only to four rejected because the bare command is supposed to show one through four. Existing rejected alternatives stay in the spec and DL-279. No contract or new agent guarantee; law-cycle answer remains NO and no law book changed.
+
+**Proof — Appendix before implementation:**
+
+```text
+$ uv run python .tools/s260/prototype.py memory ci
+{"transport": "memory", "k": 4, "replicas": 4, "orders": 4, "rounds": 1, "turn_s": 1.0, "wait_s": 2.5, "start_delay_s": 0.3, "requests_a_pass": 1, "real_debate_count": 4, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 8, "turns_served": 8, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 4, "by_replica": {"opponent-0": 1, "opponent-1": 1, "opponent-2": 1, "opponent-3": 1, "proponent-0": 1, "proponent-1": 1, "proponent-2": 1, "proponent-3": 1}, "span_s": 4.06, "served_work_s": 8.22, "effective_lanes": 2.02, "request_wait_s": [0.158, 0.343], "reply_pickup_s": [0.683, 1.003], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "clean": true, "teardown": []}
+{"transport": "memory", "k": 4, "replicas": 4, "orders": 4, "rounds": 1, "turn_s": 1.0, "wait_s": 2.5, "start_delay_s": 0.3, "requests_a_pass": 10, "real_debate_count": 2, "failed_open_count": 2, "failed_open_reason": "RuntimeError: no deliberator peer reply received", "orphaned_reply_count": 1, "replies_nobody_took": 2, "mismatched_replies": 0, "turns_asked": 6, "turns_served": 6, "turns_served_twice": 0, "turns_answered_for_nobody": 2, "turns_started_after_caller_gave_up": 1, "first_wave_replicas": 1, "by_replica": {"opponent-0": 1, "opponent-3": 1, "proponent-0": 4}, "span_s": 3.52, "served_work_s": 6.07, "effective_lanes": 1.72, "request_wait_s": [0.152, 1.319], "reply_pickup_s": [0.091, 0.697], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 1, "dead": 1}}, "errors": [], "faults": {"RuntimeError": 2, "OrphanedPeerReply": 1}, "clean": false, "teardown": []}
+{"transport": "memory", "k": 4, "replicas": 1, "orders": 4, "rounds": 1, "turn_s": 1.0, "wait_s": 2.5, "start_delay_s": 0.0, "requests_a_pass": 1, "real_debate_count": 2, "failed_open_count": 2, "failed_open_reason": "RuntimeError: no deliberator peer reply received", "orphaned_reply_count": 1, "replies_nobody_took": 2, "mismatched_replies": 0, "turns_asked": 6, "turns_served": 6, "turns_served_twice": 0, "turns_answered_for_nobody": 2, "turns_started_after_caller_gave_up": 1, "first_wave_replicas": 1, "by_replica": {"opponent-0": 2, "proponent-0": 4}, "span_s": 4.09, "served_work_s": 6.14, "effective_lanes": 1.5, "request_wait_s": [0.256, 1.009], "reply_pickup_s": [0.259, 1.008], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 1, "dead": 1}}, "errors": [], "faults": {"RuntimeError": 2, "OrphanedPeerReply": 1}, "clean": false, "teardown": []}
+{"transport": "memory", "k": 1, "replicas": 1, "orders": 4, "rounds": 1, "turn_s": 1.0, "wait_s": 2.5, "start_delay_s": 0.0, "requests_a_pass": 1, "real_debate_count": 4, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 8, "turns_served": 8, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 1, "by_replica": {"opponent-0": 4, "proponent-0": 4}, "span_s": 8.16, "served_work_s": 8.13, "effective_lanes": 1.0, "request_wait_s": [0.0, 0.019], "reply_pickup_s": [0.0, 0.002], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "clean": true, "teardown": []}
+Exit code: 0
+```
+
+All four counted reports equal the Appendix table, including `orphaned_reply_count`; no errors, mismatches or duplicate turns. Times were not compared.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+$ uv run pytest --no-cov -q tests/test_debate_lanes_timed.py::test_four_debates_lose_no_reply tests/test_debate_lanes_timed.py::test_september_setting_loses_replies tests/test_debate_lanes_peer_bus.py::test_manager_publisher_can_be_supplied
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_______________________ test_four_debates_lose_no_reply _______________________
+tests\test_debate_lanes_timed.py:13: in test_four_debates_lose_no_reply
+    from scripts.debate_lanes_scene import run
+E   ModuleNotFoundError: No module named 'scripts.debate_lanes_scene'
+____________________ test_september_setting_loses_replies _____________________
+tests\test_debate_lanes_timed.py:39: in test_september_setting_loses_replies
+    from scripts.debate_lanes_scene import run
+E   ModuleNotFoundError: No module named 'scripts.debate_lanes_scene'
+___________________ test_manager_publisher_can_be_supplied ____________________
+tests\test_debate_lanes_peer_bus.py:37: in test_manager_publisher_can_be_supplied
+    peer = ServiceBusPeerClient(
+E   TypeError: ServiceBusPeerClient.__init__() got an unexpected keyword argument 'bus'
+=========================== short test summary info ===========================
+FAILED tests/test_debate_lanes_timed.py::test_four_debates_lose_no_reply - Mo...
+FAILED tests/test_debate_lanes_timed.py::test_september_setting_loses_replies
+FAILED tests/test_debate_lanes_peer_bus.py::test_manager_publisher_can_be_supplied
+3 failed in 7.65s
+Exit code: 1
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+$ $testPaths = @(Get-ChildItem -Path tests -Filter 'test_debate_lanes*.py' | ForEach-Object { $_.FullName }); uv run pytest --no-cov -q @testPaths
+...........................................                              [100%]
+43 passed in 48.28s
+Exit code: 0
+
+$ uv run pytest --no-cov -q tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report tests/test_debate_lanes_startup.py tests/test_debate_lanes_transport.py::test_live_module_imports_with_the_azure_sdk_refused
+14 passed in 14.44s
+Exit code: 0
+
+The additional manager-identity refusal test passed after its guard was restored (guard 32); the final whole-suite count is recorded below.
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted (34/34):**
 
-**Module line counts:** <file **n**, file **n**>
+- 1. `rule-real-debate` in `scripts/debate_lanes_report.py`: replaced `real_debate_count == orders` with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-01-rule-real-debate-red.txt` and `.tools/s260/guard-01-rule-real-debate-restored.txt`; SHA-256 verified.
+- 2. `rule-failed-open` in `scripts/debate_lanes_report.py`: replaced `failed_open_count == 0` with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-02-rule-failed-open-red.txt` and `.tools/s260/guard-02-rule-failed-open-restored.txt`; SHA-256 verified.
+- 3. `rule-untaken-reply` in `scripts/debate_lanes_report.py`: replaced `replies_nobody_took == 0` with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-03-rule-untaken-reply-red.txt` and `.tools/s260/guard-03-rule-untaken-reply-restored.txt`; SHA-256 verified.
+- 4. `rule-mismatched-reply` in `scripts/debate_lanes_report.py`: replaced `mismatched_replies == 0` with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-04-rule-mismatched-reply-red.txt` and `.tools/s260/guard-04-rule-mismatched-reply-restored.txt`; SHA-256 verified.
+- 5. `rule-duplicate-turn` in `scripts/debate_lanes_report.py`: replaced `turns_served_twice == 0` with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-05-rule-duplicate-turn-red.txt` and `.tools/s260/guard-05-rule-duplicate-turn-restored.txt`; SHA-256 verified.
+- 6. `rule-replica-error` in `scripts/debate_lanes_report.py`: replaced the empty replica-errors condition with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-06-rule-replica-error-red.txt` and `.tools/s260/guard-06-rule-replica-error-restored.txt`; SHA-256 verified.
+- 7. `rule-fleet-unchanged` in `scripts/debate_lanes_report.py`: replaced the live fleet-unchanged condition with `True`; `tests/test_debate_lanes_reporting.py::test_each_rule_term_alone_makes_the_report_not_clean` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-07-rule-fleet-unchanged-red.txt` and `.tools/s260/guard-07-rule-fleet-unchanged-restored.txt`; SHA-256 verified.
+- 8. `reply-id-comparison` in `scripts/debate_lanes_observers.py`: replaced the returned-versus-requested reply-id comparison with `True`; `tests/test_debate_lanes_reporting.py::test_another_requests_reply_is_counted` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-08-reply-id-comparison-red.txt` and `.tools/s260/guard-08-reply-id-comparison-restored.txt`; SHA-256 verified.
+- 9. `requests-a-pass-ignored` in `scripts/debate_lanes_memory.py`: discarded the supplied receive-batch override, leaving the settings default; `tests/test_debate_lanes_timed.py::test_september_setting_loses_replies` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-09-requests-a-pass-ignored-red.txt` and `.tools/s260/guard-09-requests-a-pass-ignored-restored.txt`; SHA-256 verified.
+- 10. `start-delay-ignored` in `scripts/debate_lanes_scene.py`: forced the supplied replica start delay to zero; `tests/test_debate_lanes_timed.py::test_september_setting_loses_replies` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-10-start-delay-ignored-red.txt` and `.tools/s260/guard-10-start-delay-ignored-restored.txt`; SHA-256 verified.
+- 11. `fleet-topic-guard` in `scripts/debate_lanes_live.py`: removed the fleet-topic membership refusal; `tests/test_debate_lanes_transport.py::test_fleet_or_unrelated_topic_is_refused` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-11-fleet-topic-guard-red.txt` and `.tools/s260/guard-11-fleet-topic-guard-restored.txt`; SHA-256 verified.
+- 12. `run-id-guard` in `scripts/debate_lanes_live.py`: removed the topic run-id containment refusal; `tests/test_debate_lanes_transport.py::test_fleet_or_unrelated_topic_is_refused` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-12-run-id-guard-red.txt` and `.tools/s260/guard-12-run-id-guard-restored.txt`; SHA-256 verified.
+- 13. `empty-run-id-guard` in `scripts/debate_lanes_live.py`: removed the empty-run-id refusal; `tests/test_debate_lanes_transport.py::test_fleet_or_unrelated_topic_is_refused` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-13-empty-run-id-guard-red.txt` and `.tools/s260/guard-13-empty-run-id-guard-restored.txt`; SHA-256 verified.
+- 14. `supplied-bus-ignored` in `agents/deliberator/servicebus_peer_client.py`: always constructed the default Azure publisher, ignoring the supplied bus; `tests/test_debate_lanes_peer_bus.py::test_manager_publisher_can_be_supplied` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-14-supplied-bus-ignored-red.txt` and `.tools/s260/guard-14-supplied-bus-ignored-restored.txt`; SHA-256 verified.
+- 15. `falsey-supplied-bus-ignored` in `agents/deliberator/servicebus_peer_client.py`: used bus truthiness instead of `is not None`, ignoring a falsey supplied bus; `tests/test_debate_lanes_peer_bus.py::test_manager_publisher_can_be_supplied` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-15-falsey-supplied-bus-ignored-red.txt` and `.tools/s260/guard-15-falsey-supplied-bus-ignored-restored.txt`; SHA-256 verified.
+- 16. `absent-bus-no-default` in `agents/deliberator/servicebus_peer_client.py`: used `None` instead of the default publisher when no bus was supplied; `tests/test_debate_lanes_peer_bus.py::test_manager_publisher_can_be_supplied` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-16-absent-bus-no-default-red.txt` and `.tools/s260/guard-16-absent-bus-no-default-restored.txt`; SHA-256 verified.
+- 17. `first-poll-wait-removed` in `scripts/debate_lanes_scene.py`: removed every replica first-poll wait before the manager starts; `tests/test_debate_lanes_startup.py::test_manager_starts_after_every_replica_finishes_one_poll` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-17-first-poll-wait-removed-red.txt` and `.tools/s260/guard-17-first-poll-wait-removed-restored.txt`; SHA-256 verified.
+- 18. `memory-primary-isolation-removed` in `scripts/debate_lanes_memory.py`: removed explicit isolation from an environment connection string; `tests/test_debate_lanes_transport.py::test_memory_settings_ignore_connections_in_the_environment` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-18-memory-primary-isolation-removed-red.txt` and `.tools/s260/guard-18-memory-primary-isolation-removed-restored.txt`; SHA-256 verified.
+- 19. `memory-bundle-isolation-removed` in `scripts/debate_lanes_memory.py`: removed explicit isolation from an environment connection-string bundle; `tests/test_debate_lanes_transport.py::test_memory_settings_ignore_connections_in_the_environment` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-19-memory-bundle-isolation-removed-red.txt` and `.tools/s260/guard-19-memory-bundle-isolation-removed-restored.txt`; SHA-256 verified.
+- 20. `old-default-simulated` in `scripts/debate_lanes_memory.py`: simulated the old ten-request default solely in the harness, leaving kernel untouched; `tests/test_debate_lanes_timed.py::test_four_debates_lose_no_reply` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-20-old-default-simulated-red.txt` and `.tools/s260/guard-20-old-default-simulated-restored.txt`; SHA-256 verified.
+- 21. `message-returned-without-taking` in `scripts/debate_lanes_memory.py`: returned the queue head without removing it; `tests/test_debate_lanes_startup.py::test_memory_delivery_competes_and_respects_the_requested_batch_size` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-21-message-returned-without-taking-red.txt` and `.tools/s260/guard-21-message-returned-without-taking-restored.txt`; SHA-256 verified.
+- 22. `receive-batch-limit-removed` in `scripts/debate_lanes_memory.py`: returned every queued message instead of respecting the requested batch bound; `tests/test_debate_lanes_startup.py::test_memory_delivery_competes_and_respects_the_requested_batch_size` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-22-receive-batch-limit-removed-red.txt` and `.tools/s260/guard-22-receive-batch-limit-removed-restored.txt`; SHA-256 verified.
+- 23. `positive-argument-guard` in `scripts/debate_lanes.py`: disabled the positive-integer argument refusal; `tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-23-positive-argument-guard-red.txt` and `.tools/s260/guard-23-positive-argument-guard-restored.txt`; SHA-256 verified.
+- 24. `finite-nonnegative-argument-guard` in `scripts/debate_lanes.py`: disabled the finite, nonnegative float refusal; `tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-24-finite-nonnegative-argument-guard-red.txt` and `.tools/s260/guard-24-finite-nonnegative-argument-guard-restored.txt`; SHA-256 verified.
+- 25. `positive-wait-guard` in `scripts/debate_lanes.py`: disabled the strictly-positive wait refusal; `tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-25-positive-wait-guard-red.txt` and `.tools/s260/guard-25-positive-wait-guard-restored.txt`; SHA-256 verified.
+- 26. `scene-bounds-preflight-removed` in `scripts/debate_lanes.py`: clamped invalid round/concurrency inputs during preflight instead of refusing them; `tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-26-scene-bounds-preflight-removed-red.txt` and `.tools/s260/guard-26-scene-bounds-preflight-removed-restored.txt`; SHA-256 verified.
+- 27. `batch-bounds-preflight-removed` in `scripts/debate_lanes.py`: skipped receive-batch bounds preflight; `tests/test_debate_lanes_command.py::test_bad_argument_returns_two_without_a_report` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-27-batch-bounds-preflight-removed-red.txt` and `.tools/s260/guard-27-batch-bounds-preflight-removed-restored.txt`; SHA-256 verified.
+- 28. `missing-live-connection-guard` in `scripts/debate_lanes_live.py`: disabled the missing live connection-string refusal; `tests/test_debate_lanes_transport.py::test_live_without_connection_string_returns_two_and_creates_nothing` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-28-missing-live-connection-guard-red.txt` and `.tools/s260/guard-28-missing-live-connection-guard-restored.txt`; SHA-256 verified.
+- 29. `partial-creation-cleanup-removed` in `scripts/debate_lanes_live.py`: removed deletion cleanup on partial live topic creation failure; `tests/test_debate_lanes_live_lifecycle.py::test_partial_creation_deletes_every_created_topic` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-29-partial-creation-cleanup-removed-red.txt` and `.tools/s260/guard-29-partial-creation-cleanup-removed-restored.txt`; SHA-256 verified.
+- 30. `fleet-change-comparison-ignored` in `scripts/debate_lanes_live.py`: forced the before/after fleet comparison result to true; `tests/test_debate_lanes_live_lifecycle.py::test_changed_fleet_counts_and_failed_deletion_are_visible` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-30-fleet-change-comparison-ignored-red.txt` and `.tools/s260/guard-30-fleet-change-comparison-ignored-restored.txt`; SHA-256 verified.
+- 31. `unreadable-fleet-count-hidden` in `scripts/debate_lanes_live.py`: hid unreadable fleet counts as zero active/dead counts; `tests/test_debate_lanes_live_lifecycle.py::test_cleanup_compares_readable_fleet_counts_and_reports_unreadable` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-31-unreadable-fleet-count-hidden-red.txt` and `.tools/s260/guard-31-unreadable-fleet-count-hidden-restored.txt`; SHA-256 verified.
+- 32. `manager-identity-guard-removed` in `scripts/debate_lanes_scene.py`: disabled the fixed manager identity refusal; `tests/test_debate_lanes_startup.py::test_a_manager_identity_override_is_refused` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-32-manager-identity-guard-removed-red.txt` and `.tools/s260/guard-32-manager-identity-guard-removed-restored.txt`; SHA-256 verified.
+- 33. `command-default-comparison-lost` in `scripts/debate_lanes.py`: changed the default concurrency list to only four; `tests/test_debate_lanes_command.py::test_command_defaults_are_the_recorded_scene` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-33-command-default-comparison-lost-red.txt` and `.tools/s260/guard-33-command-default-comparison-lost-restored.txt`; SHA-256 verified.
+- 34. `unread-replies-not-counted` in `scripts/debate_lanes_report.py`: omitted unread active replies from the untaken-reply count; `tests/test_debate_lanes_timed.py::test_september_setting_loses_replies` failed, exit 1; original bytes restored and the same test passed, exit 0. Outputs: `.tools/s260/guard-34-unread-replies-not-counted-red.txt` and `.tools/s260/guard-34-unread-replies-not-counted-restored.txt`; SHA-256 verified.
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+`uv run python .tools/s260/mutate.py` first exited 1 after 33 verified plants because the last source matcher did not account for ruff's line break; it restored all original bytes. After correcting that matcher, `uv run python .tools/s260/mutate.py resume` exited 0, verified all prior hashes, and completed guard 34 red/restored. `.tools/s260/guards.json` records every result. No existing test was edited.
 
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**Proof — twenty consecutive timed runs:**
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+$ pwsh -NoProfile -ExecutionPolicy Bypass -File .tools/s260/repeat-timed.ps1 > .tools/s260/timed-twenty.txt 2>&1
+Iteration 1/20: 4 passed; exit 0
+Iteration 2/20: 4 passed; exit 0
+Iteration 3/20: 4 passed; exit 0
+Iteration 4/20: 4 passed; exit 0
+Iteration 5/20: 4 passed; exit 0
+Iteration 6/20: 4 passed; exit 0
+Iteration 7/20: 4 passed; exit 0
+Iteration 8/20: 4 passed; exit 0
+Iteration 9/20: 4 passed; exit 0
+Iteration 10/20: 4 passed; exit 0
+Iteration 11/20: 4 passed; exit 0
+Iteration 12/20: 4 passed; exit 0
+Iteration 13/20: 4 passed; exit 0
+Iteration 14/20: 4 passed; exit 0
+Iteration 15/20: 4 passed; exit 0
+Iteration 16/20: 4 passed; exit 0
+Iteration 17/20: 4 passed; exit 0
+Iteration 18/20: 4 passed; exit 0
+Iteration 19/20: 4 passed; exit 0
+Iteration 20/20: 4 passed; exit 0
+20/20 consecutive timed runs; 80/80 tests passed
+Exit code: 0
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+The script ran `uv run pytest --no-cov -q tests/test_debate_lanes_timed.py` on each iteration, with no concurrent heavy checks. Each of the twenty saved `timed-01.txt` through `timed-20.txt` outputs reports four passed; one-second turns and actual waits were preserved.
+
+**Proof — both required commands, whole output:**
+
+```text
+$ uv run python scripts/debate_lanes.py --concurrency 1 2 3 4 --orders 8 --rounds 2 --turn-seconds 0.5 --wait-seconds 5
+{"transport": "memory", "concurrency": 1, "replicas": 1, "orders": 8, "rounds": 2, "turn_seconds": 0.5, "wait_seconds": 5.0, "replica_start_delay_seconds": 0.0, "requests_a_pass": 1, "real_debate_count": 8, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 32, "turns_served": 32, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 1, "by_replica": {"opponent-0": 16, "proponent-0": 16}, "span_seconds": 16.46, "served_work_seconds": 16.42, "effective_lanes": 1.0, "request_wait_seconds": [0.0, 0.001], "reply_pickup_seconds": [0.0, 0.012], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "teardown": [], "clean": true}
+{"transport": "memory", "concurrency": 2, "replicas": 2, "orders": 8, "rounds": 2, "turn_seconds": 0.5, "wait_seconds": 5.0, "replica_start_delay_seconds": 0.0, "requests_a_pass": 1, "real_debate_count": 8, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 32, "turns_served": 32, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 2, "by_replica": {"opponent-0": 9, "opponent-1": 7, "proponent-0": 7, "proponent-1": 9}, "span_seconds": 13.52, "served_work_seconds": 16.87, "effective_lanes": 1.25, "request_wait_seconds": [0.0, 0.002], "reply_pickup_seconds": [0.027, 0.966], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "teardown": [], "clean": true}
+{"transport": "memory", "concurrency": 3, "replicas": 3, "orders": 8, "rounds": 2, "turn_seconds": 0.5, "wait_seconds": 5.0, "replica_start_delay_seconds": 0.0, "requests_a_pass": 1, "real_debate_count": 8, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 32, "turns_served": 32, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 3, "by_replica": {"opponent-0": 5, "opponent-1": 6, "opponent-2": 5, "proponent-0": 5, "proponent-1": 6, "proponent-2": 5}, "span_seconds": 9.83, "served_work_seconds": 16.77, "effective_lanes": 1.71, "request_wait_seconds": [0.001, 0.001], "reply_pickup_seconds": [0.482, 1.013], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "teardown": [], "clean": true}
+{"transport": "memory", "concurrency": 4, "replicas": 4, "orders": 8, "rounds": 2, "turn_seconds": 0.5, "wait_seconds": 5.0, "replica_start_delay_seconds": 0.0, "requests_a_pass": 1, "real_debate_count": 8, "failed_open_count": 0, "failed_open_reason": "", "orphaned_reply_count": 0, "replies_nobody_took": 0, "mismatched_replies": 0, "turns_asked": 32, "turns_served": 32, "turns_served_twice": 0, "turns_answered_for_nobody": 0, "turns_started_after_caller_gave_up": 0, "first_wave_replicas": 4, "by_replica": {"opponent-0": 4, "opponent-1": 6, "opponent-2": 4, "opponent-3": 2, "proponent-0": 7, "proponent-1": 4, "proponent-2": 3, "proponent-3": 2}, "span_seconds": 7.75, "served_work_seconds": 16.48, "effective_lanes": 2.13, "request_wait_seconds": [0.001, 0.016], "reply_pickup_seconds": [0.494, 0.974], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 0, "dead": 0}}, "errors": [], "faults": {}, "teardown": [], "clean": true}
+LANES CLEAN
+Exit code: 0
+```
+
+```text
+$ uv run python scripts/debate_lanes.py --concurrency 4 --orders 4 --rounds 1 --turn-seconds 1 --wait-seconds 2.5 --replica-start-delay 0.3 --requests-a-pass 10
+{"transport": "memory", "concurrency": 4, "replicas": 4, "orders": 4, "rounds": 1, "turn_seconds": 1.0, "wait_seconds": 2.5, "replica_start_delay_seconds": 0.3, "requests_a_pass": 10, "real_debate_count": 2, "failed_open_count": 2, "failed_open_reason": "RuntimeError: no deliberator peer reply received", "orphaned_reply_count": 1, "replies_nobody_took": 2, "mismatched_replies": 0, "turns_asked": 6, "turns_served": 6, "turns_served_twice": 0, "turns_answered_for_nobody": 2, "turns_started_after_caller_gave_up": 1, "first_wave_replicas": 1, "by_replica": {"opponent-0": 2, "proponent-0": 4}, "span_seconds": 3.53, "served_work_seconds": 6.1, "effective_lanes": 1.73, "request_wait_seconds": [0.152, 1.348], "reply_pickup_seconds": [0.078, 1.006], "subscriptions": {"lanes-proponent.requests": {"active": 0, "dead": 0}, "lanes-opponent.requests": {"active": 0, "dead": 0}, "deliberator-manager.reply": {"active": 1, "dead": 1}}, "errors": [], "faults": {"RuntimeError": 2, "OrphanedPeerReply": 1}, "teardown": [], "clean": false}
+LANES NOT CLEAN: 4
+Exit code: 1
+```
+
+**Module line counts (physical lines, all < 200):**
+
+| Module | Lines |
+| --- | --- |
+| `agents/deliberator/servicebus_peer_client.py` | 184 |
+| `scripts/debate_lanes.py` | 111 |
+| `scripts/debate_lanes_live.py` | 149 |
+| `scripts/debate_lanes_memory.py` | 144 |
+| `scripts/debate_lanes_model.py` | 92 |
+| `scripts/debate_lanes_observers.py` | 85 |
+| `scripts/debate_lanes_report.py` | 101 |
+| `scripts/debate_lanes_scene.py` | 183 |
+| `tests/test_debate_lanes_command.py` | 119 |
+| `tests/test_debate_lanes_live_lifecycle.py` | 112 |
+| `tests/test_debate_lanes_peer_bus.py` | 58 |
+| `tests/test_debate_lanes_reporting.py` | 80 |
+| `tests/test_debate_lanes_startup.py` | 63 |
+| `tests/test_debate_lanes_timed.py` | 91 |
+| `tests/test_debate_lanes_transport.py` | 85 |
+| `tests/debate_lanes_import_probe.py` | 31 |
+
+**`make ci`:** `make ci > .tools/s260/ci.txt 2>&1`, exit **2**. The full pytest command in that target reported `4436 passed, 8 skipped` and **100.00% coverage**. The target stopped at step 13, so steps 14 and 15 were run separately using the target's exact commands. The overall gate is not green.
+
+| Step | Command/check | Actual result |
+| --- | --- | --- |
+| 1 | ruff | PASS |
+| 2 | format | PASS |
+| 3 | mypy, all five production packages | PASS |
+| 4 | import-linter | PASS |
+| 5 | module size | PASS, existing legacy/warning rows retained |
+| 6 | module headers | PASS |
+| 7 | law coverage | PASS |
+| 8 | PARAM/settings sync | PASS, existing PM envelope warnings retained |
+| 9 | sprint status | PASS; checked again after BUILT metadata |
+| 10 | Markdown links | PASS; checked again after handback edits |
+| 11 | version scheme | PASS, version/lock untouched |
+| 12 | full pytest | PASS, 4436 passed, 8 skipped; 100.00% coverage |
+| 13 | dependency audit | **NOT RUN to completion**: the actual attempt was refused external network access; no complete audit result was produced |
+| 14 | detect-secrets | PASS separately, exit 0; `.tools/s260/secrets.txt` |
+| 15 | untracked secrets | PASS separately, exit 0; `.tools/s260/untracked-secrets.txt` |
+
+Actual pytest coverage total, summary and pre-existing skips from the redirected log:
+
+```text
+TOTAL                                                           20066      0   4240      0  100.00%
+========= 4436 passed, 8 skipped, 2470 warnings in 522.06s (0:08:42) ==========
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+```
+
+Actual dependency-audit tail:
+
+```text
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+S260 dependency audit NOT RUN: external network disabled: external DNS refused
+make: *** [Makefile:59: ci] Error 1
+make ci exit code: 2
+```
+
+```text
+$ uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+Exit code: 0
+```
+
+```text
+$ uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+Exit code: 0
+```
+
+**Final document checks:** outputs saved in `.tools/s260/final-sprint-status.txt` and
+`.tools/s260/final-markdown-links.txt`. The status report's final line is pasted below; the links
+check and staged whitespace check printed nothing. Status tokens and link targets were unchanged
+by subsequently recording this evidence.
+
+```text
+$ uv run python scripts/check_sprint_status.py
+docs_seen=265 SPEC=10 BUILT=1 MERGED=254 UNMAPPED=0 MISSING=0
+Exit code: 0
+$ uv run python scripts/check_markdown_links.py
+Exit code: 0
+$ git diff --cached --check
+Exit code: 0
+```
+
+**Scope proof:** all commands ran in `ta-s260`; `main` at this measurement was `99060be4a42f73a1325e03a044d5f2effe0f9240`. Existing tests edited: **none**. `pyproject.toml` and `uv.lock` were not touched; the planner owns the MINOR bump and lock update at merge. `docs/STATE.md`, locked laws and every protected production path were not changed by this branch.
+
+The requested two-tip comparison against moving `main` did **not** print nothing: independent commits on `main` changed STATE after the worktree was cut. The actual output is pasted, followed by the original-base and merge-base checks that measure this sprint's changes:
+
+```text
+$ git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration infra kernel pyproject.toml uv.lock docs/STATE.md
+ docs/STATE.md | 209 ++++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 152 insertions(+), 57 deletions(-)
+$ git diff main --stat -- agents
+ agents/deliberator/servicebus_peer_client.py | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+$ git diff 10770f91bf531eda99cc105f8e80abdfe22fabb0 --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration infra kernel pyproject.toml uv.lock docs/STATE.md
+$ git diff $(git merge-base main HEAD) --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration infra kernel pyproject.toml uv.lock docs/STATE.md
+$ git diff 10770f91bf531eda99cc105f8e80abdfe22fabb0 --name-only --diff-filter=MDR -- tests 'agents/*/tests/**'
+```
+
+The last three checks printed **nothing**, exit 0 each. The agents-only check names just the constructor file. The direct diff against `main` is a **verified failing literal empty-output check** caused by independent main history; no protected edits were made to satisfy it.
+
+**`make gate-ran`:** **NOT RUN**. No push or remote access authorized; no remote gate proof, merge or deployment claimed.
+
+**Live transport:** **NOT RUN against Azure**. Topic-name/lazy-import guards and synthetic administration cleanup are unit proof only. Actual SDK operation, namespace permissions, live delivery and eventual visibility of subscription counts remain unmeasured.
+
+**Not met / verified failing:** dependency audit NOT RUN to completion; eight existing tests skipped for missing secrets/configuration, network opt-in flags or the optional SciPy oracle, as listed above; live Azure transport and remote gate NOT RUN; push/merge/deploy/version bump not done, as instructed. The requested literal empty `git diff main` check was verified failing because main moved; the original-base and merge-base scope checks were empty. No implementation stop condition was encountered.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: only D2's constructor seam, harness, new tests and handback/design/index docs changed. No existing test edited. No kernel, fidelity path, pack, orchestration, contract, law, infra, STATE, version or lock edit. No production dial/default changed. Live, push and merge were not run.
+- Law-cycle answer NO remains correct. The cited five deliberator clauses are green; no contradiction or new guarantee was introduced. D9 omitted the concurrency default, so DL-281 records one through four and the rejected alternatives. No new policy or lane threshold was added to the clean rule.
+- The supplied AGENTS short form counts 14 CI steps; current CLAUDE.md and the actual Makefile target count 15, including sprint status. CLAUDE.md wins. All 15 checks were accounted for; the audit was attempted but could not complete offline.
+- PowerShell passed `tests/test_debate_lanes*.py` literally to pytest (exit 4, no tests). The corrected command resolves explicit test file paths before invocation and passed. The guard runner's final matcher initially missed ruff's line break (runner exit 1 after 33 plants); the runner restored all bytes, the matcher was corrected, and resume completed guard 34 with red/restored evidence. Neither correction changed the requested test behavior.
+- Main advanced independently after the branch was cut: housekeeping charter changes, then STATE trimming and tracker/archive/sprint status updates. The exact protected-path comparison against main therefore includes STATE. Keep the sprint isolated; assess scope against original base `10770f91` or the merge base. The exact nonempty requested output and the empty corrected checks are above. No rebase or unrelated change was made.
+- The memory command warms one guided turn before measurement, waits for every actual first poll when delay is zero, and drains late replies before counting. SDK imports are denied in A10's child process, regardless of whether a local SDK happens to be installed. These are measured harness properties, not live transport proof.
+- The planner still owes the version/lock bump at merge, remote gates for the final SHA, and any desired live run. The local gate remains incomplete until the dependency audit can run with its advisory service available.
 
 ---
 

@@ -10,6 +10,26 @@ and is marked CLOSED here.
 
 ---
 
+## DL-281 - S260's command defaults to the four measured concurrencies - status: DECIDED (builder, 2026-10-09)
+
+D9 lists every argument default except the concurrency list. The Goal says the bare command runs
+several debates at once, and the required command compares one through four. Default `--concurrency`
+to `1 2 3 4`, keeping an explicit list authoritative. Requiring the flag or choosing only four was
+ruled out: either would make the bare command miss the stated comparison. This is a tooling default;
+no production setting or pack changes. All other choices implement D1-D9, including real first-poll
+startup, without changing the Appendix's production calls.
+
+**Proof constraint found during the build.** Main advanced independently after the sprint tree was
+cut from `10770f91`, including STATE trimming and tracker updates. The requested two-tip
+`git diff main --stat` therefore includes reverse STATE changes even though this branch never edits
+STATE. Retain that actual output and assess this sprint's protected-path edits against its original
+base and merge base, naming the literal empty-output check as failing. Rebasing solely to make that
+check print nothing was ruled out: it would import unrelated history into the proving tree without
+changing the harness. Do not alter STATE or main to manufacture an empty result. The sprint's Return
+notes record the measured refs and all three comparisons.
+
+---
+
 ## DL-280 - the judge has ruled `revise` on every order since the reward-to-risk floor went to 0, and `revise` changes no order; the causes are in the packet and in the judge's prompt - status: MEASURED; fix PROPOSED (planner, 2026-10-09 10:20 AEDT), told to the operator, not yet confirmed
 
 **The question.** On `sched-2026-10-08` the judge ruled `revise` on TMO because *"the live reward-risk gate

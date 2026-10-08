@@ -89,23 +89,29 @@ class DeliberatorSettings(AgentSettings):
         why="Anthropic output_config effort for deliberation calls.",
     )
     max_tokens: int = tunable(
-        8192,
+        16384,
         why=(
             "Caps each role's reasoning and answer payload. S246 debaters write "
             "their readings before the argument: challenger output peaked at "
             "3,026 tokens (p95 2,720) before them, and the readings add an "
             "estimated 400-700, so 4,096 would leave little room. Billed per "
-            "generated token, so the unused cap costs nothing."
+            "generated token, so the unused cap costs nothing. On gpt-5.5, "
+            "reasoning counts against the cap: a defender reached 7,738 tokens "
+            "in production and 11,556 in the typed turn (DL-274 D1)."
         ),
         ge=64,
-        le=8192,
+        le=16384,
         unit="tokens",
     )
     request_timeout_seconds: float = tunable(
         30.0,
-        why="Bounds manager wait time for served proponent/opponent replies.",
+        why=(
+            "Bounds manager wait time for served proponent/opponent replies. "
+            "A turn at the cap can take about 190 seconds at the slowest "
+            "measured output rate on gpt-5.5 (DL-274 D3)."
+        ),
         ge=1.0,
-        le=120.0,
+        le=300.0,
         unit="seconds",
     )
     poll_interval_seconds: int = tunable(

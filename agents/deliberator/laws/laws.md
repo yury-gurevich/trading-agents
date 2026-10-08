@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.15 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.16 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -227,8 +227,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
-| `max_tokens` | `8192` | int >= 64 <= 8192 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8) |
-| `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |
+| `max_tokens` | `16384` | int >= 64 <= 16384 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8); on gpt-5.5 reasoning counts against the cap, a defender reached 7,738 tokens in production and 11,556 in the typed turn, and the unused cap costs nothing (DL-274 D1) |
+| `request_timeout_seconds` | `30.0` | float >= 1 <= 300 | YES | Bounds peer RPC wait; a turn at the cap can take about 190 seconds at the slowest measured output rate on gpt-5.5 (DL-274 D3) |
 | `debate_concurrency` | `4` | int >= 1 <= 25 | YES | Manager fan-out over independent PM-approved orders, bounded by the vendor rate limit because each concurrent order holds one in-flight completion per peer role |
 | `poll_interval_seconds` | `60` | int >= 1 <= 300 | YES | Bounds manager idle polling |
 | `proponent_identity` | `deliberator-proponent` | string | YES | Manager peer target |
@@ -331,3 +331,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   `DLIB-OBS-08` (every completion is a separate append-only row, including repeated
   request ids). The old after-reply settlement let expired locks crash peers and hid
   their second paid completion. No other clause changes.
++ v1.16 -- S257 / DL-274 (2026-10-08). PARAM-only: `max_tokens` defaults to
+  16,384 with the same ceiling, below Anthropic's 21,333 non-streaming limit;
+  `request_timeout_seconds` may reach 300, still defaulting to 30. Measured
+  gpt-5.5 reasoning needs the cap and can take about 190 seconds at it. No clause changes.

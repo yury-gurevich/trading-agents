@@ -10,6 +10,28 @@ and is marked CLOSED here.
 
 ---
 
+## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08)
+
+**Found while planting guards.** S257 says the PARAM gate fails until the two numeric rows follow the
+settings. With the implemented settings unchanged, reverting only the `max_tokens` row to default
+8,192 and upper bound 8,192 made A1 fail, but `python scripts/check_param_law_sync.py` still exited 0.
+The mutation was restored byte for byte. Evidence: `.tools/s257/guards.txt` from the initial run
+(preserved as `.tools/s257/guards-initial.txt`), G07. Read `scripts/param_law_sync_sources.py`:
+`ParamRow` stores the name and Tunable cell, not Value or Type; `scripts/param_law_sync.py` compares
+name presence and the tunable family, with separate default/envelope warnings.
+
+**Decision.** Keep the gate unchanged. A1 and A4 pin the two complete numeric row prefixes, and their
+plants must fail on old values; B2 still runs the shared checker and plants a tunable-declaration
+mismatch that the checker actually enforces. Record the spec correction in Return notes. This changes
+no guarantee and needs no law clause or contract change.
+
+**Ruled out.** Widening the repository-wide checker to compare numeric defaults and bounds would
+change proof for every agent, discover unrelated old-row divergences and exceed S257's settings-only
+scope. Treating its exit 0 as numeric proof would hide the observed survivor. The scoped literal tests
+already supply that proof without changing a production decision.
+
+---
+
 ## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT; SPEC as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md), work-queue 111); MEASURED and open for the grace (work-queue 113)
 
 **The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower

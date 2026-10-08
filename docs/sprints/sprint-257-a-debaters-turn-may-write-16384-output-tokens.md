@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-257-a-debaters-turn-may-write-16384-output-tokens`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-274](../design-log.md) (decisions D1 to D4 this sprint builds) · work-queue **111** ·
@@ -210,17 +210,17 @@ No test may skip when a dependency is missing. A skipped proof is not a proof. N
 
 ## Success factors
 
-- [ ] The default cap is 16,384, and a setting above 16,384 is refused (A1).
-- [ ] Both vendors' requests carry the cap from the settings (A2).
-- [ ] The cap's upper bound cannot pass what Anthropic's client accepts without streaming (A3).
-- [ ] The wait can be set to 300 seconds and no higher; its default is unchanged (A4).
-- [ ] A completion cut at the cap still fails its order open and says so (A5).
-- [ ] No prompt, packet line or schema changes (B1).
-- [ ] The two `PARAM` rows follow the code; no clause is edited.
-- [ ] `pyproject.toml`, `uv.lock` and `orchestration/packs/` are untouched.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
+- [x] The default cap is 16,384, and a setting above 16,384 is refused (A1).
+- [x] Both vendors' requests carry the cap from the settings (A2).
+- [x] The cap's upper bound cannot pass what Anthropic's client accepts without streaming (A3).
+- [x] The wait can be set to 300 seconds and no higher; its default is unchanged (A4).
+- [x] A completion cut at the cap still fails its order open and says so (A5).
+- [x] No prompt, packet line or schema changes (B1).
+- [x] The two `PARAM` rows follow the code; no clause is edited.
+- [x] `pyproject.toml`, `uv.lock` and `orchestration/packs/` are untouched.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
 
@@ -376,15 +376,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| _to be filled by the builder_ | | | |
+| `agents/deliberator/settings.py` and its tests | Whole `agents/deliberator/laws/laws.md` (LOCKED v1.15), whole `agents/deliberator/laws/test-plan.md`, whole `docs/laws/conventions.md`, whole `docs/laws/drift-register.md`; DL-274 read in full | `DLIB-DEP-04`, `DLIB-PERF-02`; the two `PARAM` rows | No: follow D1 and D3, keep the existing descriptions and lower bounds, and reconcile PARAM only. Recorded before the first test or source edit. |
+| `kernel/llm_anthropic.py` and vendor request tests | Same whole law files and DL-274 | `DLIB-NEV-06`, `DLIB-FAIL-04`, `DLIB-DEP-03`; existing `DLIB-NEV-10` boundary | No: D2 records the measured client ceiling without importing a vendor SDK in tests or changing how calls are made. |
+| Existing stop-reason, parity and hash proofs | Same whole law files and test plan | `DLIB-NEV-06`, `DLIB-OBS-03`, `DLIB-FAIL-04`, `DLIB-OUT-06`, `DLIB-IDM-02`, `DLIB-NEV-10` | No: run these unchanged; any prompt-byte or hash regression stops the sprint. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** _to be filled_
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** NO. D1-D3 change an existing default and two bounds inside existing guarantees. No contract or clause edit is authorized. Owed: two PARAM rows, an S257 / DL-274 Changelog entry and the next book amendment version under conventions §4.
 
-**Contradictions found between a law and this spec:** _to be filled_
+**Contradictions found between a law and this spec:** None. No clause fixes the cap at 8,192 or the wait at 120; those numbers occur in PARAM and historical Changelog text only.
 
-**Laws found silent where a decision was needed:** _to be filled_
+**Laws found silent where a decision was needed:** None for D1-D3. DL-274 already decides the bounds and the client ceiling; D4 and execution's grace remain outside the build.
 
-**Clauses that were ⬜ and are now proven:** _to be filled_
+**Clauses that were ⬜ and are now proven:** None claimed. `DLIB-DEP-03` and `DLIB-PERF-01` are gray in the read test plan; request-argument wiring alone does not prove all of DEP-LLM, and rounds are unchanged. `DLIB-DEP-04`, `DLIB-PERF-02`, `DLIB-NEV-06` and `DLIB-OBS-03` are already green.
 
 ---
 
@@ -392,52 +394,276 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | _to be filled_ | | | |
+| A1 | `test_the_output_cap_is_16384_and_its_law_row_agrees` | `agents/deliberator/tests/test_guided_turn_edges.py` | PASS | `DLIB-DEP-04` |
+| A2 | `test_each_roles_default_cap_reaches_the_vendor_request` (both vendors × defender, challenger, judge; 6 cases) | `agents/deliberator/tests/test_output_cap_requests.py` | PASS, synthetic SDKs | `DLIB-DEP-04`, `DLIB-DEP-03` (request wiring only; full clause stays gray) |
+| A3 | `test_the_cap_cannot_exceed_anthropics_nonstreaming_limit` | `agents/deliberator/tests/test_output_limits.py` | PASS | `DLIB-DEP-04`, `DLIB-NEV-06` |
+| A4 | `test_the_manager_may_wait_up_to_300_seconds` | `agents/deliberator/tests/test_output_limits.py` | PASS | `DLIB-PERF-02`, `DLIB-DEP-04` |
+| A5 | `test_one_stopped_turn_fails_only_that_order_and_records_reason`; `test_manager_fail_open_records_visible_rationale`; vendor stop-reason tests | `agents/deliberator/tests/test_stop_reason_fail_open.py`, `test_fail_open_reason.py`, `test_llm_openai_adapter.py`; `tests/test_deliberator_anthropic.py` | PASS, existing tests unchanged | `DLIB-NEV-06`, `DLIB-OBS-03`, `DLIB-FAIL-01`, `DLIB-FAIL-04`, `DLIB-NEV-07` |
+| B1 | `test_a_served_turn_runs_dspy_and_sends_mains_text`; `test_served_records_equal_main`; `test_role_system_text_is_reused_and_has_mains_hash`; ledger hash and output-bound tests | `agents/deliberator/tests/test_dspy_runtime.py`, `test_dspy_turn_parity.py`, `test_llm_output_bounds.py`; `tests/test_llm_ledger_provenance.py`, `test_deliberation_guided.py`, `test_deliberation_guided_text.py` | PASS, existing tests unchanged | `DLIB-OUT-06`, `DLIB-OBS-06`, `DLIB-IDM-02`, `DLIB-OBS-07` |
+| B2 | `uv run python scripts/check_param_law_sync.py` | `scripts/check_param_law_sync.py` (unchanged) | PASS, exit 0; numeric limits independently pinned by A1/A4 (DL-275) | PARAM gate; no functional-test docstring |
 
-**Tests added beyond the plan:** _to be filled_
+**Tests added beyond the plan:** None. The six A2 cases cover each existing role on each vendor. The existing default/ceiling test also retains the 64-token minimum pin.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** _to be filled: BUILT_
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** _to be filled_
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s257`, on the named sprint branch; `.env` absent. Unit proofs only, Python 3.13.2; UV offline. For mutations and final CI, `.tools/s257/offline/sitecustomize.py` blocks external DNS/TCP/UDP while allowing loopback IPC. No live LLM call.
 
-**Result:** _to be filled_
+**INTENT (recorded before code):** Work only in `C:\Users\yury_\Downloads\project\ta-s257`, branch `sprint-257-a-debaters-turn-may-write-16384-output-tokens`; clean starting HEAD and `origin/main` both `7309b858d0d19cab77f58c5edba859c557da1da0`, `.env` absent. Plant and record A1/A3/A4 red, implement D1-D3, reconcile PARAM without clause edits, break and restore every guard, run offline unit proofs and redirected CI, then commit locally. Success factors are the checklist above. `docs/STATE.md`, package version files, packs, prompts, schemas and call mechanics are excluded; no push, merge, deploy or live proof.
 
-**Files changed:** _to be filled_
+**Result:** BUILT D1-D3 as written: default and maximum output cap 16,384; Anthropic client ceiling recorded as 21,333 with its measured derivation; manager wait maximum 300 seconds with the default still 30. A1/A3/A4 were red before implementation; A1-A5/B1/B2 pass; 17 guard plants failed and restored. Final full pytest: **4,330 passed, 8 existing skips, 100.00 % coverage**. Fourteen available CI checks passed; the full `make ci` gate is **verified failing, exit 2** solely at the unavailable online dependency audit, named NOT RUN to completion. Both following security checks passed separately. No clause, contract, prompt or call-mechanics change; package version and lock untouched.
 
-**Design decisions:** recorded as [`DL-274`](../design-log.md); _anything the builder added, to be filled_
+**Files changed:**
+
+- `agents/deliberator/laws/laws.md`
+- `agents/deliberator/laws/test-plan.md`
+- `agents/deliberator/settings.py`
+- `agents/deliberator/tests/test_guided_turn_edges.py`
+- `agents/deliberator/tests/test_llm_provider.py`
+- `agents/deliberator/tests/test_output_cap_requests.py`
+- `agents/deliberator/tests/test_output_limits.py`
+- `docs/design-log.md`
+- `docs/sprints/INDEX.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md`
+- `kernel/llm_anthropic.py`
+
+**Design decisions:** D1-D3 built as [`DL-274`](../design-log.md); D4 remains the planner's. [`DL-275`](../design-log.md) records the observed PARAM-gate limitation and the scoped numeric proof, including the rejected global-checker change.
 
 **Proof — the red run first:**
 
 ```text
-to be filled
+uv run pytest --no-cov -q agents/deliberator/tests/test_guided_turn_edges.py::test_the_output_cap_is_16384_and_its_law_row_agrees agents/deliberator/tests/test_output_limits.py
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_____________ test_the_output_cap_is_16384_and_its_law_row_agrees _____________
+agents\deliberator\tests\test_guided_turn_edges.py:124: in test_the_output_cap_is_16384_and_its_law_row_agrees
+    assert DeliberatorSettings().max_tokens == 16384
+E   AssertionError: assert 8192 == 16384
+E    +  where 8192 = DeliberatorSettings(role='manager', instance_name='', max_rounds=2, debate_concurrency=4, llm_provider='anthropic', de...s=30.0, poll_interval_seconds=60, proponent_identity='deliberator-proponent', opponent_identity='deliberator-opponent').max_tokens
+E    +    where DeliberatorSettings(role='manager', instance_name='', max_rounds=2, debate_concurrency=4, llm_provider='anthropic', de...s=30.0, poll_interval_seconds=60, proponent_identity='deliberator-proponent', opponent_identity='deliberator-opponent') = DeliberatorSettings()
+__________ test_the_cap_cannot_exceed_anthropics_nonstreaming_limit ___________
+agents\deliberator\tests\test_output_limits.py:24: in test_the_cap_cannot_exceed_anthropics_nonstreaming_limit
+    assert ceiling == 600 * 128_000 // 3_600
+E   assert None == ((600 * 128000) // 3600)
+_________________ test_the_manager_may_wait_up_to_300_seconds _________________
+agents\deliberator\tests\test_output_limits.py:32: in test_the_manager_may_wait_up_to_300_seconds
+    settings = DeliberatorSettings(request_timeout_seconds=300.0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\pydantic_settings\main.py:262: in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeliberatorSettings
+E   request_timeout_seconds
+E     Input should be less than or equal to 120 [type=less_than_equal, input_value=300.0, input_type=float]
+E       For further information visit https://errors.pydantic.dev/2.13/v/less_than_equal
+=========================== short test summary info ===========================
+FAILED agents/deliberator/tests/test_guided_turn_edges.py::test_the_output_cap_is_16384_and_its_law_row_agrees
+FAILED agents/deliberator/tests/test_output_limits.py::test_the_cap_cannot_exceed_anthropics_nonstreaming_limit
+FAILED agents/deliberator/tests/test_output_limits.py::test_the_manager_may_wait_up_to_300_seconds
+3 failed in 11.05s
+EXIT_CODE=1
 ```
+
+A1, A3 and A4 failed before any settings, adapter or PARAM edit. Captured in `.tools/s257/red.txt` and pasted here before implementation.
 
 **Proof — the green run:**
 
+Focused A1-A5/B1 run, `.tools/s257/green.txt`:
+
 ```text
-to be filled
+........................................................................ [ 20%]
+........................................................................ [ 40%]
+........................................................................ [ 61%]
+........................................................................ [ 81%]
+................................................................         [100%]
+352 passed in 20.33s
+EXIT_CODE=0
 ```
 
-**Guards planted:** _to be filled, one line per guard_
+B2, `.tools/s257/param-sync.txt`:
 
-**Existing tests edited:** _to be filled, one line per test with the reason_
+```text
+uv run python scripts/check_param_law_sync.py
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+PARAM_SYNC_EXIT_CODE=0
+```
 
-**The `PARAM` rows, the Changelog line and the book's version:** _to be filled_
+**Guards planted:** 17 plants, each red (exit 1) then restored green (exit 0), with original bytes restored in a `finally` block. Complete local traces: `.tools/s257/guards-complete.txt`; initial numeric-gate survivor retained separately in `.tools/s257/guards-initial.txt`. One line per guard:
 
-**Module line counts:** _to be filled_
+- G01 A1: cap default reverted to 8,192 → red → restored.
+- G02 A1: ceiling lowered to 16,383, refusing the legal endpoint → red → restored.
+- G03 A1/A3: ceiling raised to **32,768** → both red → restored.
+- G04 A3: upper bound removed → red → restored.
+- G05 existing ceiling test: cap minimum changed from 64 to 63 → red → restored.
+- G06 A1: `gpt-5.5` removed from the measured reason → red → restored.
+- G07 A1: numeric PARAM default and ceiling reverted to 8,192 → red → restored. B2's numeric blind spot was separately observed (DL-275), not counted as red.
+- G08 A2: OpenAI request cap fixed at 8,192 → 3 red / 3 passing vendor cases → restored all 6 green.
+- G09 A2: Anthropic request cap fixed at 8,192 → 3 red / 3 passing vendor cases → restored all 6 green.
+- G10 A3: client constant raised from 21,333 to 21,334 → red → restored.
+- G11 A4: wait default changed from 30 to 31 → red → restored.
+- G12 A4: ceiling lowered to 299, refusing 300 → red → restored.
+- G13 A4: ceiling raised to 301, accepting 300.1 → red → restored.
+- G14 A4: measured `190`-second reason changed to `180` → red → restored.
+- G15 A4: numeric wait PARAM bound reverted to 120 → red → restored.
+- G16 A4: manager forwarding replaced with a fixed 120-second wait → red → restored.
+- G17 B2: the cap's Tunable cell changed from YES to NO → checker exit 1 → restored exit 0.
 
-**`make ci`:** _to be filled: the output file, the exit code, passed and skipped, coverage, each NOT RUN step_
+A5 and B1 are existing proofs run without mutation; no prompt-byte or hash test failed. Raw completion lines from the guard runs:
 
-**`make gate-ran`:** owed by the planner at merge.
+```text
+RED_THEN_RESTORED G01 A1 default 8192
+RED_THEN_RESTORED G02 A1 legal endpoint refused
+RED_THEN_RESTORED G03 A1/A3 bound 32768
+RED_THEN_RESTORED G04 A3 no upper bound
+RED_THEN_RESTORED G05 existing cap minimum changed
+RED_THEN_RESTORED G06 A1 measured reason removed
+RED_THEN_RESTORED G07 A1/B2 cap PARAM old
+RED_THEN_RESTORED G08 A2 OpenAI cap 8192
+RED_THEN_RESTORED G09 A2 Anthropic cap 8192
+RED_THEN_RESTORED G10 A3 client constant 21334
+RED_THEN_RESTORED G11 A4 default wait 31
+RED_THEN_RESTORED G12 A4 legal wait refused
+RED_THEN_RESTORED G13 A4 excess wait accepted
+RED_THEN_RESTORED G14 A4 measured rate reason changed
+RED_THEN_RESTORED G15 A4/B2 wait PARAM old
+RED_THEN_RESTORED G16 A4 configured wait not forwarded
+RED_THEN_RESTORED G17 B2 tunable declaration mismatch
+TOTAL_RED_THEN_RESTORED=17
+```
 
-**Not met / verified failing:** _to be filled_
+**Existing tests edited:**
+
+- `agents/deliberator/tests/test_guided_turn_edges.py::test_the_output_cap_is_8192_and_its_law_row_agrees` → `test_the_output_cap_is_16384_and_its_law_row_agrees` (A1): replace the old default and PARAM pin; add acceptance/refusal and measured-reason pins; retain the S246 `3,026` assertion.
+- `agents/deliberator/tests/test_llm_provider.py::test_max_tokens_default_is_its_own_ceiling`: the old assertions pinned 8,192; pin the new default and maximum at 16,384 while retaining the 64-token minimum, and cite `DLIB-DEP-04` in the updated explanation.
+
+No other existing test function was edited. A5 and B1 ran unchanged. The test-plan rows add references without moving any clause's status.
+
+**The `PARAM` rows, the Changelog line and the book's version:** LOCKED v1.16 (read v1.15 after S256; one PARAM-only amendment).
+
+```text
+| `max_tokens` | `16384` | int >= 64 <= 16384 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8); on gpt-5.5 reasoning counts against the cap, a defender reached 7,738 tokens in production and 11,556 in the typed turn, and the unused cap costs nothing (DL-274 D1) |
+| `request_timeout_seconds` | `30.0` | float >= 1 <= 300 | YES | Bounds peer RPC wait; a turn at the cap can take about 190 seconds at the slowest measured output rate on gpt-5.5 (DL-274 D3) |
++ v1.16 -- S257 / DL-274 (2026-10-08). PARAM-only: `max_tokens` defaults to
+  16,384 with the same ceiling, below Anthropic's 21,333 non-streaming limit;
+  `request_timeout_seconds` may reach 300, still defaulting to 30. Measured
+  gpt-5.5 reasoning needs the cap and can take about 190 seconds at it. No clause changes.
+```
+
+Clauses and the capability declaration are unchanged, compared byte for byte with `main`; both original `why` texts remain exact prefixes of their new descriptions. No contract file changed.
+
+**Module line counts:** every touched module is below the 200-line block.
+
+```text
+agents/deliberator/settings.py: 164 lines
+kernel/llm_anthropic.py: 162 lines
+agents/deliberator/tests/test_guided_turn_edges.py: 130 lines
+agents/deliberator/tests/test_llm_provider.py: 156 lines
+agents/deliberator/tests/test_output_limits.py: 62 lines
+agents/deliberator/tests/test_output_cap_requests.py: 70 lines
+```
+
+**`make ci`:** ran twice, redirected to a file, never piped. Final output: `C:\Users\yury_\Downloads\project\ta-s257\ci.txt`; **exit 2**, 4,330 passed / 8 existing skips / 100.00 % coverage. Initial full output is preserved in `.tools/s257/ci-initial.txt`; the final rerun follows the synthetic-key scanner correction and is the handback proof. External networking was blocked; no LLM was called.
+
+| Step | Check | Actual result |
+| --- | --- | --- |
+| 1 | ruff | PASS |
+| 2 | format | PASS |
+| 3 | mypy | PASS |
+| 4 | import-linter | PASS |
+| 5 | module size | PASS |
+| 6 | module header | PASS |
+| 7 | law coverage | PASS |
+| 8 | PARAM/settings sync | PASS; numeric proof is A1/A4, DL-275 |
+| 9 | sprint status | PASS |
+| 10 | markdown links | PASS |
+| 11 | version scheme | PASS |
+| 12 | pytest / 100.00 % floor | PASS; 4,330 passed, 8 existing skips |
+| 13 | dependency audit (`scripts/check_dependency_audit.py`, pip-audit) | NOT RUN to completion: online advisory lookup blocked by the no-network proof guard; attempted and failed |
+| 14 | detect-secrets | PASS, exit 0; run separately after the target stopped at step 13 |
+| 15 | untracked secrets | PASS, exit 0; run separately after the target stopped at step 13 |
+
+Actual output excerpts from the final `ci.txt` (full output remains in the named file):
+
+```text
+make ci > ci.txt 2>&1
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+Success: no issues found in 1165 source files
+Contracts: 5 kept, 0 broken.
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: S257 offline proof: external DNS is disabled"))
+make: *** [Makefile:59: ci] Error 1
+TOTAL                                                           20066      0   4240      0  100.00%
+========= 4330 passed, 8 skipped, 2470 warnings in 399.46s (0:06:39) ==========
+FINAL_MAKE_CI_EXIT_CODE=2
+```
+
+The target stopped before its final two checks; these were run explicitly, with new tests already staged, and no tracked edits while pre-commit scanned:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+FINAL_DETECT_SECRETS_EXIT_CODE=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+FINAL_UNTRACKED_SECRETS_EXIT_CODE=0
+```
+
+Security logs: `.tools/s257/detect-secrets.txt`, `.tools/s257/untracked-secrets.txt`. `.secrets.baseline` is unchanged. A1-A5/B1/B2 have no skipped case; the eight full-suite skips and their reasons are pasted above.
+
+**Scope proof:** the exact required command printed nothing; the measured stdout was empty. `pyproject.toml` and `uv.lock` were not touched. Packs, prompts, packet builder, guided turn, DSPy modules, contracts and `docs/STATE.md` were not touched. Mutation-only changes to `kernel/llm_openai.py` and the entrypoint were restored.
+
+```text
+git diff main -- pyproject.toml uv.lock orchestration/packs kernel/deliberation_prompts.py kernel/deliberation_program.py kernel/dspy_engine.py agents/deliberator/guided_turn.py agents/deliberator/context.py
+STDOUT_BYTES=0
+EXIT_CODE=0
+Extra exclusions and mutation-only files: STDOUT_BYTES=0 EXIT_CODE=0
+CLAUSES_AND_CAPABILITY_UNCHANGED=YES
+BOTH_EXISTING_WHY_TEXTS_PRESERVED=YES
+NEW_TESTS_IMPORT_NO_VENDOR_SDK=YES
+```
+
+**`make gate-ran`:** owed by the planner at merge; not run here (no push / no network).
+
+**Not met / verified failing:**
+
+- **Verified failing:** overall `make ci` exit 2; dependency audit **NOT RUN to completion** because its online PyPI/advisory lookup requires the network. No clean vulnerability result is claimed. The other 14 checks passed, including the separately invoked security tail.
+- **Verified failing spec assumption:** B2 does not compare numeric Value/Type cells. A1 and A4 catch both old rows; G17 proves the check B2 really enforces. The shared checker was not changed (DL-275).
+- **Not done, planner-owned:** PATCH bump / lock, push, exact-SHA remote gate, CodeQL comparison, merge/tag, image build, retag/D4 and F1a/F1b/F2. No deployment or live model proof is claimed.
+- **Not done under the read-only umbrella scope:** central law-rollup version labels still v1.15; the amended book is v1.16 with the same 32 / 63 clause count. The two labels can be reconciled at merge; no law clause or rollup count changed.
 
 ---
 
 ## Return notes
 
-- _to be filled by the builder_
+- Corrected the spec's PARAM-gate claim, without widening the checker: with the old numeric cap row planted, A1 failed but B2 exited 0. `ParamRow` parses only name and Tunable; A1/A4 now provide the exact numeric-row proof required by the scope. DL-275 records the finding, the chosen scoped proof and the rejected global-checker change. B2's own declaration-mismatch plant did fail and restore.
+- Re-counted the actual `ci:` target: **15** steps, including sprint status. AGENTS.md's short form says 14; CLAUDE.md and the Makefile are the current reference. No rule file was edited.
+- The two existing 8,192 pins named under Traps were the only existing tests edited. No additional existing test pinned the old wait bound. A5 and B1 were not edited; no prompt-byte or hash failure occurred.
+- Detect-secrets initially rejected the A2 test's literal synthetic credential as a Secret Keyword false positive (`.tools/s257/detect-secrets-initial.txt`). Changed it to the existing single-character fixture convention, `api_key="k"`; no real credential, baseline change or allowlist. The final six request cases passed (`.tools/s257/final-request-tests.txt`); full CI and secrets checks were rerun on that final test file.
+- One scanner rerun reported `files were modified` because the builder edited this handover while the scan was running (`.tools/s257/detect-secrets-concurrent-doc-edit.txt`). No hook mutation remained in the diff. Holding the tracked tree steady for the final scan yielded exit 0; the baseline is unchanged.
+- The locked book advanced from S256's **v1.15 to v1.16**, PARAM-only. Central law version labels in `docs/laws/INDEX.md` and `docs/laws/ledger.md` still say v1.15; those umbrella files were left read-only under MUST RULE. The planner can reconcile their version labels at merge; the clause count stays **32 / 63**, and no clause status moves.
+- `pyproject.toml` and `uv.lock` were not touched; the planner owes the PATCH bump and lock reconciliation at merge. `docs/STATE.md` was not edited, by the handover; intent and results live here. No package version was pinned.
+- No push, remote gate, merge, image build, deployment or live/vendor-library proof was performed. The planner owes `make gate-ran` on the final bumped SHA, the S256 CodeQL comparison, F1a/F1b, retag/D4 with the before/after snapshot, and F2. No paid call or live app setting was changed. The fleet's pack wait remains 120; the code default remains 30 and the allowed maximum is now 300.

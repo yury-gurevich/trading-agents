@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from agents.deliberator.agent import DeliberatorAgent
 from agents.deliberator.settings import DeliberatorSettings
@@ -115,11 +116,15 @@ def test_the_judge_is_asked_and_parsed_exactly_as_before() -> None:
     assert (reply.ruling, reply.rationale) == ("overturn", "stop inside one ATR")
 
 
-def test_the_output_cap_is_8192_and_its_law_row_agrees() -> None:
+def test_the_output_cap_is_16384_and_its_law_row_agrees() -> None:
     """DLIB-DEP-04: the default, its measured why, and the PARAM row say the same."""
     field = DeliberatorSettings.model_fields["max_tokens"]
     law = (Path(__file__).parents[1] / "laws" / "laws.md").read_text(encoding="utf-8")
 
-    assert DeliberatorSettings().max_tokens == 8192
-    assert "3,026" in str(field.description)
-    assert "| `max_tokens` | `8192` | int >= 64 <= 8192 | YES |" in law
+    assert DeliberatorSettings().max_tokens == 16384
+    assert DeliberatorSettings(max_tokens=16384).max_tokens == 16384
+    with pytest.raises(ValidationError, match="max_tokens"):
+        DeliberatorSettings(max_tokens=16385)
+    for reason in ("3,026", "gpt-5.5", "reasoning", "7,738", "11,556", "unused cap"):
+        assert reason in str(field.description)
+    assert "| `max_tokens` | `16384` | int >= 64 <= 16384 | YES |" in law

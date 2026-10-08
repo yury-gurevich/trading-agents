@@ -10,6 +10,41 @@ and is marked CLOSED here.
 
 ---
 
+## DL-278 - a build with a re-run job cannot be proven to the deploy record, and a tag the fleet has pulled is not pushed again - status: DECIDED (planner, 2026-10-08 22:50 AEDT); the reader's fix is work-queue 115
+
+**What happened.** The `s259` build (run `37767377219`) pushed fifteen images and failed one job: the
+scanner image's vulnerability scan could not download its database, so the image was never scanned or
+smoke-tested. I re-ran that one job (`gh run rerun --failed`); it passed and the run read `success`, 15 of
+15. The fleet was retagged to `s259` and verified. Then `scripts/record_deploy.py` refused: "GitHub build
+evidence is required before recording a deploy".
+
+**Measured.** `surfaces/dashboard/github_tag_builds.py` proves that a run published a tag by finding
+`trading-agents-master:<tag>` in the run's log archive. GitHub's archive for a run is the latest attempt's.
+Attempt 1's archive is 953 KB over 15 jobs and names the master image ten times. The latest is 56 KB, the
+scanner job alone, with no mention. A read-only call of the same reader gave 0 qualifying builds for `s259`.
+
+**Why the record could not be skipped.** `scripts/fidelity_export_helpers.py` takes a session's deployed
+commit from the `DeployRecord` in force when its scan ran. With no record for this deploy every session
+would be compared against `s257`'s commit, and the three law books S259 rewrote would make each one
+unclean. The deploy existed to prevent exactly that.
+
+**Decided.** A fresh build of the same commit in one attempt, under a new tag, `s259a` (run `37770503860`,
+15 of 15; the reader finds it), and a second retag onto it, verified and recorded. `s259` was live from
+11:09 UTC until that retag, with no record.
+
+**Ruled out.** Re-running every job of the first run, or a fresh build under `s259`: either pushes fifteen
+images again under a tag the fleet had already pulled, so what was verified would no longer be what runs.
+Recording by assertion: the skill forbids it, and the record's worth is that it is not asserted. Leaving
+the deploy unrecorded: above.
+
+**Changed.** The deploy-fleet skill says to dispatch a fresh run when a job fails and never to re-run it.
+The reader is unchanged; reading every attempt's archive is work-queue 115.
+
+**Not decided.** Whether `s259a` is the right name. The convention suffixes a chore to the sprint it
+follows; this is a second build of the same sprint. The `DeployRecord`'s commit is what is authoritative.
+
+---
+
 ## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); not proven on the fleet; work-queue 113
 
 **The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
@@ -62,7 +97,7 @@ night still does not fit.
 
 ---
 
-## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); BUILT and MERGED as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md) `0.123.03` (2026-10-08), work-queue 114 open for the eight rows
+## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); BUILT and MERGED as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md) `0.123.03` (2026-10-08); the eight rows rewritten as [S259](sprints/sprint-259-the-eight-excused-law-rows-state-the-codes-bounds.md) `0.123.04` and deployed `s259a` the same night; work-queue 114 closed
 
 **The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and
 its Tunable cell and nothing else. What should it compare, and what does it find when it does?

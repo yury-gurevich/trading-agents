@@ -79,6 +79,13 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    gh run watch <run-id> --exit-status     # ~2 min; all 15 must push
    ```
 
+   🪤 **If a job of the build fails, dispatch a fresh run. Never `gh run rerun --failed`** (measured
+   2026-10-08 at `s259`, [DL-278](../../../docs/design-log.md)). The re-run leaves a run that reads
+   `success` and whose log archive holds the re-run job alone, and step 6 proves a tag by finding
+   `trading-agents-master:<tag>` in that archive, so it refuses a build that did succeed. And a tag
+   the fleet has already pulled is never pushed again: take a new tag (`s259a`) and retag onto it.
+   Check before any retag, read-only, that step 6 will find the build.
+
 3. **List the live inventory first — never trust the list below as complete:**
 
    ```bash

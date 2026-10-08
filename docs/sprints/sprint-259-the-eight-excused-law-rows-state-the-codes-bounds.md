@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-259-the-eight-excused-law-rows-state-the-codes-bounds`
-**Status:** BUILT
-**Version:** *next available PATCH at merge*
+**Status:** MERGED 2026-10-08 — `0.123.04`, fast-forwarded to `49146e40`, tag `v0.123.04`, GATE PROVEN `49146e40` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,392 passed, 8 skipped, 100.00 %, dependency audit clean); built by the planner on the operator's word ("tonight"); portfolio manager laws v1.12, scanner v1.5, analyst v1.10 (`PARAM` only, no clause changes); red first, then each of the eight rows put back fails the parameter step; the excused list is empty and a test holds it empty; open CodeQL alerts 127, the same as `main`'s, none new; **F1 PASS** (on the merged `main` the step exits 0 with no excused row, and each row put back makes it exit 1); **deployed `s259a` 2026-10-08**, before the fidelity count's first session, so nothing counted is lost; work-queue 114 closed
+**Version:** `0.123.04`
 **Effort:** S
 **Decisions:** [DL-276](../design-log.md) (D3, D4 and D6, and its amendment of 2026-10-08: why tonight) ·
 closes work-queue **114**
@@ -192,7 +192,7 @@ Everything here was measured in `../ta-s259`, cut from `main` `2b8759ab`, with n
 - [x] Each of the eight rows put back fails the step (A2); the list cannot be refilled quietly (A3).
 - [x] No clause, Value, Tunable or Rationale cell, settings file or contract is touched (B1).
 - [x] `make ci` exit 0, 100.00 % coverage.
-- [ ] `GATE PROVEN` for the merged SHA; the retag verified before the run; work-queue 114 closed.
+- [x] `GATE PROVEN` for the merged SHA; the retag verified before the run; work-queue 114 closed.
 
 ---
 
@@ -354,3 +354,40 @@ was read). Nothing else.
   buffer of 0.95, a single-name cap of 0. That is what the code has allowed all along. It is named here so
   the operator can decide whether any of them should be tighter, which would be a code change in decision
   code and its own sprint.
+
+---
+
+## Merge and deploy record — 2026-10-08 22:50 AEDT
+
+**Merge.** `make gate-ran` from `../ta-s259` printed GATE PROVEN for
+`49146e40414eb32890a54ac7373ad689013b5866` (CI, CodeQL, Security Findings), the commit `git rev-parse HEAD`
+gave. The branch's open CodeQL alerts are the same 127 alert numbers as `main`'s. `main` was fast-forwarded
+and tagged `v0.123.04`. **F1** on the merged `main`: the step exits 0 with two warnings and no excused row,
+each of the eight rows put back makes it exit 1 and name the row, an entry put back for a reconciled row
+fails it, and the tree is clean afterwards.
+
+**Deploy.** Image-only, checked first: the three injected packs hash the same at the fleet's commit
+`b0831f64` and at `49146e40`; no file under `infra/`, the packs, the workflows or a Dockerfile differs; and
+outside `docs/`, `scripts/` and `tests/` the only differences are four law books and the version line.
+
+The fleet was retagged twice, and the second is the deploy of record.
+
+- **`s259`, 11:09–11:17 UTC.** Build `37767377219`: its first attempt pushed 15 images and failed one job,
+  because the scanner image's vulnerability scan could not download its database. The planner re-ran that
+  one job, which passed. All 16 apps and the job went to `s259` and matched the before-snapshot, image
+  aside; 15 of 15 agent types activated. Then `scripts/record_deploy.py` refused to record it: it proves a
+  tag by finding the master image's name in the run's log archive, and after a re-run of one job the
+  latest archive holds that job alone ([DL-278](../design-log.md)).
+- **`s259a`, 11:34–11:41 UTC (22:34–22:41 AEDT).** A fresh build of the same commit in one attempt, run
+  `37770503860`, 15 of 15, under a new tag, because a tag the fleet has pulled is not pushed again. All 16
+  apps and `dispatcher-cron` are on `s259a`, every one `Succeeded`, latest revision ready; 0 of 16 apps
+  differ from the snapshot taken before it, image aside, and the job differs in its image alone; the three
+  deliberators still read `openai`, the manager's wait is still 240 seconds, both debater request
+  subscriptions still hold the five-minute lock; 15 of 15 agent types activated on the new images
+  (11:35–11:41 UTC) with their credentials passed; 0 Escalations, 0 Faults, 0 Flags; every app back at 0
+  replicas. `DeployRecord` written: `deploy:2026-10-08T11:44:42.931500+00:00:s259a:49146e40414eb32890a54ac7373ad689013b5866`. Rollback: `s257`.
+- **Seen at both retags, and at the day's two earlier ones:** the master's replica being scaled down was
+  killed 31 seconds after its stop (exit code 137). Not a serving replica; filed as work-queue 116.
+
+**What this deploy is for.** The fidelity count's first session is `sched-2026-10-08`. It now starts on
+the rewritten books. The fidelity worktree is to be pinned at `v0.123.04`.

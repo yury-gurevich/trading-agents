@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `chore-three-scripts-leave-the-size-baseline`
-**Status:** BUILT
+**Status:** MERGED 2026-10-08 — no bump, fast-forwarded to `7bbf8737`, GATE PROVEN `7bbf8737` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,392 passed, 8 skipped, 100.00 %, dependency audit clean); built by a Claude cloud session on 2026-10-03; the three scripts are 128, 112 and 168 lines and `LEGACY_MAX_LINES` lists 12; the planner's own re-measure: 46 of 47 definitions identical as syntax trees and none missing, both scripts print the same bytes before and after the split, two plants of the size ratchet each red; open CodeQL alerts 127, the same as `main`'s, none new; no deploy (the scripts ship in no image)
 **Version:** no bump
 **Effort:** S
 **Decisions:** none owed beyond the split seams, which are the builder's call and go in the closeout ·

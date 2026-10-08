@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-257-a-debaters-turn-may-write-16384-output-tokens`
-**Status:** BUILT
+**Status:** MERGED 2026-10-08 — `0.123.02`, fast-forwarded to `b0831f64`, tag `v0.123.02`, GATE PROVEN `b0831f64` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,330 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s257`, complete against the nine-item checklist; deliberator laws v1.16 (`PARAM` only, no clause changes); the planner's own re-measure: eight pieces of the old behaviour put back one at a time each turn the tests red; the builder found the spec's claim about the parameter step false ([DL-275](../design-log.md), work-queue 114); open CodeQL alerts 127, the same as `main`'s, none new; **F1a PASS** (Anthropic's 0.120.2 client accepts 16,384 and 21,333 and refuses 21,334 before sending, and both adapters put 16,384 in the request, on the real libraries with an in-memory transport); **F1b not run**: one paid debate, the operator's call; **not deployed**; owed: F1b, the retag with the manager's wait set to 240 seconds, F2
 **Version:** `0.123.02`
 **Effort:** S
 **Decisions:** [DL-274](../design-log.md) (decisions D1 to D4 this sprint builds) · work-queue **111** ·

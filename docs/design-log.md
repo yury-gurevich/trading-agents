@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08)
+## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08); confirmed by the planner, the gap measured and filed as work-queue 114
 
 **Found while planting guards.** S257 says the PARAM gate fails until the two numeric rows follow the
 settings. With the implemented settings unchanged, reverting only the `max_tokens` row to default
@@ -30,9 +30,22 @@ change proof for every agent, discover unrelated old-row divergences and exceed 
 scope. Treating its exit 0 as numeric proof would hide the observed survivor. The scoped literal tests
 already supply that proof without changing a production decision.
 
+**Amendment (planner, 2026-10-08 16:27 AEDT): confirmed, and the gap is measured.** The same plant
+on the built tree: with the cap's law row back at 8,192, `scripts/check_param_law_sync.py` exits 0. The
+claim in S257's spec was the planner's, and it was never run in its failing direction: the prototype ran
+the step only with the rows already changed. Then every cell the step skips was read on `main`
+(`7309b858`), in all 16 law books it covers. Of 235 `PARAM` rows that have a settings field, the Value
+cell equals the code's default in 220; the other 15 are written in a form a number comparison cannot read
+(four `Decimal`s, one `Decimal(...)` literal, one date, nine secrets shown as a dash) and each equals the
+code when read by eye. 23 rows state a numeric bound in the Type cell, 41 bounds in all, and all 41 equal
+the code's. So the second reason above for leaving the step alone, that widening it would find old
+disagreements, is not borne out: there is none today, and a widened step would pass as the books stand.
+The first reason holds: it is a change to a shared gate and was not S257's to make. Filed as work-queue
+114.
+
 ---
 
-## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT; SPEC as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md), work-queue 111); MEASURED and open for the grace (work-queue 113)
+## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a passed, not deployed, work-queue 111; MEASURED and open for the grace (work-queue 113)
 
 **The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
 the effort. Sizing the first one means asking what a longer turn meets next. DL-271 answered for the

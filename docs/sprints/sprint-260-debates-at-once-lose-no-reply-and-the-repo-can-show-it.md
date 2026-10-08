@@ -463,15 +463,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| `ServiceBusPeerClient.__init__` | `agents/deliberator/laws/laws.md` (whole, LOCKED v1.16), its `test-plan.md` (whole), `docs/laws/conventions.md` (whole) | `DLIB-DEP-02`, `DLIB-OBS-04`, `DLIB-NEV-06`, `DLIB-FAIL-01` | No: D2 supplies the publisher only; the existing inbox, faults, correlation and fail-open behavior stay in place. |
+| Harness and new tests | the same deliberator book and test plan; `docs/laws/drift-register.md` (whole); DL-279 and DL-277 in `docs/design-log.md` | `DLIB-IDM-04`, `DLIB-OBS-04`, `DLIB-NEV-06`, `DLIB-FAIL-01`, `DLIB-DEP-02` | No: D1-D9 already decide the scene, observation, timing and reporting. The five binding clauses are green in the existing plan; `DLIB-TRG-02`, `DLIB-IN-02` and `DLIB-SEC-03` remain gray, so their entire clauses are not claimed proven here. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** NO. No `contracts/` file changes and no new agent guarantee; no law amendment or rollup change is owed.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** None needed for D1-D9. No new drift row.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** None. No clause status or law book changes.
 
 ---
 
@@ -486,6 +487,8 @@ An incomplete handback is returned, not repaired (DL-48).
 ---
 
 ## Closeout — evidence
+
+**Intent recorded before the first code change, 2026-10-09:** Work only in `../ta-s260` on the specified sprint branch, initially clean at `main` `10770f91`. Read the complete spec and then this worktree's `CLAUDE.md`, the complete law files above, and DL-279 / DL-277. First reproduce the Appendix table, then record A1/A2/A7 red before D1-D9. Prove each guard by breaking and restoring it, run A1-A4 twenty times, run the two commands and redirected `make ci`, and commit a local handback. Success is the spec's counts and scope checks. Do not change the version/lock, STATE, fidelity paths, kernel, any existing test, or any production default. Live, push, merge and remote proof are not authorized.
 
 **Status:** <BUILT | MERGED>
 

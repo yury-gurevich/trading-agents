@@ -495,3 +495,37 @@ if read through the GitHub connector, are an observation, not `GATE PROVEN`.
 - **Sprint docs.** Setting this spec to `BUILT` made `check_sprint_status.py` fail until the spec's
   row in `docs/sprints/README.md` agreed, so that row's status cell (and the matching
   `docs/sprints/INDEX.md` cell) now reads BUILT. Nothing else in either file changed.
+
+---
+
+## Planner's review and merge-time work — 2026-10-08 21:30 AEDT
+
+**The handback against the contract.** Complete. It names two things as not met as worded, both decided
+by the operator in the build session: `retrain_return_model_helpers.py` is 168 lines, not under 150, and
+five call lines of the one test changed their module alias.
+
+**Re-measured by the planner, not read from the builder's logs.** In a worktree at the branch head, and
+the behaviour checks again after `main` was merged in.
+
+- **Every definition is the same code.** Each top-level definition of the three old files was compared,
+  as a syntax tree with the renames applied, with the definition of that name after the split: 46 of 47
+  are identical and none is missing. The one that differs is `_score` in `remediation_gate.py`, which
+  gained the one import line for its new sibling.
+- `remediation_gate.py --check` prints the same bytes and exits 0 on the split tree and on `main`.
+- `check_worktrees.py` from `main` and the split one, run in the same tree, print the same bytes and
+  both exit 1, on a state with one active worktree and one stale one.
+- The two affected test files pass, 11 and 8 tests. `retrain_return_model.py --help` exits 0.
+- Two plants of the planner's own, each red and each restored: a deleted entry put back in the baseline
+  (the size step exits 1 and `test_every_baselined_path_is_over_the_block_today` fails), and a split
+  module grown to 209 lines (the size step exits 1).
+- The only files changed outside `scripts/` are the one test and the sprint documents.
+- A miscount in the handback, harmless: three `# noqa: S603` comments moved with their calls, not two.
+  None was added.
+
+**Changed by the planner at merge.**
+
+- `main` was 59 commits ahead and was merged in. The two sprint tables conflicted on neighbouring rows:
+  `main`'s rows were taken and this chore's row was kept.
+- CLAUDE.md's module-size paragraph said sixteen scripts "are frozen". It now says they were, and points
+  at the baseline file for how many are left (twelve).
+- No version bump and no `uv lock`, as this spec decided.

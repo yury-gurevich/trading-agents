@@ -101,9 +101,9 @@ Breaking this rule is a blocker — do not merge.
 
 Scope is `kernel contracts agents orchestration surfaces tests scripts`. 🪤 **`scripts/` was
 outside it until 2026-09-23**, and 16 files crossed the block unopposed while it was — including
-one added the same night the gate was taught to look. Those 16 are frozen at their measured size
-in `scripts/module_size_baseline.py`: a listed file may shrink, **never grow**, and once it falls
-under 200 its entry must be deleted. The list can only get shorter.
+one added the same night the gate was taught to look. Those 16 were frozen at their measured size
+in `scripts/module_size_baseline.py` (the file says how many are left): a listed file may shrink,
+**never grow**, and once it falls under 200 its entry must be deleted. The list can only get shorter.
 
 Split modules before they hit the hard block. Do not use `# noqa` to bypass, and do not raise a
 number in the baseline — split the file instead.

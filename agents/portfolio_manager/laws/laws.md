@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -320,12 +320,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
-| `starting_cash` | `100000.00` | `Decimal ≥ 0` (USD) | YES | Paper account size; all position limits are derived as fractions of this |
-| `max_position_pct` | `0.10` | `float ≥ 0.01, ≤ 1.0` | YES | Single-name cap at 10 % of portfolio; caps concentration risk |
-| `max_positions` | `10` | `int ≥ 1, ≤ 50` | YES | Maximum concurrent open positions; caps correlation exposure |
-| `cash_buffer_pct` | `0.05` | `float ≥ 0.0, ≤ 0.50` | YES | Reserve fraction of cash never deployed; covers fees and slippage |
-| `min_order_quantity` | `1` | `int ≥ 1` (shares) | YES | Minimum order size; prevents sub-1-share intents |
-| `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
+| `starting_cash` | `100000.00` | `Decimal ≥ 0, ≤ 1,000,000,000` (USD) | YES | Paper account size; all position limits are derived as fractions of this |
+| `max_position_pct` | `0.10` | `float ≥ 0.0, ≤ 1.0` | YES | Single-name cap at 10 % of portfolio; caps concentration risk |
+| `max_positions` | `10` | `int ≥ 1, ≤ 500` | YES | Maximum concurrent open positions; caps correlation exposure |
+| `cash_buffer_pct` | `0.05` | `float ≥ 0.0, ≤ 0.95` | YES | Reserve fraction of cash never deployed; covers fees and slippage |
+| `min_order_quantity` | `1` | `int ≥ 1, ≤ 1,000,000` (shares) | YES | Minimum order size; prevents sub-1-share intents |
+| `price_lookback_days` | `7` | `int ≥ 0, ≤ 14` (days) | YES | How far back to look for a valid close price from the provider |
 | `min_reward_risk_ratio` | `0` | `float ≥ 0.0, ≤ 10.0` | YES | Disclosure-only default; records measured target/stop ratio in every gate report and rejects only when a positive floor is configured (ADR-0027 Correction 2 / EXP-011) |
 | `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum deployed-book weight in any single sector label, counted over held **and** in-run issuers |
 | `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
@@ -464,3 +464,7 @@ classes of one issuer to one key; absence means single-class, which is the commo
   current schema (DRIFT-060). `PM-OUT-01` and `PM-TYP-03` no longer list `portfolio_state_snapshot` as
   an `OrderIntentSet` field: the contract never had it (DRIFT-098, found by the builder's law
   reading and closed by the planner at merge). 32 / 51 → 33 / 51.
+- v1.12 — amendment (S259 / DL-276, 2026-10-08). `PARAM` only: the Type cells of `starting_cash`,
+  `max_position_pct`, `max_positions`, `cash_buffer_pct`, `min_order_quantity` and
+  `price_lookback_days` state the bounds the settings enforce; S258 had recorded them as excused.
+  No clause, default or code bound changes; 33 / 51 unchanged.

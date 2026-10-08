@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -322,7 +322,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `stop_target_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — it selects which formula runs, not a value within one |
 | `stop_target_drawdown_horizon_days` | `10` | `int ≥ 1, ≤ 60` (sessions) | YES | Sessions after a recommendation over which its realized adverse excursion is measured (`ANLZ-OBS-05`). Long enough for an ordinary stop to be touched by noise, short enough that most recommendations settle inside the run's own lookback; every recorded value carries the horizon it used, so changing this cannot silently reinterpret history |
 | `stop_target_excursion_lookback_windows` | `120` | `int ≥ 1, ≤ 250` (windows) | YES | Number of prior settled windows sampled for the decision-time favourable-excursion target estimate (`ANLZ-OBS-06`). Separate from the forward horizon so the estimate depth can change without redefining what one observed horizon means |
-| `scaled_stop_atr_multiplier` | `2.0` | `float` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
+| `scaled_stop_atr_multiplier` | `2.0` | `float ≥ 0.0, ≤ 5.0` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
 | `scaled_stop_floor_pct` | `0.025` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Stops volatility-scaled stops becoming too tight on very quiet or tiny-ATR names while still allowing a narrower-than-flat challenger |
 | `scaled_stop_ceiling_pct` | `0.08` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Respects the PRD/regime maximum stop risk; the challenger must not silently widen a stop past the declared risk cap. **The cap binds position size, not stop distance — [ADR-0019](../../../docs/decisions/0019-risk-cap-binds-position-size-not-stop-distance.md)** |
 | `rsi_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Wilder's canonical RSI lookback |
@@ -427,3 +427,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.9 — amendment (S255 / DL-269, 2026-10-07). Adds and proves `ANLZ-OUT-10`: every scored
   recommendation records its active constants and the ordered names actually averaged. No existing
   metric, score, confidence, action or rationale changes. One clause added and proven: 28 / 51 → 29 / 52.
+
+- v1.10 — amendment (S259 / DL-276, 2026-10-08). `PARAM` only: the Type cell of
+  `scaled_stop_atr_multiplier` states the bounds the settings enforce; S258 had recorded it as
+  excused. No clause, default or code bound changes; 29 / 52 unchanged.

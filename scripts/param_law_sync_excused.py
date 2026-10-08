@@ -1,20 +1,12 @@
-"""The eight deferred PARAM bounds reconciliations (DL-276 D4).
+"""PARAM rows excused from the bounds comparison (DL-276 D4): none.
 
 Agent: tooling
 Role: record exact Type cells, allowing this list only to shrink.
 External I/O: none.
 """
 
-# These books are fidelity decision paths: editing any file restarts the count.
-# Delete entries and reconcile their rows at the first deploy that restarts that
-# count, or after DL-237's verdict. A changed or reconciled row fails this gate.
-EXCUSED_BOUNDS = {
-    "portfolio_manager.starting_cash": "`Decimal ≥ 0` (USD)",
-    "portfolio_manager.max_position_pct": "`float ≥ 0.01, ≤ 1.0`",
-    "portfolio_manager.max_positions": "`int ≥ 1, ≤ 50`",
-    "portfolio_manager.cash_buffer_pct": "`float ≥ 0.0, ≤ 0.50`",
-    "portfolio_manager.min_order_quantity": "`int ≥ 1` (shares)",
-    "portfolio_manager.price_lookback_days": "`int ≥ 1, ≤ 30` (days)",
-    "scanner.min_average_volume": "`float ≥ 0` (shares/day)",
-    "analyst.scaled_stop_atr_multiplier": "`float` (ratio)",
-}
+# Empty since S259 (2026-10-08): the eight rows S258 recorded here were rewritten to the
+# code's bounds. An entry excuses a bounds disagreement only while the row's Type cell
+# equals the recorded text; a changed or reconciled row fails the gate. A test holds the
+# list empty, so adding an entry is a recorded decision, never a quiet edit.
+EXCUSED_BOUNDS: dict[str, str] = {}

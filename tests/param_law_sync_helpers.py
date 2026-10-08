@@ -1,22 +1,11 @@
 """Small synthetic books for DL-276 numeric reconciliation proofs.
 
 Agent: tooling
-Role: provide isolated settings and PARAM fixtures with literal law expectations.
+Role: provide isolated settings and PARAM fixtures for the checker tests.
 External I/O: temporary filesystem writes only.
 """
 
 from pathlib import Path
-
-EXCUSED_ROWS = {
-    "portfolio_manager.starting_cash": "`Decimal ≥ 0` (USD)",
-    "portfolio_manager.max_position_pct": "`float ≥ 0.01, ≤ 1.0`",
-    "portfolio_manager.max_positions": "`int ≥ 1, ≤ 50`",
-    "portfolio_manager.cash_buffer_pct": "`float ≥ 0.0, ≤ 0.50`",
-    "portfolio_manager.min_order_quantity": "`int ≥ 1` (shares)",
-    "portfolio_manager.price_lookback_days": "`int ≥ 1, ≤ 30` (days)",
-    "scanner.min_average_volume": "`float ≥ 0` (shares/day)",
-    "analyst.scaled_stop_atr_multiplier": "`float` (ratio)",
-}
 
 
 def write_book(

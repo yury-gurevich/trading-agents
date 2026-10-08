@@ -126,6 +126,20 @@ is not seen; a Type cell that states the same side twice is read by its last sta
 numbers written with no space after the comma read as one grouped number, which fails against a field
 that has bounds and would pass against a field that has none.
 
+**Amendment (2026-10-08 21:35 AEDT): the eight rows are rewritten the same night, as
+[S259](sprints/sprint-259-the-eight-excused-law-rows-state-the-codes-bounds.md).** D6 left them for
+the first deploy that restarts the fidelity count. The operator asked what clearing them takes and
+chose "tonight". The count's first session is `sched-2026-10-08`, which had not run: a session is
+clean when no decision path differs between the deployed commit and the commit the replay runs from
+(`scripts/replay_fidelity_git.py`, read whole), so a deploy before that run spends nothing, and the
+rewritten books are part of the code the count starts on. **Ruled out.** Waiting for the next deploy
+that restarts the count, or for the verdict: one to three weeks, and each night adds a session a later
+rewrite would discard. Merging without deploying: the next retag, whatever it carried, would then
+restart the count. Removing the excusing mechanism: its tests still prove it and the repository test
+now holds the list empty, so an entry cannot arrive quietly. **Not decided.** Whether the code's
+limits are the right ones. The books now state them (up to 500 positions, a cash buffer up to 0.95, a
+single-name cap from 0); tightening one is a change to decision code and its own decision.
+
 ---
 
 ## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08); confirmed by the planner, the gap measured and filed as work-queue 114

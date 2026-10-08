@@ -1,6 +1,6 @@
 # `Scanner` — Laws
 
-**Prefix:** `SCAN` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `SCAN` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Reduce the full tradable universe to a small, ranked, explained set of candidates
 > worth deeper analysis — nothing more.
@@ -235,7 +235,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `lookback_days` | `5` | `int ≥ 2, ≤ 252` (days) | YES | Short deterministic first-slice window; broader scans tune this |
 | `min_relative_strength` | `0.02` | `float ≥ -1.0, ≤ 5.0` | YES | Require a positive lookback return before deeper analyst work |
 | `min_price` | `5.0` | `float ≥ 0.01, ≤ 1000.0` (USD) | YES | Avoid illiquid penny-price names in the first scanner slice |
-| `min_average_volume` | `500000.0` | `float ≥ 0` (shares/day) | YES | Require enough daily liquidity for later sizing and execution |
+| `min_average_volume` | `500000.0` | `float ≥ 0, ≤ 1,000,000,000` (shares/day) | YES | Require enough daily liquidity for later sizing and execution |
 | `candidate_cap` | `5` | `int ≥ 1, ≤ 50` | YES | Keep the first vertical slice small and explainable for analyst handoff |
 | `benchmark_ticker` | `"SPY"` | `str` | YES | Relative-strength benchmark; matches the scanner's S&P 500 universe |
 | `max_beta` | `2.5` | `float ≥ 0.0, ≤ 10.0` | YES | Exclude names with excessive systematic risk |
@@ -276,3 +276,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (DRIFT-085, DRIFT-086). It stays 🟩, now also proven on the poll. `SCAN-TYP-01` says
   `CONTRACT.version` names the current schema, and that no clause promises the version moves with
   the shape (DRIFT-060). No behaviour, contract or vocabulary change; 18 / 41 unchanged.
+- v1.5 — S259 / DL-276 (2026-10-08): `PARAM` only. The Type cell of `min_average_volume` states
+  the upper bound the settings enforce; S258 had recorded it as excused. No clause, default or code
+  bound changes; 18 / 41 unchanged.

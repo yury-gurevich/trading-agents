@@ -28,8 +28,8 @@
 | OPR-STA-02 | ⬜ | — |
 | OPR-STA-03 | 🟩 | `test_explain_returns_text_and_writes_audit_and_llm_call` |
 | OPR-IDM-01 | ⬜ | — |
-| OPR-IDM-02 | 🟩 | Duplicate commands without request ids share one correlation, audit and intent, but every model call appends its own LLMCall (first correlation key, later :repeat-N): `test_ledger_is_idempotent_for_same_command`; `test_write_llm_call_records_operator_attribution` |
-| OPR-IDM-03 | 🟩 | `test_ledger_is_idempotent_for_same_command` |
+| OPR-IDM-02 | 🟩 | Duplicate commands without request ids share one correlation, audit and intent, but every model call appends its own LLMCall (first correlation key, later :repeat-N): `test_same_command_shares_audit_and_intent_and_records_each_call`; `test_write_llm_call_records_operator_attribution` |
+| OPR-IDM-03 | 🟩 | `test_same_command_shares_audit_and_intent_and_records_each_call` |
 | OPR-ORD-01 | ⬜ | — |
 | OPR-ORD-02 | ⬜ | — |
 | OPR-FAIL-01 | 🟩 | `test_interpret_llm_exception_returns_refusal` |

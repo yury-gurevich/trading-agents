@@ -105,7 +105,7 @@ def test_explain_returns_text_and_writes_audit_and_llm_call() -> None:
     assert _node_count(graph, "LLMCall") == 1
 
 
-def test_ledger_is_idempotent_for_same_command() -> None:
+def test_same_command_shares_audit_and_intent_and_records_each_call() -> None:
     """OPR-IDM-02 / OPR-IDM-03: A10 shares audit/intent, records both calls."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph, _family_llm())

@@ -819,6 +819,49 @@ Full final hook output: `C:/Users/yury_/AppData/Local/Temp/ta-s256-evidence/fina
 
 ---
 
+## Planner's review and merge-time work — 2026-10-08 14:43 AEDT
+
+**The handback against the checklist.** All twelve items are met. Item 11 names one step as NOT RUN, the
+dependency audit, which needs the network; the planner runs the whole gate below.
+
+**Re-measured by the planner, not read from the builder's logs.**
+
+- The Appendix script on the built tree prints the *after* block, equal to the spec's.
+- The planner's own failed-reply script (two requests, a bus whose publish fails, a graph fault sink): both
+  handlers ran once, 2 settled, 0 abandoned, 0 dead-lettered, one `Fault` from `kernel.serve_loop`, no
+  error raised. On `main` the same script abandons both requests and writes no fault.
+- Six pieces of the old behaviour put back one at a time, each red, each restored: the request not settled
+  at the take (11 tests fail), a pass taking ten (2), a failed reply ending the loop (3), a repeated key
+  returning the first row (6), the reproducibility lookup keeping the row listed last (1), the peer
+  passing no fault sink (1). The 36 tests of the sprint's files are green before and after.
+- The five existing tests the builder edited are the five the spec named. Each edit was read: every one
+  asserts the new behaviour in place of the one removed, and none is weakened.
+- The code is the decided design: D1 to D4 and the reader, nothing more. The protected paths are untouched.
+
+**Changed by the planner at merge.**
+
+- `test_ledger_is_idempotent_for_same_command` is renamed
+  `test_same_command_shares_audit_and_intent_and_records_each_call`, in the test, the operator's test plan
+  (two rows) and DRIFT-104. It now asserts two ledger rows, so the old name said the opposite. The
+  builder's tables above keep the name it had at handback.
+- The version is `0.123.01`. `uv lock` changed the version line only; 180 packages before and after.
+- `main` was merged in. The two sprint tables conflicted on adjacent rows: this sprint's row is the
+  branch's, sprint 257's row is `main`'s. `docs/STATE.md`, the design log and the work queue are `main`'s.
+
+**Accepted as built.**
+
+- The builder promoted `DLIB-OBS-02` (spend is attributable per calling agent) on test A8. The spec did not
+  ask for it; the test asserts what the clause says, on both rows of a repeated turn.
+- The operator's test-plan footer read 16 of 50 where both rollups read 18; it now reads the derived 19.
+- A correlation id that itself ended in `:repeat-N` would share a key with another id's repeat. No caller
+  writes one: a debate's id is `<run>:<ticker>:<role>:r<n>` and the operator's is a hash.
+
+**Owed, in the order of "Sequencing after merge":** the gate on Windows and on the remote for the merged
+SHA, the merge, F1 on the live namespace, the deploy on the operator's word, F2. Their results are recorded
+in `docs/STATE.md` and in this file's Status line.
+
+---
+
 ## Appendix — the reproduction, and the reference shape
 
 ### The script

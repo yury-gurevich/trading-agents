@@ -12,7 +12,7 @@ from kernel import InMemoryGraphStore
 
 
 def test_write_llm_call_records_operator_attribution() -> None:
-    """OPR-IDN-02: operator no longer claims generic LLMCall ownership."""
+    """OPR-IDN-02 / OPR-IDM-02: a second model call keeps its own ledger row."""
     graph = InMemoryGraphStore()
 
     first = write_llm_call(
@@ -36,6 +36,8 @@ def test_write_llm_call_records_operator_attribution() -> None:
         latency_ms=7,
     )
 
-    assert second is first
+    assert second.key == first.key + ":repeat-1"
+    assert second is not first
+    assert len(graph.list_nodes("LLMCall")) == 2
     assert first.props["calling_agent"] == "operator"
     assert first.props["stop_reason"] == "unknown"

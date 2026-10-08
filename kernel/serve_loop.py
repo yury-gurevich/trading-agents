@@ -16,9 +16,12 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Protocol
 
+from kernel.errors import CollectingFaultSink, fault_boundary
+
 if TYPE_CHECKING:
     from kernel.bus import MessageBus
     from kernel.envelope import AgentMessage
+    from kernel.errors import FaultSink
 
 _DEFAULT_POLL_INTERVAL = 60
 
@@ -63,16 +66,28 @@ class LocalRequestConsumer:
         self.replies.append(response)
 
 
-def serve_once(consumer: RequestConsumer, bus: MessageBus) -> int:
+def serve_once(
+    consumer: RequestConsumer, bus: MessageBus, *, sink: FaultSink | None = None
+) -> int:
     """Dispatch every pending request through the bus and reply; return the count.
 
     Each request is routed via ``bus.request`` — which enforces the capability
     matrix and never raises (handler faults come back as error messages) — so a
-    single bad request can never kill the serving loop.
+    single bad request can never kill the serving loop. Reply failures are
+    recorded without retrying settled requests; receive/take failures propagate.
     """
+    resolved = sink if sink is not None else CollectingFaultSink()
     requests = consumer.poll()
     for request in requests:
-        consumer.reply(bus.request(request))
+        response = bus.request(request)
+        with fault_boundary(
+            resolved,
+            agent=request.recipient,
+            module="kernel.serve_loop",
+            capability=request.capability,
+            reraise=False,
+        ):
+            consumer.reply(response)
     return len(requests)
 
 
@@ -81,8 +96,9 @@ def serve_loop(  # pragma: no cover - blocks forever; serve_once carries the cov
     bus: MessageBus,
     *,
     poll_interval: int = _DEFAULT_POLL_INTERVAL,
+    sink: FaultSink | None = None,
 ) -> None:
     """Serve forever: dispatch all pending requests, then sleep when idle."""
     while True:
-        if serve_once(consumer, bus) == 0:
+        if serve_once(consumer, bus, sink=sink) == 0:
             time.sleep(poll_interval)

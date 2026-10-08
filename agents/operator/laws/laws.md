@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -85,8 +85,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **OPR-IDM-01** — The operator is non-deterministic (LLM output may vary across identical
   inputs). The graph audit is the stable record; `CommandAudit.outcome` is the single source of
   truth.
-- **OPR-IDM-02** — Duplicate `interpret` calls with the same text produce separate `CommandAudit`
-  and `LLMCall` nodes. No deduplication.
+- **OPR-IDM-02** — Duplicate `interpret` calls with the same text and no request id share one
+  correlation id (`OPR-IDM-03`), and so one `CommandAudit` and one `Intent`. Each LLM call they
+  make is its own `LLMCall` row: the first under the correlation id, each later one with a
+  `:repeat-N` suffix. No LLM call is deduplicated.
 - **OPR-IDM-03** — Correlation IDs are derived from `(actor, channel, text)` hash; the same
   command from the same actor produces the same `correlation_id`, making audit logs searchable.
 
@@ -226,3 +228,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     it does today is altered; only its claim over what *other* agents may do.
 - v1.3 — S205 rewrites `OPR-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `CommandResult`, `TypedIntent`, and `HumanCommand`. No contract shape changes.
+- v1.4 — S256 / DL-272 (2026-10-08). Rewrites `OPR-IDM-02`: identical commands
+  without a request id reuse their correlation-keyed audit and intent, as the code
+  already does, while every paid model call now has its own ledger row. Corrects
+  DRIFT-104; no other clause changes.

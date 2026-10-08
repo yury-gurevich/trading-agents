@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.14 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.15 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -103,6 +103,12 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-IDM-02** -- LLM outputs are non-deterministic but bounded by role,
   model, max rounds, prompt hashes, response hashes, and timestamps.
 + **DLIB-IDM-03** -- Manager writes use the PM run id as the deliberation id.
++ **DLIB-IDM-04** -- A served debate-turn request is settled when the peer takes it,
+  before the model is called, and a peer takes one request at a time. One delivery is therefore
+  served at most once, however long the turn takes. A turn whose peer stops mid-call, or whose
+  reply cannot be published, is not served again by the bus: its order fails open on the
+  manager's wait (`DLIB-NEV-06`, `DLIB-OBS-03`), and a reply that could not be published is
+  recorded as a `Fault`.
 
 ## Ordering & Concurrency (`ORD`)
 
@@ -179,6 +185,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   rendered its prompt, so whether a stored prompt hash is comparable to the
   current renderer is answerable without replaying the call. A call whose
   renderer was not recorded reads as unknown, never as the current one.
++ **DLIB-OBS-08** -- Every completion is its own `LLMCall` row. A completion under
+  a request id that already has a row is recorded under that row's key with a `:repeat-N`
+  suffix, N from 1. No row is overwritten, merged or left out.
 
 ## Performance Envelope (`PERF`)
 
@@ -317,3 +326,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   one first-failure reason is appended. Old records add nothing. `DLIB-NEV-09` is obeyed, not amended,
   with source pins including the planner's corrected scale clause (DL-270 / DRIFT-103). One clause
   added and proven: 28 / 60 -> 29 / 61.
++ v1.15 -- S256 / DL-272 (2026-10-08). Adds `DLIB-IDM-04` (settle a served
+  request before model work, one per pass; lost replies fault without redelivery) and
+  `DLIB-OBS-08` (every completion is a separate append-only row, including repeated
+  request ids). The old after-reply settlement let expired locks crash peers and hid
+  their second paid completion. No other clause changes.

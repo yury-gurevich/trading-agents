@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-256-a-served-request-is-settled-when-it-is-taken`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-272](../design-log.md) (decisions D1 to D6 this sprint builds) ·
@@ -276,24 +276,24 @@ the network.
 
 ## Success factors
 
-- [ ] A request is completed before its handler runs, and a completion that would have failed after a
+- [x] A request is completed before its handler runs, and a completion that would have failed after a
       long handler no longer exists (A1, A2).
-- [ ] A reply that cannot be published leaves one `Fault`, abandons nothing, and the loop serves the next
+- [x] A reply that cannot be published leaves one `Fault`, abandons nothing, and the loop serves the next
       request (A3).
-- [ ] A request that cannot be decoded is still abandoned, or dead-lettered at the limit, and never
+- [x] A request that cannot be decoded is still abandoned, or dead-lettered at the limit, and never
       completed (A4).
-- [ ] One request is taken per pass by default (A6).
-- [ ] A completion under an existing ledger key is its own row; no row is overwritten (A7, A8).
-- [ ] Every reader of `LLMCall` rows counts or reads a repeat correctly (A9, B1).
-- [ ] The Appendix script prints the *before* block on the untouched tree and the *after* block on the
+- [x] One request is taken per pass by default (A6).
+- [x] A completion under an existing ledger key is its own row; no row is overwritten (A7, A8).
+- [x] Every reader of `LLMCall` rows counts or reads a repeat correctly (A9, B1).
+- [x] The Appendix script prints the *before* block on the untouched tree and the *after* block on the
       built one.
-- [ ] `pyproject.toml`, `uv.lock`, `infra/`, the packs, the manager's modules and the role prompts are
+- [x] `pyproject.toml`, `uv.lock`, `infra/`, the packs, the manager's modules and the role prompts are
       untouched.
-- [ ] Law cycle done in two books, DRIFT-104 filed as corrected, or an existing clause named in a new
+- [x] Law cycle done in two books, DRIFT-104 filed as corrected, or an existing clause named in a new
       one's place.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
 
@@ -475,15 +475,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| _to be filled by the builder_ | | | |
+| Receiver, settings and serve loop | Deliberator `laws.md` and `test-plan.md`, both whole; `docs/laws/conventions.md` and `drift-register.md`, both whole | `DLIB-TRG-02`, `DLIB-NEV-06`, `DLIB-OBS-03`; owed `DLIB-IDM-04` | D1-D3 as decided. `TRG-02` is gray; this build proves settlement without claiming a new trigger proof. A failed decode is still refused; a failed take propagates before handling. |
+| Peer entrypoint | Deliberator book and test plan, whole; DL-272 and DL-271 | `DLIB-TRG-02`, `DLIB-NEV-06`, owed `DLIB-IDM-04` | Only the deliberator peers gain a graph fault sink; ordinary peer audit writes remain the shared `LLMCall` path. |
+| Shared ledger | Deliberator and operator books and test plans, all whole; conventions and drift register | `DLIB-IDM-02`, `DLIB-OBS-02`, `DLIB-OBS-05`; `OPR-STA-02`, `OPR-STA-03`, `OPR-IDM-02`, `OPR-IDM-03`; owed `DLIB-OBS-08` | D4 and D6 as decided. `DLIB-OBS-02`, `OPR-STA-02` and the old `OPR-IDM-02` are gray. Operator source confirms `audit:{correlation_id}` and `intent:{correlation_id}` are reused, with a new model call on each invocation. |
+| Reproducibility reader | Deliberator book and test plan, whole | `DLIB-OBS-07` | Keep the original turn's full key, independent of listing order; never split colon-bearing keys. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** _to be filled_
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/` file; yes, the three guarantees specified above: new `DLIB-IDM-04` and `DLIB-OBS-08` (v1.15), rewritten `OPR-IDM-02` (v1.4), their Changelog/test-plan entries, DRIFT-104 and both rollups. Reading completed and this record saved before any code or test change.
 
-**Contradictions found between a law and this spec:** _to be filled_
+**Contradictions found between a law and this spec:** Only the pre-identified `OPR-IDM-02` duplicate-command claim. `agents/operator/agent.py::_interpret_command` always calls the model; `agents/operator/store.py::write_command_audit` and `::write_intent` reuse their correlation-keyed nodes. D6 resolves it here. No additional contradiction found.
 
-**Laws found silent where a decision was needed:** _to be filled_
+**Laws found silent where a decision was needed:** Neither book specifies settle-on-take or repeat-row keys; D1-D4 already resolve those silences and this sprint adds the two named deliberator clauses. No additional undecided design question.
 
-**Clauses that were ⬜ and are now proven:** _to be filled_
+**Clauses that were ⬜ and are now proven:** `DLIB-OBS-02` and rewritten `OPR-IDM-02`; new `DLIB-IDM-04` and `DLIB-OBS-08` are proven. `DLIB-TRG-02` and `OPR-STA-02` remain gray; neither is promoted by inference. The gate derives deliberator 32 / 63 and operator 19 / 50 (the operator plan footer was stale at 16 / 50).
 
 ---
 
@@ -491,67 +494,328 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | _to be filled_ | | | |
+| A1 | `test_request_is_settled_before_handling_and_publication` | `tests/test_served_request_settlement.py` | PASS | DLIB-IDM-04 |
+| A2 | `test_a_turn_that_outlives_its_lock_is_served_once` | `tests/test_served_request_settlement.py` | PASS | DLIB-IDM-04 |
+| A3 | `test_failed_replies_leave_a_fault_and_serve_the_next_request` | `tests/test_served_request_faults.py` | PASS | DLIB-IDM-04, DLIB-NEV-06 |
+| A4 | `test_an_unresolved_request_is_refused_and_never_completed [False/True]; both existing bad-ready tests unchanged` | `tests/test_served_request_faults.py; tests/test_bus_azure_receiver.py` | PASS | DLIB-IDM-04, DLIB-NEV-06 (new proof) |
+| A5 | `test_failed_settlement_propagates_before_any_handler_or_reply` | `tests/test_served_request_faults.py` | PASS | DLIB-IDM-04 |
+| A6 | `test_one_request_is_taken_per_default_pass` | `tests/test_served_request_settlement.py` | PASS | DLIB-IDM-04 |
+| A7 | `test_each_completion_is_its_own_unchanged_row` | `tests/test_llm_ledger_repeats.py` | PASS | DLIB-OBS-08 |
+| A8 | `test_a_repeated_peer_turn_returns_its_own_ledger_key` | `agents/deliberator/tests/test_peer_ledger_repeats.py` | PASS | DLIB-OBS-08, DLIB-OBS-02 |
+| A9 | `test_cost_and_outage_readers_count_repeat_rows` | `tests/test_llm_repeat_readers.py` | PASS | DLIB-OBS-08 |
+| A10 | `test_ledger_is_idempotent_for_same_command` | `agents/operator/tests/test_operator_agent.py` | PASS | OPR-IDM-02, OPR-IDM-03 |
+| B1 | `test_reproducibility_uses_the_original_in_either_listing_order [False/True]` | `tests/test_llm_repeat_readers.py` | PASS | DLIB-OBS-07 |
+| B2 | `test_served_peer_uses_receive_wait_without_extra_idle_sleep` | `tests/test_deliberator_cold_peer_timing.py` | PASS | DLIB-IDM-04, DLIB-DEP-02, DLIB-PERF-02 |
+| B3 | `existing served supervisor flag / operator interpret / researcher propose / forecaster forecast entrypoint tests, all unchanged` | `agents/{supervisor,operator,researcher,forecaster}/tests/test_*_entrypoint.py` | PASS | RES-TRG-03, RES-NEV-01; FORE-TRG-02, FORE-OUT-02, FORE-NEV-02; older supervisor/operator tests have no clause docstring (retained unchanged) |
+| B4 | `test_reply_never_touches_the_receiver` | `tests/test_served_request_settlement.py` | PASS | DLIB-IDM-04 |
 
-**Tests added beyond the plan:** _to be filled_
+**Tests added beyond the plan:** `test_receive_batch_bounds_are_preserved` (both bounds), `test_receive_batch_tunable_can_still_be_raised` (no hard-coded batch), `test_repeat_allocation_takes_the_first_free_key` (gap and colon-bearing id), `test_serve_loop_forwards_the_given_fault_sink` (real loop wiring), `test_reply_faults_are_contained_with_the_default_sink` (optional-sink compatibility). Every new test cites its governing clause; no new proof skips.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** _to be filled: BUILT_
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** _to be filled_
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s256`; `.env` absent (`ENV_FILE_PRESENT=False`). All commands use `UV_OFFLINE=1` and `UV_NO_SYNC=1` (focused proofs also pass `--no-sync`); no live bus or model call.
 
-**Result:** _to be filled_
+**INTENT (before code):** Build D1-D6 in `C:/Users/yury_/Downloads/project/ta-s256`, branch `sprint-256-a-served-request-is-settled-when-it-is-taken`, clean starting HEAD and local `origin/main` `5535eb3250cdd76d30f83650c1f913788fec123d`. Prove the untouched Appendix before output; red A1/A2/A7; all A1-A10/B1-B4; every guard red/restored; the Appendix after output; scope and module-size checks; all runnable local CI steps with 100.00 % coverage. No network or live dependencies; no push, merge, version/lock change, STATE edit, contracts change or excluded production path. The handover's Closeout is the tracker for this unit of work.
 
-**Files changed:** _to be filled_
+**Result:** BUILT locally. A1-A10 and B1-B4 pass; the untouched and changed Appendix outputs match their references; 24 source guards failed and were restored; all 17 touched/new Python modules are below 200 lines. The scoped law cycle is complete. Full pytest passed at 100.00 % coverage; the offline dependency audit is NOT RUN, so the full CI gate is not green. No network, push, merge, version/lock edit, STATE edit or contracts change.
 
-**Design decisions:** recorded as [`DL-272`](../design-log.md); _anything the builder added, to be filled_
+**Files changed:**
+
+```text
+agents/deliberator/entrypoint.py
+agents/deliberator/laws/laws.md
+agents/deliberator/laws/test-plan.md
+agents/deliberator/tests/test_peer_ledger_repeats.py
+agents/operator/laws/laws.md
+agents/operator/laws/test-plan.md
+agents/operator/tests/test_operator_agent.py
+agents/operator/tests/test_operator_store.py
+docs/laws/INDEX.md
+docs/laws/drift-register.md
+docs/laws/ledger.md
+docs/sprints/INDEX.md
+docs/sprints/README.md
+docs/sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md
+kernel/bus_azure_config.py
+kernel/bus_azure_receiver.py
+kernel/llm_ledger.py
+kernel/serve_loop.py
+scripts/deliberation_reproducibility.py
+tests/served_request_helpers.py
+tests/test_bus_azure_receiver.py
+tests/test_bus_azure_receiver_edges.py
+tests/test_deliberator_cold_peer_timing.py
+tests/test_llm_ledger_repeats.py
+tests/test_llm_repeat_readers.py
+tests/test_served_request_faults.py
+tests/test_served_request_settlement.py
+```
+
+**Design decisions:** recorded as [`DL-272`](../design-log.md); D1-D6 built as decided, no additional design decision or departure requiring DL-273.
 
 **The Appendix script, before:**
 
 ```text
-to be filled
+Tree: C:/Users/yury_/Downloads/project/ta-s256
+Untouched source HEAD: 5535eb3250cdd76d30f83650c1f913788fec123d
+Command: PYTHONPATH=. UV_OFFLINE=1 uv run --no-sync python s256_appendix.py
+1. requests taken in the first pass: 3
+2. order of events for the first request: ['handled', 'published', 'settled']
+3. a turn that outlives its lock: raised LockLostError after ['handled', 'published']
+4. a reply that cannot be published: settled 0 abandoned for redelivery 1
+5. two completions of one turn: ledger rows 1 output tokens recorded 7738
+   the second completion's key: llmcall:deliberator-proponent:sched-x:GILD:defender:r2
+Appendix exit: 0
+ENV_FILE_PRESENT=False
 ```
 
 **Proof — the red run first:**
 
 ```text
-to be filled
+Command: UV_OFFLINE=1 uv run --no-sync pytest --no-cov -q tests/test_served_request_settlement.py tests/test_llm_ledger_repeats.py
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+___________ test_request_is_settled_before_handling_and_publication ___________
+tests\test_served_request_settlement.py:21: in test_request_is_settled_before_handling_and_publication
+    assert events == ["settled", "handled", "one", "published"]
+E   AssertionError: assert ['handled', '...d', 'settled'] == ['settled', '..., 'published']
+E
+E     At index 0 diff: 'handled' != 'settled'
+E     Use -v to get more diff
+______________ test_a_turn_that_outlives_its_lock_is_served_once ______________
+tests\test_served_request_settlement.py:31: in test_a_turn_that_outlives_its_lock_is_served_once
+    assert serve_once(consumer, served) == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+kernel\serve_loop.py:75: in serve_once
+    consumer.reply(bus.request(request))
+kernel\bus_azure_receiver.py:103: in reply
+    self._complete(raw)
+kernel\bus_azure_receiver.py:158: in _complete
+    self._receiver.complete_message(raw)
+tests\served_request_helpers.py:42: in complete_message
+    raise LockLostError("message lock expired")
+E   tests.served_request_helpers.LockLostError: message lock expired
+________________ test_each_completion_is_its_own_unchanged_row ________________
+tests\test_llm_ledger_repeats.py:41: in test_each_completion_is_its_own_unchanged_row
+    assert [node.key for node in nodes] == [first, first + ":repeat-1", first + ":repeat-2"]
+E   AssertionError: assert ['llmcall:del...:defender:r2'] == ['llmcall:del...:r2:repeat-2']
+E
+E     At index 1 diff: 'llmcall:deliberator-proponent:sched-x:GILD:defender:r2' != 'llmcall:deliberator-proponent:sched-x:GILD:defender:r2:repeat-1'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_served_request_settlement.py::test_request_is_settled_before_handling_and_publication
+FAILED tests/test_served_request_settlement.py::test_a_turn_that_outlives_its_lock_is_served_once
+FAILED tests/test_llm_ledger_repeats.py::test_each_completion_is_its_own_unchanged_row
+3 failed in 1.61s
+Red exit: 1
 ```
 
 **The Appendix script, after:**
 
 ```text
-to be filled
+Command: PYTHONPATH=. UV_OFFLINE=1 uv run --no-sync python s256_appendix.py
+1. requests taken in the first pass: 1
+2. order of events for the first request: ['settled', 'handled', 'published']
+3. a turn that outlives its lock: served 1, no error
+4. a reply that cannot be published: settled 1 abandoned for redelivery 0
+5. two completions of one turn: ledger rows 2 output tokens recorded 15479
+   the second completion's key: llmcall:deliberator-proponent:sched-x:GILD:defender:r2:repeat-1
+After exit: 0
 ```
 
 **Proof — the green run:**
 
 ```text
-to be filled
+After all 24 source plants were restored:
+UV_OFFLINE=1 uv run --no-sync pytest --no-cov -q [all S256 proofs, five edited files, existing reproducibility suite, four unchanged entrypoint suites]
+...............................................                          [100%]
+47 passed in 6.05s
+Restored focused exit: 0
 ```
 
-**Guards planted:** _to be filled, one line per guard_
+**Guards planted:** each source plant below failed its targeted proving test(s); all six production files were checked against their saved bytes after every restore. G09 also made A8, A9 and A10 red; G10 made A9 red. The G12 result was 1 failed / 1 passed (both listing orders ran). No plant completed an unresolved message. B3 uses unchanged existing tests, so it adds no new guard. G01-G08 prove A1-A6/B4; G09-G11 prove A7-A10 and first-free allocation; G12 proves B1; G13-G14 prove B2; G15-G18 prove loop wiring and the receive tunable/bounds; G19-G22 prove A3 containment and provenance; G23 proves the unchanged ledger schema; G24 proves default-sink containment. Raw pytest logs and guard-to-test node ids are in `C:/Users/yury_/AppData/Local/Temp/ta-s256-evidence/guards.json` and `G01.txt` through `G24.txt`.
 
-**Existing tests edited:** _to be filled, one line per test with the reason_
+```text
+G01: RED exit 1 (1 failed in 1.39s); RESTORED byte-for-byte; remove settlement before handling
+G02: RED exit 1 (1 failed in 1.21s); RESTORED byte-for-byte; move settlement after publication on decoded requests
+G03: RED exit 1 (1 failed in 1.24s); RESTORED byte-for-byte; reraise failed reply instead of continuing
+G04: RED exit 1 (1 failed in 1.24s); RESTORED byte-for-byte; omit abandon on unresolved claim
+G05: RED exit 1 (1 failed in 1.19s); RESTORED byte-for-byte; omit dead-letter at delivery limit
+G06: RED exit 1 (1 failed in 1.17s); RESTORED byte-for-byte; swallow failed take inside a boundary
+G07: RED exit 1 (1 failed in 1.17s); RESTORED byte-for-byte; restore default batch of ten
+G08: RED exit 1 (1 failed in 1.20s); RESTORED byte-for-byte; make reply abandon through the receiver
+G09: RED exit 1 (4 failed in 5.10s); RESTORED byte-for-byte; deduplicate repeated completions
+G10: RED exit 1 (2 failed in 4.51s); RESTORED byte-for-byte; lose each completion's output token count
+G11: RED exit 1 (2 failed in 1.22s); RESTORED byte-for-byte; skip repeat-1 instead of first free suffix
+G12: RED exit 1 (1 failed, 1 passed in 5.38s); RESTORED byte-for-byte; let a repeat replace the reproducibility hash
+G13: RED exit 1 (1 failed in 4.00s); RESTORED byte-for-byte; give the peer only a collecting sink
+G14: RED exit 1 (1 failed in 3.88s); RESTORED byte-for-byte; add peer idle sleep
+G15: RED exit 1 (1 failed in 1.23s); RESTORED byte-for-byte; drop the supplied sink at the serve-loop call
+G16: RED exit 1 (1 failed in 1.23s); RESTORED byte-for-byte; hard-code the batch instead of honoring the tunable
+G17: RED exit 1 (1 failed in 1.26s); RESTORED byte-for-byte; weaken the batch lower bound
+G18: RED exit 1 (1 failed in 1.21s); RESTORED byte-for-byte; weaken the batch upper bound
+G19: RED exit 1 (1 failed in 1.21s); RESTORED byte-for-byte; silently swallow reply publication failure
+G20: RED exit 1 (1 failed in 1.22s); RESTORED byte-for-byte; misattribute the failed reply to its caller
+G21: RED exit 1 (1 failed in 1.22s); RESTORED byte-for-byte; lose the reply's source module
+G22: RED exit 1 (1 failed in 1.22s); RESTORED byte-for-byte; lose the reply's capability
+G23: RED exit 1 (1 failed in 1.14s); RESTORED byte-for-byte; remove an existing ledger property
+G24: RED exit 1 (1 failed in 1.27s); RESTORED byte-for-byte; reraise a reply fault with the default sink
+24 guards verified red and restored
+```
 
-**Readers of `LLMCall` rows:** _to be filled_
+**Existing tests edited:** exactly the five expected tests in five files:
 
-**Module line counts:** _to be filled_
+- `tests/test_bus_azure_receiver.py::test_reply_abandons_pending_message_when_publish_fails` -> `test_reply_failure_does_not_abandon_a_settled_request`: publication now raises to the serve boundary, with one completed request and no abandon; the two decode-refusal tests were not edited.
+- `tests/test_bus_azure_receiver_edges.py::test_reply_publish_failure_without_pending_source_does_not_raise` -> `test_reply_publish_failure_propagates_to_the_serve_boundary`: containment now belongs to `serve_once`, not `reply`.
+- `agents/operator/tests/test_operator_agent.py::test_ledger_is_idempotent_for_same_command`: one audit/intent and one correlation now have two LLMCall rows; also proves both row keys and the shared audit/intent keys.
+- `agents/operator/tests/test_operator_store.py::test_write_llm_call_records_operator_attribution`: the repeat returns its own appended row instead of the original object.
+- `tests/test_deliberator_cold_peer_timing.py::test_served_peer_uses_receive_wait_without_extra_idle_sleep`: the stand-in accepts the new sink and proves it is a GraphFaultSink over this peer's graph, with a collecting inner sink and idle sleep still zero.
 
-**`make ci`:** _to be filled: the output file, the exit code, passed and skipped, coverage, each NOT RUN step_
+**Readers of `LLMCall` rows:** searched Python, PowerShell, shell and SQL under kernel/agents/orchestration/surfaces/scripts; the purpose-specific readers are:
+
+- `surfaces/dashboard/llm_costs.py:67`: lists all rows, adding each row's token groups, call count and price to model/agent totals, regardless of key length; A9 proves both rows count.
+- `surfaces/dashboard/llm_cost_tokens.py:51`: reads each row's properties, not its key; a repeat has the same schema and its own token groups.
+- `scripts/check_llm_outage.py:43`: passes every listed row to the classifier; A9 runs the CLI on the injected graph, with dotenv disabled.
+- `kernel/llm_outage.py:90` / `:101`: classifies and counts all supplied rows by response hash/stop reason, never by a parsed key; A9 proves two calls.
+- `scripts/deliberation_reproducibility.py:111`: keeps the original hash and skips a key beginning with the full canonical key plus `:repeat-`; B1 proves both listing orders, including correlation IDs containing colons. Existing legacy-shaped test rows still work.
+- `agents/deliberator/store.py:84` / `:85`: resolves the exact `llm_call_key` and links that row by `PRODUCED_BY`; a repeat key is passed whole and resolves like any original key. This reader was omitted from the planner's list; no implementation edit is needed.
+- `agents/operator/store.py:46` / `:72`: consume the returned LLMCall node when linking the shared audit by `PRODUCED_BY`; each call adds its own row's link, while the audit/intent nodes remain shared.
+- `kernel/llm_ledger.py:126`: the writer's existence lookup now allocates the first free full key; it never parses a correlation id or reads a repeat as an original completion.
+
+Generic graph adapters and the graph-label vocabulary are schema readers, not special LLMCall consumers; this sprint adds no label or property.
+
+**Module line counts:** all 17 touched/new Python modules are below 200 lines.
+
+```text
+agents/deliberator/entrypoint.py: 121
+agents/deliberator/tests/test_peer_ledger_repeats.py: 43
+agents/operator/tests/test_operator_agent.py: 182
+agents/operator/tests/test_operator_store.py: 43
+kernel/bus_azure_config.py: 116
+kernel/bus_azure_receiver.py: 160
+kernel/llm_ledger.py: 154
+kernel/serve_loop.py: 104
+scripts/deliberation_reproducibility.py: 142
+tests/served_request_helpers.py: 80
+tests/test_bus_azure_receiver.py: 191
+tests/test_bus_azure_receiver_edges.py: 48
+tests/test_deliberator_cold_peer_timing.py: 49
+tests/test_llm_ledger_repeats.py: 105
+tests/test_llm_repeat_readers.py: 99
+tests/test_served_request_faults.py: 111
+tests/test_served_request_settlement.py: 86
+```
+
+**Scope and law comparison:**
+
+```text
+Command: git diff main -- pyproject.toml uv.lock infra orchestration/packs scripts/servicebus_prepare_routes.py agents/deliberator/poll.py agents/deliberator/servicebus_peer_client.py agents/deliberator/servicebus_reply_inbox.py kernel/deliberation_prompts.py
+Output: nothing
+Exit: 0
+Command: git diff 5535eb3250cdd76d30f83650c1f913788fec123d -- contracts docs/STATE.md pyproject.toml uv.lock
+Output: nothing
+Exit: 0
+Clause text comparison against starting HEAD:
+agents/deliberator/laws/laws.md: added=['DLIB-IDM-04', 'DLIB-OBS-08'], changed=[], removed=[]
+61 existing clauses unchanged
+agents/operator/laws/laws.md: added=[], changed=['OPR-IDM-02'], removed=[]
+49 existing clauses unchanged
+```
+
+`pyproject.toml` and `uv.lock` were not touched. The handover's protected-file diff prints nothing. No `.env` exists; the temporary Appendix and mutation runners were deleted from the worktree before staging. The six production files match the byte hashes saved after guard restoration and used by the full CI run; G24 was restored to those same bytes and the final 47-test run passed.
+
+**`make ci`:** full redirected output is `C:/Users/yury_/AppData/Local/Temp/ta-s256-evidence/make-ci.txt`. The actual target ran with `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PIP_NO_INDEX=1`, offline npm/git settings, and a Python socket guard rejecting external addresses before I/O (local unit-test servers are allowed). Exit **2**: steps 1-12 passed, step 13's dependency audit could not obtain advisory data. The two remaining target commands were run explicitly and passed.
+
+| Step | Check | Result |
+| --- | --- | --- |
+| 1 | Ruff lint | PASS |
+| 2 | Ruff format | PASS |
+| 3 | mypy | PASS |
+| 4 | Import boundaries | PASS, 5 contracts kept |
+| 5 | Module size | PASS |
+| 6 | Module headers | PASS |
+| 7 | Law coverage | PASS |
+| 8 | PARAM/settings sync | PASS (existing envelope warnings only) |
+| 9 | Sprint status | PASS |
+| 10 | Markdown links | PASS |
+| 11 | Version scheme | PASS; no bump |
+| 12 | Full pytest and coverage | PASS, 4322 passed / 8 skipped / 100.00 % |
+| 13 | Dependency audit | **NOT RUN**: audit invocation failed before external advisory lookup, because this handover prohibits network access |
+| 14 | detect-secrets | PASS, explicitly after the stopped target |
+| 15 | Untracked secrets | PASS, explicitly after the stopped target |
+
+Actual command/output excerpts from the redirected file:
+
+```text
+Command: make ci > C:/Users/yury_/AppData/Local/Temp/ta-s256-evidence/make-ci.txt 2>&1
+1586 files already formatted
+Success: no issues found in 1163 source files
+Contracts: 5 kept, 0 broken.
+TOTAL                                                           20065      0   4240      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4322 passed, 8 skipped, 2470 warnings in 330.58s (0:05:30) ==========
+uv run python scripts/check_dependency_audit.py
+OSError: S256 offline proof: external network is prohibited by the handover
+make: *** [Makefile:59: ci] Error 1
+MAKE_CI_EXIT=2
+Continuing the remaining two ci target commands explicitly after the unavailable dependency audit.
+Command: uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+Command: uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+UNTRACKED_SECRETS_EXIT=0
+```
+
+The eight skips are existing suite skips, not new S256 proof skips. The dependency audit's error names `pypi.org/pypi/aiohappyeyeballs/2.7.1/json`; no clean advisory result is claimed. `.secrets.baseline` is unchanged.
+
+**Final documentation and staged-file checks:**
+
+```text
+Command: UV_OFFLINE=1 UV_NO_SYNC=1 uv run pre-commit run --files [the 27 staged S256 paths]
+FINAL_PRE_COMMIT_EXIT=0
+Ruff lint................................................................Passed
+Ruff format..............................................................Passed
+mypy.....................................................................Passed
+markdownlint-cli2........................................................Passed
+Detect secrets...........................................................Passed
+module size (warn 150 / hard block 200)..................................Passed
+coding-agent module header (Agent:/Role:)................................Passed
+law coverage ledger......................................................Passed
+import-linter (agents are islands).......................................Passed
+Command: UV_OFFLINE=1 UV_NO_SYNC=1 uv run python scripts/check_sprint_status.py
+FINAL_SPRINT_STATUS_EXIT=0
+docs_seen=261 SPEC=11 BUILT=1 MERGED=249 UNMAPPED=0 MISSING=0
+Command: UV_OFFLINE=1 UV_NO_SYNC=1 uv run python scripts/check_markdown_links.py
+FINAL_MARKDOWN_LINKS_EXIT=0
+Command: git diff --cached --check
+Output: nothing
+Exit: 0
+```
+
+Full final hook output: `C:/Users/yury_/AppData/Local/Temp/ta-s256-evidence/final-pre-commit.txt`; status/link outputs: `final-sprint-status.txt` and `final-markdown-links.txt` in the same directory. YAML/TOML hooks had no changed files to check; neither was an S256 proof skip. No files were rewritten by hooks.
 
 **`make gate-ran`:** owed by the planner at merge.
 
-**Not met / verified failing:** _to be filled_
+**Not met / verified failing:** Full `make ci` exit 0 is **not done** (verified exit 2 at unavailable dependency audit). Dependency audit is **NOT RUN**, not clean. Online audit, exact-SHA remote gate, version/lock bump, merge, F1, deployment and F2 are **not done**, owed by the planner; this handback proves local unit behavior only.
 
 ---
 
 ## Return notes
 
-- _to be filled by the builder_
+- The untouched source was HEAD `5535eb3250cdd76d30f83650c1f913788fec123d`, not the Appendix historical label `9ee2008d`; its six printed before lines matched exactly, so the stop condition did not apply.
+- The `ci:` target has **15** steps; AGENTS.md's short form says 14. CLAUDE.md explicitly calls for recounting the target; no gate or rule file was changed.
+- A9's outage report has no token-total field: `kernel.llm_outage.outage_report` counts calls and classifies failures. The proof checks both calls there and in the CLI, and both rows' token/cost totals in the dashboard. No new report field or production reader change was invented.
+- B3 explicitly requires the four existing entrypoint suites to pass without edits. The old supervisor/operator entrypoint tests lack clause docstrings; they remain unchanged. The researcher and forecaster tests cite their own clauses. All newly written proofs cite clauses.
+- The operator test-plan footer's old `16 / 50` was stale: before this sprint the rollups claimed 18 / 50, and after the scoped row promotion the coverage checker derives 19 / 50. Both rollups and the footer now agree.
+- D1 intentionally prevents bus retry after a settled peer dies or loses its reply; fail-open remains on the existing manager wait. No manager, reply-inbox, subscription, pack, prompt, judge or DSPy code changed.
+- While this sprint was built, the planner advanced local `main` to `a4c3dda05475d3c03bac0f11bf35f830bce6a4bc` with documentation for S257/work-queue 113. This branch keeps the required starting base; no rebase or merge was performed. Protected production diffs against the advanced `main` remain empty.
+- Commit only on this sprint branch. The planner owes the PATCH bump and lock sync, online dependency audit, exact-SHA remote gate, merge, F1, deployment and F2.
 
 ---
 

@@ -112,6 +112,9 @@ def _recorded_hashes(graph: GraphStore) -> dict[str, str]:
         corr = call.props.get("correlation_id")
         digest = call.props.get("prompt_hash")
         if isinstance(corr, str) and isinstance(digest, str):
+            first = f"llmcall:{call.props.get('calling_agent')}:{corr}"
+            if call.key.startswith(first + ":repeat-"):
+                continue
             found[corr] = digest
     return found
 

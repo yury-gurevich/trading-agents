@@ -10,6 +10,65 @@ and is marked CLOSED here.
 
 ---
 
+## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); SPEC as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md), work-queue 114
+
+**The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and
+its Tunable cell and nothing else. What should it compare, and what does it find when it does?
+
+**Measured (2026-10-08, `main` `60a19e29`, a worktree with no `.env`; a prototype on no branch).** The
+step covers 16 books and 235 rows that have a settings field. Value cells are written four ways (177 in
+backticks, 45 in backticks and double quotes, 9 a dash for a secret, 4 the bare word `empty`), and all 235
+agree with the code's default once each form is read. Bounds are written four ways: `≥` and `≤`, `>=` and
+`<=`, `>` and `<`, and intervals such as `[0.0, 1.0]` and `(0, 1]`. 164 rows have a bound in code. 152
+state the same bounds. **12 do not:** 8 state a different number or strictness, 3 state one side where the
+code has two, 1 states none. Four are in the execution book (`slippage_bps`, `min_promotion_runs`,
+`min_approval_rate`, `alpaca_timeout`), six in the portfolio manager's (`starting_cash`,
+`max_position_pct`, `max_positions`, `cash_buffer_pct`, `min_order_quantity`, `price_lookback_days`), one
+in the scanner's (`min_average_volume`) and one in the analyst's (`scaled_stop_atr_multiplier`). The
+prototype exits 1 on today's books naming exactly the four execution rows, exits 0 once they are
+rewritten, and exits 1 on each of six planted wrong rows, the first of them the row S257's builder
+planted. Against the whole suite it fails exactly one existing test, which pins the number of warnings;
+the gate self-test passes 31 of 31. Printing a law's `≥` raises `UnicodeEncodeError` on this machine when
+stdout is redirected (`cp1252`), which is how `make ci` is always run.
+
+**Correction of my amendment to DL-275.** I wrote there that 23 rows state a numeric bound, 41 bounds in
+all, that all 41 equal the code's, and that a widened step would pass as the books stand. The script
+behind it read one notation of the four. It reported no disagreement because it could not read the rows
+that disagree. The Value half of that amendment stands.
+
+**Decisions.**
+
+- **D1.** The Value cell is compared with the field's default for every row with a settings field, by
+  reading rules that cover every form in use. A cell that cannot be read is a failure, not a skip.
+- **D2.** The Type cell's bounds are compared with the field's, in every notation in use. The set of
+  bounds stated must be the set the field has, each number equal.
+- **D3.** For the twelve rows the law follows the code. No settings file changes. The four execution
+  rows are rewritten by S258.
+- **D4.** The other eight are excused by a recorded list: a row's Type cell exactly as written today. An
+  entry excuses a bounds disagreement only while the cell equals the record, and an entry that is no
+  longer needed fails the gate. They are rewritten, and the entries deleted, at the first deploy that
+  restarts the fidelity count or after [DL-237](design-log.md)'s verdict.
+- **D5.** A failure names the row, what the law states and what the code has, and no line may raise on a
+  console that cannot encode a law's symbols.
+- **D6.** Work-queue 114 stays open until the eight rows are rewritten.
+
+**Why eight rows wait.** The fidelity check calls a session clean only when no file differs under its
+decision paths between the deployed commit and the replayed one, and it counts every file under
+`agents/portfolio_manager/`, `agents/scanner/` and `agents/analyst/`, a law book included
+(`scripts/replay_fidelity_git.py`). The count restarted on 2026-10-08 and needs four clean sessions and
+ten judged recommendations. A row of text is not worth that.
+
+**Ruled out.** Rewriting all twelve now (above). Teaching the fidelity check to ignore law books: it
+narrows a rule fixed before its result was known. Changing the code's bounds to match the books: it
+changes what a setting may be set to, on no evidence. Comparing only the bounds a row states: three rows
+state one side of two. A warning that leaves the gate green: work-queue 33 removed a baseline of 57
+divergences for that reason. A case in the gate self-test: its file is frozen at its size.
+
+**Not measured.** Whether each code bound is the intended rail. The tunables' `why` texts do not say. A
+rail that looks wrong is a drift-register row and its own decision, not part of this.
+
+---
+
 ## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08); confirmed by the planner, the gap measured and filed as work-queue 114
 
 **Found while planting guards.** S257 says the PARAM gate fails until the two numeric rows follow the
@@ -42,6 +101,10 @@ the code's. So the second reason above for leaving the step alone, that widening
 disagreements, is not borne out: there is none today, and a widened step would pass as the books stand.
 The first reason holds: it is a change to a shared gate and was not S257's to make. Filed as work-queue
 114.
+
+🩹 **Corrected the same evening (DL-276).** The count of bounds above read one notation of the four the
+books use. Read in all of them, twelve rows state bounds the code does not enforce. The conclusion that a
+widened step would pass as the books stand is withdrawn; the builder's second reason was right.
 
 ---
 

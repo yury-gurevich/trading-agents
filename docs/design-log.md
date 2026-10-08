@@ -3218,6 +3218,8 @@ floor is reached. Recommended: the retag. The PM's floor is slow to reach on any
 this full, so holding buys about a week of the experiment's start at the price of every deploy in
 between.
 
+**Resolved, 2026-10-08 11:34 AEDT: the operator chose the retag** (*"go for it"*). The fleet runs `s255`, built from `fec365a1` (`v0.123.00`), since 00:40 UTC. The fidelity count starts again on that code: four clean sessions, the first of them `sched-2026-10-08`, and ten judged PM recommendations. It is read from a worktree pinned at `fec365a1`, and EXP-014 runs from the same worktree. *Given up:* the four recommendations already counted on `d526faf4`. Until the next read, any build is diffed against the decision paths before it is deployed.
+
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 
 ---

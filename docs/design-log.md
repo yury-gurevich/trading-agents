@@ -74,7 +74,7 @@ empty until 2026-10-11.
 
 ---
 
-## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); SPEC as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md), work-queue 112
+## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); BUILT and MERGED as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) `0.123.01` (`b3f1ee1f`, 2026-10-08), F1 passed, not deployed; work-queue 112
 
 **The question.** DL-271 measured the defect and listed four parts of a fix without
 choosing between them: an explicit lock, a renewal or an early settlement, a caught lost lock, a visible

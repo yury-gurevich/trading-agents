@@ -10,6 +10,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); not proven on the fleet; work-queue 113
+
+**The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
+time, is said there to need peers that serve in parallel. Is that built?
+
+**It is built, and switched off on purpose.** *[measured, read]* [S172](sprints/sprint-172-independent-debates-run-independently.md) gave the manager
+`debate_concurrency`: a thread for each order, replies routed among the waits by correlation id.
+`infra/deploy-agents.ps1` gives each debater as many replicas as the pack's
+`DELIBERATOR_DEBATE_CONCURRENCY`. The pack says 1 ([DL-153](design-log.md)). At K=4 one fleet run lost
+six replies and failed two of fifteen orders open ([DL-140](design-log.md)); a second run of the same
+build was clean; both reached 1.5 to 1.8 lanes of a possible four ([DL-145](design-log.md)). The cause
+was not found, and [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md), written to find it, is still a spec. DL-153 left the dial at 1 because
+serial debates then fitted 21 orders into execution's wait. Today they fit about 7 (DL-274's amendment).
+
+**Measured 2026-10-08, no LLM call.** The repo's own request consumer and `serve_once` on disposable
+topics of the live namespace, four consumers on one subscription as four replicas would be, a handler
+that sleeps five seconds as a turn would. Each configuration run twice, with the same result.
+
+| The requests | Taking 10 a pass (the default before S256) | Taking 1 a pass (the default since S256) |
+| --- | --- | --- |
+| Eight already queued when the four consumers start | one consumer took all eight and served them in turn, three served none; the last began after 44 s; 0.8 lanes | two each; the last began after 6.9 s; 3.35 lanes |
+| Four at a time, arriving at idle consumers, three waves | one each | one each |
+
+So a debater that found requests waiting used to take up to ten of them and serve them one after another
+while the other replicas idled. A request at the back waited several turns, longer than the manager's
+wait, and its reply arrived for nobody: the orphaned replies and the fail-opens of DL-140. When requests
+met idle replicas it did not happen: the clean run of DL-145. Fewer lanes than replicas fits both.
+[S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) changed the number taken a pass from ten to one for another reason (a taken request is
+settled at once, so nothing is gained by holding more), and that has been on the fleet since `s257`.
+
+**Not shown.** That K above 1 is correct on the fleet today. Not measured here: the manager's reply
+routing with real debates in flight, whether the debater apps scale to K replicas (never measured:
+DL-145's watcher failed), and the vendor's rate limit with K calls in flight.
+
+**Plan (planner). Nothing changes on the fleet without the operator's word.**
+
+1. A harness that runs the production manager and the production peers over disposable topics with a
+   canned model, and reports lanes, orphaned replies and fail-opens at K = 1 to 4, at no cost. Committed
+   this time: DL-145 records that the apparatus was lost twice. The next sprint for Codex after S258.
+2. Then one fleet proof at K=3, on a seeded run with execution and the portfolio manager held at zero.
+   Its debates are paid, so it is the operator's call.
+3. K=3 would take a night on `gpt-5.5` from about 7 debated buys to at most about 21; the largest night on
+   record approved 18. The value lives in the tunables pack, a fidelity decision path, so until the count
+   allows a pack edit it would be a live setting on three apps.
+
+**Ruled out for now.** Turning the dial for tonight's run: six F2s are owed on it and K above 1 is
+unproven on the fleet. A longer wait alone: the brief's last tick caps it near 3,000 seconds, about 12
+buys. A verdict applied per order as it lands stays open: it is the half that degrades gracefully when a
+night still does not fit.
+
+---
+
 ## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); SPEC as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md), work-queue 114
 
 **The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and

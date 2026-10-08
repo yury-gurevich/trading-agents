@@ -62,7 +62,7 @@ night still does not fit.
 
 ---
 
-## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); SPEC as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md), work-queue 114
+## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); BUILT and MERGED as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md) `0.123.03` (2026-10-08), work-queue 114 open for the eight rows
 
 **The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and
 its Tunable cell and nothing else. What should it compare, and what does it find when it does?
@@ -118,6 +118,13 @@ divergences for that reason. A case in the gate self-test: its file is frozen at
 
 **Not measured.** Whether each code bound is the intended rail. The tunables' `why` texts do not say. A
 rail that looks wrong is a drift-register row and its own decision, not part of this.
+
+**Built as decided (2026-10-08 20:55 AEDT, S258 merged as `0.123.03`).** D1 to D5 were built with no
+departure, and the planner's own count over the built reader gives the numbers above. Three limits of
+the reader are accepted, and no row meets any of them today: a rail enforced by a validator function
+is not seen; a Type cell that states the same side twice is read by its last statement; and two
+numbers written with no space after the comma read as one grouped number, which fails against a field
+that has bounds and would pass against a field that has none.
 
 ---
 

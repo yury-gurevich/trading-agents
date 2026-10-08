@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-258-a-law-rows-numbers-are-compared-with-the-code`
-**Status:** BUILT
-**Version:** *next available PATCH at merge*
+**Status:** MERGED 2026-10-08 — `0.123.03`, fast-forwarded to `b9ea3038`, tag `v0.123.03`, GATE PROVEN `b9ea3038` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,392 passed, 8 skipped, 100.00 %, dependency audit clean) and the gate self-test 31 of 31; built by Codex in `../ta-s258`, complete against the ten-item checklist; execution laws v1.13 (`PARAM` only, no clause changes); the planner's own re-measure: a count over the built reader gives the spec's numbers (235 rows, every default agrees, 156 bounds agree, 8 excused) and finds no bound the reader missed, and ten pieces of the comparison removed one at a time each turn the tests red; open CodeQL alerts 127, the same as `main`'s, none new; **F1 PASS** (on the merged `main` the step exits 0, and each of thirteen wrong numbers planted in a real law row or settings file makes it exit 1 and name the row, each restored); no deploy (`scripts/` ships in no image); work-queue 114 stays open for the eight excused rows
+**Version:** `0.123.03`
 **Effort:** S
 **Decisions:** [DL-276](../design-log.md) (decisions D1 to D6 this sprint builds) · work-queue **114** ·
 [DL-275](../design-log.md) (the finding: sprint 257's builder planted an old number and the gate stayed

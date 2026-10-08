@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 from scripts import param_law_sync
+from tests.param_law_sync_helpers import EXCUSED_ROWS
 
 
 def test_the_repo_has_no_param_settings_divergence_left():
-    """DRIFT-052: no PARAM/settings divergence is left, and none is baselined."""
+    """DRIFT-052 / DL-276 A7: names/tunables/defaults agree; eight bounds wait."""
 
     report = param_law_sync.check_root(param_law_sync._ROOT)
 
     assert report.errors == []
-    assert len(report.warnings) == 2
-    assert all("envelope=" in line for line in report.warnings)
+    assert len(report.warnings) == 3
+    assert sum("envelope=" in line for line in report.warnings) == 2
+    excused = [line for line in report.warnings if "envelope=" not in line]
+    assert len(excused) == 1
+    assert excused[0].startswith("[WARN]")
+    assert set(excused[0].split(": ", 1)[1].split(", ")) == set(EXCUSED_ROWS)
+
+    from scripts.param_law_sync_excused import EXCUSED_BOUNDS
+
+    assert EXCUSED_BOUNDS == EXCUSED_ROWS
 
 
 def test_a_repo_divergence_fails_rather_than_warns(monkeypatch):

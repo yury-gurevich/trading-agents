@@ -18,10 +18,12 @@ from scripts.param_law_sync import check_root  # noqa: E402
 
 
 def main(argv: list[str]) -> int:
+    from scripts.param_law_sync_output import safe_print
+
     root = Path(argv[0]).resolve() if argv else Path.cwd().resolve()
     report = check_root(root)
     for line in [*report.errors, *report.warnings]:
-        print(line)
+        safe_print(line)
     return 0 if report.ok else 1
 
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-258-a-law-rows-numbers-are-compared-with-the-code`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-276](../design-log.md) (decisions D1 to D6 this sprint builds) · work-queue **114** ·
@@ -235,19 +235,19 @@ No test may skip when a dependency is missing. A skipped proof is not a proof.
 
 ## Success factors
 
-- [ ] A Value cell that differs from the default fails the step (A1), in every form the books use (A2),
+- [x] A Value cell that differs from the default fails the step (A1), in every form the books use (A2),
       and an unreadable one fails too (A3).
-- [ ] A Type cell whose bounds differ from the field's fails the step, in every notation (A4), with a
+- [x] A Type cell whose bounds differ from the field's fails the step, in every notation (A4), with a
       side missing or extra (A5).
-- [ ] The excused list holds exactly the eight rows, excuses only what it records, and an entry that is
+- [x] The excused list holds exactly the eight rows, excuses only what it records, and an entry that is
       no longer needed fails the step (A6, A7).
-- [ ] The step never raises on a `cp1252` console (A8).
-- [ ] The four execution rows state the code's bounds; no clause is edited (B1).
-- [ ] Nothing under a fidelity decision path, no settings file, `pyproject.toml`, `uv.lock` or
+- [x] The step never raises on a `cp1252` console (A8).
+- [x] The four execution rows state the code's bounds; no clause is edited (B1).
+- [x] Nothing under a fidelity decision path, no settings file, `pyproject.toml`, `uv.lock` or
       `scripts/gate_selftest_cases.py` is touched.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step that could not run named as NOT RUN.
 
 ---
 
@@ -408,15 +408,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(fill)* | | | |
+| PARAM checker and its tests | `docs/laws/conventions.md` (whole); `docs/laws/_TEMPLATE.md` PARAM section; `docs/laws/drift-register.md` (whole); DL-276 and DL-275 in `docs/design-log.md` | Conventions sections 2, 3, 4, 7 and 9; template PARAM; DL-276 D1-D5. No agent clause governs this tooling | Read before code, 2026-10-08. Compare defaults and the complete bounds set; unreadable values fail. Tooling tests cite DL-276, not an invented clause |
+| Execution PARAM reconciliation | `agents/execution/laws/laws.md` (whole, LOCKED v1.12); `agents/execution/laws/test-plan.md` (whole) | Conventions section 4 and DL-276 D3 authorize four PARAM Type cells, v1.13 and one Changelog line. EXEC-DEP-01 through EXEC-DEP-04 describe bus, graph and broker dependencies, not PARAM numbers | No change to the planned scope. No clause, Value, Tunable or Rationale cell changes; no runtime or live-dependency proof claimed |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(fill)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** NO. No contract file or new agent guarantee. Owed: four execution PARAM Type cells following D3, next book version v1.13, and one Changelog line naming S258 and DL-276.
 
-**Contradictions found between a law and this spec:** *(fill, or "none")*
+**Contradictions found between a law and this spec:** none. The scoped PARAM discrepancies are already decided by DL-276. AGENTS.md's 14-step count disagrees with CLAUDE.md's 15-step count; CLAUDE.md wins, and the actual target will be counted (Return notes).
 
-**Laws found silent where a decision was needed:** *(fill, or "none")*
+**Laws found silent where a decision was needed:** none; D1-D5 decide the tooling behavior, and no agent clause is required for it.
 
-**Clauses that were ⬜ and are now proven:** *(fill, or "none")*
+**Clauses that were ⬜ and are now proven:** none. Existing gray execution clauses remain unproven; the sprint relies on no gray clause for numeric comparisons.
 
 ---
 
@@ -424,50 +425,324 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(fill)* | | | | |
+| A1 | `test_a_wrong_value_names_the_law_and_code_and_fails` | `tests/test_param_law_sync_values.py` | PASS (1 case) | DL-276 |
+| A2 | `test_every_value_form_compares_the_default` | `tests/test_param_law_sync_values.py` | PASS (24 cases) | DL-276 |
+| A3 | `test_unreadable_values_fail_instead_of_skipping` | `tests/test_param_law_sync_values.py` | PASS (8 cases) | DL-276 |
+| A4 | `test_every_bound_notation_compares_numbers`; `test_exclusive_lower_bound_is_not_inclusive`; `test_units_and_grouped_decimal_bounds`; `test_numeric_literal_members_are_not_an_interval` | `tests/test_param_law_sync_bounds.py` | PASS (13 cases) | DL-276 |
+| A5 | `test_missing_or_extra_bounds_fail`; `test_no_bounds_on_either_side_passes` | `tests/test_param_law_sync_bounds.py` | PASS (4 cases) | DL-276 |
+| A6 | `test_an_excuse_requires_its_exact_still_wrong_text`; `test_an_excuse_never_excuses_a_wrong_value`; `test_an_excuse_fails_when_code_catches_up_without_a_cell_edit`; `test_an_absent_book_is_not_judged`; `test_an_entry_for_a_missing_field_in_a_present_book_fails` | `tests/test_param_law_sync_excused.py` | PASS (8 cases) | DL-276 |
+| A7 | `test_the_repo_has_no_param_settings_divergence_left` | `tests/test_param_law_sync_repo.py` | PASS (1 case; exact eight keys/texts and three warnings) | DRIFT-052 / DL-276 |
+| A8 | `test_a_failing_symbolic_row_prints_on_cp1252`; `test_a_warning_prints_on_cp1252`; `test_a_stream_without_encoding_keeps_the_symbols` | `tests/test_param_law_sync_output.py` | PASS (3 cases) | DL-276 |
+| B1 | `test_the_four_execution_rows_state_the_decided_bounds`; local `git diff main -- agents/execution/laws/laws.md` | `tests/test_param_law_sync_execution_rows.py`; execution book | PASS (1 case; diff contains only four Type cells, version and one Changelog line) | DL-276 |
+| B2 | All eight original step tests; `test_surfaces_book_syncs_against_mapped_dashboard_settings`; `test_a_repo_divergence_fails_rather_than_warns` | `tests/test_param_law_sync.py`; `tests/test_param_law_sync_component_books.py`; `tests/test_param_law_sync_repo.py` | PASS (10 cases, no edits). Gate self-test: 30/31 PASS; live CVE case NOT RUN (network) | Existing DD-04 / DRIFT-052 citations unchanged |
 
-**Tests added beyond the plan:** *(fill, or "none")*
+**Tests added beyond the plan:** none outside A1-A8/B1. Within-plan extensions cover non-finite and unsupported defaults, grouped/scientific bounds, numeric Literal members, present-book missing entries, code-only reconciliation, warning output and encoding-less stdout. The plan accounts for all 73 step tests; none is skipped.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(fill)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s258`, branch `sprint-258-a-law-rows-numbers-are-compared-with-the-code`; `.env` absent (`Test-Path .env`: `False`). Initial worktree clean; HEAD, main and origin/main all `8d55cb569b01680ca583b52d25adecf742a87802`. Only this worktree is used.
 
-**INTENT (recorded before code):** *(fill)*
+**INTENT (recorded before code):** Implement DL-276 D1-D5 within the listed scripts/tests and four execution PARAM Type cells. First prove A1/A4/A5/A7 red and paste that evidence; then complete A1-A8/B1/B2, break and restore each guard, and redirect `make ci` to `.tools/s258/ci.txt`. Every touched module stays below 200 lines. No network, settings, fidelity decision paths, contracts, other law books, version files, STATE, push or merge. A network-dependent CI step is named NOT RUN, never presented as green.
 
-**Result:** *(fill only for work done)*
+**Result:** BUILT and locally unit-proven. D1-D5 implemented; all 235 defaults agree, the four execution Type cells agree, and exactly eight recorded bounds disagreements are excused. All 73 step tests passed inside the full suite: 4,392 passed, eight existing skips, 100.00% configured coverage. All 19 final guard mutations rejected and restored byte for byte. Full CI is NOT green: its dependency audit is NOT RUN offline.
 
-**Files changed:** *(fill)*
+**Files changed:** `agents/execution/laws/laws.md`; this spec and `docs/sprints/README.md`; `scripts/check_param_law_sync.py`; `scripts/param_law_sync.py`; `scripts/param_law_sync_bounds.py`; `scripts/param_law_sync_excused.py`; `scripts/param_law_sync_numbers.py`; `scripts/param_law_sync_output.py`; `scripts/param_law_sync_sources.py`; `scripts/param_law_sync_types.py`; `scripts/param_law_sync_values.py`; `tests/param_law_sync_helpers.py`; `tests/test_param_law_sync_bounds.py`; `tests/test_param_law_sync_excused.py`; `tests/test_param_law_sync_execution_rows.py`; `tests/test_param_law_sync_output.py`; `tests/test_param_law_sync_repo.py`; `tests/test_param_law_sync_values.py`. Ignored evidence and offline launch helpers live only in `.tools/s258/`.
 
-**Design decisions:** *(fill)*
+**Design decisions:** DL-276 D1-D5 built as written; no new design question or departure. Shared report types were moved to their own module so `param_law_sync.py` is 190 lines. No settings, contracts, runtime decisions, law clauses or other law books changed. The rejected alternatives remain recorded in this spec and DL-276.
 
-**Proof — the red run first:** *(paste)*
+**Proof — the red run first:** Before implementation, after fixing the synthetic `lt` fixture (initial run preserved in `.tools/s258/red-initial.txt`):
 
-**Proof — the green run:** *(paste)*
+```text
+uv run pytest --no-cov -q tests/test_param_law_sync_values.py tests/test_param_law_sync_bounds.py tests/test_param_law_sync_repo.py::test_the_repo_has_no_param_settings_divergence_left
+RED_EXIT=1
+FFFFFFFFFFFF.F                                                           [100%]
+================================== FAILURES ===================================
+_____________ test_a_wrong_value_names_the_law_and_code_and_fails _____________
+tests\test_param_law_sync_values.py:15: in test_a_wrong_value_names_the_law_and_code_and_fails
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_a_wrong_value_names_the_l0'])
+_ test_every_bound_notation_compares_numbers[`float \u2265 0, \u2264 1` (ratio)-, ge=0, le=1] _
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp0'])
+_ test_every_bound_notation_compares_numbers[float >= 0, <= 1 seconds-, ge=0, le=1] _
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp1'])
+__ test_every_bound_notation_compares_numbers[`float > 0, < 1`-, gt=0, lt=1] __
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp2'])
+___ test_every_bound_notation_compares_numbers[`float [0, 1]`-, ge=0, le=1] ___
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp3'])
+_ test_every_bound_notation_compares_numbers[`float \u2208 (0, 1]`-, gt=0, le=1] _
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp4'])
+___ test_every_bound_notation_compares_numbers[`float [0, 1)`-, ge=0, lt=1] ___
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp5'])
+___ test_every_bound_notation_compares_numbers[`float (0, 1)`-, gt=0, lt=1] ___
+tests\test_param_law_sync_bounds.py:38: in test_every_bound_notation_compares_numbers
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_every_bound_notation_comp6'])
+_________________ test_exclusive_lower_bound_is_not_inclusive _________________
+tests\test_param_law_sync_bounds.py:49: in test_exclusive_lower_bound_is_not_inclusive
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_exclusive_lower_bound_is_0'])
+_______ test_missing_or_extra_bounds_fail[, ge=0, le=10-`int \u2265 0`] _______
+tests\test_param_law_sync_bounds.py:64: in test_missing_or_extra_bounds_fail
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_missing_or_extra_bounds_f0'])
+___________ test_missing_or_extra_bounds_fail[, ge=0, le=10-`int`] ____________
+tests\test_param_law_sync_bounds.py:64: in test_missing_or_extra_bounds_fail
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_missing_or_extra_bounds_f1'])
+_____________ test_missing_or_extra_bounds_fail[-`int \u2265 0`] ______________
+tests\test_param_law_sync_bounds.py:64: in test_missing_or_extra_bounds_fail
+    assert main([str(tmp_path)]) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = main(['C:\\Users\\yury_\\AppData\\Local\\Temp\\pytest-of-yury_\\pytest-1226\\test_missing_or_extra_bounds_f2'])
+_____________ test_the_repo_has_no_param_settings_divergence_left _____________
+tests\test_param_law_sync_repo.py:13: in test_the_repo_has_no_param_settings_divergence_left
+    assert len(report.warnings) == 3
+E   AssertionError: assert 2 == 3
+E    +  where 2 = len(['[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 � UCITS in... portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later'])
+E    +    where ['[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 � UCITS in... portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later'] = ParamSyncReport(errors=[], warnings=['[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, ...portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later']).warnings
+=========================== short test summary info ===========================
+FAILED tests/test_param_law_sync_values.py::test_a_wrong_value_names_the_law_and_code_and_fails
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float \u2265 0, \u2264 1` (ratio)-, ge=0, le=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[float >= 0, <= 1 seconds-, ge=0, le=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float > 0, < 1`-, gt=0, lt=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float [0, 1]`-, ge=0, le=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float \u2208 (0, 1]`-, gt=0, le=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float [0, 1)`-, ge=0, lt=1]
+FAILED tests/test_param_law_sync_bounds.py::test_every_bound_notation_compares_numbers[`float (0, 1)`-, gt=0, lt=1]
+FAILED tests/test_param_law_sync_bounds.py::test_exclusive_lower_bound_is_not_inclusive
+FAILED tests/test_param_law_sync_bounds.py::test_missing_or_extra_bounds_fail[, ge=0, le=10-`int \u2265 0`]
+FAILED tests/test_param_law_sync_bounds.py::test_missing_or_extra_bounds_fail[, ge=0, le=10-`int`]
+FAILED tests/test_param_law_sync_bounds.py::test_missing_or_extra_bounds_fail[-`int \u2265 0`]
+FAILED tests/test_param_law_sync_repo.py::test_the_repo_has_no_param_settings_divergence_left
+13 failed, 1 passed in 4.29s
+```
 
-**The step's output on the built tree:** *(paste whole)*
+**Proof — the green run:** Final source and tests, from the pytest step of redirected `make ci`; all 73 step tests appear below. The suite's eight pre-existing skips are recorded under `make ci`, not hidden.
 
-**Guards planted:** *(one line per guard)*
+```text
+[WARN] tests/test_param_law_sync.py: 168 lines (warn 150, hard block 200)
+tests\test_param_law_sync.py ........                                    [ 19%]
+tests\test_param_law_sync_bounds.py .................                    [ 19%]
+tests\test_param_law_sync_component_books.py .                           [ 19%]
+tests\test_param_law_sync_excused.py ........                            [ 20%]
+tests\test_param_law_sync_execution_rows.py .                            [ 20%]
+tests\test_param_law_sync_output.py ...                                  [ 20%]
+tests\test_param_law_sync_repo.py ..                                     [ 20%]
+tests\test_param_law_sync_values.py .................................    [ 21%]
+TOTAL                                                           20066      0   4240      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4392 passed, 8 skipped, 2470 warnings in 383.23s (0:06:23) ==========
+```
 
-**Existing tests edited:** *(each, with its reason)*
+New modules' additional type check: `uv run mypy --explicit-package-bases scripts/param_law_sync_values.py scripts/param_law_sync_bounds.py scripts/param_law_sync_numbers.py scripts/param_law_sync_excused.py scripts/param_law_sync_types.py scripts/param_law_sync_output.py`, exit 0: `Success: no issues found in 6 source files`.
 
-**The four execution rows, the Changelog line and the book's version:** *(paste)*
+**The step's output on the built tree:** same synced interpreter as `uv run`, UTF-8 stdout captured into `.tools/s258/step.txt`; exit 0. cp1252 is separately proven by A8.
 
-**Module line counts:** *(fill)*
+```text
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+[WARN] excused PARAM bounds: analyst.scaled_stop_atr_multiplier, portfolio_manager.cash_buffer_pct, portfolio_manager.max_position_pct, portfolio_manager.max_positions, portfolio_manager.min_order_quantity, portfolio_manager.price_lookback_days, portfolio_manager.starting_cash, scanner.min_average_volume
+```
 
-**`make ci`:** *(output file, exit code, each NOT RUN step)*
+**Guards planted:** Sequential source/book mutations, each requiring pytest exit 1 with a named FAILED test, then byte-for-byte restore and pytest exit 0. `.tools/s258/guards.txt`, exit 0; full assertion output per plant is in `guard-NN-red.txt` and `guard-NN-restored.txt`. The initial G06 survivor and its correction are recorded in Return notes.
 
-**Scope proof:** *(the two commands of checklist item 7 and their empty output)*
+```text
+G01 default mismatch: red=1; restored=0; bytes_restored=True
+G02 unreadable failure: red=1; restored=0; bytes_restored=True
+G03 bound numbers and strictness: red=1; restored=0; bytes_restored=True
+G04 missing and extra sides: red=1; restored=0; bytes_restored=True
+G05 exact excuse text: red=1; restored=0; bytes_restored=True
+G06 reconciled excuse must go: red=1; restored=0; bytes_restored=True
+G07 excuses never cover values: red=1; restored=0; bytes_restored=True
+G08 missing field excuse must go: red=1; restored=0; bytes_restored=True
+G09 absent books ignored: red=1; restored=0; bytes_restored=True
+G10 eight exact keys: red=1; restored=0; bytes_restored=True
+G11 eight exact texts: red=1; restored=0; bytes_restored=True
+G12 cp1252 failures: red=1; restored=0; bytes_restored=True
+G13 cp1252 warnings: red=1; restored=0; bytes_restored=True
+G14 slippage row: red=1; restored=0; bytes_restored=True
+G15 promotion row: red=1; restored=0; bytes_restored=True
+G16 approval row: red=1; restored=0; bytes_restored=True
+G17 timeout row: red=1; restored=0; bytes_restored=True
+G18 next book version: red=1; restored=0; bytes_restored=True
+G19 amendment record: red=1; restored=0; bytes_restored=True
+GUARDS: 19/19 rejected and restored
+```
+
+**Existing tests edited:** only `tests/test_param_law_sync_repo.py::test_the_repo_has_no_param_settings_divergence_left` (A7). Its two-warning assertion became three, with the exact eight keys and texts pinned; its docstring now distinguishes clean names/tunables/defaults from the eight deferred bounds. The other test in that file, and every test in `test_param_law_sync.py` and `test_param_law_sync_component_books.py`, are unchanged and pass.
+
+**The four execution rows, the Changelog line and the book's version:** Value, Tunable and Rationale cells unchanged; no clause edited.
+
+```text
+**Prefix:** `EXEC` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
+| `slippage_bps` | `0` | `int ≥ 0, ≤ 1000` (basis points) | YES | Simulated slippage on paper fills; 0 = no adjustment |
+| `min_promotion_runs` | `10` | `int ≥ 3, ≤ 200` | YES | Minimum completed runs before promotion past "broker_shadow" is allowed |
+| `min_approval_rate` | `0.70` | `float ≥ 0.0, ≤ 1.0` | YES | Minimum fraction of approved (non-gate-rejected) fills over min_promotion_runs |
+| `alpaca_timeout` | `15` | `int ≥ 1, ≤ 60` (seconds) | YES | Per-order broker call timeout; bounded latency budget per submission |
+- **v1.13 — S258 / DL-276 (2026-10-08).** PARAM only: reconciles the bounds of `slippage_bps`, `min_promotion_runs`, `min_approval_rate` and `alpaca_timeout` with settings; no clause, default or code bound changes.
+```
+
+**Module line counts:** all 16 touched Python modules are below 200; maximum 190. The measured output (UTF-8 / LF for every touched file):
+
+```text
+scripts/check_param_law_sync.py: 31
+scripts/param_law_sync.py: 190
+scripts/param_law_sync_bounds.py: 53
+scripts/param_law_sync_excused.py: 20
+scripts/param_law_sync_numbers.py: 76
+scripts/param_law_sync_output.py: 13
+scripts/param_law_sync_sources.py: 155
+scripts/param_law_sync_types.py: 33
+scripts/param_law_sync_values.py: 66
+tests/param_law_sync_helpers.py: 60
+tests/test_param_law_sync_bounds.py: 117
+tests/test_param_law_sync_excused.py: 100
+tests/test_param_law_sync_execution_rows.py: 33
+tests/test_param_law_sync_output.py: 65
+tests/test_param_law_sync_repo.py: 45
+tests/test_param_law_sync_values.py: 94
+```
+
+**`make ci`:** `.tools/s258/ci.txt`, exit **2**. The ignored local `sitecustomize.py` explicitly exits 1 before the network dependency audit can start; recorded-audit fixtures remain enabled. No Makefile or gate source was modified. Steps 14 and 15 were executed separately after `make` stopped.
+
+| Step | Check | Result |
+| --- | --- | --- |
+| 1 | ruff | PASS |
+| 2 | format | PASS |
+| 3 | mypy (`kernel contracts agents orchestration surfaces`) | PASS |
+| 4 | import-linter | PASS |
+| 5 | module size | PASS |
+| 6 | module header | PASS |
+| 7 | law coverage | PASS |
+| 8 | PARAM/settings sync | PASS; three expected warnings |
+| 9 | sprint status | PASS |
+| 10 | markdown links | PASS |
+| 11 | version scheme | PASS; version files unchanged |
+| 12 | pytest | PASS; 4,392 passed / 8 existing skipped / 100.00% |
+| 13 | dependency audit | NOT RUN: network prohibited; explicitly blocked before I/O |
+| 14 | detect-secrets | PASS separately, exit 0; `.tools/s258/detect-secrets.txt` |
+| 15 | untracked secrets | PASS separately, exit 0; `.tools/s258/untracked-secrets.txt` |
+
+```text
+surfaces\scorecard_tool.py                                         17      0      2      0  100.00%
+-------------------------------------------------------------------------------------------------------------
+TOTAL                                                           20066      0   4240      0  100.00%
+Coverage HTML written to dir htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4392 passed, 8 skipped, 2470 warnings in 383.23s (0:06:23) ==========
+uv run python scripts/check_dependency_audit.py
+NOT RUN: dependency audit requires the network; offline S258 proof.
+make: *** [Makefile:59: ci] Error 1
+```
+
+```text
+DETECT_SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+UNTRACKED_SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+```
+
+B2 gate self-test: `.tools/s258/gate-selftest.txt`, exit 1. **NOT RUN in full:** `pip-audit-cve` needs live vulnerability data; the offline launcher blocks it before I/O. The other 30 checks passed. This is not a 31/31 proof.
+
+```text
+
+A gate did not reject its planted violation, or a gate-enabling config was lost.
+Until this is fixed, a green lane is not evidence that gate examined anything:
+  can-fail: pip-audit-cve
+PASS  can-fail: ruff � rejected (exit 1)
+PASS  can-fail: module-size � rejected (exit 1)
+PASS  can-fail: module-size-reads-scripts � rejected (exit 1)
+PASS  can-fail: module-header � rejected (exit 1)
+PASS  can-fail: law-coverage � rejected (exit 1)
+PASS  can-fail: param-law-sync � rejected (exit 1)
+PASS  can-fail: sprint-status � rejected (exit 1)
+PASS  can-fail: markdown-links � rejected (exit 1)
+PASS  can-fail: version-scheme � rejected (exit 1)
+PASS  can-fail: untracked-secrets � rejected (exit 1)
+FAIL  can-fail: pip-audit-cve � gate failed without proving: urllib3
+      why it matters: the local dependency CVE gate must fail closed on a vulnerable package
+PASS  can-fail: accepted-advisory-re-check � rejected (exit 1)
+PASS  can-fail: gate-ran-rejects-abbreviated-sha � rejected (exit 1)
+PASS  can-fail: gate-ran-rejects-zero-runs � rejected (exit 1)
+PASS  can-fail: gate-ran-judges-the-newest-attempt-not-the-first � rejected (exit 1)
+PASS  invariant: merge-procedure-asserts-a-run-exists � present
+PASS  invariant: gate-ran-target-exists � present
+PASS  invariant: security-gate-runs-on-push � present
+PASS  invariant: ci-runs-on-push � present
+PASS  invariant: sprint-status-gate-wired-locally � present
+PASS  invariant: sprint-status-gate-wired-in-ci � present
+PASS  invariant: untracked-scan-wired-into-ci � present
+PASS  invariant: dependency-audit-not-ignored-by-ci � present
+PASS  invariant: dependency-audit-wired-in-ci � present
+PASS  invariant: size-block-reads-scripts-locally � present
+PASS  invariant: size-block-reads-scripts-in-ci � present
+PASS  invariant: dependabot-pins-python-to-3-13 � present
+PASS  invariant: graph-vocabulary-guard-wired � present
+PASS  invariant: graph-vocabulary-injected-at-deploy � present
+PASS  invariant: codeql-custom-query-referenced � present
+PASS  invariant: codeql-config-queries-not-overridden � present
+
+gate self-test: 30/31 passed
+```
+
+**Scope proof:** both required commands printed nothing. `git diff HEAD -- docs/STATE.md` also printed nothing: this worktree has not changed STATE. During the build, the shared `main` ref advanced from `8d55cb569b01680ca583b52d25adecf742a87802` to `3b6f1fe86877c3157ffe097b43f52b7379cbd603`; comparing STATE with that newer `main` shows its independent update, not a sprint edit. The execution-book diff was reviewed whole: only the four Type cells, version and Changelog. No clause, Value, Tunable or Rationale cell moved.
+
+```text
+git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration/packs orchestration/history_window.py pyproject.toml uv.lock scripts/gate_selftest_cases.py docs/laws/_TEMPLATE.md
+
+ git diff main --stat -- 'agents/*/settings*.py' orchestration/settings.py surfaces/dashboard/settings.py
+
+ git diff HEAD --stat -- docs/STATE.md docs/laws/INDEX.md docs/laws/ledger.md
+```
 
 **`make gate-ran`:** owed by the planner at merge.
 
-**Not met / verified failing:** *(fill, or "none")*
+**Not met / verified failing:** full `make ci` and full gate self-test are not proven green: live dependency audit and live CVE plant are NOT RUN (network). Eight existing suite skips remain, named above; no sprint test skips. A non-required broad mypy check of scripts/tests verified failing (43 typing errors, including untyped new and existing tests and the unchanged envelope reader); it is outside configured CI's scope and was not used as green proof. The six new modules' explicit check and CI's configured mypy check pass. Remote gates, version bump, rollup labels and merge-time F1 are owed to the planner. Push, merge and deploy are not done by instruction.
 
 ---
 
 ## Return notes
 
-*(fill)*
+- AGENTS.md says 14 CI steps; CLAUDE.md and the actual `ci:` target have 15. Followed the target, including sprint status; no rules file edited.
+- Initial red used `tunable(..., lt=...)`, which this API does not accept. Corrected only the temporary fixture to use Pydantic `Field` with description metadata for exclusive upper bounds. `.tools/s258/red-initial.txt` preserves that failed attempt; the required red was re-run and pasted before implementation.
+- G06's first mutation survived: the original reconciliation fixture edited the Type cell, so the changed-text check still rejected it. Added `test_an_excuse_fails_when_code_catches_up_without_a_cell_edit` to prove independent stale-entry removal; G06 then fails and restores. Initial evidence remains in `.tools/s258/guards-initial.txt`. G09's scratch mutation was corrected before its run to actually break absent-book scoping. Final 19/19 plants rejected/restored.
+- Optional mypy command corrections: PowerShell passes wildcard paths literally to mypy, so enumerated them; namespace modules require `--explicit-package-bases`. The broad scripts/tests attempt then found 43 typing errors outside CI's configured scope, including the unchanged envelope reader; flagged, not fixed. The explicit six-new-module check passes. No existing B2 test was edited to satisfy that optional check.
+- The shared generated commit hook points at the main checkout's venv. Use an ignored worktree-local copy with only `INSTALL_PYTHON` redirected to `ta-s258/.venv`, keeping the same pre-commit hook runner/config; leave the shared hook untouched. This keeps the commit's interpreter in the authorized worktree.
+- The shared `main` ref advanced independently during the build. Required protected-path comparisons with current `main` still print nothing; STATE is unchanged against the sprint's starting HEAD. No rebase, merge or main-checkout edit was made here.
+- `pyproject.toml`, `uv.lock` and `docs/STATE.md` are untouched. The planner bumps PATCH and syncs the lock at merge, moves the execution label in both rollups, runs the live audit/CVE self-test and remote gates, and performs F1. Work-queue 114 remains open for the eight rows, whose text and paths are unchanged here. No push, merge or deploy.

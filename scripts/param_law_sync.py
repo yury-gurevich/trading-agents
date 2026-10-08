@@ -10,13 +10,12 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.param_law_sync_envelopes import envelope_warnings
+from scripts.param_law_sync_numbers import check_numbers
 from scripts.param_law_sync_sources import (
-    Location,
     ParamRow,
     agent_settings_location,
     law_book_names,
@@ -25,6 +24,13 @@ from scripts.param_law_sync_sources import (
     settings_field_locations,
     settings_module_name,
     settings_module_path,
+)
+from scripts.param_law_sync_types import (
+    MISSING_PARAM,
+    MISSING_SETTING,
+    TUNABLE_MISMATCH,
+    ParamIssue,
+    ParamSyncReport,
 )
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -37,37 +43,24 @@ if TYPE_CHECKING:
 
     from pydantic.fields import FieldInfo
 
-MISSING_PARAM = "settings field has no PARAM row"
-MISSING_SETTING = "PARAM row has no settings field"
-TUNABLE_MISMATCH = "Tunable column disagrees with settings metadata"
-
-
-@dataclass(frozen=True)
-class ParamIssue:
-    agent: str
-    name: str
-    kind: str
-    location: Location
-    detail: str
-
-
-@dataclass
-class ParamSyncReport:
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-
-    @property
-    def ok(self) -> bool:
-        return not self.errors
-
 
 def check_root(root: Path) -> ParamSyncReport:
     report = ParamSyncReport()
+    excused: set[str] = set()
     for agent in _discover_agents(root):
         settings_cls = _settings_class(root, agent)
         for issue in _agent_issues(root, agent, settings_cls):
             report.errors.append(_format_issue(root, issue))
+        errors, used = check_numbers(
+            root, agent, param_rows(root, agent), settings_cls.model_fields
+        )
+        report.errors.extend(errors)
+        excused.update(used)
         report.warnings.extend(envelope_warnings(agent, settings_cls.model_fields))
+    if excused:
+        report.warnings.append(
+            f"[WARN] excused PARAM bounds: {', '.join(sorted(excused))}"
+        )
     return report
 
 

@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-257-a-debaters-turn-may-write-16384-output-tokens`
 **Status:** BUILT
-**Version:** *next available PATCH at merge*
+**Version:** `0.123.02`
 **Effort:** S
 **Decisions:** [DL-274](../design-log.md) (decisions D1 to D4 this sprint builds) · work-queue **111** ·
 [DL-264](../design-log.md) amendment 7 (this fix comes before step 3) ·
@@ -667,3 +667,54 @@ NEW_TESTS_IMPORT_NO_VENDOR_SDK=YES
 - The locked book advanced from S256's **v1.15 to v1.16**, PARAM-only. Central law version labels in `docs/laws/INDEX.md` and `docs/laws/ledger.md` still say v1.15; those umbrella files were left read-only under MUST RULE. The planner can reconcile their version labels at merge; the clause count stays **32 / 63**, and no clause status moves.
 - `pyproject.toml` and `uv.lock` were not touched; the planner owes the PATCH bump and lock reconciliation at merge. `docs/STATE.md` was not edited, by the handover; intent and results live here. No package version was pinned.
 - No push, remote gate, merge, image build, deployment or live/vendor-library proof was performed. The planner owes `make gate-ran` on the final bumped SHA, the S256 CodeQL comparison, F1a/F1b, retag/D4 with the before/after snapshot, and F2. No paid call or live app setting was changed. The fleet's pack wait remains 120; the code default remains 30 and the allowed maximum is now 300.
+
+---
+
+## Planner's review and merge-time work — 2026-10-08 16:20 AEDT
+
+**The handback against the checklist.** All nine items are met. Item 8 names one step as NOT RUN, the
+dependency audit, which needs the network; the planner runs the whole gate below.
+
+**Re-measured by the planner, not read from the builder's logs.**
+
+- The scope command of item 6 prints nothing. Neither does the same diff over `contracts/`,
+  `orchestration/`, `surfaces/`, `scripts/`, `infra/`, `.github/`, the `Makefile`, `.secrets.baseline` and
+  `docs/STATE.md`. Twelve files changed: two modules, two edited tests, two new tests, the law book and its
+  test plan, and four documents.
+- Eight plants of the planner's own, one at a time, each red, each restored: the default back at 8,192
+  (7 tests fail), a bound of 32,768 (2), the client constant at 21,334 (1), a wait bound of 301 (1), the
+  manager forwarding a fixed 120 seconds (1), OpenAI's request cap fixed at 8,192 (3 of the 6 request
+  cases), the cap's law row back at 8,192 (1), the wait's law row back at 120 (1). The nine tests of the
+  sprint are green before and after, and the tree is clean.
+- A ninth plant is DL-275's own: with the cap's law row back at 8,192, `scripts/check_param_law_sync.py`
+  exits 0. The builder's finding is right.
+- The two existing tests the builder edited are the two the spec named. Each edit was read: both assert
+  the new numbers in place of the old, the 64-token minimum and the `3,026` sentence are still pinned, and
+  neither is weakened.
+- The code is the decided design, D1 to D3, nothing more: one default, two bounds, two `why` texts that
+  keep their old sentence, one constant with its derivation.
+
+**The planner's error, found by the builder.** This spec says the parameter step of `make ci` fails until
+the two `PARAM` rows follow the code, and offers the prototype's pass as the measurement. The step was run
+only with the rows already changed; the failing direction was never run. The step compares a row's name
+and its Tunable cell, not its Value or its Type (DL-275). A1 and A4 hold the numbers instead. The gap in
+the shared check is filed as work-queue 114.
+
+**Changed by the planner at merge.**
+
+- The version is `0.123.02`. `uv lock` changed the version line only; 180 packages before and after.
+- The deliberator's row in `docs/laws/INDEX.md` and in `docs/laws/ledger.md` reads v1.16 (S257, DL-274),
+  `PARAM` only, 32 / 63 unchanged. The builder left both files alone, as the MUST RULE told it to.
+- `main` had not moved since the worktree was cut, so nothing was merged in.
+
+**Accepted as built.**
+
+- `NONSTREAMING_MAX_TOKENS` is read by a test and by no production code: the setting's bound is the
+  literal 16,384, and the test holds it at or under the constant. That is D2 as decided.
+- A3 reads the constant with `getattr(..., None)`, which let it fail on an assertion before the constant
+  existed. With the constant in place it is an ordinary read.
+- The builder took DL-275. The next free entry is DL-276.
+
+**Owed, in the order of "Sequencing after merge":** the gate on Windows and on the remote for the merged
+SHA, the merge, F1a with the real vendor library, F1b on the operator's word, the deploy and D4 on the
+operator's word, F2. Their results are recorded in `docs/STATE.md` and in this file's Status line.

@@ -45,7 +45,7 @@ The first reason holds: it is a change to a shared gate and was not S257's to ma
 
 ---
 
-## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a passed, not deployed, work-queue 111; MEASURED and open for the grace (work-queue 113)
+## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a and F1b passed, not deployed, work-queue 111; MEASURED and open for the grace (work-queue 113)
 
 **The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
 the effort. Sizing the first one means asking what a longer turn meets next. DL-271 answered for the
@@ -106,6 +106,17 @@ caller stopped waiting is served when a peer next takes it, and it is served ahe
 **Not measured.** A production turn on `gpt-5.5` with S255's longer packet: the first debated buy will show
 it. Whether a larger cap changes what Opus writes: its largest turn is 4,846 tokens, and the account is
 empty until 2026-10-11.
+
+**Amendment (planner, 2026-10-08 18:31 AEDT): F1b, one real debate at the new cap.** The merged code
+on `gpt-5.5` at `high` effort, the cap at 16,384 and the wait at 240 seconds, on GILD's recorded packet of
+`sched-2026-10-05` (the packet S254's F1 used; it predates S255's three lines). The defender's first turn
+wrote 10,658 output tokens in 93.8 seconds, 114 tokens a second. The cap of 8,192 would have cut it and
+failed the order open, and it ran longer than the 60-second lock that S256 stopped depending on. The other
+calls: the challenger's 5,630 tokens in 52.8 s, the defender's 4,828 in 42.0 s, the challenger's 3,714 in
+34.8 s, the judge's 574 in 7.1 s. Every call ended on `stop`; the ruling was `revise`, as on the night.
+The order took 231 seconds from the first request to the ruling, against 188 seconds on 2026-10-07 with
+the same packet. That is the number work-queue 113 divides execution's 1,800-second wait by: 7 debated
+buys a night on this vendor where 188 seconds gave 9. One measurement. $0.88.
 
 ---
 

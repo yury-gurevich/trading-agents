@@ -45,7 +45,7 @@ The first reason holds: it is a change to a shared gate and was not S257's to ma
 
 ---
 
-## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a and F1b passed, not deployed, work-queue 111; MEASURED and open for the grace (work-queue 113)
+## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a and F1b passed, deployed `s257` 2026-10-08 with the manager's wait at 240 seconds, work-queue 111; MEASURED and open for the grace (work-queue 113)
 
 **The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
 the effort. Sizing the first one means asking what a longer turn meets next. DL-271 answered for the
@@ -118,9 +118,17 @@ The order took 231 seconds from the first request to the ruling, against 188 sec
 the same packet. That is the number work-queue 113 divides execution's 1,800-second wait by: 7 debated
 buys a night on this vendor where 188 seconds gave 9. One measurement. $0.88.
 
+**Amendment (planner, 2026-10-08 18:52 AEDT): D4 applied.** The fleet was retagged to `s257` between
+07:35 and 07:42 UTC, and `DELIBERATOR_REQUEST_TIMEOUT_SECONDS` went from 120 to 240 on
+`deliberator-manager` between 07:44 and 07:45 UTC: the one field that differs between the app's two
+snapshots. The manager activated on that revision; the code before S257 refuses a value above 120 at
+start-up. The value is live only. The tunables pack still says 120, so a full `up` puts 120 back, and a
+rollback to an older image must set 120 first. The two debaters keep 120: the setting bounds the manager's
+wait for a served reply.
+
 ---
 
-## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); BUILT and MERGED as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) `0.123.01` (`b3f1ee1f`, 2026-10-08), F1 passed, not deployed; work-queue 112
+## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); BUILT and MERGED as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) `0.123.01` (`b3f1ee1f`, 2026-10-08), F1 passed, deployed `s257` 2026-10-08; work-queue 112
 
 **The question.** DL-271 measured the defect and listed four parts of a fix without
 choosing between them: an explicit lock, a renewal or an early settlement, a caught lost lock, a visible

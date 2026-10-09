@@ -12,7 +12,7 @@ from typing import Literal
 from pydantic_settings import SettingsConfigDict
 
 from kernel import AgentSettings, tunable
-from kernel.llm_factory import default_model_for
+from kernel.llm_factory import default_model_for, default_operator_effort_for
 
 
 class OperatorSettings(AgentSettings):
@@ -26,12 +26,12 @@ class OperatorSettings(AgentSettings):
         "",
         why="Empty resolves the declared provider's model; explicit values win.",
     )
-    effort: Literal["low", "medium", "high", "xhigh", "max"] = tunable(
-        "max",
+    effort: Literal["", "none", "low", "medium", "high", "xhigh", "max"] = tunable(
+        "",
         why=(
-            "Provider reasoning effort. 'max' buys the deepest reasoning "
-            "per call; the literal mirrors the API's own ladder so an operator "
-            "override cannot send a value the model rejects."
+            "Empty resolves the provider's deepest operator effort "
+            "(max on Anthropic, xhigh on OpenAI); an explicit value is passed "
+            "as set, for the vendor's model to accept or refuse."
         ),
     )
     max_tokens: int = tunable(
@@ -67,3 +67,8 @@ class OperatorSettings(AgentSettings):
     def resolved_model(self) -> str:
         """Resolve the declared vendor's model unless explicitly overridden."""
         return self.model or default_model_for(self.llm_provider)
+
+    @property
+    def resolved_effort(self) -> str:
+        """Resolve the provider's effort unless the operator sets one explicitly."""
+        return self.effort or default_operator_effort_for(self.llm_provider)

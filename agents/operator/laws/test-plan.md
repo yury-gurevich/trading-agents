@@ -43,7 +43,7 @@
 | OPR-SEC-03 | ⬜ | — |
 | OPR-SEC-04 | ⬜ | — |
 | OPR-SEC-05 | ⬜ | — |
-| OPR-DEP-01 | 🟩 | Declared provider or injected fake is the sole external call, never a fallback; empty model resolves the provider default and explicit model wins: `tests/test_operator_llm_factory.py::test_b4_factory_builds_exactly_selected_vendor`; `test_b4_selected_failure_never_builds_other_vendor`; `test_b4_unknown_provider_refuses`; `test_provider_model.py::test_b1_model_follows_provider_and_override`; `tests/test_openai_operator_security.py::test_b6_openai_key_never_escapes_operator`; existing Anthropic-only constructor proof remains applicable to that selection |
+| OPR-DEP-01 | 🟩 | Declared provider or injected fake is the sole external call, never a fallback; empty model and effort resolve the provider defaults, explicit values pass as set, and another provider's model family is refused before any call: `tests/test_operator_llm_factory.py::test_b4_factory_builds_exactly_selected_vendor`; `test_b4_selected_failure_never_builds_other_vendor`; `test_b4_unknown_provider_refuses`; `test_provider_model.py::test_b1_model_follows_provider_and_override`; `tests/test_operator_provider_guards.py::test_b1_effort_follows_provider`; `test_b2_unknown_provider_effort`; `test_b3_mismatched_model_builds_nothing`; `test_b4_unknown_model_family_is_vendors_to_judge`; `tests/test_operator_responses_wire.py::test_a8_captured_wire_replay`; `tests/test_openai_operator_security.py::test_b6_openai_key_never_escapes_operator`; existing Anthropic constructor proof remains applicable to that selection |
 | OPR-DEP-02 | ⬜ | — |
 | OPR-DEP-03 | ⬜ | — |
 | OPR-OBS-01 | ⬜ | — |

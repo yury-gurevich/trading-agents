@@ -22,26 +22,17 @@ def test_b2_operator_forces_one_named_function(monkeypatch: pytest.MonkeyPatch) 
     def create(**kwargs: object) -> object:
         calls.append(kwargs)
         return SimpleNamespace(
-            choices=[
+            status="completed",
+            output=[
                 SimpleNamespace(
-                    finish_reason="stop",
-                    message=SimpleNamespace(
-                        tool_calls=[
-                            SimpleNamespace(
-                                function=SimpleNamespace(
-                                    arguments=(
-                                        '{"answer":"safe answer","outcome":"intent"}'
-                                    )
-                                )
-                            )
-                        ]
-                    ),
+                    type="function_call",
+                    arguments='{"answer":"safe answer","outcome":"intent"}',
                 )
             ],
             usage=SimpleNamespace(
-                prompt_tokens=10,
-                completion_tokens=3,
-                prompt_tokens_details=SimpleNamespace(cached_tokens=2),
+                input_tokens=10,
+                output_tokens=3,
+                input_tokens_details=SimpleNamespace(cached_tokens=2),
             ),
         )
 
@@ -50,7 +41,7 @@ def test_b2_operator_forces_one_named_function(monkeypatch: pytest.MonkeyPatch) 
         "import_module",
         lambda name: SimpleNamespace(
             OpenAI=lambda **kwargs: SimpleNamespace(
-                chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+                responses=SimpleNamespace(create=create)
             )
         ),
     )
@@ -72,12 +63,14 @@ def test_b2_operator_forces_one_named_function(monkeypatch: pytest.MonkeyPatch) 
         == "safe answer"
     )
     for call, name in zip(calls, ("parse_intent", "answer_question"), strict=True):
-        assert call["tool_choice"] == {"type": "function", "function": {"name": name}}
+        assert call["tool_choice"] == {"type": "function", "name": name}
         assert len(call["tools"]) == 1
-        assert call["tools"][0]["function"]["description"]
-        assert call["max_completion_tokens"] == 4096
-        assert call["reasoning_effort"] == "max"
-    assert client.last_stop_reason == "stop"
+        assert call["tools"][0]["description"]
+        assert call["tools"][0]["strict"] is False
+        assert call["store"] is False
+        assert call["max_output_tokens"] == 4096
+        assert call["reasoning"] == {"effort": "max"}
+    assert client.last_stop_reason == "completed"
     assert client.last_usage is not None
     assert client.last_usage.tokens_in == 8
     assert client.last_usage.tokens_out == 3

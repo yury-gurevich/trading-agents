@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -137,7 +137,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **OPR-DEP-01** — `DEP-LLM` — the declared LLM provider (or injected FakeLLMClient);
   sole external call. Provider selection never falls back to another vendor; an empty model
-  resolves that provider's default, while an explicit model wins.
+  and an empty effort resolve that provider's defaults, while explicit values are passed as set.
+  An explicit model whose name belongs to another provider's family is refused before any call.
 - **OPR-DEP-02** — `DEP-POSTGRES` — graph for `CommandAudit`, `Intent`, `LLMCall` writes and
   evidence reads for `explain`.
 - **OPR-DEP-03** — `DEP-BUS` — routes resulting `TypedIntent` to `supervisor.dispatch_intent`
@@ -167,7 +168,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     "operations": ["complete"],
     "schema": "tool_use",
     "max_tokens": 4096,
-    "effort": "max"
+    "effort": ""
   },
   "graph": {
     "operations": ["append_write", "read"],
@@ -187,7 +188,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | --- | --- | --- | --- | --- |
 | `llm_provider` | `"anthropic"` | `str` | YES | Operator-declared provider; selection is an operator act, never an automatic fallback |
 | `model` | `""` | `str` | YES | Empty resolves `default_model_for(llm_provider)` (`claude-opus-5` or `gpt-5.5`); an explicit model wins; every call records the resolved value |
-| `effort` | `"max"` | `low\|medium\|high\|xhigh\|max` | YES | Provider reasoning depth passed as configured, without translating the effort ladder |
+| `effort` | `""` | `""\|none\|low\|medium\|high\|xhigh\|max` | YES | Empty resolves the provider's deepest operator effort (`max` on Anthropic, `xhigh` on OpenAI); explicit values pass as set for the vendor's model to accept or refuse, without translating the effort ladder |
 | `max_tokens` | `4096` | `int ≥ 64 ≤ 4096` | YES | Caps thinking plus structured output together; too tight and the parse refuses before emitting a tool call |
 | `explain_max_evidence_nodes` | `20` | `int ≥ 1 ≤ 100` | YES | Bound graph evidence included in explanation prompts |
 | `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled interpret prompt (ADR-0010); empty = dynamic construction |
@@ -199,6 +200,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.6 — S263 / DL-284 (2026-10-09): `OPR-DEP-01` also resolves an empty effort
+  from the selected provider and refuses an explicit model from another provider's family
+  before any call. PARAM effort defaults to empty and accepts `none`; CAP follows that default.
+  Re-proven on Responses wire replay, effort resolution and model-family refusal. No clause added.
 
 - v1.5 — S262 / DL-282 (2026-10-09): `OPR-DEP-01` names the declared provider and its
   no-fallback/model-resolution rules. PARAM adds `llm_provider`, makes `model` empty with

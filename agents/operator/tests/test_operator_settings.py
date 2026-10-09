@@ -13,8 +13,14 @@ from pydantic import ValidationError
 from agents.operator.settings import OperatorSettings
 
 
-def test_effort_defaults_to_max() -> None:
-    assert OperatorSettings().effort == "max"
+def test_effort_defaults_to_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    """OPR-DEP-01: unset effort resolves the declared provider's default."""
+    monkeypatch.setenv("OPERATOR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("OPERATOR_MODEL", "")
+    monkeypatch.delenv("OPERATOR_EFFORT", raising=False)
+    settings = OperatorSettings(_env_file=None)
+    assert settings.effort == ""
+    assert settings.resolved_effort == "max"
 
 
 def test_max_tokens_leaves_room_for_effort_driven_thinking() -> None:

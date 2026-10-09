@@ -28,9 +28,20 @@ DEFAULT_MODEL: dict[str, str] = {
     "openai": "gpt-5.5",
 }
 
+DEFAULT_OPERATOR_EFFORT: dict[str, str] = {"anthropic": "max", "openai": "xhigh"}
+
+MODEL_PREFIXES: dict[str, tuple[str, ...]] = {
+    "anthropic": ("claude-",),
+    "openai": ("gpt-", "chatgpt-", "o1", "o3", "o4"),
+}
+
 
 class UnknownProviderError(RuntimeError):
     """Raised when configuration names a provider that does not exist."""
+
+
+class ModelProviderMismatchError(RuntimeError):
+    """Raised when an explicit model belongs to a different known provider."""
 
 
 def build_llm(
@@ -63,6 +74,22 @@ def default_model_for(provider: str) -> str:
         raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
 
 
+def default_operator_effort_for(provider: str) -> str:
+    """Return the selected provider's default operator reasoning effort."""
+    try:
+        return DEFAULT_OPERATOR_EFFORT[provider]
+    except KeyError as exc:
+        raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
+
+
+def model_provider(model: str) -> str | None:
+    """Return the provider whose model family this name starts with, if any."""
+    for provider, prefixes in MODEL_PREFIXES.items():
+        if model.startswith(prefixes):
+            return provider
+    return None
+
+
 def build_operator_llm(
     provider: str,
     *,
@@ -72,6 +99,12 @@ def build_operator_llm(
     effort: str,
 ) -> LLMClient:
     """Construct exactly the selected vendor's operator adapter."""
+    owner = model_provider(model)
+    if provider in KEY_ENV and owner not in (None, provider):
+        raise ModelProviderMismatchError(
+            f"model {model!r} belongs to {owner}; the declared llm_provider is "
+            f"{provider}. Unset the model to use the provider's default."
+        )
     if provider == "anthropic":
         return OperatorAnthropicLLMClient(
             api_key=api_key,

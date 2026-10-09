@@ -101,7 +101,3 @@ def _finish_reasons(response: object) -> tuple[str, ...]:
         if reason:
             reasons.append(reason)
     return tuple(reasons)
-
-
-completion_usage = _usage
-completion_stop_reason = _stop_reason

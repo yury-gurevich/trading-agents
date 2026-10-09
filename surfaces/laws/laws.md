@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -133,7 +133,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   are absent: read routes degrade, and chat reports disconnected.
 - **SRF-DEP-03** — Dashboard chat uses the LLM provider declared in operator settings and no
   other. A missing key for that provider, an unknown provider, or its adapter's configuration
-  failure leaves chat disconnected.
+  failure, or an explicit model belonging to another provider's family leaves chat disconnected.
+  For a model-family mismatch the dashboard's start-up output names that cause.
 
 ## Observability & audit (`OBS`)
 
@@ -214,6 +215,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
+
+- v1.5 — S263 / DL-284 (2026-10-09): `SRF-DEP-03` adds cross-provider model-family
+  refusal to the disconnection causes and requires its reason on dashboard start-up output.
+  Re-proven without importing a vendor SDK and with both providers' resolved model/effort values.
+  No clause added; the dashboard remains useful with chat disconnected.
 
 - v1.4 — S262 / DL-282 (2026-10-09): new `SRF-DEP-03` binds chat through the kernel's
   selected-provider factory; missing selected credentials, unknown provider or either adapter's

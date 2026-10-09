@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-284](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-282](../design-log.md) amendment 2 (what S262's paid check refuted) · [work-queue 121](../work-queue.md)
@@ -282,21 +282,21 @@ Unit tests inject a fake SDK through `importlib.import_module`, as the existing 
 
 ## Success factors
 
-- [ ] With the provider `openai` and no model or effort set, the binding builds the OpenAI operator
+- [x] With the provider `openai` and no model or effort set, the binding builds the OpenAI operator
       client with `gpt-5.5` and `xhigh` (C2), and its call is the request captured from the vendor (A8).
-- [ ] A reply cut at the cap raises after its tokens are recorded (A3); an unusable reply is the
+- [x] A reply cut at the cap raises after its tokens are recorded (A3); an unusable reply is the
       refusal (A4).
-- [ ] An explicit model of the other vendor's family builds nothing and leaves the chat disconnected
+- [x] An explicit model of the other vendor's family builds nothing and leaves the chat disconnected
       with the reason on standard error (B3, C1).
-- [ ] On Anthropic the resolved model and effort are what they were: `claude-opus-5`, `max` (B1, C2).
-- [ ] `build_llm`, `OpenAILLMClient` and its helpers, `kernel/llm_anthropic*.py` and
+- [x] On Anthropic the resolved model and effort are what they were: `claude-opus-5`, `max` (B1, C2).
+- [x] `build_llm`, `OpenAILLMClient` and its helpers, `kernel/llm_anthropic*.py` and
       `agents/deliberator/` are unchanged apart from the two deleted alias lines and the rider;
       the command in the handback checklist prints nothing.
-- [ ] Both law cycles done: `OPR-DEP-01` and `SRF-DEP-03` reworded and re-proven, the `effort` row
+- [x] Both law cycles done: `OPR-DEP-01` and `SRF-DEP-03` reworded and re-proven, the `effort` row
       and the `CAP` line, changelogs, versions, test-plan rows, both rollups.
-- [ ] `scripts/check_param_law_sync.py` exits 0.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
+- [x] `scripts/check_param_law_sync.py` exits 0.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -496,15 +496,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Responses operator adapter | `agents/operator/laws/laws.md` and `test-plan.md` (whole); `tests/test_llm_adapter_ownership.py` and `tests/test_llm_adapter_security.py` (whole) | OPR-DEP-01, OPR-NEV-05, OPR-FAIL-01/02, OPR-STA-03, OPR-PERF-01/03, OPR-SEC-01 | No: D1-D4 preserve the tool boundary, refusal and accounting; PERF-01/03 are gray and remain gray unless their whole guarantees are proven. |
+| Factory and operator settings | Same operator book and test plan, adapter ownership/security tests | OPR-DEP-01; PARAM effort and CAP | No: D5-D6 require the authorized operator amendment; `build_llm` stays unchanged. |
+| Dashboard chat binding | `surfaces/laws/laws.md` and `test-plan.md` (whole) | SRF-DEP-02/03 | No: a mismatch disconnects chat with one stderr reason and leaves the dashboard useful. |
+| Deleted aliases and isolated-test rider | `agents/deliberator/laws/laws.md` (whole, read only) | DLIB-DEP-03, DLIB-FAIL-04, DLIB-OBS-05/06 | No: only the two aliases, their separating blank line, and D9's test line/comment may change. |
+| Law-cycle procedure | `docs/laws/conventions.md` and `drift-register.md` (whole); DL-284 and DL-282 amendment 2 | conventions sections 3, 4, 7, 7a, 9; LAW-02/06 | No: decisions already recorded; no new decision or drift found. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No contracts changes; YES operator and surfaces amendments, no new clause IDs. Owed: OPR-DEP-01, PARAM effort/CAP, SRF-DEP-03, versions/changelogs, test-plan rows and both rollups. Both cycles subsequently completed and re-proven; the record itself was filled before code.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** None outside the explicitly authorized amendments. The operator's existing Anthropic constructor proof remains valid for that selected vendor.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** None beyond D1-D9 and the two amendments already authorized by DL-284.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** None: existing OPR-DEP-01 and SRF-DEP-03 remain green after their amendments. OPR-PERF-01/03 and OPR-STA-01 are gray; this sprint does not claim their whole guarantees. Gate-derived counts remain operator 19 / 50 and surfaces 30 / 37 in both rollups.
+
+**Pre-code baseline:** `C:\Users\yury_\Downloads\project\ta-s263`, branch `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`, HEAD/main/origin-main `02dd0d49fc51bae7a6bdeff5ea0d4de624e12c97`. Only the supplied fixture is untracked; its SHA256 matches `fd6c917a973db0d54e3eda70d3dc97231f6ccb7b2b9ce62200d6cbd6b8a735a8`. `.env` absent. All proofs will be offline. The binding handover excludes tracker edits, version/lock edits, push, merge and vendor calls. CLAUDE.md's 15-step CI target overrides AGENTS.md's stale 14-step count; disagreement recorded, neither rule file edited. Law reading recorded before any Python or configuration change.
 
 ---
 
@@ -512,60 +518,504 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | `test_a1_measured_request` | `tests/test_operator_responses.py` | PASS | OPR-DEP-01 / OPR-NEV-05 |
+| A2 | `test_a2_function_call_and_usage` | `tests/test_operator_responses.py` | PASS | OPR-STA-03 |
+| A3 | `test_a3_cutoff_records_before_raise` | `tests/test_operator_responses.py` | PASS | OPR-FAIL-01 / OPR-STA-03 |
+| A4 | `test_a4_unusable_output_is_refused` | `tests/test_operator_responses_edges.py` | PASS | OPR-NEV-05 / OPR-FAIL-02 |
+| A5 | `test_a5_filtered_reply_is_refused` | `tests/test_operator_responses_edges.py` | PASS | OPR-FAIL-02 / OPR-STA-03 |
+| A6 | `test_transport_failure_clears_old_accounting` | `tests/test_openai_operator_edges.py` | PASS | OPR-STA-03 / OPR-FAIL-01 |
+| A7 | `test_optional_sdk_is_lazy_and_missing_key_refuses` | `tests/test_openai_operator_edges.py` | PASS | OPR-SEC-01 / OPR-DEP-01 |
+| A8 | `test_a8_captured_wire_replay` | `tests/test_operator_responses_wire.py` | PASS | OPR-DEP-01 / OPR-STA-03 |
+| B1 | `test_b1_effort_follows_provider` | `tests/test_operator_provider_guards.py` | PASS | OPR-DEP-01 |
+| B2 | `test_b2_unknown_provider_effort` | `tests/test_operator_provider_guards.py` | PASS | OPR-DEP-01 |
+| B3 | `test_b3_mismatched_model_builds_nothing` | `tests/test_operator_provider_guards.py` | PASS | OPR-DEP-01 |
+| B4 | `test_b4_unknown_model_family_is_vendors_to_judge` | `tests/test_operator_provider_guards.py` | PASS | OPR-DEP-01 |
+| C1 | `test_c1_mismatch_disconnects_with_reason` | `surfaces/tests/test_chat_model_mismatch.py` | PASS | SRF-DEP-03 |
+| C2 | `test_c2_binding_passes_resolved_settings` | `surfaces/tests/test_chat_model_mismatch.py` | PASS | SRF-DEP-03 / OPR-DEP-01 |
+| D1 | `test_b6_openai_key_never_escapes_operator` | `tests/test_openai_operator_security.py` | PASS | OPR-SEC-01 / OPR-DEP-01 |
+| E1 | `test_our_effort_values_are_all_valid_openai_values` | `agents/deliberator/tests/test_llm_openai_adapter.py` | PASS | DL-105 (existing rider docstring unchanged) |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** `test_model_family_prefixes` pins all five OpenAI prefixes and the Anthropic prefix plus unclassified names; `test_missing_arguments_and_output` covers absent SDK fields. A2 also checks cache overflow clamping, ignored cache-write tokens, the adapter default and first-of-two function calls. All prove D1-D6 without expanding production scope.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s263`, branch `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`; `.env` absent; `UV_OFFLINE=1`, `UV_FROZEN=1`, no vendor call.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** Full unit suite: 4,558 passed, 8 skipped, 100.00 % coverage; focused unit suite after fixture annotations: 66 passed; isolated rider: 4 passed after reproducing 1 failed / 3 passed before. The real SDK mock-transport request equals the captured body at `/v1/responses`. All 25 implementation guards fail when broken and pass after byte-for-byte restoration; both law-citation plants fail and restore. PARAM, law coverage and both secret checks exit 0. Overall `make ci` is verified failing (exit 2): the dependency audit cannot query PyPI offline and is NOT RUN online.
 
-**Files changed:** <list>
+**Files changed:**
 
-**Design decisions:** recorded as [`DL-284`](../design-log.md) — <one line on any amendment, or "built as written">
+- `.env.example`
+- `agents/deliberator/tests/test_llm_openai_adapter.py`
+- `agents/operator/laws/laws.md`
+- `agents/operator/laws/test-plan.md`
+- `agents/operator/settings.py`
+- `agents/operator/tests/test_operator_settings.py`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md`
+- `kernel/llm_factory.py`
+- `kernel/llm_openai.py`
+- `kernel/llm_openai_operator.py`
+- `surfaces/dashboard/chat_binding.py`
+- `surfaces/laws/laws.md`
+- `surfaces/laws/test-plan.md`
+- `surfaces/tests/test_chat_model_mismatch.py`
+- `tests/fixtures/openai_responses_forced_function.json`
+- `tests/test_openai_operator.py`
+- `tests/test_openai_operator_edges.py`
+- `tests/test_openai_operator_security.py`
+- `tests/test_operator_provider_guards.py`
+- `tests/test_operator_responses.py`
+- `tests/test_operator_responses_edges.py`
+- `tests/test_operator_responses_wire.py`
+
+**Design decisions:** recorded as [`DL-284`](../design-log.md) — built as written; no amendment required.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+uv run pytest tests/test_operator_responses.py::test_a1_measured_request tests/test_operator_responses.py::test_a3_cutoff_records_before_raise tests/test_operator_provider_guards.py::test_b1_effort_follows_provider tests/test_operator_provider_guards.py::test_b3_mismatched_model_builds_nothing surfaces/tests/test_chat_model_mismatch.py::test_c1_mismatch_disconnects_with_reason -q --no-cov
+FFFFFFF                                                                  [100%]
+================================== FAILURES ===================================
+__________________________ test_a1_measured_request ___________________________
+tests\test_operator_responses.py:71: in test_a1_measured_request
+    client.complete(system="system", user="user", tool_schema=supplied)
+kernel\llm_openai_operator.py:64: in complete
+    response = self._client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'chat'
+_____________________ test_a3_cutoff_records_before_raise _____________________
+tests\test_operator_responses.py:127: in test_a3_cutoff_records_before_raise
+    client.complete(system="s", user="u", tool_schema={})
+kernel\llm_openai_operator.py:64: in complete
+    response = self._client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'chat'
+_______________ test_b1_effort_follows_provider[anthropic-max] ________________
+tests\test_operator_provider_guards.py:26: in test_b1_effort_follows_provider
+    assert settings.effort == ""
+E   AssertionError: assert 'max' == ''
+E
+E     + max
+________________ test_b1_effort_follows_provider[openai-xhigh] ________________
+tests\test_operator_provider_guards.py:26: in test_b1_effort_follows_provider
+    assert settings.effort == ""
+E   AssertionError: assert 'max' == ''
+E
+E     + max
+___ test_b3_mismatched_model_builds_nothing[openai-claude-opus-5-anthropic] ___
+tests\test_operator_provider_guards.py:57: in test_b3_mismatched_model_builds_nothing
+    with pytest.raises(llm_factory.ModelProviderMismatchError) as error:
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'kernel.llm_factory' has no attribute 'ModelProviderMismatchError'
+______ test_b3_mismatched_model_builds_nothing[anthropic-gpt-5.5-openai] ______
+tests\test_operator_provider_guards.py:57: in test_b3_mismatched_model_builds_nothing
+    with pytest.raises(llm_factory.ModelProviderMismatchError) as error:
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'kernel.llm_factory' has no attribute 'ModelProviderMismatchError'
+__________________ test_c1_mismatch_disconnects_with_reason ___________________
+surfaces\tests\test_chat_model_mismatch.py:36: in test_c1_mismatch_disconnects_with_reason
+    assert result is None
+E   AssertionError: assert {'graph': <kernel.graph_memory.InMemoryGraphStore object at 0x0000022EBA41E510>, 'llm': <kernel.llm_openai_operator.OperatorOpenAILLMClient object at 0x0000022EBA469810>} is None
+=========================== short test summary info ===========================
+FAILED tests/test_operator_responses.py::test_a1_measured_request - Attribute...
+FAILED tests/test_operator_responses.py::test_a3_cutoff_records_before_raise
+FAILED tests/test_operator_provider_guards.py::test_b1_effort_follows_provider[anthropic-max]
+FAILED tests/test_operator_provider_guards.py::test_b1_effort_follows_provider[openai-xhigh]
+FAILED tests/test_operator_provider_guards.py::test_b3_mismatched_model_builds_nothing[openai-claude-opus-5-anthropic]
+FAILED tests/test_operator_provider_guards.py::test_b3_mismatched_model_builds_nothing[anthropic-gpt-5.5-openai]
+FAILED surfaces/tests/test_chat_model_mismatch.py::test_c1_mismatch_disconnects_with_reason
+7 failed in 2.21s
+EXIT=1
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+....................................................................     [100%]
+68 passed in 9.09s
+EXIT=0
+
+Isolated rider after D9:
+....                                                                     [100%]
+4 passed in 3.54s
+EXIT=0
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
-
-**Module line counts:** <file **n**, file **n**>
-
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
-
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**Guards planted — actual break/restore output:**
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+tool_choice not forced: RED exit 1 (1 failed in 1.26s); RESTORED exit 0 (1 passed in 1.03s)
+store dropped: RED exit 1 (2 failed in 4.68s); RESTORED exit 0 (2 passed in 4.06s)
+strict dropped: RED exit 1 (2 failed in 4.60s); RESTORED exit 0 (2 passed in 4.03s)
+effort not sent: RED exit 1 (1 failed in 1.23s); RESTORED exit 0 (1 passed in 1.01s)
+first output item used instead of function call: RED exit 1 (2 failed in 1.25s); RESTORED exit 0 (2 passed in 1.03s)
+cached tokens not subtracted: RED exit 1 (2 failed in 1.54s); RESTORED exit 0 (2 passed in 1.09s)
+cutoff raise removed: RED exit 1 (1 failed in 1.35s); RESTORED exit 0 (1 passed in 1.18s)
+usage assigned after cutoff raise: RED exit 1 (1 failed in 1.25s); RESTORED exit 0 (1 passed in 1.05s)
+non-object arguments accepted: RED exit 1 (1 failed, 5 passed in 1.29s); RESTORED exit 0 (6 passed in 1.06s)
+binding passes unresolved effort: RED exit 1 (2 failed in 1.86s); RESTORED exit 0 (2 passed in 1.54s)
+OpenAI provider default changed to high: RED exit 1 (1 failed, 1 passed in 1.29s); RESTORED exit 0 (2 passed in 1.09s)
+mismatch check removed: RED exit 1 (3 failed in 2.04s); RESTORED exit 0 (3 passed in 1.73s)
+stderr reason removed: RED exit 1 (1 failed in 1.83s); RESTORED exit 0 (1 passed in 1.56s)
+D1 fake SDK lacks responses: RED exit 1 (1 failed in 1.37s); RESTORED exit 0 (1 passed in 1.09s)
+adapter default changed to high: RED exit 1 (2 failed in 1.30s); RESTORED exit 0 (2 passed in 1.02s)
+cached input not clamped: RED exit 1 (1 failed, 1 passed in 1.26s); RESTORED exit 0 (2 passed in 1.02s)
+cache writes counted: RED exit 1 (2 failed in 1.25s); RESTORED exit 0 (2 passed in 1.01s)
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+```text
+agents/operator/laws/test-plan.md: RED exit 1
+[FAIL] agents/operator/laws/test-plan.md:46: OPR-DEP-01 green row cites no live test: test_s263_intentionally_missing_guard (test function does not exist)
+RESTORED exit 0
+surfaces/laws/test-plan.md: RED exit 1
+[FAIL] ta-s263/surfaces/laws/test-plan.md:39: SRF-DEP-03 green row cites no live test: test_s263_intentionally_missing_guard (test function does not exist)
+RESTORED exit 0
+```
+
+PARAM was also proven red after the code default changed and green after its authorized law-row amendment:
+
+```text
+[FAIL] agents/operator/laws/laws.md:190: operator.effort law Value '`"max"`' differs from code default ''
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+EXIT=1
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+EXIT=0
+```
+
+The D1 plant keeps the new `result.outcome == "intent"` assertion and replaces its SDK with one exposing only `chat`; it fails on outcome `refused`, then restores to `intent`. Guard commands and full red/green outputs are saved in `C:\Users\yury_\AppData\Local\Temp\ta-s263-evidence\guards-full.txt`.
+
+**D1 successful-outcome assertion, actual red/restore output:**
+
+```text
+D1 fake SDK lacks responses
+COMMAND: ['uv', 'run', 'pytest', 'tests/test_openai_operator_security.py::test_b6_openai_key_never_escapes_operator', '-q', '--no-cov']
+RED EXIT=1
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________________ test_b6_openai_key_never_escapes_operator __________________
+tests\test_openai_operator_security.py:65: in test_b6_openai_key_never_escapes_operator
+    assert result.outcome == "intent"
+E   AssertionError: assert 'refused' == 'intent'
+E
+E     - intent
+E     + refused
+=========================== short test summary info ===========================
+FAILED tests/test_openai_operator_security.py::test_b6_openai_key_never_escapes_operator
+1 failed in 1.37s
+
+RESTORED EXIT=0
+.                                                                        [100%]
+1 passed in 1.09s
+```
+
+**Eight additional guard plants — actual output:**
+
+```text
+B4 unclassified model wrongly refused: RED exit 1 (6 failed in 1.50s); RESTORED exit 0 (6 passed in 1.40s)
+B4 unknown provider wrongly becomes mismatch: RED exit 1 (6 failed in 2.62s); RESTORED exit 0 (6 passed in 1.52s)
+B1 explicit effort replaced by default: RED exit 1 (2 failed in 1.92s); RESTORED exit 0 (2 passed in 3.66s)
+A6 old usage survives transport failure: RED exit 1 (1 failed in 1.86s); RESTORED exit 0 (1 passed in 1.83s)
+A6 old stop survives transport failure: RED exit 1 (1 failed in 1.81s); RESTORED exit 0 (1 passed in 1.77s)
+A7 missing credential accepted: RED exit 1 (1 failed in 1.97s); RESTORED exit 0 (1 passed in 1.46s)
+A5 status hides incomplete reason: RED exit 1 (1 failed in 1.85s); RESTORED exit 0 (1 passed in 1.48s)
+A1 explicit adapter effort rewritten: RED exit 1 (1 failed in 1.69s); RESTORED exit 0 (1 passed in 1.41s)
+```
+
+Commands and complete red/restored outputs: `C:\Users\yury_\AppData\Local\Temp\ta-s263-evidence\extra-guards-full.txt`. Combined with the 17 above, all 25 implementation guards were restored; no mutation remains.
+
+**Module line counts:**
+
+```text
+agents/deliberator/tests/test_llm_openai_adapter.py: 124 lines
+agents/operator/settings.py: 74 lines
+agents/operator/tests/test_operator_settings.py: 45 lines
+kernel/llm_factory.py: 130 lines
+kernel/llm_openai.py: 103 lines
+kernel/llm_openai_operator.py: 114 lines
+surfaces/dashboard/chat_binding.py: 60 lines
+surfaces/tests/test_chat_model_mismatch.py: 101 lines
+tests/test_openai_operator.py: 77 lines
+tests/test_openai_operator_edges.py: 109 lines
+tests/test_openai_operator_security.py: 79 lines
+tests/test_operator_provider_guards.py: 137 lines
+tests/test_operator_responses.py: 153 lines
+tests/test_operator_responses_edges.py: 74 lines
+tests/test_operator_responses_wire.py: 59 lines
+```
+
+**Protected-path proof:** checked against `main`, resolved to `02dd0d49fc51bae7a6bdeff5ea0d4de624e12c97` (the branch-cut base is `02dd0d49fc51bae7a6bdeff5ea0d4de624e12c97`). The following command prints nothing:
+
+```text
+git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration/history_window.py orchestration/packs kernel/llm_anthropic.py kernel/llm_anthropic_responses.py agents/deliberator/settings.py agents/deliberator/agent.py pyproject.toml uv.lock docs/STATE.md docs/work-queue.md
+<no output>
+EXIT=0
+build_llm source segment: byte-for-byte unchanged against the branch-cut commit
+```
+
+**Whole narrow diffs requested by the checklist:**
+
+```diff
+diff --git a/agents/deliberator/tests/test_llm_openai_adapter.py b/agents/deliberator/tests/test_llm_openai_adapter.py
+index a62a4c02..785bd5c8 100644
+--- a/agents/deliberator/tests/test_llm_openai_adapter.py
++++ b/agents/deliberator/tests/test_llm_openai_adapter.py
+@@ -88,10 +88,9 @@ def test_openai_length_without_text_raises_stop_reason() -> None:
+         _text(response)
+
+
+-# Read off `openai` 2.49.0 on 2026-08-11. Pinned rather than imported because
+-# `openai` is an optional extra (`llm`) that CI's `uv sync --frozen` does not
+-# install — an importorskip here would skip on every CI run, which is decoration
+-# rather than a check. The live cross-check below runs wherever the extra exists.
++# Read off `openai` 2.49.0 on 2026-08-11. The SDK is optional (`llm`) and also
++# arrives with DSPy in CI's dev group. The pinned check runs without the SDK;
++# the live cross-check runs wherever it exists.
+ _OPENAI_REASONING_EFFORT = frozenset(
+     {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
+ )
+@@ -115,6 +114,7 @@ def test_our_effort_values_are_all_valid_openai_values() -> None:
+     )
+
+     try:  # pragma: no cover - only where the optional `llm` extra is installed
++        _ = importlib.import_module("openai").OpenAI  # load DSPy's lazy package first
+         module = importlib.import_module("openai.types.shared.reasoning_effort")
+     except ModuleNotFoundError:
+         return
+diff --git a/kernel/llm_openai.py b/kernel/llm_openai.py
+index 682a1808..26559ce8 100644
+--- a/kernel/llm_openai.py
++++ b/kernel/llm_openai.py
+@@ -101,7 +101,3 @@ def _finish_reasons(response: object) -> tuple[str, ...]:
+         if reason:
+             reasons.append(reason)
+     return tuple(reasons)
+-
+-
+-completion_usage = _usage
+-completion_stop_reason = _stop_reason
+```
+
+```diff
+diff --git a/kernel/llm_factory.py b/kernel/llm_factory.py
+index b01f5a8a..e6385316 100644
+--- a/kernel/llm_factory.py
++++ b/kernel/llm_factory.py
+@@ -28,11 +28,22 @@ DEFAULT_MODEL: dict[str, str] = {
+     "openai": "gpt-5.5",
+ }
+
++DEFAULT_OPERATOR_EFFORT: dict[str, str] = {"anthropic": "max", "openai": "xhigh"}
++
++MODEL_PREFIXES: dict[str, tuple[str, ...]] = {
++    "anthropic": ("claude-",),
++    "openai": ("gpt-", "chatgpt-", "o1", "o3", "o4"),
++}
++
+
+ class UnknownProviderError(RuntimeError):
+     """Raised when configuration names a provider that does not exist."""
+
+
++class ModelProviderMismatchError(RuntimeError):
++    """Raised when an explicit model belongs to a different known provider."""
++
++
+ def build_llm(
+     provider: str,
+     *,
+@@ -63,6 +74,22 @@ def default_model_for(provider: str) -> str:
+         raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
+
+
++def default_operator_effort_for(provider: str) -> str:
++    """Return the selected provider's default operator reasoning effort."""
++    try:
++        return DEFAULT_OPERATOR_EFFORT[provider]
++    except KeyError as exc:
++        raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
++
++
++def model_provider(model: str) -> str | None:
++    """Return the provider whose model family this name starts with, if any."""
++    for provider, prefixes in MODEL_PREFIXES.items():
++        if model.startswith(prefixes):
++            return provider
++    return None
++
++
+ def build_operator_llm(
+     provider: str,
+     *,
+@@ -72,6 +99,12 @@ def build_operator_llm(
+     effort: str,
+ ) -> LLMClient:
+     """Construct exactly the selected vendor's operator adapter."""
++    owner = model_provider(model)
++    if provider in KEY_ENV and owner not in (None, provider):
++        raise ModelProviderMismatchError(
++            f"model {model!r} belongs to {owner}; the declared llm_provider is "
++            f"{provider}. Unset the model to use the provider's default."
++        )
+     if provider == "anthropic":
+         return OperatorAnthropicLLMClient(
+             api_key=api_key,
+```
+
+**Fixture checksum — actual sha256sum output:**
+
+```text
+fd6c917a973db0d54e3eda70d3dc97231f6ccb7b2b9ce62200d6cbd6b8a735a8 *tests/fixtures/openai_responses_forced_function.json
+```
+
+**Law amendments:** operator LOCKED v1.5 -> v1.6; surfaces LOCKED v1.4 -> v1.5. Reworded clauses:
+
+> - **OPR-DEP-01** — `DEP-LLM` — the declared LLM provider (or injected FakeLLMClient);
+>   sole external call. Provider selection never falls back to another vendor; an empty model
+>   and an empty effort resolve that provider's defaults, while explicit values are passed as set.
+>   An explicit model whose name belongs to another provider's family is refused before any call.
+
+> - **SRF-DEP-03** — Dashboard chat uses the LLM provider declared in operator settings and no
+>   other. A missing key for that provider, an unknown provider, or its adapter's configuration
+>   failure, or an explicit model belonging to another provider's family leaves chat disconnected.
+>   For a model-family mismatch the dashboard's start-up output names that cause.
+
+**Law gate rollups:** `scripts/check_law_coverage.py` prints no lines on success (exit 0); the `make ci` invocation therefore has no printed rollup lines to quote. Its derived counter function reports:
+
+```text
+operator: derived 19 / 50
+surfaces: derived 30 / 37
+law coverage check: True
+```
+
+**Isolated rider, same command before and after:**
+
+```text
+uv run pytest agents/deliberator/tests/test_llm_openai_adapter.py -q --no-cov
+BEFORE: 1 failed, 3 passed in 4.38s
+EXIT=1
+AFTER: 4 passed in 3.54s
+EXIT=0
+```
+
+**C2 guard after the new test's typing repair:** `2 failed in 1.88s`, RED exit 1; `2 passed in 1.56s`, RESTORED exit 0. Full output: `C:\Users\yury_\AppData\Local\Temp\ta-s263-evidence\c2-guard-final.txt`.
+
+**`make ci`:** redirected, never piped, to `C:\Users\yury_\AppData\Local\Temp\ta-s263-evidence\make-ci-final.txt`. Exit code **2**, verified failing at step 13. **4,558 passed, 8 skipped; 100.00 % coverage.** `UV_OFFLINE=1`, `UV_FROZEN=1` and HTTP/HTTPS/ALL proxy `http://127.0.0.1:9` prevent external traffic. The dependency audit is **NOT RUN online** because it requires PyPI. The remaining two required checks were run separately.
+
+| Step | Result and evidence |
+| --- | --- |
+| 1 ruff | PASS, exit 0; `make ci` continued to step 2 |
+| 2 format | PASS, 1,648 files formatted; exit 0 |
+| 3 mypy | PASS, 1,173 source files; exit 0 |
+| 4 import-linter | PASS, 5 contracts kept / 0 broken; exit 0 |
+| 5 module size | PASS, exit 0; all touched Python modules under 200 lines (counts above) |
+| 6 module header | PASS, exit 0 |
+| 7 law coverage | PASS, exit 0; silent success and derived rollups above |
+| 8 PARAM/settings sync | PASS, exit 0; actual output above |
+| 9 sprint status | PASS, exit 0 |
+| 10 markdown links | PASS, exit 0 |
+| 11 version scheme | PASS, exit 0; version and lock left unchanged |
+| 12 pytest | PASS, 4,558 passed / 8 skipped, 100.00 % coverage; exit 0 |
+| 13 dependency audit | NOT RUN online: no network authorized; offline attempt verified failing on the refused loopback proxy |
+| 14 detect-secrets | PASS separately after four dummy-key false positives were annotated; exit 0 |
+| 15 untracked secrets | PASS separately; exit 0 |
+
+Actual `make ci` command sequence and selected output (the complete output is retained at the named path):
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+
+1648 files already formatted
+Success: no issues found in 1173 source files
+Analyzed 647 files, 2218 dependencies.
+Contracts: 5 kept, 0 broken.
+TOTAL                                                           20186      0   4272      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4558 passed, 8 skipped, 2470 warnings in 546.69s (0:09:06) ==========
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:59: ci] Error 1
+MAKE_CI_EXIT=2; dependency audit NOT RUN online (offline proxy refused); remaining required steps run separately
+```
+
+Actual separate secret-check commands and output after dummy-key annotations:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**Final fixture annotations:** The first detect-secrets run exited 1, naming only `fixture-value` dummy keys in four new test files. Specific inline `pragma: allowlist secret` comments were added; `.secrets.baseline` was not edited. AST comparison against the files exercised by full CI proves the executable syntax unchanged; focused tests were rerun after annotation.
+
+```text
+tests/test_operator_responses_wire.py: syntax tree unchanged; dummy-key annotations only
+tests/test_operator_responses.py: syntax tree unchanged; dummy-key annotations only
+tests/test_operator_provider_guards.py: syntax tree unchanged; dummy-key annotations only
+surfaces/tests/test_chat_model_mismatch.py: syntax tree unchanged; dummy-key annotations only
+tests/test_operator_responses_wire.py: syntax tree unchanged; dummy-key annotations only
+tests/test_operator_responses.py: syntax tree unchanged; dummy-key annotations only
+tests/test_operator_provider_guards.py: syntax tree unchanged; dummy-key annotations only
+surfaces/tests/test_chat_model_mismatch.py: syntax tree unchanged; dummy-key annotations only
+
+..................................................................       [100%]
+66 passed in 13.58s
+FOCUSED_EXIT=0
+```
+
+**New top-level tests checked with mypy independently:**
+
+```text
+uv run mypy --explicit-package-bases tests/test_operator_provider_guards.py tests/test_operator_responses.py tests/test_operator_responses_edges.py tests/test_operator_responses_wire.py
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 4 source files
+EXIT=0
+```
+
+**B1 and A1 guards re-proven after their new tests' typing repairs:**
+
+```text
+B1 after invalid-env typing repair: RED exit 1 (1 failed, 1 passed in 1.37s); RESTORED exit 0 (2 passed in 1.08s)
+A1 after explicit import and schema typing repair: RED exit 1 (1 failed in 1.29s); RESTORED exit 0 (1 passed in 1.03s)
+```
+
+**`make gate-ran`:** NOT RUN: the handover prohibits push and merge and requires offline proof. No remote gate, merge, deployment or live proof claimed.
+
+**Not met / verified failing:** Overall `make ci` exit 0 is not met: **verified failing, exit 2**, solely because the dependency audit needs network. Dependency audit **NOT RUN online**. Remote gates, merge, deployment, F1a/F1b and a vendor call by this builder are **not done**, as required by the offline handover; these remain the planner's. No green overall CI claim.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- The first detect-secrets attempt identified four dummy-key false positives in new tests. Only inline fixture annotations were added; the executable syntax trees match the full-CI files and the scan now passes. No secret or baseline update entered the worktree. The prior typing-failed CI log is retained at `C:\Users\yury_\AppData\Local\Temp\ta-s263-evidence\make-ci-typing-red.txt`; corrected new tests pass mypy and full unit coverage.
+- Scope held; `pyproject.toml`, `uv.lock`, the trackers, packs, contracts and all excluded decision paths are unchanged. The planner owns the PATCH bump and remote gate at merge. No push or merge performed.
+- No law/spec contradiction outside the two named amendments and no new design decision. AGENTS.md says 14 CI steps; CLAUDE.md and the actual `ci:` target say 15. Neither rule file changed.
+- The law-coverage checker is silent on success, so `make ci` cannot print the requested rollup lines. Its own `_derived_counter` was read directly: operator 19 / 50, surfaces 30 / 37; both rollups agree and the gate exits 0. No count was invented or changed.
+- The rider assigns the package's `OpenAI` attribute to `_` so the package loads first without ruff B018. Its comment is corrected and every assertion is unchanged. The binding uses `sys.stderr.write` for the required single reason line, satisfying ruff T201.
+- Existing tests edited: `test_b2_operator_forces_one_named_function` (Responses wire/reply); `test_b3_unusable_tool_reply_is_refused` (Responses output, with its shared `_sdk` helper); `test_b3_length_raises_after_recording_usage` (vendor word `max_output_tokens`); `test_transport_failure_clears_old_accounting` (a real prior fake call before the transport failure); `test_effort_defaults_to_max`, renamed `test_effort_defaults_to_empty` (new default and provider resolution); `test_b6_openai_key_never_escapes_operator` (Responses fake and successful-outcome assertion); `test_our_effort_values_are_all_valid_openai_values` (D9 rider only). No other existing test function was edited; `test_effort_accepts_every_rung_of_the_api_ladder` is unchanged because B1 already covers `none` on both vendors.
+- Adapter NOT RUN against the vendor. Cached input being part of total input and cutoff metadata remain planner assumptions based on SDK types; real non-zero cache hits and a vendor-produced cutoff remain unproved. `cache_write_tokens` is deliberately ignored under D4. F1a/F1b, return-to-Anthropic proof and the dashboard restart remain the planner's.
 
 ---
 

@@ -28,25 +28,16 @@ def test_b6_openai_key_never_escapes_operator(
     def constructor(*, api_key: str) -> object:
         assert api_key == sentinel
         response = SimpleNamespace(
-            choices=[
+            status="completed",
+            output=[
                 SimpleNamespace(
-                    finish_reason="stop",
-                    message=SimpleNamespace(
-                        tool_calls=[
-                            SimpleNamespace(
-                                function=SimpleNamespace(
-                                    arguments='{"outcome":"intent","family":"status","parameters":{}}'
-                                )
-                            )
-                        ]
-                    ),
+                    type="function_call",
+                    arguments='{"outcome":"intent","family":"status","parameters":{}}',
                 )
-            ]
+            ],
         )
         return SimpleNamespace(
-            chat=SimpleNamespace(
-                completions=SimpleNamespace(create=lambda **kwargs: response)
-            )
+            responses=SimpleNamespace(create=lambda **kwargs: response)
         )
 
     def fake_import(name: str) -> object:
@@ -54,6 +45,9 @@ def test_b6_openai_key_never_escapes_operator(
         return SimpleNamespace(OpenAI=constructor)
 
     caplog.set_level(logging.DEBUG)
+    monkeypatch.setenv("OPERATOR_LLM_PROVIDER", "openai")
+    monkeypatch.setenv("OPERATOR_MODEL", "")
+    monkeypatch.setenv("OPERATOR_EFFORT", "")
     monkeypatch.setattr(llm_openai_operator.importlib, "import_module", fake_import)
     client = build_operator_llm(
         "openai", api_key=sentinel, model="gpt-5.5", max_tokens=4096, effort="max"
@@ -68,6 +62,7 @@ def test_b6_openai_key_never_escapes_operator(
     result = operator._interpret(
         HumanCommand(text="status", actor="admin", channel="dashboard")
     )
+    assert result.outcome == "intent"
     evidence = (
         repr(
             (

@@ -8,11 +8,17 @@ External I/O: process environment; selected-vendor calls occur later via the ope
 from __future__ import annotations
 
 import os
+import sys
 from typing import TYPE_CHECKING
 
 from agents.operator.settings import OperatorSettings
 from kernel.llm_anthropic import ConfigurationError as AnthropicConfigurationError
-from kernel.llm_factory import UnknownProviderError, build_operator_llm, key_env_var
+from kernel.llm_factory import (
+    ModelProviderMismatchError,
+    UnknownProviderError,
+    build_operator_llm,
+    key_env_var,
+)
 from kernel.llm_openai import ConfigurationError as OpenAIConfigurationError
 from surfaces.context import paper_context
 
@@ -40,8 +46,11 @@ def bind_dashboard_chat(
             api_key=api_key,
             model=settings.resolved_model,
             max_tokens=settings.max_tokens,
-            effort=settings.effort,
+            effort=settings.resolved_effort,
         )
+    except ModelProviderMismatchError as exc:
+        sys.stderr.write(f"dashboard: operator chat not connected: {exc}\n")
+        return None
     except (
         UnknownProviderError,
         AnthropicConfigurationError,

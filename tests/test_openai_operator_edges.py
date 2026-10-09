@@ -19,9 +19,7 @@ TEST_CREDENTIAL = "fixture-value"
 
 def _sdk(monkeypatch: pytest.MonkeyPatch, response: object) -> None:
     client = SimpleNamespace(
-        chat=SimpleNamespace(
-            completions=SimpleNamespace(create=lambda **kwargs: response)
-        )
+        responses=SimpleNamespace(create=lambda **kwargs: response)
     )
     monkeypatch.setattr(
         adapter.importlib,
@@ -36,15 +34,11 @@ def test_b3_unusable_tool_reply_is_refused(
 ) -> None:
     """OPR-NEV-05 / OPR-FAIL-02: absent or non-object tool arguments refuse."""
     calls = (
-        []
-        if raw is None
-        else [SimpleNamespace(function=SimpleNamespace(arguments=raw))]
+        [] if raw is None else [SimpleNamespace(type="function_call", arguments=raw)]
     )
     _sdk(
         monkeypatch,
-        SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(tool_calls=calls))]
-        ),
+        SimpleNamespace(output=calls),
     )
     client = adapter.OperatorOpenAILLMClient(api_key=TEST_CREDENTIAL)
     assert json.loads(
@@ -57,19 +51,21 @@ def test_b3_unusable_tool_reply_is_refused(
 def test_b3_length_raises_after_recording_usage(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """OPR-FAIL-01 / OPR-STA-03: a billed length stop remains visible and fails."""
+    """OPR-FAIL-01 / OPR-STA-03: a billed cap stop remains visible and fails."""
     _sdk(
         monkeypatch,
         SimpleNamespace(
-            choices=[SimpleNamespace(finish_reason="length")],
-            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=4096),
+            status="incomplete",
+            incomplete_details=SimpleNamespace(reason="max_output_tokens"),
+            output=[SimpleNamespace(type="reasoning")],
+            usage=SimpleNamespace(input_tokens=10, output_tokens=4096),
         ),
     )
     client = adapter.OperatorOpenAILLMClient(api_key=TEST_CREDENTIAL)
     with pytest.raises(LLMCompletionStoppedError) as error:
         client.complete(system="s", user="u", tool_schema={})
     assert error.value.provider == "openai"
-    assert error.value.stop_reason == client.last_stop_reason == "length"
+    assert error.value.stop_reason == client.last_stop_reason == "max_output_tokens"
     assert client.last_usage is not None
     assert client.last_usage.tokens_out == 4096
 
@@ -98,10 +94,15 @@ def test_transport_failure_clears_old_accounting(
     def broken(**kwargs: object) -> object:
         raise TimeoutError("fixture timeout")
 
-    _sdk(monkeypatch, object())
+    _sdk(
+        monkeypatch,
+        SimpleNamespace(status="completed", usage=SimpleNamespace(input_tokens=10)),
+    )
     client = adapter.OperatorOpenAILLMClient(api_key=TEST_CREDENTIAL)
-    client.last_stop_reason = "stop"
-    monkeypatch.setattr(client._client.chat.completions, "create", broken)
+    client.complete(system="s", user="u", tool_schema={})
+    assert client.last_stop_reason == "completed"
+    assert client.last_usage is not None
+    monkeypatch.setattr(client._client.responses, "create", broken)
     with pytest.raises(TimeoutError):
         client.complete(system="s", user="u", tool_schema={})
     assert client.last_stop_reason == "unknown"

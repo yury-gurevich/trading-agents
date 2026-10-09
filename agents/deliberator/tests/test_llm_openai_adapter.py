@@ -88,10 +88,9 @@ def test_openai_length_without_text_raises_stop_reason() -> None:
         _text(response)
 
 
-# Read off `openai` 2.49.0 on 2026-08-11. Pinned rather than imported because
-# `openai` is an optional extra (`llm`) that CI's `uv sync --frozen` does not
-# install — an importorskip here would skip on every CI run, which is decoration
-# rather than a check. The live cross-check below runs wherever the extra exists.
+# Read off `openai` 2.49.0 on 2026-08-11. The SDK is optional (`llm`) and also
+# arrives with DSPy in CI's dev group. The pinned check runs without the SDK;
+# the live cross-check runs wherever it exists.
 _OPENAI_REASONING_EFFORT = frozenset(
     {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
 )
@@ -115,6 +114,7 @@ def test_our_effort_values_are_all_valid_openai_values() -> None:
     )
 
     try:  # pragma: no cover - only where the optional `llm` extra is installed
+        _ = importlib.import_module("openai").OpenAI  # load DSPy's lazy package first
         module = importlib.import_module("openai.types.shared.reasoning_effort")
     except ModuleNotFoundError:
         return

@@ -1,0 +1,11 @@
+{
+  "_comment": "One declared LLM provider for the fleet. infra/deploy-agents.ps1 and scripts/switch_llm_provider.py read this file; its provider wins over trading_tunables.json for every app environment key named here. App order is apply order, with the master first.",
+  "provider": "openai",
+  "apps": {
+    "master": "MASTER_LLM_PROVIDER",
+    "operator": "OPERATOR_LLM_PROVIDER",
+    "deliberator-manager": "DELIBERATOR_LLM_PROVIDER",
+    "deliberator-proponent": "DELIBERATOR_LLM_PROVIDER",
+    "deliberator-opponent": "DELIBERATOR_LLM_PROVIDER"
+  }
+}

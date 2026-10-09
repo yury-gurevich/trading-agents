@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from kernel.llm_anthropic import AnthropicLLMClient
+from kernel.llm_anthropic import AnthropicLLMClient, OperatorAnthropicLLMClient
 from kernel.llm_openai import OpenAILLMClient
+from kernel.llm_openai_operator import OperatorOpenAILLMClient
 
 if TYPE_CHECKING:
     from kernel.llm import LLMClient
@@ -60,6 +61,32 @@ def default_model_for(provider: str) -> str:
         return DEFAULT_MODEL[provider]
     except KeyError as exc:
         raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
+
+
+def build_operator_llm(
+    provider: str,
+    *,
+    api_key: str | None,
+    model: str,
+    max_tokens: int,
+    effort: str,
+) -> LLMClient:
+    """Construct exactly the selected vendor's operator adapter."""
+    if provider == "anthropic":
+        return OperatorAnthropicLLMClient(
+            api_key=api_key,
+            model=model,
+            max_tokens=max_tokens,
+            effort=effort,
+        )
+    if provider == "openai":
+        return OperatorOpenAILLMClient(
+            api_key=api_key,
+            model=model,
+            max_tokens=max_tokens,
+            effort=effort,
+        )
+    raise UnknownProviderError(f"unknown llm_provider {provider!r}")
 
 
 def key_env_var(provider: str) -> str:

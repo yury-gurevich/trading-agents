@@ -435,6 +435,18 @@ function Get-AppTunables($name) {
   return @($apps.$name.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)" })
 }
 
+function Load-LlmPack {
+  $p = Join-Path $PSScriptRoot '..\orchestration\packs\trading_llm.json'
+  if (-not (Test-Path $p)) { throw "LLM pack missing: $p" }
+  return Get-Content $p -Raw | ConvertFrom-Json
+}
+
+function Get-AppLlmEnv($name) {
+  $pack = Load-LlmPack
+  if (@($pack.apps.PSObject.Properties.Name) -notcontains $name) { return @() }
+  return @("$($pack.apps.$name)=$($pack.provider)")
+}
+
 function Resolve-DispatcherCron {
   # An explicit -DispatcherCron still wins; the script literal no longer exists,
   # because a literal default is what reverted `30 22 * * 1-5` to daily.
@@ -456,7 +468,12 @@ function Get-AgentEnv($name, $masterUrl, $pubB64) {
   if ($name -eq "portfolio-manager") {
     $envv += @(Get-IssuerMapEnv)
   }
-  return $envv + (Get-AppTunables $name)
+  $llmEnv = @(Get-AppLlmEnv $name)
+  $llmKeys = @($llmEnv | ForEach-Object { ($_ -split '=', 2)[0] })
+  $tunables = @(Get-AppTunables $name | Where-Object {
+    $llmKeys -notcontains ($_ -split '=', 2)[0]
+  })
+  return $envv + $tunables + $llmEnv
 }
 
 function Get-LiveEnvNames($name) {
@@ -739,7 +756,7 @@ function Up {
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
-  )
+  ) + (Get-AppLlmEnv "master")
   $masterGraph = Get-GraphConfig "master"
   $envv += @($masterGraph.envVars)
   $masterSecrets = @($masterGraph.secrets) + @("master-key-b64=$($kp.priv_b64)")

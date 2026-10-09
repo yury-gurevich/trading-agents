@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -131,6 +131,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   requests, and an optional dashboard chat LLM client.
 - **SRF-DEP-02** — The dashboard remains useful when optional Azure/GitHub readers or chat binding
   are absent: read routes degrade, and chat reports disconnected.
+- **SRF-DEP-03** — Dashboard chat uses the LLM provider declared in operator settings and no
+  other. A missing key for that provider, an unknown provider, or its adapter's configuration
+  failure leaves chat disconnected.
 
 ## Observability & audit (`OBS`)
 
@@ -211,6 +214,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
+
+- v1.4 — S262 / DL-282 (2026-10-09): new `SRF-DEP-03` binds chat through the kernel's
+  selected-provider factory; missing selected credentials, unknown provider or either adapter's
+  configuration failure reads disconnected. One new clause; no graph or request-shape changes.
 
 - v1.3 — S251 (DL-259, DL-260; DRIFT-078): `SRF-OUT-03` covers the answers the operator model
   composes, and names the four quick asks as graph reads that make no model call and write no audit

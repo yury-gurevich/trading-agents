@@ -89,6 +89,7 @@ def _text(response: object) -> str:
 
 
 def _stop_reason(response: object) -> str:
+    """Read finish reasons from every choice as compact audit metadata."""
     reasons = _finish_reasons(response)
     return "+".join(dict.fromkeys(reasons)) if reasons else STOP_REASON_UNKNOWN
 
@@ -100,3 +101,7 @@ def _finish_reasons(response: object) -> tuple[str, ...]:
         if reason:
             reasons.append(reason)
     return tuple(reasons)
+
+
+completion_usage = _usage
+completion_stop_reason = _stop_reason

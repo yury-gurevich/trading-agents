@@ -64,7 +64,12 @@ def test_receive_batch_bounds_are_preserved(invalid: int) -> None:
 
 def test_receive_batch_tunable_can_still_be_raised() -> None:
     """DLIB-IDM-04: an explicit batch override is honored, never hard-coded away."""
-    settings = AzureServiceBusSettings(_env_file=None, receive_max_messages=3)
+    settings = AzureServiceBusSettings(
+        _env_file=None,
+        receive_max_messages=3,
+        connection_string=None,
+        connection_strings_json=None,
+    )
     consumer, served, receiver, events = scene(
         ("one", "two", "three"), settings=settings
     )

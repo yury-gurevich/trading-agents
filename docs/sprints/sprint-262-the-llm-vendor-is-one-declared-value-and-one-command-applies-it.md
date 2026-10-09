@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** L
 **Decisions:** [DL-282](../design-log.md) (this sprint's ten decisions, made) · [DL-265](../design-log.md) (the hand-made switch it replaces) · DL-100 (the models follow the provider) · [work-queue 109](../work-queue.md)
@@ -394,19 +394,19 @@ make, add it as an amendment under DL-282 and say so in Return notes.
 
 ## Success factors
 
-- [ ] With provider `openai`, the fleet check passes while every Anthropic probe would fail (A3).
-- [ ] The unselected vendor's key is not in any agent's resolved config (A2).
-- [ ] A mistyped provider, a mistyped tag and a granted key with no probe each stop the master (A4, A5).
-- [ ] With an empty `MASTER_LLM_PROVIDER` the master behaves as today (A6).
-- [ ] The dashboard chat binds on OpenAI with only OpenAI's key, and is disconnected without it (B5).
-- [ ] The command's report mode changes nothing; apply changes only differing apps; the proof fails
+- [x] With provider `openai`, the fleet check passes while every Anthropic probe would fail (A3).
+- [x] The unselected vendor's key is not in any agent's resolved config (A2).
+- [x] A mistyped provider, a mistyped tag and a granted key with no probe each stop the master (A4, A5).
+- [x] With an empty `MASTER_LLM_PROVIDER` the master behaves as today (A6).
+- [x] The dashboard chat binds on OpenAI with only OpenAI's key, and is disconnected without it (B5).
+- [x] The command's report mode changes nothing; apply changes only differing apps; the proof fails
       on each missing term (D1, D2, D5).
-- [ ] **No fidelity decision path changed**: the scope command of the checklist prints nothing.
-- [ ] Exactly five existing tests edited: the four of the Measured table and the rider. One existing
+- [x] **No fidelity decision path changed**: the scope command of the checklist prints nothing.
+- [x] Exactly five existing tests edited: the four of the Measured table and the rider. One existing
       constant extended (`VENDOR_ADAPTER_CLASSES`).
-- [ ] The three law cycles done; the parameter step exits 0.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched Python module under 200 lines.
+- [x] The three law cycles done; the parameter step exits 0.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched Python module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -590,15 +590,23 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Master pack loading, probes and key selection | `agents/master/laws/laws.md` LOCKED v1.8 and its whole `test-plan.md` | `MST-OUT-04`, `MST-NEV-06`, `MST-SEC-02/03/04`, `MST-DEP-04/05`, PARAM | Yes: select once before the credential-bearing-pack check; preserve empty-provider identity and minimum privilege. `MST-SEC-02/03` remain grey; this sprint proves the narrower new vendor-key guarantee. |
+| Operator settings and recorded model | `agents/operator/laws/laws.md` LOCKED v1.4 and its whole `test-plan.md` | `OPR-DEP-01`, `OPR-SEC-01`, `OPR-STA-03`, PARAM | Yes: resolve the model at all three readers; retain the fake container client. |
+| Dashboard chat binding | `surfaces/laws/laws.md` LOCKED v1.3 and its whole `test-plan.md` | `SRF-IN-03`, `SRF-DEP-01/02`, new `SRF-DEP-03` | Yes: missing selected key and either configuration error disconnect. `SRF-DEP-01` remains grey; the new narrower clause gets functional proof. |
+| Kernel adapter and factory | Whole `docs/laws/conventions.md`, `tests/test_llm_adapter_ownership.py`, `tests/test_llm_adapter_security.py` | conventions sections 3, 4, 7, 7a; `OPR-SEC-01`, `OPR-DEP-01` | No: vendor implementations stay in kernel, imports lazy, selected-vendor failure never constructs another vendor. |
+| Pack, deploy script and command | Whole `orchestration/laws/dispatcher/laws.md` LOCKED v1.2, `tests/test_deploy_script_invariants.py`, `tests/test_deploy_tunables_pack.py` | `MST-NEV-06`, `MST-OUT-04`, `DSP-IN-03`, `DSP-ORD-01` | No: use existing graph evidence only; count replicas, compare snapshots, inject every external boundary. |
+| Deliberator selection (read only) | Whole `agents/deliberator/laws/laws.md` LOCKED v1.16 | `DLIB-DEP-03/04`, PARAM `llm_provider` and provider-resolved models | No: no deliberator, contract, fidelity path or graph-vocabulary edit. |
+| Governing context | Whole `CLAUDE.md`, `docs/laws/drift-register.md`; DL-282 and DL-265 in `docs/design-log.md` | LAW-02, LAW-06, conventions section 9 | No: D1-D10 are decided. Correct the nonexistent orchestration law path through the laws index and record it in Return notes. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** YES for master, operator and surfaces, exactly the three D9 cycles; NO contract changes. Owed: `MST-OUT-04` amendment, new `MST-NEV-07`, `OPR-DEP-01` amendment, new `SRF-DEP-03`, PARAM rows and both rollups. Pre-code record: these cycles were not done at the time of reading. All three are now completed and proven locally below.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** none beyond the three amendments explicitly authorized by D9.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** master vendor-key containment and dashboard selected-provider binding are absent; D9 already decides their new guarantees. Recorded as DRIFT-105, to be closed by this cycle; no additional decision needed.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** new `MST-NEV-07` and `SRF-DEP-03`. Amended `MST-OUT-04` and `OPR-DEP-01` re-proven. Existing grey clauses remain grey; no promotion from partial proof.
+
+**Pre-code baseline:** clean `C:\Users\yury_\Downloads\project\ta-s262`, branch `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`; HEAD, main and origin/main all `ceec5bb605271295b06e1ca1f04df2a42ffc1d4d`. No push, merge, live call, version/lock or tracker edit is authorized. `docs/STATE.md` is the active tracker under CLAUDE.md and is explicitly excluded by this handover.
 
 ---
 
@@ -606,60 +614,491 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | `test_a1_only_declared_vendor_probes_remain` | `agents/master/tests/test_provider_selection.py` | PASS | `MST-NEV-07, MST-OUT-04` |
+| A2 | `test_a2_unselected_vendor_key_is_withheld` | `agents/master/tests/test_provider_selection.py` | PASS | `MST-NEV-07, MST-SEC-02` |
+| A3 | `test_a3_fleet_check_follows_selection` | `agents/master/tests/test_provider_selection.py` | PASS | `MST-OUT-04` |
+| A4 | `test_a4_unknown_provider_refuses_start; test_a4_unknown_probe_tag_is_refused` | `agents/master/tests/test_provider_selection_refusals.py` | PASS | `MST-NEV-07` |
+| A5 | `test_a5_granted_key_without_probe_is_refused` | `agents/master/tests/test_provider_selection_refusals.py` | PASS | `MST-NEV-07` |
+| A6 | `test_a6_empty_selection_preserves_input_objects` | `agents/master/tests/test_provider_selection.py` | PASS | `MST-NEV-07` |
+| A7 | `test_a7_real_packs_are_consistent` | `agents/master/tests/test_provider_selection.py` | PASS | `MST-NEV-06, MST-NEV-07` |
+| B1 | `test_b1_model_follows_provider_and_override` | `agents/operator/tests/test_provider_model.py` | PASS | `OPR-DEP-01, OPR-STA-03` |
+| B2 | `test_b2_operator_forces_one_named_function` | `tests/test_openai_operator.py` | PASS | `OPR-DEP-01, OPR-NEV-05` |
+| B3 | `test_b3_unusable_tool_reply_is_refused; test_b3_length_raises_after_recording_usage` | `tests/test_openai_operator_edges.py` | PASS | `OPR-FAIL-01, OPR-FAIL-02, OPR-NEV-05, OPR-STA-03` |
+| B4 | `test_b4_factory_builds_exactly_selected_vendor; test_b4_selected_failure_never_builds_other_vendor; test_b4_unknown_provider_refuses` | `tests/test_operator_llm_factory.py` | PASS | `OPR-DEP-01` |
+| B5 | `test_b5_chat_binds_only_with_selected_key; test_each_vendor_configuration_error_disconnects` | `surfaces/tests/test_dashboard_chat_provider.py` | PASS | `SRF-DEP-03, SRF-IN-03` |
+| B6 | `test_b6_openai_key_never_escapes_operator` | `tests/test_openai_operator_security.py` | PASS | `OPR-DEP-01, OPR-SEC-01` |
+| C1 | `test_c1_llm_pack_names_real_apps_and_settings` | `tests/test_deploy_llm_pack.py` | PASS | `MST-NEV-07, OPR-DEP-01` |
+| C2 | `test_c2_deploy_filters_tunables_before_appending_llm_pack` | `tests/test_deploy_llm_pack.py` | PASS | `MST-NEV-07` |
+| D1 | `test_d1_report_is_read_only` | `tests/test_switch_llm_apply.py` | PASS | `MST-OUT-04` |
+| D2 | `test_d2_apply_changes_only_differences_master_first` | `tests/test_switch_llm_apply.py` | PASS | `MST-NEV-07, MST-OUT-04` |
+| D3 | `test_d3_evidence_inside_repo_is_refused; test_d3_proof_without_dsn_is_refused; test_d3_replicas_refuse_before_first_update; test_d3_unknown_provider_refuses_before_azure` | `tests/test_switch_llm_refusals.py` | PASS | `MST-NEV-07, MST-OUT-04` |
+| D4 | `test_d4_nothing_else_may_move (seven fields)` | `tests/test_switch_llm_refusals.py` | PASS | `MST-OUT-04` |
+| D5 | `test_d5_each_missing_proof_term_fails; test_d5_deadline_is_bounded_by_injected_clock` | `tests/test_switch_llm_proof.py` | PASS | `MST-NEV-07, MST-OUT-04` |
+| D6 | `test_d6_unchanged_apps_are_not_reproven` | `tests/test_switch_llm_apply.py` | PASS | `MST-OUT-04` |
+| D7 | `test_d7_failed_second_update_stops_run` | `tests/test_switch_llm_apply.py` | PASS | `MST-OUT-04` |
+| D8 | `test_d8_report_apply_and_prove_output_are_ascii` | `tests/test_switch_llm_apply.py` | PASS | `MST-OUT-04` |
+| E1 | `test_e1_rider_ignores_ambient_bus_credentials` | `tests/test_settlement_rider_offline.py` | PASS | `DEP-BUS-05, DLIB-IDM-04` |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** one-call master composition, vendor-wide probe applicability, fake container ownership, lazy SDK failure and cleared accounting, all seven protected fields, stale/inactive/malformed graph facts, evidence-based proof retry, proof arrival during polling, pack/clock/bounds validation, Azure stdout and error containment, resolved CLI execution, and explicit Postgres backend selection. These close independent failure paths without live calls.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s262`, branch `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`; `.env` absent, verified with `Test-Path .env` → `False`. No live calls, push or merge. `pyproject.toml` and `uv.lock` untouched; the planner bumps and locks at merge.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** the pack declaration selects the master's vendor probes and distributed key, resolves the operator's model and dashboard vendor, and supplies exactly one deployment provider variable per target. The injected command reports differences without updates, applies only differing apps in master-first order, snapshots and compares protected configuration, stops on replicas or update failure, and requires every fresh graph proof term. Local focused tests and 45 independently broken/restored guards prove these behaviors.
 
-**Files changed:** <list>
+**Files changed:**
 
-**Design decisions:** recorded as [`DL-282`](../design-log.md) — <amendments, if any>
+- `agents/master/credential_probes.py`
+- `agents/master/credential_selection.py`
+- `agents/master/credential_test.py`
+- `agents/master/entrypoint.py`
+- `agents/master/laws/laws.md`
+- `agents/master/laws/test-plan.md`
+- `agents/master/pack_loading.py`
+- `agents/master/settings.py`
+- `agents/master/tests/test_credential_probe_loading.py`
+- `agents/master/tests/test_fleet_preflight_packs.py`
+- `agents/master/tests/test_provider_selection.py`
+- `agents/master/tests/test_provider_selection_refusals.py`
+- `agents/operator/agent.py`
+- `agents/operator/laws/laws.md`
+- `agents/operator/laws/test-plan.md`
+- `agents/operator/settings.py`
+- `agents/operator/tests/test_provider_model.py`
+- `docs/deployment.md`
+- `docs/design-log.md`
+- `docs/laws/INDEX.md`
+- `docs/laws/drift-register.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md`
+- `infra/deploy-agents.ps1`
+- `kernel/llm_factory.py`
+- `kernel/llm_openai.py`
+- `kernel/llm_openai_operator.py`
+- `orchestration/packs/trading_credential_tests.json`
+- `orchestration/packs/trading_llm.json`
+- `orchestration/packs/trading_secrets.json`
+- `scripts/switch_llm_apply.py`
+- `scripts/switch_llm_azure.py`
+- `scripts/switch_llm_config.py`
+- `scripts/switch_llm_proof.py`
+- `scripts/switch_llm_provider.py`
+- `surfaces/dashboard/chat_binding.py`
+- `surfaces/laws/laws.md`
+- `surfaces/laws/test-plan.md`
+- `surfaces/tests/test_dashboard_chat.py`
+- `surfaces/tests/test_dashboard_chat_edges.py`
+- `surfaces/tests/test_dashboard_chat_provider.py`
+- `tests/switch_llm_testkit.py`
+- `tests/test_deploy_llm_pack.py`
+- `tests/test_llm_adapter_ownership.py`
+- `tests/test_openai_operator.py`
+- `tests/test_openai_operator_edges.py`
+- `tests/test_openai_operator_security.py`
+- `tests/test_operator_llm_factory.py`
+- `tests/test_served_request_settlement.py`
+- `tests/test_settlement_rider_offline.py`
+- `tests/test_switch_llm_apply.py`
+- `tests/test_switch_llm_boundaries.py`
+- `tests/test_switch_llm_config.py`
+- `tests/test_switch_llm_proof.py`
+- `tests/test_switch_llm_refusals.py`
+
+**Design decisions:** recorded as [`DL-282`](../design-log.md). Amendment: proof retry can read original before snapshots to recover changed-app scope; without evidence it conservatively requires every non-master target activation. No D1-D10 reversal. Rejected inference from missing activations is circular; no new graph property was added.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+Command: uv run pytest --no-cov --tb=short -q agents/master/tests/test_provider_selection.py tests/test_openai_operator.py surfaces/tests/test_dashboard_chat_provider.py tests/test_deploy_llm_pack.py tests/test_switch_llm_apply.py
+Exit code: 1
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_________________ test_a1_only_declared_vendor_probes_remain __________________
+agents\master\tests\test_provider_selection.py:23: in test_a1_only_declared_vendor_probes_remain
+    from agents.master.credential_selection import select_llm_provider
+E   ModuleNotFoundError: No module named 'agents.master.credential_selection'
+__________________ test_a2_unselected_vendor_key_is_withheld __________________
+agents\master\tests\test_provider_selection.py:37: in test_a2_unselected_vendor_key_is_withheld
+    from agents.master.credential_selection import select_llm_provider
+E   ModuleNotFoundError: No module named 'agents.master.credential_selection'
+_________________ test_b2_operator_forces_one_named_function __________________
+tests\test_openai_operator.py:16: in test_b2_operator_forces_one_named_function
+    import kernel.llm_openai_operator as adapter
+E   ModuleNotFoundError: No module named 'kernel.llm_openai_operator'
+__________________ test_b5_chat_binds_only_with_selected_key __________________
+surfaces\tests\test_dashboard_chat_provider.py:20: in test_b5_chat_binds_only_with_selected_key
+    import kernel.llm_openai_operator as adapter
+E   ModuleNotFoundError: No module named 'kernel.llm_openai_operator'
+________________ test_c1_llm_pack_names_real_apps_and_settings ________________
+tests\test_deploy_llm_pack.py:20: in test_c1_llm_pack_names_real_apps_and_settings
+    pack = json.loads((ROOT / "orchestration/packs/trading_llm.json").read_text("utf-8"))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\pathlib\_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\pathlib\_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\pathlib\_local.py:537: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\yury_\\Downloads\\project\\ta-s262\\orchestration\\packs\\trading_llm.json'
+_____________ test_d2_apply_changes_only_differences_master_first _____________
+tests\test_switch_llm_apply.py:15: in test_d2_apply_changes_only_differences_master_first
+    from scripts.switch_llm_provider import main
+E   ModuleNotFoundError: No module named 'scripts.switch_llm_provider'
+=========================== short test summary info ===========================
+FAILED agents/master/tests/test_provider_selection.py::test_a1_only_declared_vendor_probes_remain
+FAILED agents/master/tests/test_provider_selection.py::test_a2_unselected_vendor_key_is_withheld
+FAILED tests/test_openai_operator.py::test_b2_operator_forces_one_named_function
+FAILED surfaces/tests/test_dashboard_chat_provider.py::test_b5_chat_binds_only_with_selected_key
+FAILED tests/test_deploy_llm_pack.py::test_c1_llm_pack_names_real_apps_and_settings
+FAILED tests/test_switch_llm_apply.py::test_d2_apply_changes_only_differences_master_first
+6 failed in 4.40s
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+Command: uv run pytest --no-cov --tb=short -q agents/master/tests/test_provider_selection.py agents/master/tests/test_provider_selection_refusals.py agents/operator/tests/test_provider_model.py tests/test_openai_operator.py tests/test_openai_operator_edges.py tests/test_operator_llm_factory.py tests/test_openai_operator_security.py surfaces/tests/test_dashboard_chat_provider.py tests/test_deploy_llm_pack.py tests/test_switch_llm_apply.py tests/test_switch_llm_refusals.py tests/test_switch_llm_proof.py tests/test_settlement_rider_offline.py tests/test_switch_llm_config.py tests/test_switch_llm_boundaries.py
+Exit code: 0
+........................................................................ [ 86%]
+...........                                                              [100%]
+83 passed in 4.98s
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted:** each row was changed on disk, tested, restored from original bytes, and tested again; all red exits were 1 and all restored exits were 0. Exact commands and complete red/restored stdout are outside the repository in `C:\Users\yury_\AppData\Local\Temp\s262-guard-evidence`, `C:\Users\yury_\AppData\Local\Temp\s262-guard-extra-evidence`, `C:\Users\yury_\AppData\Local\Temp\s262-guard-final-evidence` `C:\Users\yury_\AppData\Local\Temp\s262-guard-backend-evidence`, `C:\Users\yury_\AppData\Local\Temp\s262-guard-config-evidence` and `C:\Users\yury_\AppData\Local\Temp\s262-guard-config-final-evidence`. The initial two redundant-boundary attempts are preserved in the first logs; the successful independent retries are the rows below.
 
-**Module line counts:** <file **n**, file **n**>
+| Guard | Planted break | Actual red / restored output |
+| --- | --- | --- |
+| 1. A4 unknown provider | coerce an unknown provider to openai | `planted exit=1; restored exit=0; PROVEN` |
+| 2. A4 unknown tag including empty selection | skip unknown-tag validation, including empty selection | `planted exit=1; restored exit=0; PROVEN` |
+| 3. A5 granted key without vendor probe | skip grant-without-probe refusal | `planted exit=1; restored exit=0; PROVEN` |
+| 4. A2 unselected key withheld | retain unselected vendor key | `planted exit=1; restored exit=0; PROVEN` |
+| 5. A3 vendor probe selection ignored | run every vendor probe | `planted exit=1; restored exit=0; PROVEN` |
+| 6. A6 empty selection preserves original objects | copy the empty-selection secret map | `planted exit=1; restored exit=0; PROVEN` |
+| 7. master composes selection exactly once | pass an empty provider at master composition | `planted exit=1; restored exit=0; PROVEN` |
+| 8. B1 model resolution | record the unresolved model | `planted exit=1; restored exit=0; PROVEN` |
+| 9. B2 forced named tool | use automatic tool choice | `planted exit=1; restored exit=0; PROVEN` |
+| 10. B3 length stop | ignore a length stop | `planted exit=1; restored exit=0; PROVEN` |
+| 11. B3 unusable arguments refusal | return intent for unusable arguments | `planted exit=1; restored exit=0; PROVEN` |
+| 12. D5 no fresh FleetPreflight | ignore absence of a fresh fleet check | `planted exit=1; restored exit=0; PROVEN` |
+| 13. D5 FleetPreflight passed false | accept a failed fleet check | `planted exit=1; restored exit=0; PROVEN` |
+| 14. D5 missing changed-app activation | ignore a missing changed-app activation | `planted exit=1; restored exit=0; PROVEN` |
+| 15. D5 selected probe not passed | ignore missing passed vendor probes | `planted exit=1; restored exit=0; PROVEN` |
+| 16. D5 other vendor probe declared | allow the other vendor probe to be declared | `planted exit=1; restored exit=0; PROVEN` |
+| 17. D5 stale fleet check | accept an old fleet timestamp | `planted exit=1; restored exit=0; PROVEN` |
+| 18. D5 inactive AgentInstance | accept a non-active instance | `planted exit=1; restored exit=0; PROVEN` |
+| 19. D5 stale activation | accept an old activation timestamp | `planted exit=1; restored exit=0; PROVEN` |
+| 20. D5 missing probe lists | accept missing probe lists | `planted exit=1; restored exit=0; PROVEN` |
+| 21. D3 replica refusal | skip replica counting | `planted exit=1; restored exit=0; PROVEN` |
+| 22. D4 nothing else moved all seven fields | skip all protected-field comparisons (seven planted fields) | `planted exit=1; restored exit=0; PROVEN` |
+| 23. D7 stop after failed update | return success after a failed update | `planted exit=1; restored exit=0; PROVEN` |
+| 24. D3 external evidence directory | allow evidence in the repository | `planted exit=1; restored exit=0; PROVEN` |
+| 25. D3 no graph proof without DSN | allow proof without DSN | `planted exit=1; restored exit=0; PROVEN` |
+| 26. D3 UTC proof timestamp | allow non-UTC timestamp | `planted exit=1; restored exit=0; PROVEN` |
+| 27. D3 poll bound | allow zero polling interval | `planted exit=1; restored exit=0; PROVEN` |
+| 28. D3 wait bound | allow a negative wait | `planted exit=1; restored exit=0; PROVEN` |
+| 29. B5 selected vendor key | read the other vendor key | `planted exit=1; restored exit=0; PROVEN` |
+| 30. C2 duplicate provider filtering | keep duplicate tunable provider keys | `planted exit=1; restored exit=0; PROVEN` |
+| 31. D7 nonzero Azure update stops following calls | ignore nonzero Azure status with valid JSON stdout | `planted exit=1; restored exit=0; PROVEN` |
+| 32. D5 bounded deadline | extend the proof deadline | `planted exit=1; restored exit=0; PROVEN` |
+| 33. B3 absent selected key | construct with no selected key | `planted exit=1; restored exit=0; PROVEN` |
+| 34. B3 absent optional SDK | raise the wrong missing-SDK error | `planted exit=1; restored exit=0; PROVEN` |
+| 35. B4 selected construction never switches vendor | construct the other vendor after selection | `planted exit=1; restored exit=0; PROVEN` |
+| 36. B5 absent selected key disconnects | construct without a selected dashboard key | `planted exit=1; restored exit=0; PROVEN` |
+| 37. B5 OpenAI configuration error disconnects | propagate OpenAI configuration refusal | `planted exit=1; restored exit=0; PROVEN` |
+| 38. B5 Anthropic configuration error disconnects | propagate Anthropic configuration refusal | `planted exit=1; restored exit=0; PROVEN` |
+| 39. C2 missing provider pack refuses | allow a missing deployment provider pack | `planted exit=1; restored exit=0; PROVEN` |
+| 40. D8 validated DSN selects Postgres | discard the validated DSN when building Postgres | `planted exit=1; restored exit=0; PROVEN` |
+| 41. D3 unknown pack provider | allow an unknown provider with otherwise valid pack inputs | `planted exit=1; restored exit=0; PROVEN` |
+| 42. D3 ordered master-first target map | skip ordered master-first map validation | `planted exit=1; restored exit=0; PROVEN` |
+| 43. D3 provider environment key validation | allow an invalid provider environment key | `planted exit=1; restored exit=0; PROVEN` |
+| 44. D3 target selected-vendor probe declaration | allow a target with no selected vendor probe | `planted exit=1; restored exit=0; PROVEN` |
+| 45. D5 malformed fleet timestamp | accept a malformed fleet timestamp | `planted exit=1; restored exit=0; PROVEN` |
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+**Module line counts:** all 39 touched/new Python modules are below 200 lines.
 
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+| Python module | Lines |
+| --- | ---: |
+| `agents/master/credential_probes.py` | 173 |
+| `agents/master/credential_selection.py` | 49 |
+| `agents/master/credential_test.py` | 158 |
+| `agents/master/entrypoint.py` | 156 |
+| `agents/master/pack_loading.py` | 62 |
+| `agents/master/settings.py` | 144 |
+| `agents/master/tests/test_credential_probe_loading.py` | 143 |
+| `agents/master/tests/test_fleet_preflight_packs.py` | 42 |
+| `agents/master/tests/test_provider_selection.py` | 121 |
+| `agents/master/tests/test_provider_selection_refusals.py` | 100 |
+| `agents/operator/agent.py` | 164 |
+| `agents/operator/settings.py` | 69 |
+| `agents/operator/tests/test_provider_model.py` | 48 |
+| `kernel/llm_factory.py` | 97 |
+| `kernel/llm_openai.py` | 107 |
+| `kernel/llm_openai_operator.py` | 104 |
+| `scripts/switch_llm_apply.py` | 109 |
+| `scripts/switch_llm_azure.py` | 135 |
+| `scripts/switch_llm_config.py` | 87 |
+| `scripts/switch_llm_proof.py` | 104 |
+| `scripts/switch_llm_provider.py` | 151 |
+| `surfaces/dashboard/chat_binding.py` | 51 |
+| `surfaces/tests/test_dashboard_chat.py` | 198 |
+| `surfaces/tests/test_dashboard_chat_edges.py` | 110 |
+| `surfaces/tests/test_dashboard_chat_provider.py` | 81 |
+| `tests/switch_llm_testkit.py` | 160 |
+| `tests/test_deploy_llm_pack.py` | 57 |
+| `tests/test_llm_adapter_ownership.py` | 90 |
+| `tests/test_openai_operator.py` | 84 |
+| `tests/test_openai_operator_edges.py` | 108 |
+| `tests/test_openai_operator_security.py` | 84 |
+| `tests/test_operator_llm_factory.py` | 83 |
+| `tests/test_served_request_settlement.py` | 91 |
+| `tests/test_settlement_rider_offline.py` | 21 |
+| `tests/test_switch_llm_apply.py` | 99 |
+| `tests/test_switch_llm_boundaries.py` | 124 |
+| `tests/test_switch_llm_config.py` | 107 |
+| `tests/test_switch_llm_proof.py` | 146 |
+| `tests/test_switch_llm_refusals.py` | 110 |
+
+**Excluded-scope proof:** run against the exact branch-cut baseline, which is also still main at the pre-code measurement:
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+git diff ceec5bb605271295b06e1ca1f04df2a42ffc1d4d --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration/history_window.py orchestration/packs/trading_tunables.json orchestration/packs/trading_issuer_map.json orchestration/packs/trading_graph_vocabulary.json agents/deliberator pyproject.toml uv.lock docs/STATE.md docs/work-queue.md
+Exit code: 0
+(stdout empty)
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+**Every existing test edit — exactly five tests and one constant:**
+
+- `agents/master/tests/test_credential_probe_loading.py::test_trading_credential_tests_load_to_nonzero_count`: 12 → 13 for the operator's added probe.
+- `agents/master/tests/test_fleet_preflight_packs.py::test_every_trading_credential_probe_is_required`: 12 → 13; all probes remain required.
+- `surfaces/tests/test_dashboard_chat.py::test_chat_binding_requires_live_graph_and_key`: patch the selected-provider factory now called by the binding.
+- `surfaces/tests/test_dashboard_chat_edges.py::test_chat_binding_configuration_failure_is_disconnected`: patch the factory with its provider argument; the refusal expectation is unchanged.
+- `tests/test_served_request_settlement.py::test_receive_batch_tunable_can_still_be_raised`: explicit `connection_string=None`, `connection_strings_json=None` keep the rider offline even with ambient bus config.
+- Only `VENDOR_ADAPTER_CLASSES` in `tests/test_llm_adapter_ownership.py` extended for `OperatorOpenAILLMClient`; no existing test function there changed.
+
+**Pack diff — whole, added lines only:**
+
+```diff
+diff --git a/orchestration/packs/trading_credential_tests.json b/orchestration/packs/trading_credential_tests.json
+index cfbd2846..54be33d8 100644
+--- a/orchestration/packs/trading_credential_tests.json
++++ b/orchestration/packs/trading_credential_tests.json
+@@ -67,8 +67,26 @@
+     }
+   ],
+   "operator": [
++    {
++      "name": "openai",
++      "llm_provider": "openai",
++      "kind": "http_status",
++      "method": "POST",
++      "url": "https://api.openai.com/v1/chat/completions",
++      "headers": { "Authorization": "Bearer {OPENAI_API_KEY}" },
++      "json_body": {
++        "model": "gpt-5.5",
++        "max_completion_tokens": 256,
++        "messages": [{ "role": "user", "content": "." }]
++      },
++      "expected_statuses": [200],
++      "credential_failure_statuses": [400, 401, 403, 429],
++      "required": true,
++      "cost": "cheap"
++    },
+     {
+       "name": "anthropic",
++      "llm_provider": "anthropic",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.anthropic.com/v1/messages",
+@@ -90,6 +108,7 @@
+   "deliberator-manager": [
+     {
+       "name": "anthropic",
++      "llm_provider": "anthropic",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.anthropic.com/v1/messages",
+@@ -109,6 +128,7 @@
+     },
+     {
+       "name": "openai",
++      "llm_provider": "openai",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.openai.com/v1/chat/completions",
+@@ -127,6 +147,7 @@
+   "deliberator-proponent": [
+     {
+       "name": "anthropic",
++      "llm_provider": "anthropic",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.anthropic.com/v1/messages",
+@@ -146,6 +167,7 @@
+     },
+     {
+       "name": "openai",
++      "llm_provider": "openai",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.openai.com/v1/chat/completions",
+@@ -164,6 +186,7 @@
+   "deliberator-opponent": [
+     {
+       "name": "anthropic",
++      "llm_provider": "anthropic",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.anthropic.com/v1/messages",
+@@ -183,6 +206,7 @@
+     },
+     {
+       "name": "openai",
++      "llm_provider": "openai",
+       "kind": "http_status",
+       "method": "POST",
+       "url": "https://api.openai.com/v1/chat/completions",
+diff --git a/orchestration/packs/trading_secrets.json b/orchestration/packs/trading_secrets.json
+index f6168ee5..ccd9bb9e 100644
+--- a/orchestration/packs/trading_secrets.json
++++ b/orchestration/packs/trading_secrets.json
+@@ -11,6 +11,7 @@
+     ["alpaca-secret-key", "EXECUTION_ALPACA_SECRET_KEY"]
+   ],
+   "operator": [
++    ["openai-api-key", "OPENAI_API_KEY"],
+     ["anthropic-api-key", "ANTHROPIC_API_KEY"]
+   ],
+   "deliberator-manager": [
+```
+
+**PowerShell parse check — no execution of the deployment script:**
+
+```powershell
+$s262Tokens=$null; $s262Errors=$null
+[System.Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'infra/deploy-agents.ps1'), [ref]$s262Tokens, [ref]$s262Errors) | Out-Null
+$s262Errors
+"PowerShell parser errors=$($s262Errors.Count)"
+```
+
+```text
+PowerShell parser errors=0
+Exit code: 0
+```
+
+**Offline deployment env composition:** evaluated only AST-extracted `Get-AgentEnv`, `Get-AppTunables`, `Get-AppLlmEnv`, with graph/bus functions stubbed and the two committed packs read directly; no `az` call or deployment script invocation.
+
+```text
+deliberator-manager provider assignments=1: DELIBERATOR_LLM_PROVIDER=openai; env total=8
+deliberator-proponent provider assignments=1: DELIBERATOR_LLM_PROVIDER=openai; env total=7
+deliberator-opponent provider assignments=1: DELIBERATOR_LLM_PROVIDER=openai; env total=7
+operator provider assignments=1: OPERATOR_LLM_PROVIDER=openai; env total=3
+reporter provider assignments=0: ; env total=2
+master: MASTER_LLM_PROVIDER=openai
+offline env composition exit=0
+```
+
+**Law cycles and rollups:** master LOCKED v1.8 → v1.9 (`MST-OUT-04` amended; `MST-NEV-07` added; provider PARAM); operator v1.4 → v1.5 (`OPR-DEP-01` amended; provider/model/effort PARAM); surfaces v1.3 → v1.4 (`SRF-DEP-03` added). Both ledger and INDEX agree; DRIFT-105 CORRECTED. Existing gray `MST-SEC-02/03` and `SRF-DEP-01` remain gray. The coverage checker prints nothing on success; this explicit readback uses its own derived counters:
+
+```text
+uv run python scripts/check_law_coverage.py
+(stdout empty)
+Exit code: 0
+master: derived 26 / 52
+operator: derived 19 / 50
+surfaces: derived 30 / 37
+```
+
+**PARAM/settings step:**
+
+```text
+uv run python scripts/check_param_law_sync.py
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+Exit code: 0
+```
+
+The two portfolio-manager warnings are unchanged and outside this sprint's scope.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s262-make-ci.txt`, exit **2**. All first twelve steps passed. The dependency-audit attempt exits 1 before obtaining an advisory report; **dependency audit NOT RUN** because the offline boundary blocks external DNS/connect calls. The two subsequent Make recipe steps passed separately. Overall CI is not green.
+
+```powershell
+$env:UV_OFFLINE='1'
+$env:PYTHONUTF8='1'
+$env:PYTHONPATH=(Join-Path $env:TEMP 's262-offline-guard')
+$env:GIT_CONFIG_COUNT='1'
+$env:GIT_CONFIG_KEY_0='http.proxy'
+$env:GIT_CONFIG_VALUE_0='http://127.0.0.1:9'
+make ci > "$env:TEMP\s262-make-ci.txt" 2>&1
+$s262Exit=$LASTEXITCODE
+```
+
+Actual coverage/test output and the audit's terminating output:
+
+```text
+TOTAL                                                           20156      0   4266      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4520 passed, 8 skipped, 2470 warnings in 647.93s (0:10:47) ==========
+uv run python scripts/check_dependency_audit.py
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: S262 offline proof: external network NOT RUN"))
+make: *** [Makefile:59: ci] Error 1
+make ci exit=2
+```
+
+| Step | Outcome |
+| --- | --- |
+| 1. Ruff | PASS, exit 0 |
+| 2. Format | PASS, exit 0 |
+| 3. Mypy | PASS, exit 0; 1,172 source files |
+| 4. Import-linter | PASS, exit 0; 4 kept, 0 broken |
+| 5. Module size | PASS, exit 0; all touched/new Python files below 200 |
+| 6. Module header | PASS, exit 0 |
+| 7. Law coverage | PASS, exit 0; derived rollups above |
+| 8. PARAM/settings sync | PASS, exit 0; exact output above |
+| 9. Sprint status | PASS, exit 0; README/spec both BUILT |
+| 10. Markdown links | PASS, exit 0 |
+| 11. Version scheme | PASS, exit 0; version and lock untouched |
+| 12. Pytest | PASS, exit 0; 4,520 passed, 8 skipped, 100.00% |
+| 13. Dependency audit | NOT RUN offline; attempted boundary refusal, exit 1 |
+| 14. Detect secrets | PASS separately, exit 0; no baseline change |
+| 15. Untracked secrets | PASS separately, exit 0 |
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+Exit code: 0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+Exit code: 0
+```
+
+Markdown lint also passed. The command modules passed `uv run mypy --explicit-package-bases scripts/switch_llm_provider.py scripts/switch_llm_config.py scripts/switch_llm_azure.py scripts/switch_llm_apply.py scripts/switch_llm_proof.py`: `Success: no issues found in 5 source files`, exit 0. The Make recipe does not include scripts in mypy, so this is separate proof. Test-only fixture refinements after the full run were independently broken/restored; production source did not change. A prior secret-hook run reported file changes because the handback was edited concurrently; the steady-tree retry above passed with no baseline update.
+
+**`make gate-ran`:** NOT RUN — no push is authorized, so no remote gate is claimed.
+
+**Not met / verified failing:** overall `make ci` is not green (exit 2 at the offline dependency audit). Dependency audit and live checks are NOT RUN offline. No MERGED, remote-gated, deployed or live-proven claim.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- `main` advanced during the build to `80322272e655432c3e0377d956c7b3dc959b3eeb`; all comparisons use the recorded branch-cut SHA `ceec5bb605271295b06e1ca1f04df2a42ffc1d4d`. No merge from main was performed.
+- Four new tests now use named dummy credential constants after detect-secrets flagged literal keyword assignments; the values and behavior are unchanged, and all 16 affected cases passed again. No baseline update or detector suppression.
+- Scope held; excluded fidelity paths, deliberator, contracts, version/lock and tracker files are untouched. All evidence is local/unit; the operator container still uses its fake client.
+- Correction: `orchestration/laws/laws.md` does not exist; the laws INDEX points to `orchestration/laws/dispatcher/laws.md`, read whole before code. The CI recipe has 15 steps, including sprint status; AGENTS.md's short form says 14.
+- Law reading found no conflict beyond D9's authorized amendments. The law checker does not print successful rollup lines; actual derived counts were pasted explicitly instead.
+- The initial failed-update mutation was masked by empty stdout failing JSON parsing. The failure fixture now returns valid JSON with a nonzero status, and removing the exit-status guard independently fails D7. The dashboard key refusal had a second adapter guard; its test now asserts missing selected credentials stop before factory construction.
+- Empty `MASTER_LLM_PROVIDER` preserves the exact input objects after tag validation. Public usage/stop-reason aliases preserve older `_usage` imports; no deliberator test was edited. `build_app` stays small by moving pack loading, not trimming its behavior.
+- Proof retry scope is DL-282's recorded amendment: use original snapshots when available; otherwise all non-master targets are required. The command constructs Postgres directly from the validated DSN when the graph is not injected, avoiding a development-memory fallback.
+- **Live execution NOT RUN:** the command, deployment script and OpenAI adapter were not run against Azure, a live graph or a model. Env-only replica startup is unproven; paid `gpt-5.5` effort acceptance and the 4,096-token cap for real interpret/explain calls are unproven; return to Anthropic is unproven. F1a/F1b/F2 and remote gates belong to the planner's authorized post-merge sequence.
 
 ---
 

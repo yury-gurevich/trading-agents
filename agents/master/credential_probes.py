@@ -102,7 +102,12 @@ def _test_from_entry(
     else:
         raise ValueError(f"unknown credential probe kind {kind!r} for {name!r}")
     return CredentialTest(
-        name, run, required=required, cost=test_cost, agent_types=(agent_type,)
+        name,
+        run,
+        required=required,
+        cost=test_cost,
+        agent_types=(agent_type,),
+        llm_provider=str(entry.get("llm_provider", "")),
     )
 
 

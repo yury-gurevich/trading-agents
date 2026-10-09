@@ -16,7 +16,12 @@ from kernel import llm_factory
 
 REPOSITORY_ROOT = Path(__file__).parents[1]
 VENDOR_ADAPTER_CLASSES = frozenset(
-    {"AnthropicLLMClient", "OpenAILLMClient", "OperatorAnthropicLLMClient"}
+    {
+        "AnthropicLLMClient",
+        "OpenAILLMClient",
+        "OperatorAnthropicLLMClient",
+        "OperatorOpenAILLMClient",
+    }
 )
 
 

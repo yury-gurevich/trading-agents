@@ -12,24 +12,24 @@ from typing import Literal
 from pydantic_settings import SettingsConfigDict
 
 from kernel import AgentSettings, tunable
+from kernel.llm_factory import default_model_for
 
 
 class OperatorSettings(AgentSettings):
     """Settings for bounded operator intent parsing and explanations."""
 
+    llm_provider: str = tunable(
+        "anthropic",
+        why="Operator-declared LLM vendor; never an automatic fallback.",
+    )
     model: str = tunable(
-        "claude-opus-5",
-        why=(
-            "Production default for structured human-command intent parsing. "
-            "This literal is the *effective* value in the deployed fleet: a "
-            "container never reads .env — it gets os.environ from the master's "
-            "ACTIVATE payload, which carries credentials only (DL-07)."
-        ),
+        "",
+        why="Empty resolves the declared provider's model; explicit values win.",
     )
     effort: Literal["low", "medium", "high", "xhigh", "max"] = tunable(
         "max",
         why=(
-            "Anthropic output_config effort. 'max' buys the deepest reasoning "
+            "Provider reasoning effort. 'max' buys the deepest reasoning "
             "per call; the literal mirrors the API's own ladder so an operator "
             "override cannot send a value the model rejects."
         ),
@@ -62,3 +62,8 @@ class OperatorSettings(AgentSettings):
     )
 
     model_config = SettingsConfigDict(env_prefix="OPERATOR_", frozen=True)
+
+    @property
+    def resolved_model(self) -> str:
+        """Resolve the declared vendor's model unless explicitly overridden."""
+        return self.model or default_model_for(self.llm_provider)

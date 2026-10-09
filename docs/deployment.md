@@ -167,6 +167,40 @@ Rollback keeps the shared namespace string untouched and re-points the fleet to 
 pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip -UseSharedServiceBusDsn
 ```
 
+### Switching the LLM vendor
+
+Edit `provider` in [`trading_llm.json`](../orchestration/packs/trading_llm.json), then run
+the command below with the configured live graph environment. App order in the pack is apply order:
+master first, then operator and the three deliberators. A full `up` reads the same declaration; its
+keys override the old provider entries in the tunables pack.
+
+```powershell
+uv run --env-file .env python scripts/switch_llm_provider.py
+uv run --env-file .env python scripts/switch_llm_provider.py --apply --evidence-dir C:\outside-repo\llm-switch
+uv run --env-file .env python scripts/switch_llm_provider.py --prove-since <UTC-ISO> --evidence-dir C:\outside-repo\llm-switch
+```
+
+Report mode reads and changes nothing: exit 0 means all five live values equal the declaration,
+exit 3 names pending differences. Apply snapshots all five apps before and after, updates only
+the differing values in pack order, then checks containers (excluding the selected variable),
+scale, secret names, ingress, registries and identity stayed equal. Any replica refuses before
+the first update unless `--even-if-running` is given; `runningStatus` is not a replica count.
+A failed update stops immediately and names apps already changed. Evidence must live outside the repo.
+
+Apply/proof exit 0 requires a passing `FleetPreflight` at or after the printed start instant, and
+an active, fresh `AgentInstance` for each changed non-master app with every selected-vendor probe
+passed and no other-vendor probe declared. Unchanged apps read `unchanged, activation not re-proven`.
+Exit 1 names a failed check or missing proof term; exit 2 names invalid configuration, an unknown
+provider, an evidence directory inside the repo, or missing `POSTGRES_DSN`. Proof polls every 30
+seconds for up to 900 seconds, configurable with `--poll-seconds` and `--wait-seconds`.
+`--resource-group` defaults to `trading-agents`; `--subscription` otherwise uses the Azure CLI default.
+
+For proof retry, reuse the original evidence directory to recover exactly the apps that changed.
+Without it, `--prove-since` conservatively requires activations of all non-master pack targets.
+The command applies the file's vendor and accepts no vendor argument. It does not retag images,
+replace master's secret/probe packs, wake unchanged apps, change scale, or make a model call.
+The operator container retains its fake client; real operator model calls happen through dashboard chat.
+
 ### Verifying which credential the fleet actually holds
 
 **`preflight` and `az containerapp show` cannot answer this.** A flip rewrites the *value* of the

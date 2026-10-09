@@ -15,6 +15,11 @@ from kernel import AgentSettings, tunable
 class MasterSettings(AgentSettings):
     """Settings for the master bootstrap lifecycle agent."""
 
+    llm_provider: str = tunable(
+        "",
+        why="Declared vendor selects probes and keys; empty keeps every declaration.",
+    )
+
     handshake_timeout_2_seconds: float = tunable(
         300.0,
         why=(

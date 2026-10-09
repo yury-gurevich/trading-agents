@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -50,8 +50,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `AgentInstance` node.
 - **MST-OUT-03** — On `start()`, writes a `Session` node with `started_at`. Used for
   crash-recovery detection (no `ended_at` → prior session crashed).
-- **MST-OUT-04** — `run_fleet_preflight` tests every pack-declared probe for every agent type in
-  the grant policy and writes one `FleetPreflight` node per check. The check passes only if every
+- **MST-OUT-04** — `run_fleet_preflight` tests every pack-declared probe that applies under the
+  declared LLM provider for every agent type in the grant policy and writes one `FleetPreflight`
+  node per check. An empty provider leaves every probe applicable. The check passes only if every
   probe passed or has a fresh costly-pass cache entry. A credential failure or a transport failure
   fails it.
 
@@ -69,6 +70,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-NEV-06** — Master never hands over a pack-declared credential until its applicable
   credential test has either passed live or has a fresh costly-pass cache entry. A failed required
   credential test refuses activation and writes no `AgentInstance`.
+- **MST-NEV-07** — With a declared LLM provider, master never hands an agent another vendor's
+  key. Master refuses to start on an unknown non-empty provider, an unknown non-empty probe tag,
+  or an agent type granted the declared vendor's key without a probe tagged for that vendor.
+  An empty provider preserves the original probes and secret map after validating probe tags.
 
 ## State & storage (`STA`)
 
@@ -221,6 +226,7 @@ guarantees.
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
+| `llm_provider` | `""` | `str` | YES | Declared vendor selects applicable probes and keys once at pack loading; empty preserves every declaration after validating tags (`MST-NEV-07`) |
 | `handshake_timeout_2_seconds` | `300.0` | `float ≥ 30.0 ≤ 600.0` | YES | Master's replay window (`MST-IDM-03`): seconds a resent EHLO with the same boot id and type gets the first ACTIVATE back; must be ≥ the kernel's EHLO budget (`ehlo_budget_seconds`, 300) so every resend is replayed |
 | `ehlo_listen_backlog` | `64` | `int ≥ 16 ≤ 1024` | YES | Listen backlog of master's EHLO server (`MST-ORD-03`); one wave is the 15 agent types waking together, and 64 holds four waves of resends |
 | `credential_tests_path` | `""` | `str` | YES | Filesystem path fallback for the master credential-test declaration pack |
@@ -244,6 +250,11 @@ guarantees.
 | DRIFT-002 | MST-DEP-02: Key Vault resolves credentials in ACTIVATE | `config={}` in S73 | **RESOLVED S75** — `resolve_config()` in `agents/master/secret_map.py`; `SecretStore` protocol; KV + env-var impls |
 
 ## Changelog
+
+- v1.9 — S262 / DL-282 (2026-10-09): `MST-OUT-04` applies the declared-provider selection;
+  new `MST-NEV-07` withholds other-vendor keys and refuses unknown providers/tags or unprobed
+  vendor grants before startup. Empty selection preserves the validated declarations. PARAM
+  gains `llm_provider`. Probe bodies, graph evidence shape and activation policy are unchanged.
 
 - v1 — authored S73 (P15 foundation) and locked immediately.
 - v1.1 — S74: DRIFT-001 resolved (RSA-PSS signing wired); S75: DRIFT-002 resolved (Key Vault wired).

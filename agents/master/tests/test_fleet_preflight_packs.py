@@ -14,14 +14,14 @@ from agents.master.tests.helpers import TRADING_CREDENTIAL_TESTS_PATH
 
 
 def test_every_trading_credential_probe_is_required() -> None:
-    """MST-NEV-06: the twelve pack-declared credential probes are all required."""
+    """MST-NEV-06: the thirteen pack-declared credential probes are all required."""
     declaration = json.loads(Path(TRADING_CREDENTIAL_TESTS_PATH).read_text())
     assert isinstance(declaration, dict)
     entries = [
         entry for agent_entries in declaration.values() for entry in agent_entries
     ]
 
-    assert len(entries) == 12
+    assert len(entries) == 13
     assert all(entry["required"] is True for entry in entries)
 
 

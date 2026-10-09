@@ -87,10 +87,10 @@ def test_operator_tool_status_invalid_channel_and_explain_error() -> None:
 def test_chat_binding_configuration_failure_is_disconnected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fail(**_kwargs: object) -> object:
+    def fail(_provider: str, **_kwargs: object) -> object:
         raise ConfigurationError("adapter unavailable")
 
-    monkeypatch.setattr(chat_binding, "OperatorAnthropicLLMClient", fail)
+    monkeypatch.setattr(chat_binding, "build_operator_llm", fail)
     result = chat_binding.bind_dashboard_chat(
         InMemoryGraphStore(),
         {

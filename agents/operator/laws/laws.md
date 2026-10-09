@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -135,7 +135,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Dependencies (`DEP`)
 
-- **OPR-DEP-01** — `DEP-LLM` — Anthropic Claude (or injected FakeLLMClient); sole external call.
+- **OPR-DEP-01** — `DEP-LLM` — the declared LLM provider (or injected FakeLLMClient);
+  sole external call. Provider selection never falls back to another vendor; an empty model
+  resolves that provider's default, while an explicit model wins.
 - **OPR-DEP-02** — `DEP-POSTGRES` — graph for `CommandAudit`, `Intent`, `LLMCall` writes and
   evidence reads for `explain`.
 - **OPR-DEP-03** — `DEP-BUS` — routes resulting `TypedIntent` to `supervisor.dispatch_intent`
@@ -183,8 +185,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
-| `model` | `"claude-opus-5"` | `str` | YES | Production default for structured intent parsing. Effective value in the fleet — a container reads no `.env`; ACTIVATE carries credentials only (DL-07) |
-| `effort` | `"max"` | `low\|medium\|high\|xhigh\|max` | YES | Anthropic `output_config` reasoning depth; literal mirrors the API ladder so an override cannot be rejected |
+| `llm_provider` | `"anthropic"` | `str` | YES | Operator-declared provider; selection is an operator act, never an automatic fallback |
+| `model` | `""` | `str` | YES | Empty resolves `default_model_for(llm_provider)` (`claude-opus-5` or `gpt-5.5`); an explicit model wins; every call records the resolved value |
+| `effort` | `"max"` | `low\|medium\|high\|xhigh\|max` | YES | Provider reasoning depth passed as configured, without translating the effort ladder |
 | `max_tokens` | `4096` | `int ≥ 64 ≤ 4096` | YES | Caps thinking plus structured output together; too tight and the parse refuses before emitting a tool call |
 | `explain_max_evidence_nodes` | `20` | `int ≥ 1 ≤ 100` | YES | Bound graph evidence included in explanation prompts |
 | `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled interpret prompt (ADR-0010); empty = dynamic construction |
@@ -196,6 +199,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.5 — S262 / DL-282 (2026-10-09): `OPR-DEP-01` names the declared provider and its
+  no-fallback/model-resolution rules. PARAM adds `llm_provider`, makes `model` empty with
+  provider resolution, and names provider-neutral effort. The container retains its fake client.
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
 - v1.1 — S72: added `system_prompt` tunable (ADR-0010 immediate consequence); wired into `_interpret_command`.

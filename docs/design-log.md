@@ -163,6 +163,13 @@ credential-test pack, and any full `up` reverts it.
 (2026-10-11). The operator container still binds the fake client. A rollback below this sprint's
 image needs the hand-made eight-probe pack put back on the master.
 
+**S262 build amendment (2026-10-09): proof retry scope.** `--prove-since` alone has no record of
+which apps the previous apply changed: D8 forbids adding graph properties, and unchanged apps must
+not require fresh activations. Reusing `--evidence-dir` recovers the changed set from the original
+before snapshots; without evidence the retry names its conservative scope and requires all
+non-master pack targets. Ruled out: infer the changed set from missing activations (that would erase
+the very failure being checked), or write a new graph property. No D1-D10 decision is reversed.
+
 ## DL-281 - S260's command defaults to the four measured concurrencies - status: DECIDED (builder, 2026-10-09)
 
 D9 lists every argument default except the concurrency list. The Goal says the bare command runs

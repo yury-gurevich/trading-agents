@@ -43,7 +43,7 @@
 | OPR-SEC-03 | ⬜ | — |
 | OPR-SEC-04 | ⬜ | — |
 | OPR-SEC-05 | ⬜ | — |
-| OPR-DEP-01 | 🟩 | `tests/test_llm_adapter_security.py::test_operator_adapter_imports_anthropic_only` |
+| OPR-DEP-01 | 🟩 | Declared provider or injected fake is the sole external call, never a fallback; empty model resolves the provider default and explicit model wins: `tests/test_operator_llm_factory.py::test_b4_factory_builds_exactly_selected_vendor`; `test_b4_selected_failure_never_builds_other_vendor`; `test_b4_unknown_provider_refuses`; `test_provider_model.py::test_b1_model_follows_provider_and_override`; `tests/test_openai_operator_security.py::test_b6_openai_key_never_escapes_operator`; existing Anthropic-only constructor proof remains applicable to that selection |
 | OPR-DEP-02 | ⬜ | — |
 | OPR-DEP-03 | ⬜ | — |
 | OPR-OBS-01 | ⬜ | — |

@@ -50,7 +50,7 @@ def test_trading_credential_tests_load_to_nonzero_count() -> None:
         TRADING_CREDENTIAL_TESTS_PATH, http_transport=lambda _request: 200
     )
 
-    assert len(tests) == 12
+    assert len(tests) == 13
     assert {test.name for test in tests} == {
         "alpaca-broker",
         "alpaca-data",

@@ -100,7 +100,7 @@ class OperatorAgent(AgentBase):
         with record_llm_call(
             self._graph,
             correlation_id=corr,
-            model=self._settings.model,
+            model=self._settings.resolved_model,
             prompt=user,
             system_prompt=system,
         ) as call:
@@ -128,7 +128,7 @@ class OperatorAgent(AgentBase):
         with record_llm_call(
             self._graph,
             correlation_id=corr,
-            model=self._settings.model,
+            model=self._settings.resolved_model,
             prompt=user,
             system_prompt=system,
         ) as call:

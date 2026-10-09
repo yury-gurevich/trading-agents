@@ -1,6 +1,6 @@
 # `Surfaces` — Law Test-Plan
 
-**Prefix:** `SRF` · **status:** LOCKED v1.3 · **aligned with:** laws.md LOCKED v1.3
+**Prefix:** `SRF` · **status:** LOCKED v1.4 · **aligned with:** laws.md LOCKED v1.4
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -36,6 +36,7 @@
 | SRF-SEC-02 | Surface adapters sanitise external read errors before returning them to callers. | Partial: `surfaces/tests/test_scorecard_reason.py::test_an_unknown_kind_never_reaches_the_page` proves the scorecard tile alone (CodeQL alerts 256/257); the other MCP, dashboard and CLI adapters are unproven | ⬜ |
 | SRF-DEP-01 | Surfaces depend on graph, optional Azure/GitHub readers, message bus, and optional chat LLM. | _tbd_ | ⬜ |
 | SRF-DEP-02 | Dashboard remains useful when optional Azure/GitHub readers or chat binding are absent. | `surfaces/tests/test_dashboard_app.py::test_s123_degraded_routes_still_return_http_200`; `surfaces/tests/test_dashboard_chat.py::test_chat_unbound_invalid_requests_and_method_guard` | 🟩 |
+| SRF-DEP-03 | Chat uses only the provider declared in operator settings; missing selected key, unknown provider or selected-adapter configuration failure leaves chat disconnected. | `surfaces/tests/test_dashboard_chat_provider.py::test_b5_chat_binds_only_with_selected_key`; `test_each_vendor_configuration_error_disconnects` | 🟩 |
 | SRF-OBS-01 | Confirmed surface actions are reconstructable through graph facts or supervisor dispatch results. | `surfaces/tests/test_dashboard_hold_answers.py::test_c17_dashboard_post_writes_the_shared_fact_and_dispatcher_honours_it`; `surfaces/tests/test_dashboard_flag_ack.py::test_flag_acknowledgement_uses_chat_confirmation_and_resolves_flag`; `surfaces/tests/test_dashboard_resume.py::test_resume_round_trip_echoes_consequence_and_places_audited_child`; `surfaces/tests/test_dashboard_chat.py::test_chat_answer_is_run_grounded_and_writes_priced_ledger_nodes` | 🟩 |
 | SRF-OBS-02 | Context bundles contain per-container logs and image evidence when available, and name unavailable or partial evidence truthfully. | `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_has_per_container_logs_and_real_image_tags`; `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_partial_log_failure_and_unavailable_mode` | 🟩 |
 | SRF-PERF-01 | Log and bundle reads are bounded by tail settings; invalid tail inputs fall back to the default. | `surfaces/tests/test_dashboard_app.py::test_s123_routes_use_fake_azure_and_tail_bounds`; `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_has_per_container_logs_and_real_image_tags` | 🟩 |

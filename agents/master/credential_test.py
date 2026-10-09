@@ -56,6 +56,7 @@ class CredentialTest:
     required: bool = True
     cost: Cost = "cheap"
     agent_types: tuple[str, ...] = ()
+    llm_provider: str = ""
 
 
 class PassCache:

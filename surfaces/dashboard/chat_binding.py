@@ -2,7 +2,7 @@
 
 Agent: surfaces
 Role: bind the existing operator surface only when live graph and LLM config exist.
-External I/O: reads process environment; Anthropic calls occur later via the operator.
+External I/O: process environment; selected-vendor calls occur later via the operator.
 """
 
 from __future__ import annotations
@@ -11,7 +11,9 @@ import os
 from typing import TYPE_CHECKING
 
 from agents.operator.settings import OperatorSettings
-from kernel.llm_anthropic import ConfigurationError, OperatorAnthropicLLMClient
+from kernel.llm_anthropic import ConfigurationError as AnthropicConfigurationError
+from kernel.llm_factory import UnknownProviderError, build_operator_llm, key_env_var
+from kernel.llm_openai import ConfigurationError as OpenAIConfigurationError
 from surfaces.context import paper_context
 
 if TYPE_CHECKING:
@@ -26,17 +28,24 @@ def bind_dashboard_chat(
 ) -> SurfaceContext | None:
     """Bind the operator in-process, or return None for an honest empty state."""
     env = os.environ if environ is None else environ
-    api_key = env.get("ANTHROPIC_API_KEY", "")
-    if graph is None or not env.get("POSTGRES_DSN", "") or not api_key:
+    if graph is None or not env.get("POSTGRES_DSN", ""):
         return None
     settings = OperatorSettings()
     try:
-        llm = OperatorAnthropicLLMClient(
+        api_key = env.get(key_env_var(settings.llm_provider), "")
+        if not api_key:
+            return None
+        llm = build_operator_llm(
+            settings.llm_provider,
             api_key=api_key,
-            model=settings.model,
+            model=settings.resolved_model,
             max_tokens=settings.max_tokens,
             effort=settings.effort,
         )
-    except ConfigurationError:
+    except (
+        UnknownProviderError,
+        AnthropicConfigurationError,
+        OpenAIConfigurationError,
+    ):
         return None
     return paper_context(graph=graph, llm=llm)

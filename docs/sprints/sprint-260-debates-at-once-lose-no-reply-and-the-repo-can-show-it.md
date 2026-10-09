@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it`
-**Status:** BUILT — local memory proof; dependency audit and live transport NOT RUN
-**Version:** *next available MINOR at merge*
+**Status:** MERGED 2026-10-09 — `0.124.00`, fast-forwarded to `19239d25`, tag `v0.124.00`, GATE PROVEN `19239d25` (CI, CodeQL, Security Findings); Windows `make ci` exit 0 (4,436 passed, 8 skipped, 100.00 %, dependency audit clean); built by Codex in `../ta-s260`, complete against the twelve-item checklist; no law change; the planner's own re-measure: the kernel's old default of ten requests a pass put back turns A1 red (the builder could only simulate it inside the harness), and both handback commands give their counts with a connection string in the environment; merged with the planner's removal of a module global and a bare delete that CodeQL reported on the branch, and with the builder's design-log entry renumbered to [DL-281](../design-log.md); open CodeQL alerts 127, the same as `main`'s, none new; **live before the merge PASS** (disposable topics: one to four at once clean, 16 turns of 10 s in 186.7 s at one and 50.2 s at four; ten requests a pass with late replicas failed 2 of 4 orders open); **F1 PASS** (on the merged `main`, live, 8 orders, 2 rounds, turns of 20 s, a wait of 240 s: one, two, three and four at once all clean, 32 turns in 712.7, 356.3, 268.6 and 181.0 s, effective lanes 0.90, 1.80, 2.38 and 3.54; ten requests a pass with late replicas read not clean, 2 of 4 failed open and 2 replies nobody took; every topic deleted, the fleet's three subscriptions unchanged); no deploy (`scripts/` ships in no image, and the one new argument rides the next retag); the dial stays at 1; next: the operator's call on one paid proof on the fleet at three at once
+**Version:** `0.124.00`
 **Effort:** M
 **Decisions:** [DL-279](../design-log.md) (decisions D1 to D9 this sprint builds) ·
 [DL-277](../design-log.md) (the measurement that traced September's lost replies, and the plan) ·
@@ -500,7 +500,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Intent recorded before the first code change, 2026-10-09:** Work only in `../ta-s260` on the specified sprint branch, initially clean at `main` `10770f91`. Read the complete spec and then this worktree's `CLAUDE.md`, the complete law files above, and DL-279 / DL-277. First reproduce the Appendix table, then record A1/A2/A7 red before D1-D9. Prove each guard by breaking and restoring it, run A1-A4 twenty times, run the two commands and redirected `make ci`, and commit a local handback. Success is the spec's counts and scope checks. Do not change the version/lock, STATE, fidelity paths, kernel, any existing test, or any production default. Live, push, merge and remote proof are not authorized.
 
-**Status:** BUILT — local memory proof; not remotely gated, merged, deployed or live-proven
+**Status at handback:** BUILT — local memory proof; not remotely gated, merged, deployed or live-proven. The planner's merge record is below, before the Return notes.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s260`, branch `sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it`; `.env` absent. Original base `10770f91bf531eda99cc105f8e80abdfe22fabb0`. The law-reading and intent record was committed as `2fe980679286ad34661f9e605560e56af7f4e0eb` before code. All runs used `UV_OFFLINE=1`; a gitignored proof guard allowed loopback IPC and refused external DNS/TCP/UDP. CI additionally stopped pip-audit immediately when it attempted external I/O, and prohibited HTTP/HTTPS git fetching. No saved advisory report substituted for the audit.
 
@@ -769,6 +769,35 @@ The last three checks printed **nothing**, exit 0 each. The agents-only check na
 **Live transport:** **NOT RUN against Azure**. Topic-name/lazy-import guards and synthetic administration cleanup are unit proof only. Actual SDK operation, namespace permissions, live delivery and eventual visibility of subscription counts remain unmeasured.
 
 **Not met / verified failing:** dependency audit NOT RUN to completion; eight existing tests skipped for missing secrets/configuration, network opt-in flags or the optional SciPy oracle, as listed above; live Azure transport and remote gate NOT RUN; push/merge/deploy/version bump not done, as instructed. The requested literal empty `git diff main` check was verified failing because main moved; the original-base and merge-base scope checks were empty. No implementation stop condition was encountered.
+
+**Planner's merge record, 2026-10-09 (after the handback above).** The handback was complete against
+the twelve items. What the planner measured itself, in `../ta-s260` unless said:
+
+- **The guard the builder could not plant.** `kernel/bus_azure_config.py`'s `receive_max_messages` default put
+  back to 10: `test_four_debates_lose_no_reply` fails (`clean` is false), exit 1; restored, `git status` empty.
+- **Both handback commands with a connection string in the environment** (a name that resolves nowhere): four
+  clean reports and exit 0 (effective lanes 1.00, 1.39, 1.69, 2.14); not clean and exit 1 at ten a pass.
+- **The live transport, before the merge**, with the main checkout's `.env` and the `azure` extra. Two at once,
+  2 orders: clean. One to four at once, 4 orders, 2 rounds, turns of 10 s, a wait of 60 s: all clean, 16 turns
+  in 186.7, 94.1, 93.9 and 50.2 s (four orders make two waves at two and at three). Four at once with replicas
+  3 s late, turns of 8 s, a wait of 20 s: clean at one request a pass with 4 replicas on the first wave; at ten
+  a pass 2 of 4 failed open, 2 replies nobody took, one replica served the first four turns. Every topic
+  deleted; `production_unchanged` true in every report.
+- **The rebase.** `main` had gained a `DL-280` of its own, so the builder's entry is
+  [DL-281](../design-log.md) here, in the spec and in the one test docstring that cites it.
+- **Two CodeQL results on the branch** (129 open against 127): a module global in `debate_lanes_model.py` and a
+  bare `del` in `debate_lanes_memory.py`, a note and a warning. Both removed (`functools.cache` on the warm-up;
+  a docstring for the no-op), `make ci` run again, 127 open after, none at error level.
+- **`make ci`** on the merged commit: exit 0, 4,436 passed, 8 skipped, 100.00 %, dependency audit clean.
+  **`make gate-ran`** from this worktree: `GATE PROVEN for 19239d2594dcb5691cb9350a39ae80ae39b9d966` (CI,
+  CodeQL, Security Findings, each attempt 1).
+- **F1, on the merged `main`, live, no cost:** see [functionality-checks](../laws/functionality-checks.md).
+  PASS.
+- 🟠 **Seen, not caused:** the fleet's `deliberator-manager.reply` subscription holds 7 dead-lettered messages,
+  the same before and after every run. After the 12-minute configuration the SDK logged idle connections
+  closed by the service (`no active links in the past 300000 milliseconds`); no count was affected.
+
+Outputs: OneDrive `trading-agents-data/s260-2026-10-09/`.
 
 ---
 

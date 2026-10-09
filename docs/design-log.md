@@ -97,7 +97,7 @@ ruling would probably stay `revise` for another reason shared by every order (no
 
 ---
 
-## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); SPEC [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), packaged for Codex; work-queue 113
+## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); MERGED as [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md) `0.124.00` (`19239d25`), F1 passed 2026-10-09; work-queue 113
 
 **The question.** [DL-277](design-log.md) measured the request side alone: four consumers on one
 subscription and a handler that sleeps. Step 1 of its plan is a committed harness on the production

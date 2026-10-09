@@ -190,7 +190,7 @@ follows; this is a second build of the same sprint. The `DeployRecord`'s commit 
 
 ---
 
-## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); not proven on the fleet; work-queue 113
+## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); one clean fleet run at three at once on 2026-10-09 (amendment 1); work-queue 113
 
 **The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
 time, is said there to need peers that serve in parallel. Is that built?
@@ -234,6 +234,39 @@ DL-145's watcher failed), and the vendor's rate limit with K calls in flight.
 3. K=3 would take a night on `gpt-5.5` from about 7 debated buys to at most about 21; the largest night on
    record approved 18. The value lives in the tunables pack, a fidelity decision path, so until the count
    allows a pack edit it would be a live setting on three apps.
+
+**Amendment 1 — step 2 is done: one fleet proof at three debates at once, clean (measured 2026-10-09
+15:54–16:01 AEDT, 04:54–05:01 UTC; operator: *"yes, it can. go ahead"* to about $5.30).** Six synthetic
+buys (`verify-2026-10-09-s260-k3-a`: GOOGL, TMO, TXN, CSCO, GOOG, UNP, one share each) seeded under
+`sched-2026-10-08`'s real AnalystRun, on the fleet's own images (`s259a`). Live for the run only: the
+manager's `DELIBERATOR_DEBATE_CONCURRENCY` 3, each debater app at three replicas, and a temporary window on
+the master and the three deliberator apps. Execution and the portfolio manager stayed at 0 replicas.
+
+| Read | Value |
+| --- | --- |
+| Orders really debated | **6 of 6**; 0 failed open; **0 orphaned replies** |
+| Model calls | **30** (12, 12 and 6), all `gpt-5.5`, all ended on `stop`; **$3.72** |
+| Replicas | 3 of each debater running at three samples; **7 activations** (the manager and three instances of each debater), credentials passed; **3 calls in flight at once** on each debater |
+| Time | the record landed 6.9 minutes after the seed; model span 361.8 s for 819.3 s of model time: **2.26 lanes**, about 60 s an order against 188 to 231 s one at a time |
+| Faults | 0 |
+| The vendor's rate limit | not met at three calls in flight for each debater |
+
+The slowest call took 62.3 s and the largest turn wrote 7,569 output tokens. The judge ruled `overturn` on
+four and `revise` on two; the rulings are about orders priced at a placeholder $100.00 and are not evidence
+for [DL-280](design-log.md).
+
+**Torn down and restored.** `pg_teardown --prefix` deleted the PMRun, its DeliberationRun and 32 edges; the
+AnalystRun has its one PM run again, no PM run awaits deliberation or execution, and the 30 `LLMCall` rows
+stay as the record of the spend. The four apps' scale, env, image, resources, ingress and secret names
+equal the snapshot taken before; execution and the portfolio manager were not touched. Scripts, snapshots
+and outputs: OneDrive `trading-agents-data/k3-fleet-proof-2026-10-09/`.
+
+**What it does and does not show.** The debater apps scale to three replicas and each activates; the
+manager's reply routing holds with real debates in flight; nothing was lost. It is **one** run of two waves.
+September's failure appeared in one run of two, so this does not prove absence; its named cause (ten
+requests a pass) is gone and is held red by [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md)'s tests. Not measured: a night-sized batch (the
+largest on record approved 18), and execution reading the record. **Step 3 is the operator's decision:**
+three at once as a live setting on three apps (the pack is a fidelity decision path), or leave the dial at 1.
 
 **Ruled out for now.** Turning the dial for tonight's run: six F2s are owed on it and K above 1 is
 unproven on the fleet. A longer wait alone: the brief's last tick caps it near 3,000 seconds, about 12

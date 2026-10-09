@@ -72,7 +72,7 @@ class MemoryReceiver:
         return self._broker.take(self._topic, max_message_count, max_wait_time)
 
     def complete_message(self, message: Raw) -> None:
-        del message
+        """A taken message is already off its queue; completing it changes nothing."""
 
     def abandon_message(self, message: Raw) -> None:
         self._broker.publish(self._topic, json.loads(message.body))

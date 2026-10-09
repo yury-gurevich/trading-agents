@@ -660,7 +660,7 @@ Exit code: 1
 | `scripts/debate_lanes.py` | 111 |
 | `scripts/debate_lanes_live.py` | 149 |
 | `scripts/debate_lanes_memory.py` | 144 |
-| `scripts/debate_lanes_model.py` | 92 |
+| `scripts/debate_lanes_model.py` | 89 (92 at handback; the planner removed a module global before the merge) |
 | `scripts/debate_lanes_observers.py` | 85 |
 | `scripts/debate_lanes_report.py` | 101 |
 | `scripts/debate_lanes_scene.py` | 183 |

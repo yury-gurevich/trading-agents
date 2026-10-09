@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import functools
 import time
 from decimal import Decimal
 
@@ -26,7 +27,6 @@ GUIDED = (
     "[[ ## completed ## ]]"
 )
 UPHOLD = '{"ruling": "uphold", "rationale": "clears review"}'
-_WARM = False
 
 
 class SleepingLLM:
@@ -45,11 +45,9 @@ class SleepingLLM:
         return GUIDED
 
 
+@functools.cache
 def warm_up() -> None:
-    """Run one guided turn so DSPy's initial import is outside every span."""
-    global _WARM
-    if _WARM:
-        return
+    """Run one guided turn, once, so DSPy's first import is outside every span."""
     agent = DeliberatorAgent(
         InProcessBus(),
         graph=InMemoryGraphStore(),
@@ -64,7 +62,6 @@ def warm_up() -> None:
             proposition=DebateProposition(decision="buy WARM", context="ctx"),
         )
     )
-    _WARM = True
 
 
 def pm_node(graph: InMemoryGraphStore, orders: int) -> Node:

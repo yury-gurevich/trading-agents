@@ -10,7 +10,9 @@ and is marked CLOSED here.
 
 ---
 
-## DL-285 - a reply cut off at the cap is the port's stopped completion on both vendors; the operator records its stop reason and its tokens on both paths and writes the audit, and the chat says one sentence - status: MEASURED and DECIDED (planner, 2026-10-10 00:15 AEDT); specced as [S264](sprints/sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so.md); work-queue 124; the failed request is work-queue 125
+## DL-285 - a reply cut off at the cap is the port's stopped completion on both vendors; the operator records its stop reason and its tokens on both paths and writes the audit, and the chat says one sentence - status: MEASURED and DECIDED (planner, 2026-10-10 00:15 AEDT); specced as [S264](sprints/sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so.md); work-queue 124; the failed request is work-queue 125; OpenAI's real cut-off read 2026-10-10 (amendment 1)
+
+🔁 **Amendment 1, 2026-10-10 00:28 AEDT (planner) — OpenAI's cut-off reply produced and read; it is the shape the adapter reads.** On the operator's word (*"yes, you may spend a tihrd of a cent"*), one paid call at 00:27 AEDT: `gpt-5.5` at `xhigh` with the cap at 64, a typed question through the chat handler on an in-memory graph, on `main` at `ad741063`. The vendor answered `status: incomplete`, `incomplete_details.reason: max_output_tokens`; `output` held one `reasoning` item and no function call; usage 278 in, 64 out (all reasoning), 0 cached; $0.0033 at the price pack's rates. On that code the chat said *"Operator could not parse the command."*, the row read `unknown`, 13 in, 0 out, `estimated`, no `CommandAudit` was written and a fault was recorded: what the table below shows for a fake reply, now for a real one. The call is not on the live ledger (the graph was in memory); this paragraph is its record. No decision changes. Still not produced: a reply cut inside the function call's arguments, and any cut-off on Anthropic.
 
 **The question.** S263's paid check found that the operator's ledger rows carry no stop reason, and
 reading the caller showed a cut-off reply is recorded differently on the two vendors (DL-284,

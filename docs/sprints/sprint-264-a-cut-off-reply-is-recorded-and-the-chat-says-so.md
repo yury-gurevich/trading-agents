@@ -112,7 +112,8 @@ chat shows the vendor's field name. On Anthropic the adapter does not raise: the
 the chat says *"No explanation returned."* with nothing saying why. And if Anthropic's reply is cut
 inside the tool block, the chat shows the half sentence as an answer.
 
-No cut-off has happened in the chat: the live ledger holds none from any agent. The cost of leaving
+No cut-off has happened in the chat: the live ledger holds none from any agent, and the one real
+cut-off this system has seen was produced on purpose (table below). The cost of leaving
 it is that the first one will be recorded as free on one vendor, unexplained on the other, and
 counted by the outage check as a call that returned nothing.
 
@@ -140,7 +141,8 @@ row says otherwise.
 | What the chat page shows of a turn | only `turn.message`; `outcome` changes nothing on screen except for `needs_confirmation`, `dispatched` and `confirmed_dispatch` | *[measured, read]* `renderTurn` and `send` in `surfaces/dashboard/static/chat.js`, both whole |
 | Who else reads a `CommandAudit`'s outcome | `surfaces/queries/scorecard_actions.py::_acts`: an audit with no `Intent` whose outcome is not `explain` counts as **a human action** on the unattended scorecard | *[measured, read]* the function whole; `grep CommandAudit` over every tracked `.py` outside tests finds only the operator's store, the contract and this reader |
 | The live ledger | 1,456 `LLMCall` rows. **None, from any agent, reads `max_tokens`, `length` or `max_output_tokens`.** The operator has 9 rows, all `unknown`, all `claude-opus-5`, 2026-09-23 and -24; the largest reply 703 output tokens; none at or over 4,096 | *[measured 2026-10-09 23:37 AEDT, read-only, the main checkout with its `.env`]* `wq124_live_ledger_read.py` |
-| How each vendor reports a cut-off | OpenAI: `status: "incomplete"`, `incomplete_details.reason: "max_output_tokens"`. Anthropic: `stop_reason: "max_tokens"` | *[read in the SDK's types and in `kernel/llm_anthropic_responses.py` — NOT produced by either vendor]* the paid check after merge produces one of each |
+| How OpenAI reports a cut-off | `status: "incomplete"`, `incomplete_details.reason: "max_output_tokens"`; `output` holds one `reasoning` item and no function call; `usage` reads 278 in and 64 out, all 64 of them reasoning, 0 cached | *[measured 2026-10-10 00:27 AEDT, one paid call, $0.0033 at the price pack's rates]* `gpt-5.5` (the vendor names it `gpt-5.5-2026-04-23`) at `xhigh` with the cap at 64, a typed question through the chat handler on an in-memory graph, on `main` at `ad741063`. On that code the chat said *"Operator could not parse the command."*, the row read `unknown`, 13 in, 0 out, `estimated`, no `CommandAudit` was written and a fault was recorded: the second row of this table, now on a real reply. A reply cut inside the function call's arguments has not been produced |
+| How Anthropic reports a cut-off | `stop_reason: "max_tokens"` | *[read in the SDK's types and in `kernel/llm_anthropic_responses.py` — NOT produced by the vendor]* its account is empty until 2026-10-11; the paid check after merge produces one |
 | A prototype of the whole change | four files, 58 lines added and 14 removed (Appendix). After it, on both vendors: the sentence in the chat for every cut-off case; rows 21,133 in, 4,096 out, `vendor`, with `max_output_tokens` or `max_tokens`; good replies read `completed` or `tool_use`; filtered ones `content_filter` or `refusal`; audits `explain`, `refused`, and `intent` then `explain`; no fault; no row read silent; the explicit approve asks for confirmation on both | *[measured]* the same script on the prototype; the two outputs were diffed |
 | Existing tests the prototype breaks | **None.** 857 passed: `agents/operator`, `agents/deliberator/tests`, `surfaces/tests`, and under `tests/` the operator, adapter-ownership, adapter-security and outage files. So no existing test guards any of this | *[measured]* run on the prototype |
 | Prototype tests for every row of the Test plan | 25 cases pass on the prototype; on `main` the file fails at collection, on the import of the two new names | *[measured]* `proto_test_cut_off.py`, 412 lines, outside the repository |
@@ -381,10 +383,11 @@ vendor); its row is 🟩 only when the cited tests prove each of them.
    audits and no fault; the time-out cases print what they print today.
 3. **F1b, paid, on the operator's word: under one cent a vendor.** One typed question through the
    chat handler on an in-memory graph, the real adapter built with the cap at 64, so the vendor cuts
-   the reply: about 290 input and 64 output tokens. On OpenAI as soon as it is allowed; on Anthropic
-   after its account is funded (2026-10-11). It reads the vendor's own cut-off reply for the first
-   time: the stop word, the counts, what the `output` or the tool block holds; and the row, the
-   audit and the chat's sentence.
+   the reply: about 290 input and 64 output tokens. One was produced on OpenAI before the build
+   (2026-10-10, $0.0033, the Measured table), on `main`'s code; after merge the same call on the
+   built code must show the sentence, the vendor's counts and stop word on the row, and the audit.
+   On Anthropic after its account is funded (2026-10-11), where it also reads that vendor's own
+   cut-off reply for the first time: the stop word, the counts, what the tool block holds.
 4. No deploy. **Not proven by any of these:** a reply cut off at the real cap of 4,096 on the
    21,000-token explain prompt.
 

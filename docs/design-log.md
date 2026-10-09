@@ -12,6 +12,8 @@ and is marked CLOSED here.
 
 ## DL-284 - on OpenAI the operator's forced function goes through the Responses API, its effort resolves from the provider as its model does, and an explicit model of another vendor refuses the chat's binding - status: MEASURED and DECIDED (planner, 2026-10-09 21:11 AEDT); MERGED as [S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md) `0.125.01` (`9df7dacd`), F1a and F1b passed 2026-10-09; work-queue 121 closed, 124 opened
 
+🔁 **Amendment 2, 2026-10-09 23:06 AEDT (planner) — amendment 1 overstated the ledger defect; corrected by measuring through each real adapter.** Amendment 1 said a cut-off call's row holds 0 output tokens *on either vendor*. That was inferred from a stand-in client that raises, and it is true on OpenAI only. Measured offline on the merged code, each real operator adapter on a fake SDK, one cut-off explain each: on OpenAI the adapter raises and the row holds 0 output tokens stamped `estimated`; on Anthropic the operator's adapter does not raise, the row holds the vendor's 21,133 and 4,096, and the chat answers *"No explanation returned."* Missing on both: the stop reason, which the agent never passes on and which Anthropic's operator client does not expose. The token loss dates from S262's OpenAI adapter, which raised the same way, and S263 kept that. Work-queue 124 is restated, with one decision added: what the chat says on a cut-off, the same on both vendors.
+
 🔁 **Amendment 1, 2026-10-09 22:49 AEDT (planner) — built as decided and merged; what the paid check confirmed and what it found.**
 
 - **Confirmed (F1b, three calls, $0.27).** Through the dashboard binding on the merged code `gpt-5.5` answered an

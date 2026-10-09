@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`
-**Status:** MERGED 2026-10-09 — `0.125.01`, fast-forwarded to `9df7dacd`, tag `v0.125.01`, GATE PROVEN `9df7dacd` (CI, CodeQL, Security Findings); no deploy; F1a and F1b passed; 🔴 found by F1b and not caused by this sprint: the operator's ledger row carries no stop reason and drops a cut-off call's tokens (work-queue 124)
+**Status:** MERGED 2026-10-09 — `0.125.01`, fast-forwarded to `9df7dacd`, tag `v0.125.01`, GATE PROVEN `9df7dacd` (CI, CodeQL, Security Findings); no deploy; F1a and F1b passed; 🔴 found by F1b, carried over from S262's adapter: the operator's ledger row carries no stop reason and, on OpenAI, drops a cut-off call's tokens (work-queue 124)
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-284](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-282](../design-log.md) amendment 2 (what S262's paid check refuted) · [work-queue 121](../work-queue.md)
@@ -1082,8 +1082,10 @@ seconds a turn. 🔴 *Found by F1b, not caused by this sprint:* each of the thre
 a cut-off it never reads the usage the adapter recorded before raising: measured offline on the merged
 code, such a call's row holds 0 output tokens stamped `estimated`. So this spec's Goal sentence, *a
 reply cut at the output cap is recorded with its tokens*, is true of the adapter (test A3) and
-**verified failing in the operator's ledger row**, on either vendor. The deliberator's wrapper reads
-both on both paths. Work-queue 124. *Not observed:* a cached input token (0 on all three calls).
+**verified failing in the operator's ledger row** on OpenAI. *Corrected the same night, measured through each
+real adapter:* on Anthropic the operator's adapter does not raise on a cut-off, so its tokens are recorded;
+the stop reason is missing on both vendors. S262's adapter raised the same way, and this sprint kept that.
+The deliberator's wrapper reads both on both paths. Work-queue 124. *Not observed:* a cached input token (0 on all three calls).
 
 **Written at the merge, before the checks — still owed after the merge, none of it proven here:** F1a (the replay and the binding's refusal on
 the merged `main`, at no cost), F1b (one paid `explain` and one `interpret` through the dashboard

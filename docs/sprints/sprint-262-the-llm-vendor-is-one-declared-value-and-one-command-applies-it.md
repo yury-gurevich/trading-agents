@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`
-**Status:** BUILT
+**Status:** MERGED 2026-10-09 — `0.125.00`, fast-forwarded to `d01b71b3`, tag `v0.125.00`, GATE PROVEN `d01b71b3`; not deployed
 **Version:** *next available MINOR at merge*
 **Effort:** L
 **Decisions:** [DL-282](../design-log.md) (this sprint's ten decisions, made) · [DL-265](../design-log.md) (the hand-made switch it replaces) · DL-100 (the models follow the provider) · [work-queue 109](../work-queue.md)
@@ -645,7 +645,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s262`, branch `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`; `.env` absent, verified with `Test-Path .env` → `False`. No live calls, push or merge. `pyproject.toml` and `uv.lock` untouched; the planner bumps and locks at merge.
 
@@ -1082,9 +1082,20 @@ Exit code: 0
 
 Markdown lint also passed. The command modules passed `uv run mypy --explicit-package-bases scripts/switch_llm_provider.py scripts/switch_llm_config.py scripts/switch_llm_azure.py scripts/switch_llm_apply.py scripts/switch_llm_proof.py`: `Success: no issues found in 5 source files`, exit 0. The Make recipe does not include scripts in mypy, so this is separate proof. Test-only fixture refinements after the full run were independently broken/restored; production source did not change. A prior secret-hook run reported file changes because the handback was edited concurrently; the steady-tree retry above passed with no baseline update.
 
-**`make gate-ran`:** NOT RUN — no push is authorized, so no remote gate is claimed.
+**`make gate-ran`:** run by the planner from `../ta-s262` at `d01b71b3745ff27b97d9b4c719bdcd7f95ad5be1`:
+
+```text
+GATE PROVEN for d01b71b3745ff27b97d9b4c719bdcd7f95ad5be1:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**The planner's `make ci` on Windows, on the same commit:** exit 0; `4522 passed, 8 skipped`, coverage `100.00 %`; `No unaccepted vulnerabilities; 1 accepted advisory re-checked`. Open CodeQL alerts on the branch: 127, the same alert numbers as `main`'s.
 
 **Not met / verified failing:** overall `make ci` is not green (exit 2 at the offline dependency audit). Dependency audit and live checks are NOT RUN offline. No MERGED, remote-gated, deployed or live-proven claim.
+
+**At the merge (planner):** the dependency audit ran in the planner's gate and passed, and the remote gate is proven above. Still not met: every live check (F1a, F1b, F2) and the return to Anthropic.
 
 ---
 

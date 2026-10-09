@@ -29,7 +29,7 @@ from kernel.bus_azure_ready import (
 from kernel.serve_transport import request_topic
 
 if TYPE_CHECKING:
-    from kernel import FaultSink, GraphStore
+    from kernel import FaultSink, GraphStore, MessageBus
 
 _MESSAGE_LABEL = "AgentMessage"
 
@@ -47,10 +47,13 @@ class ServiceBusPeerClient:
         timeout_seconds: float | None = None,
         reply_receiver: ReadyEventReceiver[Any] | None = None,
         sink: FaultSink | None = None,
+        bus: MessageBus | None = None,
     ) -> None:
         """Create a live Service Bus request client for the manager."""
         self._settings = settings if settings is not None else AzureServiceBusSettings()
-        self._bus = AzureServiceBusBus(settings=self._settings)
+        self._bus = (
+            bus if bus is not None else AzureServiceBusBus(settings=self._settings)
+        )
         self._graph = graph
         self._sender = sender
         self._reply_subscription = reply_subscription

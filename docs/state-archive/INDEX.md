@@ -27,6 +27,7 @@ canonical chronological list of every sprint, use [`../sprints/README.md`](../sp
 | [STATE-15.md](STATE-15.md) | S225 + items 78/33/22B + EXP-013 + DL-205–208 | The dashboard-truth and gate-widening arc, 2026-09-22→23: S225's stop lineage and the `s225` deploy, EXP-013 (regime-scaled sizing, measured not built), the `scripts/` size gate (item 78), the 57 PARAM divergences reconciled (item 33), machine-checkable sprint status (item 22 Part B), and the dashboard's deploy-currency, schedule and verdict repairs (DL-205 to DL-208) | 2026-09-25 |
 | [STATE-16.md](STATE-16.md) | S226–S227 + DL-210–219 | The LLM hard stop and the degraded-run arc, 2026-09-24→25 morning: the Anthropic credit drain that held the run and the key's return (DL-210), S226's benchmark-relative Snapshot and its `s226a` deploy, the fleet-check banner (DL-211–213), S227's degraded run for LLM-only outages and the `s227` deploy it needed a Dockerfile fix for (DL-218), the planner-fired `manual-2026-09-24` run, the fleet brought down after a run (DL-219), and S227's test time bomb | 2026-09-26 |
 | [STATE-17.md](STATE-17.md) | S228–S233, S244's entry (moved 2026-10-07), and S234's and S236's entries (moved 2026-10-08) + DL-222, DL-224–226, R008 | The replay-universe, substrate-wall and stop-placement arc, 2026-09-25→26: the benchmark tile (S228), the law-book gate (S229), the stop that rests where the PM decided and its live replace check (S230), the point-in-time replay universe and its identity fix (S231/S233), the substrate import wall and the full `up` at `s232` (S232), the `s228a`/`s230` deploys, R008. Also holds the 2026-09-30 pyjwt advisory fix (`0.119.04`), moved 2026-10-06 | 2026-09-29 |
+| [STATE-18.md](STATE-18.md) | S235–S251, S258, S259 + the header, *Recent* and *Next* as they stood | The fidelity, drift-row and debate-plumbing arc, 2026-09-27→10-08: the replay and its fidelity check (S235, S237, S250), the tape-volume, barrier and PM-mark sprints with their deploys (S238–S240, S242, S243), the debate-reading and divergence fixes (S245, S246, S248, S249), every drift row decided (S251), the law-row gate (S258, S259), the checks of `sched-2026-09-28` and `sched-2026-10-01`; plus a 6 KB header line and the September narrative under *Next* | 2026-10-09, the first tracker trim (76 KB against a limit of 40) |
 
 ## A note on the overlapping ranges
 
@@ -39,7 +40,7 @@ entries themselves are unique to one file. If you cannot find a sprint, search a
 
 ## When to split again
 
-Trigger: **STATE.md passes 200 lines** (operator rule, 2026-08-11; the 2026-08-12 split ran at
+Trigger since 2026-10-09: **STATE.md passes 40 KB** ([housekeeping charter](../../ops/departments/housekeeping/charter.md), G-SIZE), because a file can hold 200 lines and be 76 KB. The older trigger still stands beside it: **STATE.md passes 200 lines** (operator rule, 2026-08-11; the 2026-08-12 split ran at
 **192** — splitting on approach rather than on breach, because the session that closed DL-106
 would have crossed it — it replaces the old "~50 % or
 roughly 400 lines", which was blown by 174 lines before anyone noticed, because nothing measured it).

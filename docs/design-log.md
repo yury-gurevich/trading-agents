@@ -10,7 +10,94 @@ and is marked CLOSED here.
 
 ---
 
-## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); SPEC [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), packaged for Codex; work-queue 113
+## DL-281 - S260's command defaults to the four measured concurrencies - status: DECIDED (builder, 2026-10-09)
+
+D9 lists every argument default except the concurrency list. The Goal says the bare command runs
+several debates at once, and the required command compares one through four. Default `--concurrency`
+to `1 2 3 4`, keeping an explicit list authoritative. Requiring the flag or choosing only four was
+ruled out: either would make the bare command miss the stated comparison. This is a tooling default;
+no production setting or pack changes. All other choices implement D1-D9, including real first-poll
+startup, without changing the Appendix's production calls.
+
+**Proof constraint found during the build.** Main advanced independently after the sprint tree was
+cut from `10770f91`, including STATE trimming and tracker updates. The requested two-tip
+`git diff main --stat` therefore includes reverse STATE changes even though this branch never edits
+STATE. Retain that actual output and assess this sprint's protected-path edits against its original
+base and merge base, naming the literal empty-output check as failing. Rebasing solely to make that
+check print nothing was ruled out: it would import unrelated history into the proving tree without
+changing the harness. Do not alter STATE or main to manufacture an empty result. The sprint's Return
+notes record the measured refs and all three comparisons.
+
+---
+
+## DL-280 - the judge has ruled `revise` on every order since the reward-to-risk floor went to 0, and `revise` changes no order; the causes are in the packet and in the judge's prompt - status: MEASURED; fix PROPOSED (planner, 2026-10-09 10:20 AEDT), told to the operator, not yet confirmed
+
+**The question.** On `sched-2026-10-08` the judge ruled `revise` on TMO because *"the live reward-risk gate
+is effectively disabled at threshold 0"*. That floor is a recorded decision
+([ADR-0027](decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md), Correction 2).
+Is this one ruling or a pattern, and why does it happen?
+
+**Measured 2026-10-09, no LLM call.** Every `DeliberationRun` with a real debate, and the recorded packet and
+turns of TMO's (scripts and outputs: OneDrive `trading-agents-data/f2-sched-2026-10-08/`, `analysis_a.py`).
+
+| Rulings | All | `revise` | `uphold` | `overturn` | Rationale names reward-to-risk |
+| --- | --- | --- | --- | --- | --- |
+| Before 2026-09-17 | 209 | 161 | 26 | 22 | 29 |
+| From 2026-09-17, the floor at 0 (S211) | 35 | 35 | 0 | 0 | 32 |
+
+- 34 of the 35 are Opus's and one is `gpt-5.5`'s, so it is not one vendor's habit.
+- **`revise` has no reader.** Execution drops an order only when its ticker is in `vetoed_tickers`
+  (`agents/execution/deliberation_gate.py::drop_vetoed`). None of the 35 orders was vetoed or changed.
+- **The packet prints the ratio as a gate that passed.** TMO's line: `PM gate outcome: name=reward_risk
+  value_reward_risk_ratio=1.004 threshold_reward_risk_ratio=0 -> PASSED (… comparison=DISCLOSURE_ONLY)`. It
+  has the form of the eight real gates beside it. Nothing says the ratio is printed and not enforced, or why.
+- **The judge's prompt** (`kernel/deliberation_prompts.py::JUDGE_SYSTEM`, version
+  `2026-09-30-s245-v6-judge-claude-opus-5`) says *"If the Challenger catches a grounded
+  implementation-specific flaw from the evidence, do not uphold the decision"*, and all six of its examples
+  rule `revise`. One of them (`alpha158-weight-zero`) rules `revise` because a weight of 0.00 *"is a disabled
+  signal"*, which is the shape of the argument made about the floor.
+- 🪰 The last column counts rationales that name the theme, by a keyword pattern; a rationale can name several.
+- *[not measured]* Whether the judge's earlier prompt versions held the same six examples (77 % `revise`
+  before 2026-09-17 suggests so); what the 35 debates cost.
+
+**Reading.** Three causes that add. The packet shows a disclosed number as a passed gate and does not state
+the decision behind it. The judge may not uphold once an implementation flaw is named, and this one is on
+every order. Every example it was given rules `revise`. So the judge rules on the system's design, which is
+the same for every order, and the ruling cannot tell one order from another. The ruling it then gives is
+read by nothing.
+
+**Consequence for [DL-264](design-log.md)'s order.** Amendment 6's loop gives `revise` an effect: a smaller
+quantity or no order. With this judge it would shrink or drop every order. The judge's contract therefore
+comes before the loop, and before the debaters' typed turn, whose worth is read through the judge.
+
+**Proposed (work-queue 118).**
+
+1. **The packet, deliberator only, so no fidelity decision path moves.** A gate whose detail says
+   `comparison=DISCLOSURE_ONLY` is not rendered as `PM gate outcome … -> PASSED`. One line, in the manner of
+   S255's *rule for every order*, states that the ratio is printed and not enforced, by ADR-0027's decision
+   and on its evidence. The same sprint states that the name's previous lot was stopped out that session
+   ([DL-240](design-log.md) amendment 2; work-queue 98's *past fills in the ticker*).
+2. **The judge's contract**, ahead of the debaters' typed turn: rule on what distinguishes this order from
+   the others; a property shared by every order is recorded as a design note and cannot decide the ruling;
+   the examples include an `uphold` and an `overturn`. It changes a prompt, so ADR-0010's gate and a paid
+   replay apply.
+3. **`revise`** takes its effect from amendment 6's loop, in shadow first.
+
+**Proof before either ships:** the ten stored packets replayed on `gpt-5.5`, about $8, on the operator's
+word. The bar: the rulings are not all the same, and none rests on the floor.
+
+**Ruled out.** *Raising the floor so the gate can fail:* Correction 2 measured that the ratio does not
+predict returns (+0.03 % per trade, 95 % CI −0.17 % to +0.23 %, 47,485 decisions) and that a floor of 0.80
+rejects between 0 % and 99 % of a night's book. *Removing the line from the packet:* the debaters would lose
+the stop and target geometry, and withholding is what work-queue 98 exists to end. *Dropping `revise` from
+the judge's choices now:* under the instruction not to uphold, the rulings may all move to `overturn` and no
+buy would be placed; not measured, so not done blind. *The packet line alone:* the same rationales also name
+fixed-fraction sizing (a distinction the prompt teaches) and the stop's gap risk on most orders, so the
+ruling would probably stay `revise` for another reason shared by every order (not measured).
+
+---
+
+## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); MERGED as [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md) `0.124.00` (`19239d25`), F1 passed 2026-10-09; work-queue 113
 
 **The question.** [DL-277](design-log.md) measured the request side alone: four consumers on one
 subscription and a handler that sleeps. Step 1 of its plan is a committed harness on the production
@@ -103,7 +190,7 @@ follows; this is a second build of the same sprint. The `DeployRecord`'s commit 
 
 ---
 
-## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); not proven on the fleet; work-queue 113
+## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); one clean fleet run at three at once on 2026-10-09 (amendment 1); **three at once is LIVE on the fleet since 2026-10-09 (amendment 2, operator)**; work-queue 113
 
 **The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
 time, is said there to need peers that serve in parallel. Is that built?
@@ -147,6 +234,53 @@ DL-145's watcher failed), and the vendor's rate limit with K calls in flight.
 3. K=3 would take a night on `gpt-5.5` from about 7 debated buys to at most about 21; the largest night on
    record approved 18. The value lives in the tunables pack, a fidelity decision path, so until the count
    allows a pack edit it would be a live setting on three apps.
+
+**Amendment 1 — step 2 is done: one fleet proof at three debates at once, clean (measured 2026-10-09
+15:54–16:01 AEDT, 04:54–05:01 UTC; operator: *"yes, it can. go ahead"* to about $5.30).** Six synthetic
+buys (`verify-2026-10-09-s260-k3-a`: GOOGL, TMO, TXN, CSCO, GOOG, UNP, one share each) seeded under
+`sched-2026-10-08`'s real AnalystRun, on the fleet's own images (`s259a`). Live for the run only: the
+manager's `DELIBERATOR_DEBATE_CONCURRENCY` 3, each debater app at three replicas, and a temporary window on
+the master and the three deliberator apps. Execution and the portfolio manager stayed at 0 replicas.
+
+| Read | Value |
+| --- | --- |
+| Orders really debated | **6 of 6**; 0 failed open; **0 orphaned replies** |
+| Model calls | **30** (12, 12 and 6), all `gpt-5.5`, all ended on `stop`; **$3.72** |
+| Replicas | 3 of each debater running at three samples; **7 activations** (the manager and three instances of each debater), credentials passed; **3 calls in flight at once** on each debater |
+| Time | the record landed 6.9 minutes after the seed; model span 361.8 s for 819.3 s of model time: **2.26 lanes**, about 60 s an order against 188 to 231 s one at a time |
+| Faults | 0 |
+| The vendor's rate limit | not met at three calls in flight for each debater |
+
+The slowest call took 62.3 s and the largest turn wrote 7,569 output tokens. The judge ruled `overturn` on
+four and `revise` on two; the rulings are about orders priced at a placeholder $100.00 and are not evidence
+for [DL-280](design-log.md).
+
+**Torn down and restored.** `pg_teardown --prefix` deleted the PMRun, its DeliberationRun and 32 edges; the
+AnalystRun has its one PM run again, no PM run awaits deliberation or execution, and the 30 `LLMCall` rows
+stay as the record of the spend. The four apps' scale, env, image, resources, ingress and secret names
+equal the snapshot taken before; execution and the portfolio manager were not touched. Scripts, snapshots
+and outputs: OneDrive `trading-agents-data/k3-fleet-proof-2026-10-09/`.
+
+**What it does and does not show.** The debater apps scale to three replicas and each activates; the
+manager's reply routing holds with real debates in flight; nothing was lost. It is **one** run of two waves.
+September's failure appeared in one run of two, so this does not prove absence; its named cause (ten
+requests a pass) is gone and is held red by [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md)'s tests. Not measured: a night-sized batch (the
+largest on record approved 18), and execution reading the record. **Step 3 is the operator's decision:**
+three at once as a live setting on three apps (the pack is a fidelity decision path), or leave the dial at 1.
+
+**Amendment 2 — step 3 is decided: three debates at once, as a live setting (operator, 2026-10-09 16:25
+AEDT: *"three at once"*).** Set 2026-10-09 16:27 AEDT on three apps and nowhere else: `deliberator-manager`'s
+`DELIBERATOR_DEBATE_CONCURRENCY` is 3 (was 1); `deliberator-proponent` and `deliberator-opponent` have
+`maxReplicas` 3 and `desiredReplicas` 3 in the nightly window rule, whose hours are unchanged. Compared with
+the morning's snapshot, those are the only differences on the three apps; the master, execution and the
+portfolio manager differ in nothing. **The pack still says 1**, because the pack is a fidelity decision path
+and an edit would restart the clean-session count: a full `up` puts 1 back on all three, and the pack edit is
+owed once the count allows it. **Rollback:** the manager's value back to 1 and the two debaters back to one
+replica. **F2, owed on the first scheduled night with more than one debated buy:** the record's
+`real_debate_count` equals the approved buys, `failed_open_count` 0, `orphaned_reply_count` 0, three replicas
+of each debater activated, and the record lands inside execution's 1,800 seconds. **Ruled out:** four at
+once, never run on the fleet since September's failure; waiting for more fleet runs first, since a night
+with more than about 7 debated buys places none today and the proof run cost $3.72 a time.
 
 **Ruled out for now.** Turning the dial for tonight's run: six F2s are owed on it and K above 1 is
 unproven on the fleet. A longer wait alone: the brief's last tick caps it near 3,000 seconds, about 12
@@ -3237,6 +3371,24 @@ written, not a defect, and the six that held say it has not cost money so far. I
 entry's question (what the book does with a name after an exit). The replay harness runs the same
 code, so EXP-014's arms include the behaviour. **No decision taken:** a re-entry rule is trading
 policy, the operator's to set, and the place to test one is the exit experiment this entry plans.
+
+**Amendment 2 — the same reading on the broker's own orders, with what each second lot did (measured
+2026-10-09).** On `sched-2026-10-08` the stops on TMO and DE had filled in the session, and the run bought
+TMO again: a limit of $661.63 against a stop fill of $645.43. From Alpaca's closed orders, by fill time:
+**14 of 37** filled stops were followed by a buy order for the same name before the next session opened. Two
+of those orders expired, one is pending and 11 filled: 6 are up and 5 down, **+$252.34** in total, of which
+INTC alone is +$216.01. **3 of the 11 were stopped out a second time** (SCHW, BMY, DE: −$129.81), so a stop
+limits the loss on a lot and not on a name (DE: −4.63 % and then −4.89 % within a week). The second lot was
+bought above the stop's fill in 6 of 11, by +0.51 % on average. **14 of the 37 stops filled in the first 15
+minutes of a session**; TMO's did, at 13:36 UTC, on a day whose low was $635.30 and whose close was $652.00.
+Why the run buys again: the stop is tied to the old lot's entry price, the analyst scores the name afresh at
+the close, and nothing between them carries the stop-out; the debate's packet does not carry it either.
+*[not measured]* how often a stopped name closed back above its stop the same day; any rule on the ten-year
+replay. **Proposed, told to the operator (the rule is theirs):** no cool-down on this evidence, because it
+would have cost this record $252, INTC's recovery; the packet states the stop-out (the packet sprint of
+[DL-280](design-log.md)); *no re-entry for 1, 3 or 5 sessions* becomes an arm of the exit experiment on the
+replay, after the fidelity verdict. The first amendment read the graph's refresh dates and counted 11 of 31
+a week earlier; script `analysis_b.py`, OneDrive `trading-agents-data/f2-sched-2026-10-08/`.
 
 ## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
 

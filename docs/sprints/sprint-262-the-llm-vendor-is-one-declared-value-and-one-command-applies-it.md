@@ -1102,6 +1102,51 @@ Markdown lint also passed. The command modules passed `uv run mypy --explicit-pa
 
 ---
 
+## Planner's review at the merge — 2026-10-09
+
+Re-measured by the planner in `../ta-s262`, not taken from the handback.
+
+- **Scope.** The checklist's scope command against the branch-cut commit `ceec5bb6` prints nothing:
+  no fidelity decision path, no `agents/deliberator/` file, no graph vocabulary, no tracker. No
+  security baseline, workflow or `Makefile` change. Every changed file is LF in the index.
+- **Existing tests.** Six existing test files are edited, as specified: the two probe counts
+  (12 to 13), the two chat-binding patches (they now patch `build_operator_llm`), the rider, and the
+  one constant `VENDOR_ADAPTER_CLASSES`.
+- **The packs.** The diff of `trading_credential_tests.json` and `trading_secrets.json` is added
+  lines only. The operator's OpenAI probe and key pair sit before its Anthropic ones; the order
+  carries no meaning.
+- **The deploy script.** It parses with no error. Its real `Get-AgentEnv`, run with the cluster
+  calls stubbed, gives each deliberator `DELIBERATOR_LLM_PROVIDER=openai` once (no key passed
+  twice), the operator `OPERATOR_LLM_PROVIDER=openai`, the master `MASTER_LLM_PROVIDER=openai`, and
+  leaves the scanner's and execution's lists as they were. The same functions on `main` give the
+  deliberators `anthropic`: the revert this sprint removes.
+- **Guards.** 32 things broken one at a time against the sprint's fourteen test files, each restored:
+  30 went red. One of the other two was the planner's own mistake (a key under a variable name the
+  rule does not cover); its corrected form, the operator's OpenAI probe taken out of the real pack,
+  is red. The last was a real gap: removing the check that the value was applied after an update left
+  every test green.
+- **Two changes made by the planner on the branch** (`e487cec3`):
+  1. *An apply with nothing to change waited fifteen minutes and exited 1.* Every app already on the
+     declared value means no update, so no container restarts and no fleet check can follow; the
+     command now says so and exits 0 at once, writing no evidence. Measured before the change with
+     the sprint's own fake Azure: exit 1, `proof failed: no FleetPreflight since the start`. The spec
+     had not said what this case should do: the omission was the spec's.
+  2. *A test for an update that did not take:* the update call succeeds, the value on the app is
+     unchanged, the command exits 1 naming the app. With it, the surviving break above is red.
+  Both are in `tests/test_switch_llm_planner_review.py`; removing either guard turns it red.
+- **Seen and accepted.** `FleetPreflight.checked_at` is written to the second and the command's start
+  instant is not, so a fleet check inside the same second as the start would not count; the master
+  starts tens of seconds after an update. The proof read lists every `AgentInstance` at each poll,
+  which is acceptable for a command run by hand a few times a year.
+- **Version.** MINOR, `0.124.00` to `0.125.00`; `uv lock` changed the version line alone (180
+  packages).
+
+**Still owed after the merge, none of it proven here:** F1a (the command against the fleet, with the
+retag and the master's three narrow updates), F1b (one paid exchange through the dashboard chat on
+`gpt-5.5`), F2 (the first scheduled run), and the return to Anthropic.
+
+---
+
 ## Appendix — the planner's prototype of the OpenAI operator adapter
 
 Built on a throwaway worktree on 2026-10-09 and type-checked there. It was never run against the

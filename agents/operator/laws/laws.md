@@ -112,9 +112,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   answer. It is recorded as `OPR-STA-03` says; `interpret` reads it as a refusal whose reason
   is `CUT_OFF_REPLY`, and the explicit command grammar still applies; `explain` returns
   `CUT_OFF_REPLY`; no part of the cut reply is shown; the `CommandAudit` is written and linked
-  to its `LLMCall` as for any reply; the same on every vendor. `CUT_OFF_REPLY` is:
-  "The model's reply was cut off at its output limit before it finished, so there is no answer.
-  Ask again, or ask something narrower."
+  to its `LLMCall` as for any reply; the same on every vendor. `CUT_OFF_REPLY` is one fixed
+  sentence that says the reply was cut off and names no vendor, model, number or the word
+  *token*; its letters are pinned by a test, not quoted here.
 
 ## Type alignment (`TYP`)
 

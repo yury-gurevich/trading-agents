@@ -905,6 +905,52 @@ The first detect-secrets run flagged the fixed `fixture-key` equality in the new
 
 ---
 
+## Planner's review at the merge — 2026-10-10
+
+Re-measured by the planner in `../ta-s264`, not taken from the handback.
+
+- **Scope.** The checklist's scope command against `main` (`2680c962`, which has not moved) prints
+  nothing: no fidelity decision path, no pack, no tracker, no version file, no production file of
+  the surfaces. In `kernel/llm_anthropic.py` the diff is one import, one constant and the operator's
+  class; the debate's three classes are untouched. No existing test was edited: the ten Python
+  files changed are the four production modules and six new test files. Every changed file is LF.
+- **The code is the measured prototype**, line for line: every added and every removed line of the
+  four production modules equals the prototype's (58 added, 14 removed).
+- **The measurement on the built code.** The planner's end-to-end script (each real adapter on a
+  fake SDK through the chat handler, 21 cases, 23 ledger rows) prints on the built code exactly what
+  it printed on the prototype: the sentence for every cut-off case on both vendors, the vendor's
+  counts and stop word on the row, the audits, no fault; the eight failed-request cases as on `main`.
+- **Guards.** 31 things broken one at a time against the builder's four test files, each restored
+  and the tree left clean: **31 went red, no gap.** The 23 of the spec, and eight the builder was
+  not given: a cut-off `interpret` refusing before the normaliser and the audit; no stop reason
+  before the first call; the usage dropped before the raise; a cut-off `explain` recording a fault;
+  the finished path writing a fixed stop word; `interpret`'s reason being a different sentence; the
+  cut-off path keeping a response text; the raise only when no tool block came back.
+- **The tests, read.** 17 functions, 30 cases, each citing its clause. D1 writes the sentence out
+  and compares what was observed on the two vendors. The surfaces' tests import the operator's
+  test helper, as the orchestration tests import agents' helpers.
+- **One change made by the planner on the branch.** `OPR-FAIL-04` as built quoted the sentence
+  inside the law. The law now says what the sentence must be (one fixed sentence that says the reply
+  was cut off and names no vendor, model, number or the word *token*) and leaves its letters to the
+  test that pins them: two copies of one text, with no gate comparing them, drift. The clause's
+  other assertions and its test-plan row are as built. The Closeout above quotes the clause as the
+  builder wrote it.
+- **Seen and accepted.** `test_c5_failed_interpret_keeps_the_old_fault_and_refusal` and
+  `test_d3_outage_distinguishes_failed_request_from_cutoff` assert that a failed request writes no
+  `CommandAudit`. That is today's behaviour, which this sprint was told to keep, and it is DRIFT-107:
+  the sprint that closes work-queue 125 edits those two assertions. The handback's `make ci` stopped
+  at the dependency audit, which needs the network the builder does not have; the planner's Windows
+  run is the proof.
+- **Version.** PATCH, `0.125.01` to `0.125.02`; `uv lock` changed the version line alone (180
+  packages).
+
+**Written at the merge, before the gate — still owed, none of it proven here:** the planner's
+Windows `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block;
+then F1a (the measurement on the merged `main`, at no cost) and F1b (one paid cut-off on OpenAI on
+the built code, on the operator's word; Anthropic's after its account is funded).
+
+---
+
 ## Appendix — the planner's prototype
 
 Measured on `main` at `2ce40c30`: with this diff applied, the 857 existing tests named in the

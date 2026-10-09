@@ -10,6 +10,72 @@ and is marked CLOSED here.
 
 ---
 
+## DL-282 - the fleet's LLM vendor becomes one declared value that the deliberators, the operator, its chat and the master's probes follow, with one command to apply and prove it - status: DECIDED (planner, 2026-10-09 17:25 AEDT); the build is [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md), work-queue 109
+
+**The question** (operator, 2026-10-06, DL-265): switching the vendor *"SHOULD be a configurational change and a
+trigger"*. By hand it took five live changes on four apps and a hand-edited copy of the master's
+credential-test pack, and any full `up` reverts it.
+
+**Measured before deciding** *[2026-10-09; the prototype's diff and outputs are outside the repository, `trading-agents-data/wq109-2026-10-09/`]*.
+
+- The operator **container** calls no vendor: its entrypoint binds the fake client. Its Anthropic
+  probe guards a key that only the dashboard chat uses, and that chat is the operator agent's one
+  real LLM use (`surfaces/dashboard/chat_binding.py`, Anthropic only).
+- A prototype of the selection, the packs, the operator's setting, an OpenAI operator adapter and the
+  chat binding changes 11 files and adds 2, touches **no** fidelity decision path, and breaks exactly
+  four existing tests (two pin 12 probes, two patch a name the chat binding no longer imports).
+- The parameter step of `make ci` goes red on the new settings field until its law row exists, and
+  green after: the S258 gate covers this change by itself.
+- `properties.runningStatus` reads `Running` on an app with 0 replicas (three apps, 06:14 UTC), so a
+  "nothing is running" guard must count replicas.
+- Not measured, each named in the spec with the check that settles it: whether `gpt-5.5` accepts the
+  operator's effort `max` with a forced function inside 4,096 completion tokens (a paid call, F1b);
+  whether an env-only update on an app at 0 replicas starts a replica (F1a).
+
+**Decided.**
+
+1. **The value lives in a new pack file, `orchestration/packs/trading_llm.json`**: the provider, and
+   for each of five apps the environment variable that app reads. At merge it says `openai`, which is
+   what the fleet runs on the operator's word of 2026-10-07.
+2. **The master selects once, where it loads its packs.** A probe may carry its vendor; with a
+   declared provider the master keeps that vendor's probes and key and drops the other's. An empty
+   setting is today's behaviour. It refuses to start on an unknown provider, an unknown tag, or a
+   granted vendor key with no probe.
+3. **The unselected vendor's key is withheld**, not handed over untested (DL-36).
+4. **The operator's settings gain `llm_provider`**, and its model resolves from the provider, as the
+   deliberator's does since DL-100. The container keeps the fake client.
+5. **The dashboard chat follows the operator's provider** through a kernel factory and a new OpenAI
+   adapter with one forced function call.
+6. **The deploy script reads the pack**, so a full `up` keeps the value; it wins over the tunables
+   pack's line for the same key.
+7. **The command is Python** (`scripts/switch_llm_provider.py`) with the `az` runner injected: report,
+   apply to the apps that differ, check nothing else on them moved, read the proof from the graph.
+8. **The tunables pack is not edited.** Its three provider lines stay until the fidelity count allows
+   a pack edit; work-queue 109 stays open until then.
+
+**Ruled out, and why.**
+
+- *Filter the credential pack in the deploy tooling* (the hand method): the filter would sit in
+  PowerShell, unread by the gate, and the master would run a pack the repository does not hold.
+- *The command takes the vendor as an argument*: a live-only state, which a full `up` reverts. It
+  applies what the pack declares.
+- *Hand both keys over and test one*: against DL-36.
+- *Select on every call inside the credential report*: prototyped first; it threads an argument
+  through two near-full modules and withholds no key.
+- *Record the provider on `FleetPreflight`*: a new property on a property-enforced label moves the
+  vocabulary pack and turns an image-only retag into a full `up`.
+- *The command wakes unchanged apps to re-prove their activation*: temporary scale rules on live
+  apps; the fleet check already tests every agent type's credentials, and the command says which
+  activations it did not re-prove.
+- *A vendor per role*: one provider for all; a second would need the master's selection per agent
+  type.
+- *Carry the manager's wait and the debate concurrency in the same file*: both would also survive a
+  full `up`, but they are not this row; they stay live-only.
+
+**Residue named now.** The return to Anthropic cannot be proven live before its account is funded
+(2026-10-11). The operator container still binds the fake client. A rollback below this sprint's
+image needs the hand-made eight-probe pack put back on the master.
+
 ## DL-281 - S260's command defaults to the four measured concurrencies - status: DECIDED (builder, 2026-10-09)
 
 D9 lists every argument default except the concurrency list. The Goal says the bare command runs

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so`
-**Status:** BUILT
+**Status:** MERGED 2026-10-10 — `0.125.02`, fast-forwarded to `cc050bba`, tag `v0.125.02`, GATE PROVEN `cc050bba` (CI, CodeQL, Security Findings); no deploy; F1a passed and F1b passed on OpenAI (a real cut-off, $0.0033); F1b on Anthropic is owed after its account is funded (2026-10-11)
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-285](../design-log.md) (this sprint's six decisions, made and measured) · [DL-284](../design-log.md) amendments 1 and 2 (how the defect was found, and corrected) · [work-queue 124](../work-queue.md) · DRIFT-106
@@ -315,7 +315,7 @@ tests do, with `SimpleNamespace` replies. The D tests build each **real** operat
 - [x] Design decisions built as recorded in DL-285, or an amendment under it.
 - [x] Every guard planted, watched to fail, restored, stated per guard.
 - [x] Every touched or new module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -575,7 +575,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s264`, branch `sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so`; `.env` absent. Every completion uses an injected SDK or stub, with no vendor called.
 
@@ -944,7 +944,30 @@ Re-measured by the planner in `../ta-s264`, not taken from the handback.
 - **Version.** PATCH, `0.125.01` to `0.125.02`; `uv lock` changed the version line alone (180
   packages).
 
-**Written at the merge, before the gate — still owed, none of it proven here:** the planner's
+**The gate and the merge.** Windows `make ci` exit 0 on the branch: all 15 steps, 4,588 passed, 8
+skipped, 100.00 % coverage, and the dependency audit the builder could not run found nothing
+unaccepted (one accepted advisory re-checked). `GATE PROVEN` for `cc050bba`, run from `../ta-s264`,
+the printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 127, the same alert numbers as on the last merged branch, none at error level
+and none in a file this sprint touched. `main` fast-forwarded to that commit and tagged `v0.125.02`.
+
+**After the merge, 2026-10-10 ([functionality checks](../laws/functionality-checks.md)).** *F1a passed*
+on the merged `main`, from the main checkout, at no cost: the planner's end-to-end script prints
+exactly what it printed on the prototype. On both vendors every cut-off question shows the one
+sentence, each cut-off row holds the vendor's 21,133 and 4,096 with `max_output_tokens` or
+`max_tokens`, the audits read `explain`, `refused`, and `intent` then `explain`, there is no fault,
+and an explicit approve asks for confirmation; the eight failed-request turns read as before the
+sprint. *F1b passed on OpenAI* (the operator: *"go for it"*): one paid call, $0.0033, `gpt-5.5` at
+`xhigh` with the cap at 64, a typed question through the chat handler on an in-memory graph. The
+vendor answered `incomplete`, `max_output_tokens`, one reasoning item, 278 in and 64 out. The chat
+showed the sentence; the row reads `max_output_tokens`, 278, 64, `vendor`, and the outage check does
+not read it silent; the `CommandAudit` reads `refused`; no fault. The same call on the code before
+the sprint (the Measured table) gave *"Operator could not parse the command."*, a row of 13 and 0
+stamped `estimated`, no audit and a fault. *Owed:* F1b on Anthropic after its account is funded
+(2026-10-11), on the operator's word. *Not proven:* a reply cut at the real cap of 4,096 on the
+21,000-token explain prompt; a reply cut inside a function call's arguments or a tool block.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's
 Windows `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block;
 then F1a (the measurement on the merged `main`, at no cost) and F1b (one paid cut-off on OpenAI on
 the built code, on the operator's word; Anthropic's after its account is funded).

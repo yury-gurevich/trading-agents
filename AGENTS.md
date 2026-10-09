@@ -15,8 +15,8 @@ were given.
    first. Do not open random files to discover what is there. Same for agent laws:
    `agents/<name>/laws/laws.md`.
 
-2. **`make ci` must pass — all 14 steps.** ruff, format, mypy, import-linter, module size, module
-   header, law coverage, PARAM/settings sync, markdown links, version scheme, pytest at a
+2. **`make ci` must pass — all 15 steps.** ruff, format, mypy, import-linter, module size, module
+   header, law coverage, PARAM/settings sync, sprint status, markdown links, version scheme, pytest at a
    **100.00 % coverage floor**, pip-audit, detect-secrets, untracked secrets. Never lower the floor. Never declare work green without running
    it, and confirm the remote gates after pushing.
 

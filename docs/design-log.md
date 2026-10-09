@@ -10,6 +10,121 @@ and is marked CLOSED here.
 
 ---
 
+## DL-284 - on OpenAI the operator's forced function goes through the Responses API, its effort resolves from the provider as its model does, and an explicit model of another vendor refuses the chat's binding - status: MEASURED and DECIDED (planner, 2026-10-09 21:11 AEDT); the build is [S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md), work-queue 121
+
+**The question.** S262's paid check found the dashboard chat cannot run on OpenAI (DL-282,
+amendment 2): `gpt-5.5` refuses the effort `max`, refuses a function tool with any reasoning effort on
+Chat Completions, and the operator's `.env` would send it an Anthropic model name. DL-282's decision 5
+was made unmeasured. This entry measures each choice against the vendor first.
+
+**Measured** *[2026-10-09; scripts, prompts, wire requests and replies are kept outside the repository, `trading-agents-data/wq121-2026-10-09/`]*.
+
+*At no cost.* The Responses API was read in the installed SDK (`openai` 2.49.0,
+`types/responses/`): the request fields `instructions`, `input`, `max_output_tokens`,
+`reasoning.effort`, `tools`, `tool_choice`, `store`; the reply's `status`, `incomplete_details.reason`,
+`output` items of type `function_call` carrying `arguments`, and `usage.input_tokens`,
+`usage.input_tokens_details.cached_tokens`, `usage.output_tokens`. The chat's two real prompts were
+captured from the live graph with a fake model: the explain prompt for `sched-2026-10-08` is 21,049
+tokens (the 3,958 in S262's record was a word count), the interpret prompt about 290.
+
+*Nine calls to the vendor, $0.38 at the price pack's rates, one at a time under a stop rule of $0.60.*
+
+| Road | Effort | Prompt | Vendor's answer | Seconds | Output tokens of 4,096 | Of them reasoning |
+| --- | --- | --- | --- | --- | --- | --- |
+| Responses | `max` | interpret | HTTP 400, `'max' is not supported with the 'gpt-5.5' model. Supported values are: 'none', 'low', 'medium', 'high', and 'xhigh'.` | 2.2 | none, nothing billed | |
+| Responses | `xhigh` | interpret | the function call | 4.6 | 187 | 121 |
+| Responses | `high` | interpret | the function call | 2.9 | 60 | 0 |
+| Responses | `medium` | interpret | the function call | 2.9 | 58 | 0 |
+| Responses | `none` | interpret | the function call | 3.1 | 65 | 0 |
+| Chat Completions | `none` | interpret | the function call | 3.4 | 60 | 0 |
+| Responses | `xhigh` | explain | the function call | 9.4 | 811 | 516 |
+| Responses | `high` | explain | the function call | 5.8 | 293 | 0 |
+| Chat Completions | `none` | explain | the function call | 6.6 | 307 | 0 |
+
+- Every accepted call returned usable arguments: the same intent on the interpret prompt, and on the
+  explain prompt a paragraph with the same verdict and numbers. One sample each: this is not a
+  comparison of answer quality.
+- With a forced function the model reasoned at `xhigh` only. At `high` and `medium` it wrote no
+  reasoning token on either prompt.
+- A completed reply reads `status: completed`; its `output` holds a `reasoning` item, when the model
+  reasoned, and then the `function_call`. Chat Completions ends a forced call on `tool_calls`.
+- No reply reported a cached token, so the reading of `cached_tokens` as a part of `input_tokens`
+  rests on the SDK's wording (*"a detailed breakdown of the input tokens"*), not on an observed value.
+- A cut-off reply was not produced by the vendor: no call came near the cap.
+
+*A prototype of the whole change* (five code files and one law row, kept as a diff outside the
+repository): the six accepted Responses replies, replayed through the real SDK on a fake transport,
+give back what the paid calls returned, with the same stop reason and usage, and the request the SDK
+sends equals the request captured on the wire, also in a process where DSPy has registered its lazy
+`openai` module first. The parameter step of `make ci` goes red on the changed default and green once
+the law row follows. Eight existing test cases in three files fail (five test functions: they pin
+the old endpoint's shape or the old default). `mypy`, the import contracts and the size check pass.
+
+**Decided.**
+
+1. **The OpenAI operator adapter calls the Responses API.** System text as `instructions`, user text
+   as `input`, one function tool with `strict: false`, `tool_choice` naming it, the operator's cap as
+   `max_output_tokens`, the effort as `reasoning.effort`. The arguments are read from the first
+   `output` item of type `function_call`; a reply without one is the same refusal as today.
+2. **`store: false`.** The explain prompt carries the book; nothing reads a stored reply.
+3. **The stop reason recorded is the vendor's own word**: the incomplete reason when there is one
+   (`max_output_tokens`, `content_filter`), else the status (`completed`). A reply cut on
+   `max_output_tokens` raises the port's stopped-completion error after its usage is recorded.
+4. **Usage is read as on Chat Completions**: input minus cached is the uncached input, cached is the
+   cache read. `cache_write_tokens`, a field the reply also carries (0 on all nine), is not carried:
+   whether `input_tokens` includes it is not known.
+5. **The operator's effort resolves from the provider, as its model does.** The setting's default
+   becomes empty; empty resolves `max` on Anthropic and `xhigh` on OpenAI. An explicit value is sent
+   as set. The setting accepts both vendors' words, so `none` joins the list.
+6. **An explicit model whose name starts with another provider's family prefix is refused** when the
+   operator's client is built (`claude-` is Anthropic's; `gpt-`, `chatgpt-`, `o1`, `o3`, `o4` are
+   OpenAI's). The chat binding returns disconnected and writes the reason on the dashboard's start-up
+   output. A name that starts with none of them is left to the selected vendor.
+7. **The cap stays 4,096.** The largest reply used 811.
+8. **`.env.example` stops planting the trap**: it no longer sets `OPERATOR_MODEL`.
+9. **Rider, found while measuring.** `agents/deliberator/tests/test_llm_openai_adapter.py` fails when
+   run alone on `main` (`ImportError`, a circular import): importing the deliberator loads DSPy, DSPy
+   registers `openai` as a lazy module, and the test's first use of the SDK is a submodule import.
+   Reading an attribute of the package first loads it; one line. Its comment that CI does not
+   install the SDK is also stale: the SDK arrives with DSPy in the dev group.
+
+**Ruled out, and why.**
+
+- *Stay on Chat Completions and send effort `none`*: measured to work, and it is a one-value change.
+  But on that endpoint every other effort is refused with a function tool, so the operator's effort
+  setting would mean nothing on this vendor, and the vendor's own message names Responses as the way
+  to keep both.
+- *Translate `max` to `xhigh` inside the adapter*: an explicit value the model refuses should be
+  seen, not rewritten (the operator law's row; DL-282). Resolving an unset value is not a translation.
+- *Default to `high` on OpenAI, as the debaters run*: with a forced function `high` reasoned nothing,
+  so it is `none` under another name here; `xhigh` is the one value that reasoned, and it used a
+  fifth of the cap on the largest real prompt.
+- *Check the effort against a ladder for each vendor at the binding*: the ladder is the model's, not
+  the vendor's (the SDK's type lists `max` and `minimal`; the vendor's message for `gpt-5.5` lists
+  neither), so a table here would be wrong for the next model. The vendor's refusal costs nothing and names the
+  supported values, and the chat shows it.
+- *Record the cut-off as `length`, Chat's word*: the ledger keeps each vendor's own word already
+  (`max_tokens`, `length`). A translated word would claim a field the reply did not carry. The cost:
+  a query for cut-off calls must know a third word.
+- *`strict: true`*: not tried. The intent schema has an open `parameters` object and optional fields;
+  the operator's parser already refuses what it cannot read.
+- *Refuse every model name not known here*: a new family or a fine-tuned name is not this code's to
+  judge.
+- *Stop the dashboard when the model belongs to another vendor*: the dashboard is the status board
+  and the chat is one panel of it; it stays up and says why the chat is dark.
+- *Give the debaters the same two rules in this sprint*: their default effort is `max` too, and an
+  explicit role model of another vendor would be sent as is. On the fleet the tunables pack sets
+  `high` on all three apps and leaves the models empty, and a full `up` re-applies both, so nothing
+  is live. What a debater should do at start with another vendor's model is its own decision: a
+  refusal to start means no debate record, and under the binding posture that drops every buy.
+  Work-queue 123.
+
+**Not measured, each named in the spec.** A reply cut off by the vendor (the adapter's reading of it
+rests on the SDK's types; the cap was never approached). A non-zero `cached_tokens`. The effort
+`low`. The return to Anthropic, whose account is empty until 2026-10-11. S263's paid check, one
+explain and one interpret through the binding on the merged code, reads the second and gives two more
+samples at `xhigh`.
+
 ## DL-283 - a sensor for containers that do not start or stop cleanly: the platform's event log already holds when and why, nothing reads it, and no container in the fleet has a shutdown path - status: DECIDED as a direction (planner, 2026-10-09 17:39 AEDT); the sensor is work-queue 119 and the shutdown path is work-queue 116; neither is specced
 
 **The operator's words, 2026-10-09.** *"remind me untill we resolve it: container restarts and

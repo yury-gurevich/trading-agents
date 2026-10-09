@@ -91,6 +91,9 @@ def main(
             snapshots, changed = read_values(azure, pack, write)
             if not args.apply:
                 return 3 if changed else 0
+            if not changed:
+                write("nothing to apply: every app already holds the declared value")
+                return 0
             assert directory is not None
             code, since = apply(
                 azure,

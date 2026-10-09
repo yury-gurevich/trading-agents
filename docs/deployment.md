@@ -181,7 +181,8 @@ uv run --env-file .env python scripts/switch_llm_provider.py --prove-since <UTC-
 ```
 
 Report mode reads and changes nothing: exit 0 means all five live values equal the declaration,
-exit 3 names pending differences. Apply snapshots all five apps before and after, updates only
+exit 3 names pending differences. An apply with nothing to change says so and exits 0 at
+once, writing no evidence. Apply snapshots all five apps before and after, updates only
 the differing values in pack order, then checks containers (excluding the selected variable),
 scale, secret names, ingress, registries and identity stayed equal. Any replica refuses before
 the first update unless `--even-if-running` is given; `runningStatus` is not a replica count.

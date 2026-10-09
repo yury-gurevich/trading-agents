@@ -10,6 +10,107 @@ and is marked CLOSED here.
 
 ---
 
+## DL-285 - a reply cut off at the cap is the port's stopped completion on both vendors; the operator records its stop reason and its tokens on both paths and writes the audit, and the chat says one sentence - status: MEASURED and DECIDED (planner, 2026-10-10 00:15 AEDT); specced as [S264](sprints/sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so.md); work-queue 124; the failed request is work-queue 125
+
+**The question.** S263's paid check found that the operator's ledger rows carry no stop reason, and
+reading the caller showed a cut-off reply is recorded differently on the two vendors (DL-284,
+amendments 1 and 2). Work-queue 124 carried one decision: what the chat says when a reply is cut
+off, the same on both vendors. This entry measures today's behaviour end to end and decides.
+
+**Measured** *[2026-10-09 23:21 to 23:37 AEDT; in the sprint's worktree, which has no `.env`, on
+`main` at `2ce40c30`; no call to a vendor. Each real operator adapter was built by the factory on a
+fake SDK and bound into the surfaces' context, and each turn went through the dashboard's chat
+handler. Scripts, outputs and the prototype's diff are outside the repository,
+`trading-agents-data/wq124-2026-10-09/`]*. The fake cut-off reply carries 21,133 input and 4,096
+output tokens.
+
+| A reply cut off at the cap | OpenAI today | Anthropic today | Both, on the prototype |
+| --- | --- | --- | --- |
+| the quick ask *explain this run* | chat: *"openai completion stopped: stop_reason=max_output_tokens"*; row `unknown`, 0 out, `estimated`; **no `CommandAudit`**; a fault from the bus | chat: *"No explanation returned."*; row `unknown`, 4,096 out, `vendor`; audit `explain`; no fault | the sentence; row with the vendor's own stop word, 21,133 in, 4,096 out, `vendor`; audit `explain`; no fault |
+| a typed question, its parse cut | chat: *"Operator could not parse the command."*; row as above; **no `CommandAudit`**; a fault from the agent | chat: *"model returned no tool result"*; audit `refused` | the sentence; audit `refused`; no fault |
+| the reply cut inside the tool block | the adapter raises before it reads the output | the half sentence is shown as the answer *(on an assumed reply shape: a partial `input`)* | the sentence, and nothing of the cut reply |
+| an explicit `approve flag-12`, its parse cut | refused, *"Operator could not parse the command."* | asks for confirmation: the grammar pins the intent over whatever the model returned | asks for confirmation |
+| the outage check on the row (`is_silent_call`) | silent | silent for the explain | not silent |
+
+- No operator row carries a stop reason: 23 of the 23 rows the measurement wrote on `main` read
+  `unknown`, the good replies included. On the prototype a good reply reads `completed` or
+  `tool_use`, a filtered one `content_filter` or `refusal`.
+- The chat page shows only a turn's message; its outcome changes nothing on screen except for the
+  three outcomes that carry a control (`renderTurn` and `send` in `chat.js`, read whole).
+- The unattended scorecard counts a `CommandAudit` with no `Intent` and an outcome other than
+  `explain` as a human action (`surfaces/queries/scorecard_actions.py::_acts`, read whole).
+- The live ledger, read at 23:37 AEDT: 1,456 `LLMCall` rows, **none from any agent** recorded as cut
+  at the cap (`max_tokens`, `length`, `max_output_tokens`). The operator has nine rows, all
+  `unknown`, the largest reply 703 output tokens.
+- *A prototype of the whole change*, four files, 58 lines added and 14 removed. The 857 existing
+  tests over the operator, the debate, the surfaces and the adapters pass with it, and passed
+  without it: none guards any of this. 25 prototype test cases pass on it. Broken 23 ways, one at a
+  time, 23 went red. `mypy`, the import contracts, the size and header checks are clean.
+- The law gate was run on a planted clause: it refuses a clause with no test-plan row, a green row
+  whose test does not exist, a test whose docstring names no clause, and a rollup that disagrees
+  with the derived 20 / 51. It does not read the test plan's own footer.
+
+**Decided.**
+
+1. **Anthropic's operator client raises on a cut-off, as OpenAI's does.** It keeps the reply's
+   `stop_reason` as `last_stop_reason` (the port's `unknown` after construction and at the start of
+   each call) and on `max_tokens` raises the port's stopped-completion error, after the stop reason
+   and the usage are set. The port's docstring already asks this of every adapter; the operator's
+   Anthropic client was the one that did neither. Every other stop reason returns as today.
+2. **One helper records a completion on both paths.** `agents/operator/ledger.py::complete_recorded`
+   sets the stop reason and the usage whether the reply came back or the vendor stopped it, and
+   returns `None` for a cut-off. Any other exception passes through untouched.
+3. **The chat says one fixed sentence:** *"The model's reply was cut off at its output limit before
+   it finished, so there is no answer. Ask again, or ask something narrower."* No vendor, model,
+   number or the word *token*.
+4. **`explain`** writes its audit with outcome `explain`, as for an answer, then returns the
+   sentence. No fault.
+5. **`interpret`** reads a cut-off as a refusal whose reason is the sentence, through the same
+   normaliser as any reply: an explicit `approve <target>` keeps its grammar, everything else is
+   refused with the sentence, and the existing flow writes the audit. No fault.
+6. **Nothing else moves**: a request that fails, a reply the vendor filtered or refused, the cap of
+   4,096, every file of the surfaces, the debate's client.
+
+One law cycle follows: `OPR-STA-03` reworded (the row carries the vendor's stop reason and counts on
+both paths) and a new `OPR-FAIL-04` (a cut-off is neither a fault nor an answer).
+
+**Ruled out, and why.**
+
+- *Show the part of the reply that arrived, marked as cut.* OpenAI returns no usable part, so the
+  vendors would differ again; and half a sentence about the book reads as a statement.
+- *Leave Anthropic's client as it is and let the agent compare stop reasons.* The agent would need
+  each vendor's vocabulary; the port assigns that to the adapter.
+- *Raise from `explain` and let the bus report it*, which is what happens on OpenAI today. It skips
+  the audit, records a fault for a call that completed and was billed, and shows a field name.
+- *Reword the error at the surface*, in `surfaces/plain_errors.py`, where a vendor's status error is
+  already reworded. It would change the words on one path of one vendor and leave the row's tokens,
+  the missing audit, the fault and Anthropic's unexplained answer as they are.
+- *Audit a cut-off `explain` as `refused`.* The scorecard would count a question as a human action.
+- *Record a fault for a cut-off.* On Anthropic it never was one; the row and the audit are the
+  record; on the dashboard the fault sink is in memory and nobody reads it.
+- *Name the cap or the vendor in the sentence.* The agent is handed a client and does not know its
+  cap; the vendor's word is on the row.
+- *Raise on a vendor's refusal too*, as the port's docstring also allows. The OpenAI adapter returns
+  the refusal dictionary on `content_filter` (S263, test A5), so raising on Anthropic's `refusal`
+  would make the vendors differ; neither has been seen; the row now names the reason.
+- *Retry once, or raise the cap.* The cap's bound is the law's; a retry doubles a paid call with no
+  evidence that it ends differently.
+
+**Found while measuring, and not decided here.** When the request itself fails (a time-out, the
+vendor answering HTTP 400), on both vendors alike: no `CommandAudit` is written for either
+capability, although `OPR-OUT-06` says every call has one; the quick ask shows the error's text,
+which the surface already rewords for a status error; a typed question says *"Operator could not
+parse the command."* and the reason is shown nowhere. The prototype leaves these eight cases exactly
+as they are. Work-queue 125, DRIFT-107: it needs its own decision (what a typed question says, and
+what the audit of a failed call reads, given the scorecard's rule), and it touches the same two call
+sites, so it follows S264.
+
+**Not measured.** A cut-off produced by a vendor: both adapters read it from the SDK's types, and
+whether Anthropic returns a partial tool input is assumed. The check after merge produces one on
+each vendor with the cap at 64, under one cent each, on the operator's word.
+
+---
+
 ## DL-284 - on OpenAI the operator's forced function goes through the Responses API, its effort resolves from the provider as its model does, and an explicit model of another vendor refuses the chat's binding - status: MEASURED and DECIDED (planner, 2026-10-09 21:11 AEDT); MERGED as [S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md) `0.125.01` (`9df7dacd`), F1a and F1b passed 2026-10-09; work-queue 121 closed, 124 opened
 
 🔁 **Amendment 2, 2026-10-09 23:06 AEDT (planner) — amendment 1 overstated the ledger defect; corrected by measuring through each real adapter.** Amendment 1 said a cut-off call's row holds 0 output tokens *on either vendor*. That was inferred from a stand-in client that raises, and it is true on OpenAI only. Measured offline on the merged code, each real operator adapter on a fake SDK, one cut-off explain each: on OpenAI the adapter raises and the row holds 0 output tokens stamped `estimated`; on Anthropic the operator's adapter does not raise, the row holds the vendor's 21,133 and 4,096, and the chat answers *"No explanation returned."* Missing on both: the stop reason, which the agent never passes on and which Anthropic's operator client does not expose. The token loss dates from S262's OpenAI adapter, which raised the same way, and S263 kept that. Work-queue 124 is restated, with one decision added: what the chat says on a cut-off, the same on both vendors.

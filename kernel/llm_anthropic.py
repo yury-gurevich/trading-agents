@@ -11,7 +11,7 @@ import importlib
 import json
 from typing import TYPE_CHECKING
 
-from kernel.llm import STOP_REASON_UNKNOWN
+from kernel.llm import STOP_REASON_UNKNOWN, LLMCompletionStoppedError
 from kernel.llm_anthropic_responses import (
     _stop_reason,
     _text,
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 # Anthropic 0.120.2, measured offline 2026-10-08 (DL-274 D2): non-streaming
 # requests require 3,600 s * max_tokens / 128,000 <= 600 s.
 NONSTREAMING_MAX_TOKENS = 21_333
+_CUT_OFF = "max_tokens"
 
 
 class ConfigurationError(RuntimeError):
@@ -128,12 +129,14 @@ class OperatorAnthropicLLMClient(_AnthropicClient):
             max_tokens=max_tokens,
             effort=effort,
         )
+        self.last_stop_reason = STOP_REASON_UNKNOWN
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
-        """Call Anthropic with a bounded tool-use response."""
+        """Force one named tool, recording usage even for a cut-off reply."""
         name = "parse_intent" if tool_schema else "answer_question"
+        self.last_stop_reason = STOP_REASON_UNKNOWN
         schema = tool_schema or {
             "type": "object",
             "properties": {"answer": {"type": "string"}},
@@ -158,5 +161,8 @@ class OperatorAnthropicLLMClient(_AnthropicClient):
             ],
             tool_choice={"type": "tool", "name": name},
         )
+        self.last_stop_reason = _stop_reason(response)
+        if self.last_stop_reason == _CUT_OFF:
+            raise LLMCompletionStoppedError(provider="anthropic", stop_reason=_CUT_OFF)
         data = _tool_input(response)
         return json.dumps(data) if tool_schema else str(data.get("answer", ""))

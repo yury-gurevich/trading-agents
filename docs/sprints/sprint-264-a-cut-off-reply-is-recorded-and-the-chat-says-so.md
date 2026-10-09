@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-285](../design-log.md) (this sprint's six decisions, made and measured) · [DL-284](../design-log.md) amendments 1 and 2 (how the defect was found, and corrected) · [work-queue 124](../work-queue.md) · DRIFT-106
@@ -299,22 +299,22 @@ tests do, with `SimpleNamespace` replies. The D tests build each **real** operat
 
 ## Success factors
 
-- [ ] On both vendors a cut-off reply's row holds the vendor's stop reason and token counts (A1, B1,
+- [x] On both vendors a cut-off reply's row holds the vendor's stop reason and token counts (A1, B1,
       C1, C2, D1).
-- [ ] The chat shows the one sentence for a cut-off `explain` and a cut-off `interpret`, on both
+- [x] The chat shows the one sentence for a cut-off `explain` and a cut-off `interpret`, on both
       vendors, and no part of the cut reply (C1, C2, D1, D2).
-- [ ] A cut-off `explain` writes its `CommandAudit` with outcome `explain`; a cut-off `interpret`
+- [x] A cut-off `explain` writes its `CommandAudit` with outcome `explain`; a cut-off `interpret`
       writes one with outcome `refused`; neither records a fault (C1, C2).
-- [ ] An explicit approve keeps its grammar on a cut-off (C3).
-- [ ] A request that fails behaves exactly as on `main` (B4, C5, D3), and a vendor's refusal is not
+- [x] An explicit approve keeps its grammar on a cut-off (C3).
+- [x] A request that fails behaves exactly as on `main` (B4, C5, D3), and a vendor's refusal is not
       raised (A3).
-- [ ] `_AnthropicTransport`, `_AnthropicClient`, `AnthropicLLMClient` and every file the invariant
+- [x] `_AnthropicTransport`, `_AnthropicClient`, `AnthropicLLMClient` and every file the invariant
       names are unchanged; the command in the handback checklist prints nothing.
-- [ ] The law cycle done: `OPR-STA-03` reworded and re-proven, `OPR-FAIL-04` added and proven, the
+- [x] The law cycle done: `OPR-STA-03` reworded and re-proven, `OPR-FAIL-04` added and proven, the
       changelog, the version, the test-plan rows and footer, both rollups, DRIFT-106 CORRECTED.
-- [ ] Design decisions built as recorded in DL-285, or an amendment under it.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched or new module under 200 lines.
+- [x] Design decisions built as recorded in DL-285, or an amendment under it.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched or new module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -530,15 +530,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Anthropic operator adapter | `agents/operator/laws/laws.md` and `test-plan.md`; `kernel/llm.py`; both `tests/test_llm_adapter_ownership.py` and `tests/test_llm_adapter_security.py`; `agents/deliberator/laws/laws.md` (whole, read-only) | `OPR-STA-03`, `OPR-SEC-01`; adapter port stop metadata; `DLIB-OUT-05`, `DLIB-FAIL-04`, `DLIB-OBS-05` protect the unchanged debate client | No: keep all three shared/debate classes byte-identical; set operator stop reason and usage before raising only for `max_tokens`. |
+| Operator ledger | Whole operator law book and test plan; `docs/laws/conventions.md` and `drift-register.md` (whole) | `OPR-STA-03`, `OPR-OBS-02` | No: catch only `LLMCompletionStoppedError`; `OPR-OBS-02` is currently gray, not claimed proven by this sprint. |
+| Operator agent and result parser | Whole operator law book and test plan; DL-285 and DL-284 including amendments 1 and 2 | `OPR-OUT-04/05/06`, `OPR-FAIL-01/02`, `OPR-IN-03`, `OPR-OBS-03`, `OPR-IDM-01`, `OPR-NEV-05`; new `OPR-FAIL-04` owed | No: audit cut-off explain as `explain` before returning; preserve explicit grammar and failed-request behavior. `OPR-OBS-03` and `OPR-IDM-01` are currently gray; neither rollup row is promoted here. |
+| New dashboard chat tests and citation | `surfaces/laws/laws.md` and `test-plan.md` (whole) | `SRF-FAIL-02`, `SRF-OUT-03`, `SRF-OUT-05` | No: exercise the real adapters on fake SDKs through chat; no surfaces production or constitution change. The explicitly authorized `SRF-FAIL-02` test-plan citation is the only existing surfaces file to change. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No contracts changes; YES operator guarantee. Owed: amend `OPR-STA-03`, add/prove `OPR-FAIL-04`, bump operator v1.6, changelog, test-plan rows/footer, both derived rollups and DRIFT-106. Surfaces: citation only, no clause/version change. Reading completed and this record written before the first code change on 2026-10-10; implementation and proof not done at this point.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** None blocking D1-D6. DRIFT-107 already records the failed-request audit gap, which remains outside scope. AGENTS.md says 14 CI steps while CLAUDE.md says 15 and explicitly explains that discrepancy; use the actual Makefile target. The sprint's explicit citation-only exception authorizes `surfaces/laws/test-plan.md` despite the broader invariant wording.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** The cut-off guarantee is owed as new `OPR-FAIL-04`, already decided by DL-285 and tracked by DRIFT-106. No additional undecided silence found.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** No existing gray clause promoted. New `OPR-FAIL-04` is proven; `OPR-STA-03` is re-proven. Gate-derived operator 20 / 51 in both rollups; surfaces 30 / 37 unchanged.
+
+**Pre-code workspace record:** `C:\Users\yury_\Downloads\project\ta-s264`, branch `sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so`; clean at start. `HEAD`, `main`, and `origin/main` all `2680c962600133cd2f40efd80705396e9ebfe90e`. Active tracker per CLAUDE.md is `docs/STATE.md`; the handover forbids changing it, so sprint intent/evidence stays here. No push/merge/version bump; no existing test edits; all named invariant paths excluded. D1-D6 will be built as written, without a design-log amendment.
 
 ---
 
@@ -546,60 +551,357 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | `test_a1_anthropic_cutoff_records_metadata_before_raising` | `agents/operator/tests/test_cutoff_adapter.py` | PASS | OPR-STA-03 |
+| A2 | `test_a2_finished_anthropic_reply_keeps_its_stop_reason` | `agents/operator/tests/test_cutoff_adapter.py` | PASS | OPR-STA-03 |
+| A3 | `test_a3_anthropic_refusal_returns_without_raising` | `agents/operator/tests/test_cutoff_adapter.py` | PASS | OPR-STA-03 |
+| A4 | `test_a4_failed_request_clears_anthropic_metadata` | `agents/operator/tests/test_cutoff_adapter.py` | PASS | OPR-STA-03 |
+| B1 | `test_b1_cutoff_helper_records_usage_and_error_stop_reason` | `agents/operator/tests/test_cutoff_ledger.py` | PASS | OPR-STA-03 |
+| B2 | `test_b2_finished_helper_records_response_stop_and_usage` | `agents/operator/tests/test_cutoff_ledger.py` | PASS | OPR-STA-03 |
+| B3 | `test_b3_client_without_metadata_uses_stamped_estimates` | `agents/operator/tests/test_cutoff_ledger.py` | PASS | OPR-STA-03 |
+| B4 | `test_b4_helper_propagates_failed_request_and_records_silence` | `agents/operator/tests/test_cutoff_ledger.py` | PASS | OPR-FAIL-01 |
+| C1 | `test_c1_cutoff_explain_audits_before_returning_the_sentence` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-04 / OPR-OUT-06 / OPR-STA-03 |
+| C2 | `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-04 / OPR-OUT-05 / OPR-OBS-03 |
+| C3 | `test_c3_explicit_approve_keeps_grammar_after_cutoff` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-04 |
+| C4 | `test_c4_finished_call_records_the_clients_stop_reason` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-STA-03 |
+| C5 | `test_c5_failed_interpret_keeps_the_old_fault_and_refusal` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-01 |
+| C6 | `test_c6_cutoff_sentence_is_pinned_letter_for_letter` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-04 |
+| D1 | `test_d1_cutoff_chat_is_equal_on_both_vendors` | `surfaces/tests/test_chat_cutoff.py` | PASS | SRF-FAIL-02 / SRF-OUT-03 / OPR-FAIL-04 |
+| D2 | `test_d2_partial_tool_answer_is_never_shown` | `surfaces/tests/test_chat_cutoff.py` | PASS | OPR-FAIL-04 |
+| D3 | `test_d3_outage_distinguishes_failed_request_from_cutoff` | `surfaces/tests/test_chat_cutoff.py` | PASS | OPR-FAIL-01 / OPR-FAIL-04 |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** None: 17 planned functions, 30 parameterized cases. B1 additionally distinguishes the stopped error's reason from conflicting client metadata; it is still the planned helper proof.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s264`, branch `sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so`; `.env` absent. Every completion uses an injected SDK or stub, with no vendor called.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** The restored sprint suite passes 30 cases: both vendors' cut-offs keep billed usage and stop words, write linked audits without faults, show the fixed sentence and retain explicit approval grammar. Failed requests keep the old refusal/fault path. All 25 planted guard mutations fail on behavior and restore exact source bytes.
 
-**Files changed:** <list>
+**Files changed:**
 
-**Design decisions:** recorded as [`DL-285`](../design-log.md) — <one line on any amendment, or "built as written">
+- `kernel/llm_anthropic.py`
+- `agents/operator/ledger.py`
+- `agents/operator/domain/result.py`
+- `agents/operator/agent.py`
+- `agents/operator/tests/cutoff_helpers.py`
+- `agents/operator/tests/test_cutoff_adapter.py`
+- `agents/operator/tests/test_cutoff_ledger.py`
+- `agents/operator/tests/test_cutoff_agent.py`
+- `surfaces/tests/chat_cutoff_helpers.py`
+- `surfaces/tests/test_chat_cutoff.py`
+- `agents/operator/laws/laws.md`
+- `agents/operator/laws/test-plan.md`
+- `surfaces/laws/test-plan.md`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `docs/laws/drift-register.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so.md`
+
+**Design decisions:** recorded as [`DL-285`](../design-log.md) — built as written; no amendment.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+Command: uv run --no-sync pytest agents/operator/tests/test_cutoff_adapter.py surfaces/tests/test_chat_cutoff.py --no-cov -q
+UV_OFFLINE=1; exit 1; before all production implementation edits.
+
+FFFFFFF                                                                  [100%]
+================================== FAILURES ===================================
+____ test_a1_anthropic_cutoff_records_metadata_before_raising[False-False] ____
+agents\operator\tests\test_cutoff_adapter.py:34: in test_a1_anthropic_cutoff_records_metadata_before_raising
+    with pytest.raises(LLMCompletionStoppedError) as stopped:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE LLMCompletionStoppedError
+____ test_a1_anthropic_cutoff_records_metadata_before_raising[False-True] _____
+agents\operator\tests\test_cutoff_adapter.py:34: in test_a1_anthropic_cutoff_records_metadata_before_raising
+    with pytest.raises(LLMCompletionStoppedError) as stopped:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE LLMCompletionStoppedError
+____ test_a1_anthropic_cutoff_records_metadata_before_raising[True-False] _____
+agents\operator\tests\test_cutoff_adapter.py:34: in test_a1_anthropic_cutoff_records_metadata_before_raising
+    with pytest.raises(LLMCompletionStoppedError) as stopped:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE LLMCompletionStoppedError
+_____ test_a1_anthropic_cutoff_records_metadata_before_raising[True-True] _____
+agents\operator\tests\test_cutoff_adapter.py:34: in test_a1_anthropic_cutoff_records_metadata_before_raising
+    with pytest.raises(LLMCompletionStoppedError) as stopped:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE LLMCompletionStoppedError
+_____________ test_d1_cutoff_chat_is_equal_on_both_vendors[quick] _____________
+surfaces\tests\test_chat_cutoff.py:31: in test_d1_cutoff_chat_is_equal_on_both_vendors
+    assert turn["message"] == EXPECTED_REPLY
+E   assert 'openai compl...output_tokens' == "The model's ...ing narrower."
+E
+E     - The model's reply was cut off at its output limit before it finished, so there is no answer. Ask again, or ask something narrower.
+E     + openai completion stopped: stop_reason=max_output_tokens
+_____________ test_d1_cutoff_chat_is_equal_on_both_vendors[parse] _____________
+surfaces\tests\test_chat_cutoff.py:31: in test_d1_cutoff_chat_is_equal_on_both_vendors
+    assert turn["message"] == EXPECTED_REPLY
+E   assert 'Operator cou... the command.' == "The model's ...ing narrower."
+E
+E     - The model's reply was cut off at its output limit before it finished, so there is no answer. Ask again, or ask something narrower.
+E     + Operator could not parse the command.
+____________ test_d1_cutoff_chat_is_equal_on_both_vendors[answer] _____________
+surfaces\tests\test_chat_cutoff.py:31: in test_d1_cutoff_chat_is_equal_on_both_vendors
+    assert turn["message"] == EXPECTED_REPLY
+E   assert 'openai compl...output_tokens' == "The model's ...ing narrower."
+E
+E     - The model's reply was cut off at its output limit before it finished, so there is no answer. Ask again, or ask something narrower.
+E     + openai completion stopped: stop_reason=max_output_tokens
+=========================== short test summary info ===========================
+FAILED agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising[False-False]
+FAILED agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising[False-True]
+FAILED agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising[True-False]
+FAILED agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising[True-True]
+FAILED surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors[quick]
+FAILED surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors[parse]
+FAILED surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors[answer]
+7 failed in 2.25s
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+Command: uv run --no-sync pytest agents/operator/tests/test_cutoff_adapter.py agents/operator/tests/test_cutoff_ledger.py agents/operator/tests/test_cutoff_agent.py surfaces/tests/test_chat_cutoff.py --no-cov -q
+UV_OFFLINE=1; exit 0 after every mutation was restored and the fixture-key annotation.
+
+..............................                                           [100%]
+30 passed in 3.72s
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted:** Raw per-guard output is in `.tools/s264-proof/mutation-01.log` through `mutation-25.log`; the runner checks exit 1, resolved test failures and no collection errors, then verifies byte-for-byte restoration.
 
-**Module line counts:** <file **n**, file **n**>
-
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
-
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+1. Anthropic raise removed: RED exit 1, 8 behavior failure(s), caught by `test_a1_anthropic_cutoff_records_metadata_before_raising`, `test_d1_cutoff_chat_is_equal_on_both_vendors`, `test_d2_partial_tool_answer_is_never_shown`; restored exact source bytes.
+2. Anthropic raise before stop reason is kept: RED exit 1, 4 behavior failure(s), caught by `test_a1_anthropic_cutoff_records_metadata_before_raising`; restored exact source bytes.
+3. Anthropic stop reason not reset before request: RED exit 1, 1 behavior failure(s), caught by `test_a4_failed_request_clears_anthropic_metadata`; restored exact source bytes.
+4. Anthropic refusal raises too: RED exit 1, 2 behavior failure(s), caught by `test_a3_anthropic_refusal_returns_without_raising`; restored exact source bytes.
+5. Wrong Anthropic cut-off word: RED exit 1, 4 behavior failure(s), caught by `test_a1_anthropic_cutoff_records_metadata_before_raising`; restored exact source bytes.
+6. Other vendor stop word on Anthropic error: RED exit 1, 4 behavior failure(s), caught by `test_a1_anthropic_cutoff_records_metadata_before_raising`; restored exact source bytes.
+7. Other vendor name on Anthropic error: RED exit 1, 4 behavior failure(s), caught by `test_a1_anthropic_cutoff_records_metadata_before_raising`; restored exact source bytes.
+8. Helper usage not read on cut-off path: RED exit 1, 4 behavior failure(s), caught by `test_b1_cutoff_helper_records_usage_and_error_stop_reason`, `test_c1_cutoff_explain_audits_before_returning_the_sentence`; restored exact source bytes.
+9. Helper stop reason not kept on cut-off path: RED exit 1, 2 behavior failure(s), caught by `test_b1_cutoff_helper_records_usage_and_error_stop_reason`; restored exact source bytes.
+10. Helper stop reason not kept on finished path: RED exit 1, 3 behavior failure(s), caught by `test_b2_finished_helper_records_response_stop_and_usage`, `test_c4_finished_call_records_the_clients_stop_reason`; restored exact source bytes.
+11. Helper usage not read on finished path: RED exit 1, 1 behavior failure(s), caught by `test_b2_finished_helper_records_response_stop_and_usage`; restored exact source bytes.
+12. Helper response not kept: RED exit 1, 1 behavior failure(s), caught by `test_b2_finished_helper_records_response_stop_and_usage`; restored exact source bytes.
+13. Every exception taken for a cut-off: RED exit 1, 4 behavior failure(s), caught by `test_b4_helper_propagates_failed_request_and_records_silence`, `test_c5_failed_interpret_keeps_the_old_fault_and_refusal`, `test_d3_outage_distinguishes_failed_request_from_cutoff`; restored exact source bytes.
+14. Helper empty string instead of None: RED exit 1, 2 behavior failure(s), caught by `test_c1_cutoff_explain_audits_before_returning_the_sentence`; restored exact source bytes.
+15. Cut-off explain returns before its audit: RED exit 1, 2 behavior failure(s), caught by `test_c1_cutoff_explain_audits_before_returning_the_sentence`; restored exact source bytes.
+16. Cut-off explain audited as refused: RED exit 1, 2 behavior failure(s), caught by `test_c1_cutoff_explain_audits_before_returning_the_sentence`; restored exact source bytes.
+17. Cut-off explain says No explanation returned: RED exit 1, 3 behavior failure(s), caught by `test_c1_cutoff_explain_audits_before_returning_the_sentence`, `test_d2_partial_tool_answer_is_never_shown`; restored exact source bytes.
+18. Interpret calls the client directly: RED exit 1, 4 behavior failure(s), caught by `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit`, `test_c3_explicit_approve_keeps_grammar_after_cutoff`; restored exact source bytes.
+19. Explain calls the client directly: RED exit 1, 3 behavior failure(s), caught by `test_c1_cutoff_explain_audits_before_returning_the_sentence`, `test_c4_finished_call_records_the_clients_stop_reason`; restored exact source bytes.
+20. Cut-off parse has no reason: RED exit 1, 2 behavior failure(s), caught by `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit`; restored exact source bytes.
+21. Cut-off parse asks for clarification: RED exit 1, 2 behavior failure(s), caught by `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit`; restored exact source bytes.
+22. Cut-off sentence reworded: RED exit 1, 1 behavior failure(s), caught by `test_c6_cutoff_sentence_is_pinned_letter_for_letter`; restored exact source bytes.
+23. Cut-off sentence names a vendor: RED exit 1, 1 behavior failure(s), caught by `test_c6_cutoff_sentence_is_pinned_letter_for_letter`; restored exact source bytes.
+24. Cut-off sentence names the cap: RED exit 1, 1 behavior failure(s), caught by `test_c6_cutoff_sentence_is_pinned_letter_for_letter`; restored exact source bytes.
+25. Helper cut-off reason read from client instead of error: RED exit 1, 2 behavior failure(s), caught by `test_b1_cutoff_helper_records_usage_and_error_stop_reason`; restored exact source bytes.
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+01. RED exit 1; Anthropic raise removed; 8 behavior failure(s); restored exact bytes
+02. RED exit 1; Anthropic raise before stop reason is kept; 4 behavior failure(s); restored exact bytes
+03. RED exit 1; Anthropic stop reason not reset before request; 1 behavior failure(s); restored exact bytes
+04. RED exit 1; Anthropic refusal raises too; 2 behavior failure(s); restored exact bytes
+05. RED exit 1; Wrong Anthropic cut-off word; 4 behavior failure(s); restored exact bytes
+06. RED exit 1; Other vendor stop word on Anthropic error; 4 behavior failure(s); restored exact bytes
+07. RED exit 1; Other vendor name on Anthropic error; 4 behavior failure(s); restored exact bytes
+08. RED exit 1; Helper usage not read on cut-off path; 4 behavior failure(s); restored exact bytes
+09. RED exit 1; Helper stop reason not kept on cut-off path; 2 behavior failure(s); restored exact bytes
+10. RED exit 1; Helper stop reason not kept on finished path; 3 behavior failure(s); restored exact bytes
+11. RED exit 1; Helper usage not read on finished path; 1 behavior failure(s); restored exact bytes
+12. RED exit 1; Helper response not kept; 1 behavior failure(s); restored exact bytes
+13. RED exit 1; Every exception taken for a cut-off; 4 behavior failure(s); restored exact bytes
+14. RED exit 1; Helper empty string instead of None; 2 behavior failure(s); restored exact bytes
+15. RED exit 1; Cut-off explain returns before its audit; 2 behavior failure(s); restored exact bytes
+16. RED exit 1; Cut-off explain audited as refused; 2 behavior failure(s); restored exact bytes
+17. RED exit 1; Cut-off explain says No explanation returned; 3 behavior failure(s); restored exact bytes
+18. RED exit 1; Interpret calls the client directly; 4 behavior failure(s); restored exact bytes
+19. RED exit 1; Explain calls the client directly; 3 behavior failure(s); restored exact bytes
+20. RED exit 1; Cut-off parse has no reason; 2 behavior failure(s); restored exact bytes
+21. RED exit 1; Cut-off parse asks for clarification; 2 behavior failure(s); restored exact bytes
+22. RED exit 1; Cut-off sentence reworded; 1 behavior failure(s); restored exact bytes
+23. RED exit 1; Cut-off sentence names a vendor; 1 behavior failure(s); restored exact bytes
+24. RED exit 1; Cut-off sentence names the cap; 1 behavior failure(s); restored exact bytes
+25. RED exit 1; Helper cut-off reason read from client instead of error; 2 behavior failure(s); restored exact bytes
+25/25 guards red; all source bytes restored.
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+**Module line counts:** All ten touched/new Python modules are below 200 lines.
+
+```text
+agents/operator/agent.py: 168 lines
+agents/operator/domain/result.py: 100 lines
+agents/operator/ledger.py: 75 lines
+agents/operator/tests/cutoff_helpers.py: 145 lines
+agents/operator/tests/test_cutoff_adapter.py: 121 lines
+agents/operator/tests/test_cutoff_agent.py: 150 lines
+agents/operator/tests/test_cutoff_ledger.py: 102 lines
+kernel/llm_anthropic.py: 168 lines
+surfaces/tests/chat_cutoff_helpers.py: 74 lines
+surfaces/tests/test_chat_cutoff.py: 107 lines
+```
+
+**Law cycle — verbatim clauses, plan rows and drift status:**
+
+```text
+Operator law book: LOCKED v1.6 -> LOCKED v1.7.
+
+- **OPR-STA-03** — Every LLM call is recorded in an `LLMCall` graph node via `record_llm_call`
+  context manager (model, prompt, response, timestamp). The row carries the vendor's own stop
+  reason and token counts whether the reply finished or the vendor cut it off. A client that
+  exposes neither is recorded as `unknown` with a stamped estimate.
+
+- **OPR-FAIL-04** — A reply the vendor cut off at the output cap is neither a fault nor an
+  answer. It is recorded as `OPR-STA-03` says; `interpret` reads it as a refusal whose reason
+  is `CUT_OFF_REPLY`, and the explicit command grammar still applies; `explain` returns
+  `CUT_OFF_REPLY`; no part of the cut reply is shown; the `CommandAudit` is written and linked
+  to its `LLMCall` as for any reply; the same on every vendor. `CUT_OFF_REPLY` is:
+  "The model's reply was cut off at its output limit before it finished, so there is no answer.
+  Ask again, or ask something narrower."
+
+agents/operator/laws/test-plan.md
+| OPR-STA-03 | 🟩 | Every call records model, prompt, response and timestamp; the vendor's stop reason and counts survive finished and cut-off replies; clients exposing neither retain unknown with a stamped estimate: `test_explain_returns_text_and_writes_audit_and_llm_call`; `agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising`; `test_a2_finished_anthropic_reply_keeps_its_stop_reason`; `test_a4_failed_request_clears_anthropic_metadata`; `agents/operator/tests/test_cutoff_ledger.py::test_b1_cutoff_helper_records_usage_and_error_stop_reason`; `test_b2_finished_helper_records_response_stop_and_usage`; `test_b3_client_without_metadata_uses_stamped_estimates`; `agents/operator/tests/test_cutoff_agent.py::test_c1_cutoff_explain_audits_before_returning_the_sentence`; `test_c4_finished_call_records_the_clients_stop_reason` |
+| OPR-FAIL-04 | 🟩 | A vendor cut-off is neither a fault nor an answer; recorded under OPR-STA-03; interpret refuses with CUT_OFF_REPLY through the explicit grammar; explain returns that sentence; no partial reply is shown; CommandAudit links to LLMCall as for any reply, on every vendor: `agents/operator/tests/test_cutoff_agent.py::test_c1_cutoff_explain_audits_before_returning_the_sentence`; `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit`; `test_c3_explicit_approve_keeps_grammar_after_cutoff`; `test_c6_cutoff_sentence_is_pinned_letter_for_letter`; `surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors`; `test_d2_partial_tool_answer_is_never_shown`; `test_d3_outage_distinguishes_failed_request_from_cutoff` |
+
+surfaces/laws/test-plan.md
+| SRF-FAIL-02 | Chat, MCP, and operator-tool errors reach the operator in plain words, not raw SDK JSON or tracebacks. | `surfaces/tests/test_dashboard_chat.py::test_chat_unbound_invalid_requests_and_method_guard`; `surfaces/tests/test_mcp_server.py::test_command_tool_refusal_returns_reason`; `surfaces/tests/test_mcp_server.py::test_error_paths_and_tool_catalog`; `surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors` | 🟩 |
+
+DRIFT-106 new status cell:
+**CORRECTED (S264 / DL-285, operator v1.7, 2026-10-10).** Vendor stop reasons and billed usage survive both reply paths; cut-offs write linked audits without a fault or partial answer and show the same fixed sentence. Proven by `agents/operator/tests/test_cutoff_adapter.py`, `test_cutoff_ledger.py`, `test_cutoff_agent.py` and `surfaces/tests/test_chat_cutoff.py` (A1-A4, B1-B4, C1-C6, D1-D3). `OPR-STA-03` amended and `OPR-FAIL-04` added/proven. DRIFT-107 remains outside scope.
+```
+
+**Law gate:** `uv run --no-sync python scripts/check_law_coverage.py`, exit 0; `.tools/s264-proof/law.log` has empty stdout. The gate is quiet on success, including inside `make ci`; it prints no rollup lines. The following separate measurement uses its own `_derived_counter(discover_agent_books(Path.cwd()))` helper and reads the actual two rollup rows:
+
+```text
+operator: derived 20 / 51
+surfaces: derived 30 / 37
+docs/laws/ledger.md: | operator | ✅ v1.7 (LOCKED) | 20 / 51 | 🟨 partial — **20 of 51 clauses proven** after S264 (DL-285) re-proves `OPR-STA-03` for vendor stop reasons and billed counts on both reply paths and adds/proves `OPR-FAIL-04` for audited, fault-free cut-offs with one sentence and explicit grammar preserved; DRIFT-106 corrected; before that S263 (DL-284) amends and re-proves `OPR-DEP-01` for provider effort resolution and pre-call model-family refusal; PARAM effort and CAP reconciled; before that S262 (DL-282) amends and re-proves `OPR-DEP-01` for the selected vendor, model resolution and no fallback; PARAM reconciled; before that S256 (DL-272) rewrites and proves `OPR-IDM-02`: duplicate commands share audit/intent while every model call has its own row; DRIFT-104 corrected; S222 proves `OPR-SEC-01` key containment and `OPR-DEP-01` Anthropic-only dependency; S205 rewrites and proves `OPR-TYP-01`; 31 have a gray row |
+docs/laws/INDEX.md: | operator | ✅ LOCKED v1.7 (S264, DL-285) | 20 / 51 | S264 (DL-285) re-proves `OPR-STA-03` for vendor stop reasons and billed counts on both reply paths and adds/proves `OPR-FAIL-04` for audited, fault-free cut-offs with one sentence and explicit grammar preserved; DRIFT-106 corrected; before that S263 (DL-284) amends and re-proves `OPR-DEP-01` for provider effort resolution and pre-call model-family refusal; PARAM effort and CAP reconciled; before that S262 (DL-282) amends and re-proves `OPR-DEP-01` for the selected vendor, model resolution and no fallback; PARAM reconciled; before that S256 (DL-272) rewrites and proves `OPR-IDM-02`: duplicate commands share the audit and intent, but every model call has its own ledger row; DRIFT-104 corrected; S222 proves `OPR-SEC-01` key containment and `OPR-DEP-01` Anthropic-only dependency; S205 rewrites and proves `OPR-TYP-01`; counters are clauses proven / clauses declared |
+```
+
+**Scope proof:** Exact requested command, against unchanged `main` at the branch's starting commit; no protected-path diff. Existing tests edited: none. No vendor was called. `pyproject.toml` and `uv.lock` are unchanged; the planner owns the version bump.
+
+```text
+git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration/history_window.py orchestration/packs kernel/llm.py kernel/llm_ledger.py kernel/llm_tokens.py kernel/llm_factory.py kernel/llm_outage.py kernel/llm_openai.py kernel/llm_openai_operator.py kernel/llm_anthropic_responses.py agents/deliberator surfaces/dashboard surfaces/queries surfaces/context.py surfaces/operator_tools.py surfaces/mcp_tools.py surfaces/laws/laws.md pyproject.toml uv.lock docs/STATE.md docs/work-queue.md
+Exit 0; stdout is empty. Reference main = 2680c962600133cd2f40efd80705396e9ebfe90e.
+_AnthropicTransport: byte-for-byte unchanged.
+_AnthropicClient: byte-for-byte unchanged.
+AnthropicLLMClient: byte-for-byte unchanged.
+Existing tests edited: none.
+pyproject.toml and uv.lock unchanged; version bump belongs to the planner.
+.env present: False
+No vendor called; all completion tests inject SDKs or stub clients.
+```
+
+**Entire `git diff main -- kernel/llm_anthropic.py`:**
+
+```diff
+diff --git a/kernel/llm_anthropic.py b/kernel/llm_anthropic.py
+index 40c9e810..cf0ebfdd 100644
+--- a/kernel/llm_anthropic.py
++++ b/kernel/llm_anthropic.py
+@@ -11,7 +11,7 @@ import importlib
+ import json
+ from typing import TYPE_CHECKING
+
+-from kernel.llm import STOP_REASON_UNKNOWN
++from kernel.llm import STOP_REASON_UNKNOWN, LLMCompletionStoppedError
+ from kernel.llm_anthropic_responses import (
+     _stop_reason,
+     _text,
+@@ -26,6 +26,7 @@ if TYPE_CHECKING:
+ # Anthropic 0.120.2, measured offline 2026-10-08 (DL-274 D2): non-streaming
+ # requests require 3,600 s * max_tokens / 128,000 <= 600 s.
+ NONSTREAMING_MAX_TOKENS = 21_333
++_CUT_OFF = "max_tokens"
+
+
+ class ConfigurationError(RuntimeError):
+@@ -128,12 +129,14 @@ class OperatorAnthropicLLMClient(_AnthropicClient):
+             max_tokens=max_tokens,
+             effort=effort,
+         )
++        self.last_stop_reason = STOP_REASON_UNKNOWN
+
+     def complete(
+         self, *, system: str, user: str, tool_schema: dict[str, object]
+     ) -> str:
+-        """Call Anthropic with a bounded tool-use response."""
++        """Force one named tool, recording usage even for a cut-off reply."""
+         name = "parse_intent" if tool_schema else "answer_question"
++        self.last_stop_reason = STOP_REASON_UNKNOWN
+         schema = tool_schema or {
+             "type": "object",
+             "properties": {"answer": {"type": "string"}},
+@@ -158,5 +161,8 @@ class OperatorAnthropicLLMClient(_AnthropicClient):
+             ],
+             tool_choice={"type": "tool", "name": name},
+         )
++        self.last_stop_reason = _stop_reason(response)
++        if self.last_stop_reason == _CUT_OFF:
++            raise LLMCompletionStoppedError(provider="anthropic", stop_reason=_CUT_OFF)
+         data = _tool_input(response)
+         return json.dumps(data) if tool_schema else str(data.get("answer", ""))
+```
+
+**`make ci`:** `make ci > ci.txt 2>&1` in `C:\Users\yury_\Downloads\project\ta-s264`, with `UV_OFFLINE=1`, `PYTHONUTF8=1` and `PYTHONPATH=.tools/s264-proof/offline`. Exit **2**, verified failing overall. Steps 1-12 passed, including **4,588 passed, 8 skipped, 100.00 % coverage**. Step 13, dependency audit, is **NOT RUN to completion**: the offline socket guard blocked the required PyPI query before any external network access. Steps 14 and 15 were not reached by `make ci`; both exact commands were then run separately and passed. No gate or coverage floor was bypassed or changed. Actual output excerpt:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1179 source files
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+docs_seen=268 SPEC=10 BUILT=1 MERGED=257 UNMAPPED=0 MISSING=0
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           20205      0   4278      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4588 passed, 8 skipped, 2470 warnings in 473.02s (0:07:53) ==========
+uv run python scripts/check_dependency_audit.py
+OSError: S264 offline proof blocks external network
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: S264 offline proof blocks external network"))
+make: *** [Makefile:59: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+**Remaining local security steps:** `UV_OFFLINE=1` and the offline guard remained set; cached pre-commit hooks also ran with Git protocols denied and npm offline.
+
+```text
+Command: uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+
+Command: uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+The first detect-secrets run flagged the fixed `fixture-key` equality in the new test helper. It now has the same inline fixture allowlist annotation as its constructor argument. `.secrets.baseline` is unchanged. This annotation came after the full CI run; its executable AST and line count are identical, and the restored 30-case sprint suite plus the security check passed after it. No production change followed the full coverage run.
+
+**`make gate-ran`:** **NOT RUN** — the handover forbids pushing and the worktree is offline. No remote gate, merge or deployment is claimed.
+
+**Not met / verified failing:** `make ci` exit 0 is **not done**; the actual exit is **2**, verified failing at the offline dependency audit. Dependency vulnerability results are **NOT RUN**. Push, remote gates, merge, version bump, deploy, live vendor calls and the planner's post-merge F1/F2 proofs are **not done**, as instructed. No implementation or local behavior proof remains unfilled.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: D1-D6 built as DL-285 records them, without an amendment. No contracts, surfaces production, debate plumbing, cap, retry or failed-request audit change. The sole existing surfaces edit is the explicitly authorized `SRF-FAIL-02` citation. No existing test was edited; no vendor was called; no `.env` is present.
+- No law contradicted D1-D6. `OPR-OBS-02`, `OPR-OBS-03` and `OPR-IDM-01` remain gray; this work proves the new `OPR-FAIL-04` and re-proves `OPR-STA-03`. DRIFT-106 is corrected; DRIFT-107's failed-request audit gap is unchanged.
+- Corrections to the spec's mechanical expectations: the actual Makefile and CLAUDE.md have 15 steps, despite AGENTS.md's 14; the law gate is quiet on success, so the rollups above were measured separately rather than attributed to CI stdout. The two later security steps were run separately because dependency auditing cannot finish offline. The full CI result remains failing.
+- No build decision remains uncertain. The faked SDK tests prove local behavior, not a live Anthropic partial-tool shape or paid-call behavior. The planner still owns the PATCH bump at merge, remote gates, deployment, F1 and F2. Preserve the distinction between a billed cut-off and a failed request, and keep both explicit command grammar and the linked `explain` audit.
 
 ---
 

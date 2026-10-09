@@ -20,9 +20,16 @@ if TYPE_CHECKING:
 
 Outcome = Literal["intent", "refused", "needs_clarification"]
 
+CUT_OFF_REPLY = (
+    "The model's reply was cut off at its output limit before it finished, "
+    "so there is no answer. Ask again, or ask something narrower."
+)
 
-def parse_json(raw: str) -> dict[str, object]:
-    """Parse model JSON, normalizing malformed output to a refusal."""
+
+def parse_json(raw: str | None) -> dict[str, object]:
+    """Parse model JSON; malformed output, or a cut-off reply (None), is a refusal."""
+    if raw is None:
+        return {"outcome": "refused", "reason": CUT_OFF_REPLY}
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:

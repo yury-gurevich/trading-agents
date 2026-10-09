@@ -19,6 +19,7 @@ from agents.operator.domain.prompts import (
     build_interpret_user,
 )
 from agents.operator.domain.result import (
+    CUT_OFF_REPLY,
     intent_from_data,
     message,
     outcome,
@@ -27,7 +28,7 @@ from agents.operator.domain.result import (
     request_correlation,
     with_graph,
 )
-from agents.operator.ledger import record_llm_call
+from agents.operator.ledger import complete_recorded, record_llm_call
 from agents.operator.settings import OperatorSettings
 from agents.operator.store import write_command_audit, write_intent
 from contracts.common import Explanation
@@ -43,7 +44,6 @@ from kernel import (
     FakeLLMClient,
     FaultSink,
     GraphStore,
-    llm_usage,
 )
 from kernel.errors import fault_boundary
 
@@ -104,9 +104,9 @@ class OperatorAgent(AgentBase):
             prompt=user,
             system_prompt=system,
         ) as call:
-            raw = self._llm.complete(system=system, user=user, tool_schema={})
-            call.set_response(raw)
-            call.set_usage(llm_usage(self._llm))
+            raw = complete_recorded(
+                call, self._llm, system=system, user=user, tool_schema={}
+            )
         assert call.node is not None
         write_command_audit(
             self._graph,
@@ -117,6 +117,8 @@ class OperatorAgent(AgentBase):
             outcome="explain",
             llm_call_node=call.node,
         )
+        if raw is None:
+            return Explanation(summary=CUT_OFF_REPLY)
         return Explanation(summary=raw.strip() or "No explanation returned.")
 
     def _interpret_command(self, command: HumanCommand) -> CommandResult:
@@ -132,11 +134,13 @@ class OperatorAgent(AgentBase):
             prompt=user,
             system_prompt=system,
         ) as call:
-            raw = self._llm.complete(
-                system=system, user=user, tool_schema=INTENT_TOOL_SCHEMA
+            raw = complete_recorded(
+                call,
+                self._llm,
+                system=system,
+                user=user,
+                tool_schema=INTENT_TOOL_SCHEMA,
             )
-            call.set_response(raw)
-            call.set_usage(llm_usage(self._llm))
         assert call.node is not None
         data = normalize_explicit_intent(command.text, parse_json(raw))
         parsed_outcome = outcome(data)

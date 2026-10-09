@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -78,7 +78,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **OPR-STA-02** — Graph writes are append-only. `CommandAudit`, `LLMCall`, and `Intent` nodes
   accumulate; none are overwritten.
 - **OPR-STA-03** — Every LLM call is recorded in an `LLMCall` graph node via `record_llm_call`
-  context manager (model, prompt, response, timestamp).
+  context manager (model, prompt, response, timestamp). The row carries the vendor's own stop
+  reason and token counts whether the reply finished or the vendor cut it off. A client that
+  exposes neither is recorded as `unknown` with a stamped estimate.
 
 ## Determinism & idempotency (`IDM`)
 
@@ -106,6 +108,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   returns `None`; result is `outcome="refused"`.
 - **OPR-FAIL-03** — Graph write failure (CommandAudit / LLMCall node): fault recorded; the
   `CommandResult` is still returned.
+- **OPR-FAIL-04** — A reply the vendor cut off at the output cap is neither a fault nor an
+  answer. It is recorded as `OPR-STA-03` says; `interpret` reads it as a refusal whose reason
+  is `CUT_OFF_REPLY`, and the explicit command grammar still applies; `explain` returns
+  `CUT_OFF_REPLY`; no part of the cut reply is shown; the `CommandAudit` is written and linked
+  to its `LLMCall` as for any reply; the same on every vendor. `CUT_OFF_REPLY` is:
+  "The model's reply was cut off at its output limit before it finished, so there is no answer.
+  Ask again, or ask something narrower."
 
 ## Type alignment (`TYP`)
 
@@ -200,6 +209,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.7 — S264 / DL-285 (2026-10-10): `OPR-STA-03` also records vendor stop reasons
+  and billed token counts on finished and cut-off replies, retaining stamped estimates for
+  clients without metadata. Adds `OPR-FAIL-04`: cut-offs are recorded and audited without a
+  fault or partial answer, with one fixed sentence and the explicit grammar preserved on
+  every vendor. Unit-proven through real adapters on fake SDKs; no failed-request change.
 
 - v1.6 — S263 / DL-284 (2026-10-09): `OPR-DEP-01` also resolves an empty effort
   from the selected provider and refuses an explicit model from another provider's family

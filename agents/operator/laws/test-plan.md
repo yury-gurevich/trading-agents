@@ -26,7 +26,7 @@
 | OPR-NEV-06 | ⬜ | — |
 | OPR-STA-01 | ⬜ | — |
 | OPR-STA-02 | ⬜ | — |
-| OPR-STA-03 | 🟩 | `test_explain_returns_text_and_writes_audit_and_llm_call` |
+| OPR-STA-03 | 🟩 | Every call records model, prompt, response and timestamp; the vendor's stop reason and counts survive finished and cut-off replies; clients exposing neither retain unknown with a stamped estimate: `test_explain_returns_text_and_writes_audit_and_llm_call`; `agents/operator/tests/test_cutoff_adapter.py::test_a1_anthropic_cutoff_records_metadata_before_raising`; `test_a2_finished_anthropic_reply_keeps_its_stop_reason`; `test_a4_failed_request_clears_anthropic_metadata`; `agents/operator/tests/test_cutoff_ledger.py::test_b1_cutoff_helper_records_usage_and_error_stop_reason`; `test_b2_finished_helper_records_response_stop_and_usage`; `test_b3_client_without_metadata_uses_stamped_estimates`; `agents/operator/tests/test_cutoff_agent.py::test_c1_cutoff_explain_audits_before_returning_the_sentence`; `test_c4_finished_call_records_the_clients_stop_reason` |
 | OPR-IDM-01 | ⬜ | — |
 | OPR-IDM-02 | 🟩 | Duplicate commands without request ids share one correlation, audit and intent, but every model call appends its own LLMCall (first correlation key, later :repeat-N): `test_same_command_shares_audit_and_intent_and_records_each_call`; `test_write_llm_call_records_operator_attribution` |
 | OPR-IDM-03 | 🟩 | `test_same_command_shares_audit_and_intent_and_records_each_call` |
@@ -35,6 +35,7 @@
 | OPR-FAIL-01 | 🟩 | `test_interpret_llm_exception_returns_refusal` |
 | OPR-FAIL-02 | 🟩 | `test_interpret_invalid_intent_family_is_refused` |
 | OPR-FAIL-03 | ⬜ | — |
+| OPR-FAIL-04 | 🟩 | A vendor cut-off is neither a fault nor an answer; recorded under OPR-STA-03; interpret refuses with CUT_OFF_REPLY through the explicit grammar; explain returns that sentence; no partial reply is shown; CommandAudit links to LLMCall as for any reply, on every vendor: `agents/operator/tests/test_cutoff_agent.py::test_c1_cutoff_explain_audits_before_returning_the_sentence`; `test_c2_cutoff_interpret_refuses_with_reason_and_linked_audit`; `test_c3_explicit_approve_keeps_grammar_after_cutoff`; `test_c6_cutoff_sentence_is_pinned_letter_for_letter`; `surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors`; `test_d2_partial_tool_answer_is_never_shown`; `test_d3_outage_distinguishes_failed_request_from_cutoff` |
 | OPR-TYP-01 | 🟩 | `tests/test_contract_required_fields.py::test_operator_payload_fields_required_by_law` |
 | OPR-TYP-02 | ⬜ | — |
 | OPR-TYP-03 | ⬜ | — |
@@ -54,4 +55,4 @@
 | OPR-PERF-03 | ⬜ | — |
 | OPR-CAP | ⬜ | — |
 
-## Green: 19 / 50
+## Green: 20 / 51

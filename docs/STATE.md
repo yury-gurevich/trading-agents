@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-09 20:03 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.125.00`, not deployed · **[S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) is merged (work-queue 109: the LLM vendor as one declared value and one command); its retag and its two live checks are approved by the operator and owed; debates run three at once on the fleet, as a live setting.**
+**Last updated:** 2026-10-09 20:35 AEDT · **Version:** **0.125.00 deployed** (`s262`, image-only retag from `d01b71b3`, rollback `s259a` with the master's eight-probe pack) · **[S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) is deployed: the fleet's LLM vendor is declared in one file, a full `up` keeps it, and the command applied and proved it on the fleet; the dashboard chat on OpenAI is verified failing (work-queue 121); debates run three at once, as a live setting.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -34,18 +34,20 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ### Standing conditions — live, each with what lifts it
 
-- **The fleet is on `s259a`** = `0.123.04` (`49146e40`), since 2026-10-08 22:41 AEDT. Rollback: `s257`.
-- **The debate runs on OpenAI (`gpt-5.5`)**, a live-only change on four apps ([DL-265](design-log.md)).
-  Any full `up` reverts it; it is restored only on the operator's word. The Anthropic account is out of
-  credit until 2026-10-11, and the operator agent's chat stays dark. OpenAI debated its first
-  scheduled buy on `sched-2026-10-08`; no order failed open. The one-switch fix is work-queue 109.
+- **The fleet is on `s262`** = `0.125.00` (`d01b71b3`), since 2026-10-09 20:16 AEDT. Rollback: `s259a`,
+  with the hand-made eight-probe pack put back on the master in the same step (the older image
+  ignores the declared provider and would run Anthropic's probes).
+- **The debate runs on OpenAI (`gpt-5.5`)**, declared in `orchestration/packs/trading_llm.json` and
+  kept by a full `up` since `s262` ([DL-282](design-log.md)); the master runs and counts OpenAI's
+  probes alone. The Anthropic account is out of credit until 2026-10-11. **The operator's dashboard
+  chat stays dark:** it is on Anthropic, and it cannot run on OpenAI until work-queue 121 is fixed.
 - **The manager's wait is 240 seconds, live only** on `deliberator-manager`; the pack says 120. A full
   `up` puts 120 back, and a rollback to `s255` or older must set 120 first.
 - **The five-minute message lock is live only** on the two debater subscriptions; a re-created
   subscription reverts to one minute.
 - **The fidelity count restarted at `sched-2026-10-08`.** Four clean sessions and ten judged PM
   recommendations are needed before EXP-014 may start ([DL-237](design-log.md)). A deploy that changes a
-  decision path restarts it.
+  decision path restarts it; the retag to `s262` changed none.
 - **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
   the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
   nightly window. The pack says 1, so a full `up` puts 1 back on all three. F2 is owed on the first
@@ -57,7 +59,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 🧹 **IN PROGRESS — the first tracker trim, 2026-10-09 ([housekeeping charter](../ops/departments/housekeeping/charter.md) v0.2: OPS-TRIM and gate G-SIZE; operator: *"yes, please"* to a maintenance schedule for the frequently edited files).** INTENT: each of the seven most-edited trackers is under its size limit in bytes, everything removed from one is in the place the charter names, every link resolves, and the limits become a step of `make ci`. Success factors: the seven sizes against their limits; for each move, the count before equals live plus archived; `check_markdown_links.py` and `check_sprint_status.py` exit 0. PROVEN so far: this file, 76 KB → 28 KB against a limit of 40; its header, 24 *Now* entries on which nothing was owed, 12 lines of *Recent* and the September narrative under *Next* moved verbatim to [state-archive/STATE-18.md](state-archive/STATE-18.md). **Merged 2026-10-09 16:47 AEDT (`4a88282e`), the Librarian's pass over three trackers, re-measured by the planner on top of the day's commits:** the work queue 251 KB → 48 KB (limit 64), the sprints README 178 KB → 87 KB (limit 96), the sprints INDEX 121 KB → 24 KB (limit 48); all 115 queue ids are in the live table (23) or the archive (92), every live row equals its text before the trim, all 265 README rows are present, and the link check and the sprint-status check exit 0 with the same count line as before. Two closed rows (111, 112) stay in the queue until the next trim. NOT yet met: the design log (1,249 KB against 512) and the functionality-check register (264 KB against 160), which the Librarian left because moving design-log entries would leave 12 links dead and the register is two tables in two orders; the gate step (sprint 261 and work-queue 117 are reserved for it, not specced).
 
-🟩 **MERGED — [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) (work-queue 109, [DL-282](design-log.md)), `0.125.00`, fast-forwarded to `d01b71b3` so the merged SHA is the gated SHA, tag `v0.125.00`, 2026-10-09; NOT deployed.** INTENT: one pack file declares the fleet's LLM vendor; the master runs and counts only that vendor's probes and hands over only its key; the operator and its dashboard chat follow it; a full `up` keeps it; one command applies it to the five live apps and reads the proof from the graph. Built by Codex in `../ta-s262`, complete against its 13-item checklist. PROVEN: the planner's own re-measure (the scope command prints nothing against the branch-cut commit, so no fidelity decision path moved; the six existing test files edited are the six named; the deploy script parses and its real env-building function gives each deliberator, the operator and the master `openai` once; 32 guard breaks, all red once one missing test was added); Windows `make ci` exit 0 (**4,522 passed, 8 skipped, 100.00 %**, audit clean); **`GATE PROVEN` for `d01b71b3`**; open CodeQL alerts 127, the same as `main`'s (two warnings in the sprint's own tests were fixed on the branch first). Changed by the planner at the review: an apply with nothing to change ended in a fifteen-minute wait and exit 1, and now ends at once with exit 0. NOT yet met: anything live. **Owed, approved by the operator 2026-10-09 (*"ok for both"*):** the image-only retag, then the master's three narrow updates and the command against the fleet (F1a); one paid exchange through the dashboard chat on `gpt-5.5` (F1b); then F2 on the first scheduled run. Rollback: tag `s259a`, and the hand-made eight-probe pack back on the master.
+🚀 **DEPLOYED `s262` 2026-10-09 20:09 to 20:31 AEDT (09:08 to 09:31 UTC), image-only retag, on the operator's word (*"ok for both"*) — [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) (work-queue 109, [DL-282](design-log.md)), `0.125.00`, fast-forwarded to `d01b71b3`, tag `v0.125.00`, GATE PROVEN.** INTENT: one pack file declares the fleet's LLM vendor; the master runs and counts only that vendor's probes and hands over only its key; a full `up` keeps it; one command applies it to the live apps and reads the proof from the graph; the operator's dashboard chat follows it. PROVEN (F1a, [functionality checks](laws/functionality-checks.md)): build 15 of 15 in one attempt from the release tag; 16 of 16 apps and the job on `s262`, 0 of 16 differing from the before-snapshot image aside; 15 of 15 agent types activated, 0 Escalations, Faults or Flags; the master given its vendor and two packs in one update, and its fleet check **passed over 15 agent types** on the full 13-probe pack; the command reported the operator as the one app differing, applied it, found nothing else moved, and read a passed fleet check and the operator active on OpenAI's probe alone, inside 90 seconds; `DeployRecord` written; no decision path differs from `v0.123.04`, so the fidelity count stands. 🔴 **NOT met, verified failing (F1b):** the dashboard chat on OpenAI. `gpt-5.5` refuses the adapter's call with HTTP 400, first for the effort `max`, then for any reasoning effort with a function tool on that endpoint; nothing was spent; work-queue 121. 🔴 The spec's order for the master (provider, then packs) would have stopped it at start; measured offline before acting. NOT exercised live: the command changing the master or more than one app; the return to Anthropic. **Owed:** **F2** on the first scheduled run (8 / 8; each deliberator and the operator activated with OpenAI's probe passed and Anthropic's not declared; no `Escalation`).
 
 🟩 **MERGED — [S252](sprints/sprint-252-every-finder-fetches-only-its-pending-work.md) (work-queue 101 and 106, DRIFT-097 / DRIFT-100, [DL-261](design-log.md)), `0.121.03`, fast-forwarded to `dd22b348` so the merged SHA is the gated SHA, tag `v0.121.03`, 2026-10-02; **deployed `s255` 2026-10-08**, F2 owed on the first scheduled run.** INTENT: all thirteen pending-work finders find their work by key and edge and fetch props only for it. Built by Codex in `../ta-s252`, complete against the checklist: the forecaster's two finders, the deliberator's, execution's two and the monitor's position sync use `kernel.graph_pending`; the monitor finds its sync work from the `RunRequest` side; a guard reads the source and fails on a finder with no payload case; forecaster laws v1.10, deliberator v1.12 (27 / 59), execution v1.12 (40 / 66, new `EXEC-TRG-08`), monitor v1.3. PROVEN: Windows `make ci` exit 0 (**3,966 passed, 8 skipped, 100.00 %**), including the dependency audit the builder's sandbox could not run; **`GATE PROVEN` for `dd22b348`**, measured from the proving worktree; CodeQL 131 = 131; `uv lock` changed only the version line. **F1 PASS** ([functionality-checks](laws/functionality-checks.md)): `main`'s finders and the branch's on the live graph, 44 comparisons, every pending set equal and in the same order; one idle poll reads 12.47 MB (forecaster), 4.72 MB (deliberator), 1.08 MB (execution) and 0.42 MB (monitor) before, and a key query after. Planner's review: 🔴 the handback's `mypy` PASS did not reproduce (one error in the test clock, on the handback's own commit); fixed at merge, two lines in a test helper. Rebased over S253, the shared law and sprint tables merged row by row. NOT yet met: the fleet's received bytes. **Owed:** **F2** (the first scheduled run on `s255`: 8 / 8, and `RxBytes` for the four apps down at least tenfold from 2,295, 1,021, 403 and 143 MB).
 
@@ -86,7 +88,8 @@ second ranking.
    the scale-down (work-queue 116); both are readable once the run's window has closed at 00:30 UTC.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
-3. **S262's deploy and its live checks** (*Now*), approved by the operator.
+3. **S262's F2** on tonight's run (*Now*), and **the chat adapter's fix** (work-queue 121), a small
+   sprint for Codex once its choices are measured against the vendor.
    **The tracker trim's two remaining files** (*Now*), then the size limits as a step of `make ci`
    (sprint 261, reserved). Also Codex-sized and off the fidelity decision paths: work-queue 115.
    **Then the shutdown path and the container sensor** (work-queue 116, then 119;
@@ -94,7 +97,8 @@ second ranking.
    signal, and nothing tells the operator when one fails to start or is killed. Until the sensor
    exists the fleet check reads the platform's event log by hand.
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from
-   `sched-2026-10-08`, read from a worktree pinned at `v0.123.04`; on PASS,
+   `sched-2026-10-08`, read from a worktree pinned at `v0.123.04` (`v0.125.00` holds the same
+   decision code); on PASS,
    [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md),
    which is also S250's F2.
 5. **After 2026-10-11:** EXP-019's remainder on Opus, then the debate workflow in the order of

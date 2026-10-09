@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it`
-**Status:** MERGED 2026-10-09 — `0.125.00`, fast-forwarded to `d01b71b3`, tag `v0.125.00`, GATE PROVEN `d01b71b3`; not deployed
+**Status:** MERGED 2026-10-09 — `0.125.00`, fast-forwarded to `d01b71b3`, tag `v0.125.00`, GATE PROVEN `d01b71b3`; **deployed `s262` 2026-10-09**; F1a passed (the command against the fleet); 🔴 F1b verified failing (the OpenAI chat adapter, work-queue 121); F2 owed
 **Version:** *next available MINOR at merge*
 **Effort:** L
 **Decisions:** [DL-282](../design-log.md) (this sprint's ten decisions, made) · [DL-265](../design-log.md) (the hand-made switch it replaces) · DL-100 (the models follow the provider) · [work-queue 109](../work-queue.md)
@@ -1156,7 +1156,9 @@ Re-measured by the planner in `../ta-s262`, not taken from the handback.
 - **Version.** MINOR, `0.124.00` to `0.125.00`; `uv lock` changed the version line alone (180
   packages).
 
-**Still owed after the merge, none of it proven here:** F1a (the command against the fleet, with the
+**After the deploy, 2026-10-09 ([functionality checks](../laws/functionality-checks.md)).** *F1a passed:* retag to `s262`, the master's vendor and packs in one update, a fleet check that passed over 15 agent types, and the command's report, apply and proof against the live fleet. 🔴 *F1b is verified failing:* `gpt-5.5` refuses the chat adapter's call twice over, first the effort `max`, then any reasoning effort together with a function tool on the endpoint the adapter uses. D5's two unmeasured assumptions are both refuted; the fix is work-queue 121. 🔴 *The order this spec gave for the master was wrong:* the provider set before the tagged probe pack stops the master at start. It was measured offline before acting and the three values went in one update. *F2 is owed* on the first scheduled run.
+
+**Written at the merge, before the deploy — still owed after the merge, none of it proven here:** F1a (the command against the fleet, with the
 retag and the master's three narrow updates), F1b (one paid exchange through the dashboard chat on
 `gpt-5.5`), F2 (the first scheduled run), and the return to Anthropic.
 

@@ -202,6 +202,11 @@ The command applies the file's vendor and accepts no vendor argument. It does no
 replace master's secret/probe packs, wake unchanged apps, change scale, or make a model call.
 The operator container retains its fake client; real operator model calls happen through dashboard chat.
 
+🪤 **The master's provider and its two packs go together.** The master refuses to start when it is
+granted a vendor's key and holds no probe tagged for that vendor, and with no provider it runs every
+vendor's probes. When a deploy changes `MASTER_CREDENTIAL_TESTS_B64` or `MASTER_SECRET_MAP_B64` by
+hand, set them and `MASTER_LLM_PROVIDER` in one `az containerapp update` (measured 2026-10-09).
+
 ### Verifying which credential the fleet actually holds
 
 **`preflight` and `az containerapp show` cannot answer this.** A flip rewrites the *value* of the

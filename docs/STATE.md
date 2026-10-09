@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-09 16:15 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.124.00`, not deployed · **[S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md) is merged and F1 passed, and one paid proof on the fleet at three debates at once ran clean (6 of 6, $3.72); the dial stays at 1 pending the operator's decision; `sched-2026-10-08` read 8 / 8 with the first buy debated on OpenAI, and the F2s of S253 to S257 passed on it; S252's F2 is read once that run's window has closed.**
+**Last updated:** 2026-10-09 16:35 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.124.00`, not deployed · **Debates run three at once on the fleet from tonight, as a live setting (operator); [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md) is merged, and one paid proof at three at once ran clean (6 of 6, $3.72); `sched-2026-10-08` read 8 / 8 with the first buy debated on OpenAI, and the F2s of S253 to S257 passed on it; S252's F2 is read once that run's window has closed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -46,8 +46,10 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 - **The fidelity count restarted at `sched-2026-10-08`.** Four clean sessions and ten judged PM
   recommendations are needed before EXP-014 may start ([DL-237](design-log.md)). A deploy that changes a
   decision path restarts it.
-- **Debates run one at a time** (the pack's dial is 1). A night with more than about 7 debated buys
-  places none (work-queue 113); [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), merged, shows four at once lose no reply off the fleet.
+- **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
+  the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
+  nightly window. The pack says 1, so a full `up` puts 1 back on all three. F2 is owed on the first
+  scheduled night with more than one debated buy (work-queue 113).
 - **[EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md) is
   interrupted** at 31 of 52 calls; $2.80 is approved for the rest, on Opus, after 2026-10-11.
 
@@ -80,9 +82,8 @@ second ranking.
 
 1. **Today:** S252's F2 on `sched-2026-10-08` (the four apps' received bytes) and how the master's container ended at
    the scale-down (work-queue 116); both are readable once the run's window has closed at 00:30 UTC.
-2. **The operator's decision on work-queue 113:** three debates at once as a live setting on the
-   three deliberator apps (the pack is a fidelity decision path), or the dial stays at 1. The harness is
-   merged ([S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md)) and one fleet run at three at once was clean ([DL-277](design-log.md) amendment 1).
+2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
+   scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. **The tracker trim** (*Now*), then the size limits as a step of `make ci`, a small chore for Codex.
    Also Codex-sized and off the fidelity decision paths: work-queue 115 and 116.
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from

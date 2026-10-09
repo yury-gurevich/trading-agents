@@ -190,7 +190,7 @@ follows; this is a second build of the same sprint. The `DeployRecord`'s commit 
 
 ---
 
-## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); one clean fleet run at three at once on 2026-10-09 (amendment 1); work-queue 113
+## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); one clean fleet run at three at once on 2026-10-09 (amendment 1); **three at once is LIVE on the fleet since 2026-10-09 (amendment 2, operator)**; work-queue 113
 
 **The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
 time, is said there to need peers that serve in parallel. Is that built?
@@ -267,6 +267,20 @@ September's failure appeared in one run of two, so this does not prove absence; 
 requests a pass) is gone and is held red by [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md)'s tests. Not measured: a night-sized batch (the
 largest on record approved 18), and execution reading the record. **Step 3 is the operator's decision:**
 three at once as a live setting on three apps (the pack is a fidelity decision path), or leave the dial at 1.
+
+**Amendment 2 — step 3 is decided: three debates at once, as a live setting (operator, 2026-10-09 16:25
+AEDT: *"three at once"*).** Set 2026-10-09 16:27 AEDT on three apps and nowhere else: `deliberator-manager`'s
+`DELIBERATOR_DEBATE_CONCURRENCY` is 3 (was 1); `deliberator-proponent` and `deliberator-opponent` have
+`maxReplicas` 3 and `desiredReplicas` 3 in the nightly window rule, whose hours are unchanged. Compared with
+the morning's snapshot, those are the only differences on the three apps; the master, execution and the
+portfolio manager differ in nothing. **The pack still says 1**, because the pack is a fidelity decision path
+and an edit would restart the clean-session count: a full `up` puts 1 back on all three, and the pack edit is
+owed once the count allows it. **Rollback:** the manager's value back to 1 and the two debaters back to one
+replica. **F2, owed on the first scheduled night with more than one debated buy:** the record's
+`real_debate_count` equals the approved buys, `failed_open_count` 0, `orphaned_reply_count` 0, three replicas
+of each debater activated, and the record lands inside execution's 1,800 seconds. **Ruled out:** four at
+once, never run on the fleet since September's failure; waiting for more fleet runs first, since a night
+with more than about 7 debated buys places none today and the proof run cost $3.72 a time.
 
 **Ruled out for now.** Turning the dial for tonight's run: six F2s are owed on it and K above 1 is
 unproven on the fleet. A longer wait alone: the brief's last tick caps it near 3,000 seconds, about 12

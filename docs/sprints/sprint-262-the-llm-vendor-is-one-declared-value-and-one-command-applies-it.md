@@ -1134,6 +1134,10 @@ Re-measured by the planner in `../ta-s262`, not taken from the handback.
   2. *A test for an update that did not take:* the update call succeeds, the value on the app is
      unchanged, the command exits 1 naming the app. With it, the surviving break above is red.
   Both are in `tests/test_switch_llm_planner_review.py`; removing either guard turns it red.
+- **CodeQL.** The first push of the branch showed two open alerts that `main` does not have, both
+  `py/incomplete-url-substring-sanitization` warnings in the sprint's own master tests: a fake
+  transport told the vendors apart by `"anthropic.com" in request.url`. Both now compare the
+  URL's exact host. Test code only; the eleven tests of the two files pass unchanged in meaning.
 - **Seen and accepted.** `FleetPreflight.checked_at` is written to the second and the command's start
   instant is not, so a fleet check inside the same second as the start would not count; the master
   starts tens of seconds after an update. The proof read lists every `AgentInstance` at each poll,

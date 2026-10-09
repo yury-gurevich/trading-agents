@@ -6,6 +6,7 @@ External I/O: fixture pack files and in-memory graph only.
 """
 
 from dataclasses import replace
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -16,6 +17,11 @@ from agents.master.secret_map import SecretMap, load_secret_map
 from agents.master.settings import MasterSettings
 from agents.master.tests.test_provider_selection import PACKS, FakeSecrets
 from kernel import InMemoryGraphStore
+
+
+def _vendor_host(url: str) -> str:
+    """Return the URL's exact host, so a probe is matched by host, not substring."""
+    return urlsplit(url).hostname or ""
 
 
 def _settings(provider: str) -> MasterSettings:
@@ -79,7 +85,9 @@ def test_selection_runs_once_when_building_master(
     monkeypatch.setattr(
         credential_probes,
         "_default_http_transport",
-        lambda request: 401 if "anthropic.com" in request.url else 200,
+        lambda request: (
+            200 if _vendor_host(request.url) != "api.anthropic.com" else 401
+        ),
     )
     agent, _ = entrypoint.build_app(
         InMemoryGraphStore(), "fixture-pem", _settings("openai"), FakeSecrets()

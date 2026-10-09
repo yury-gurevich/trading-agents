@@ -8,6 +8,7 @@ External I/O: committed pack files only; probe transports and secrets are fake.
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from agents.master.credential_probes import load_credential_tests
 from agents.master.credential_selection import select_llm_provider
@@ -16,6 +17,11 @@ from agents.master.secret_map import load_secret_map, resolve_config
 from kernel import CollectingFaultSink, InMemoryGraphStore
 
 PACKS = Path(__file__).resolve().parents[3] / "orchestration/packs"
+
+
+def _vendor_host(url: str) -> str:
+    """Return the URL's exact host, so a probe is matched by host, not substring."""
+    return urlsplit(url).hostname or ""
 
 
 class FakeSecrets:
@@ -68,7 +74,9 @@ def test_a3_fleet_check_follows_selection() -> None:
     """MST-OUT-04: the selected fleet passes despite four drained Anthropic probes."""
     tests = load_credential_tests(
         str(PACKS / "trading_credential_tests.json"),
-        http_transport=lambda request: 401 if "anthropic.com" in request.url else 200,
+        http_transport=lambda request: (
+            200 if _vendor_host(request.url) != "api.anthropic.com" else 401
+        ),
     )
     secrets = load_secret_map(str(PACKS / "trading_secrets.json"))
     policy = json.loads((PACKS / "trading_grants.json").read_text("utf-8"))

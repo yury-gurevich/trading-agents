@@ -10,6 +10,133 @@ and is marked CLOSED here.
 
 ---
 
+## DL-286 - a model request that fails in the operator's chat is a fault inside the operator's own boundary, is audited on both capabilities, and is answered with one message that says why - status: MEASURED and DECIDED (planner, 2026-10-10 10:47 AEDT); specced as [S265](sprints/sprint-265-a-failed-chat-request-is-audited-and-says-why.md); work-queue 125; DRIFT-107 and DRIFT-108
+
+**The question.** Work-queue 125, found while measuring DL-285: when the operator's model request
+itself fails, no `CommandAudit` is written and a typed question hides the reason. Two things were
+left to decide: what a typed question says, and what the audit of a failed call reads, given that
+the unattended scorecard counts an audit with no intent and an outcome other than `explain` as a
+human action. This entry measures today's behaviour again, with more cases, and decides.
+
+**Measured** *[2026-10-10, 10:05 to 10:45 AEDT; in the sprint's worktree, which has no `.env`, on
+`main` at `f3e37421`; no call to a vendor except where a line says so. Each real operator adapter
+was built by the factory on a fake SDK and bound into the surfaces' context, and each turn went
+through the dashboard's chat handler. Scripts, outputs and the prototype's diff are outside the
+repository, `trading-agents-data/wq125-2026-10-10/`]*. Both vendors read alike in every row.
+
+| The request fails | Today | On the prototype |
+| --- | --- | --- |
+| the quick ask *explain this run*, a time-out | chat: *"Request timed out."*; **no `CommandAudit`**; a fault recorded by the bus | the message; audit `explain`, linked to the row; one fault from the operator's boundary |
+| the quick ask, the vendor answers HTTP 400 | chat: *"The language model refused the request (HTTP 400): ..."*; no audit | the message, with the status and the vendor's words |
+| the quick ask, an error with no text | chat: **an empty message**; no audit | the message, naming the error's type |
+| a typed question, any of the three | chat: *"Operator could not parse the command."*, the reason nowhere; no audit; a fault from the agent | the same message as the quick ask; audit `refused`, linked; one fault |
+| a typed question parsed, then its answer's request fails | audit `intent` only; the explain call has none | audits `intent` and `explain` |
+| an explicit `approve flag-12` | refused, *"Operator could not parse the command."* | refused, the message |
+| the unattended scorecard | counts nothing (there is no audit) | a failed typed question counts as one `command`; a failed explain counts as reading |
+
+- The row of a failed call is unchanged: `unknown`, 0 output tokens, `estimated`, and the outage
+  check reads it silent, as it should.
+- Four control cases a vendor (a cut-off and a good reply, on the quick ask and on a typed
+  question) print the same lines before and after the prototype.
+- *What the SDKs really render* (one request a vendor from the main checkout with a key that is not
+  a key: answered HTTP 401, nothing billed). OpenAI 2.49.0: `Error code: 401 - {'error':
+  {'message': 'Incorrect API key provided: not-a-ke***q125. ...', 'type': 'invalid_request_error',
+  ...}}`. Anthropic 0.120.2: `Error code: 401 - {'type': 'error', 'error': {'type':
+  'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': ...}`. The pattern in
+  `surfaces/plain_errors.py` reads the status and the message from both. OpenAI's message repeats
+  the key masked to its first eight and last four characters. A time-out reads *"Request timed
+  out."* on OpenAI and a longer plain sentence on Anthropic.
+- Only the operator's store, the contract and `surfaces/queries/scorecard_actions.py` read a
+  `CommandAudit`; only `surfaces/operator_tools.py` and the command line (which binds the fake
+  client) ask the operator to `interpret` or `explain`.
+- *A prototype of the whole change*, five files, 129 lines added and 48 removed. Of the 4,588
+  existing tests it breaks exactly three functions, the three that pin today's behaviour. 48
+  prototype test cases pass on it. Broken 32 ways, one at a time, 32 went red (a first run of 30
+  read 29: one break changed nothing and was replaced). `ruff`, `mypy` and the import contracts
+  are clean.
+- The law gate was run on a planted citation: a test that does not exist, added to a green row
+  beside two live ones, leaves the gate at exit 0. It checks that a green row has one live test
+  naming the clause, not each citation.
+- A model reply that is not valid JSON emits no fault (three shapes planted), although
+  `OPR-FAIL-01` lists *malformed JSON* among the failures that do: DRIFT-108.
+
+**Decided.**
+
+1. **The model call sits in its own fault boundary.** One helper,
+   `agents/operator/ledger.py::recorded_completion`, opens the ledger capture outside and the
+   caller's boundary inside, around the completion alone, and hands back the row, the reply and
+   the fault. A request that fails is a fault and not a raise. A ledger write that fails is not a
+   failed request and propagates as today.
+2. **One message, built in the operator's domain:** *"The request to the language model failed, so
+   there is no answer."*, then the error's own reason in plain words: *"The vendor answered HTTP
+   400: ..."* for a status error, the error's text for any other, the error's type when it has no
+   text.
+3. **The pattern that reads an SDK's status-error text moves to the kernel**, unchanged
+   (`kernel/llm_error_text.py`), so the agent and the surface read one pattern. The surface's
+   `plain_error` keeps its sentence and its behaviour.
+4. **`explain`** writes its audit with outcome `explain` on every path and returns the message for
+   a failed request. It no longer raises to the bus for it.
+5. **`interpret`** reads a failed request as a refusal whose reason is the message, and does not
+   pass it through the explicit grammar. The existing flow writes the audit, `refused`. Any other
+   fault inside `interpret` keeps *"Operator could not parse the command."*
+6. **The audits keep today's vocabulary.** A failed explain is `explain` (reading on the
+   scorecard); a failed interpret is `refused`, which the scorecard counts as a command, as it
+   counts every interpret call that produced no intent and as a cut-off one is counted since S264.
+7. **Nothing else moves**: a reply that came back, the adapters, the bus, the scorecard, the chat
+   page, the debaters.
+
+One law cycle follows, with no new clause: `OPR-FAIL-01` is reworded to say all of this for both
+capabilities, and to stop listing a reply that is not JSON as a fault.
+
+**Ruled out, and why.**
+
+- *Keep the old division (the operator relays the error's text, the surface words it): `explain`
+  keeps raising to the bus with its audit written first, and the surface rewords a refusal's
+  message.* The smallest change, and it keeps the turn's outcome word `refused`. Rejected: one
+  event would keep two idioms and two fault sources; a bare *"Request timed out."* or *"Connection
+  error."* in a chat does not say what failed; an error with no text shows an empty message; and
+  the sentence that says the model request failed can only be written by the agent, the one place
+  that knows it was the model call. It is also the shape S264 chose for a cut-off.
+- *Relay the text of every fault inside `interpret`.* A graph failure is not a model failure; only
+  the measured case changes.
+- *Apply the explicit grammar to a failed request, as to a cut-off*, so that `approve flag-12`
+  typed during an outage asks for confirmation (the grammar needs no model). Rejected for this
+  sprint: the law says a failed call is refused, and whether a command should act while the model
+  is unreachable is a decision about commands during an outage, not about what the chat says. It
+  can be asked for on its own.
+- *A new audit outcome (`failed`) that the scorecard skips.* Nothing shows whether the words were a
+  question or a command; an approval typed during an outage would leave the count; the rule is
+  DL-235's.
+- *Audit a failed `explain` as `refused`.* The scorecard would count a question as a human action.
+- *Write the error's text or type on the `CommandAudit`.* `OPR-NEV-06` and `OPR-SEC-02` keep
+  credentials and raw text out of the graph, and a vendor's 401 repeats the key masked. It would
+  also be a new graph property. The linked row reads silent; the fault holds the type and text.
+- *Copy the pattern into the operator's domain.* Two patterns for one vendor format. Importing the
+  surface's is not possible: an agent may not import a surface.
+- *Have the adapters raise a typed error carrying the status and the message.* Four adapters, the
+  debate's two among them, for a text the SDKs already render one way.
+- *Retry once.* An empty account or a refused key does not heal, and a paid call would be doubled
+  with no evidence that it ends differently.
+- *Shorten a long error text.* No measured case; a bound would be a number with no evidence.
+
+**Named consequences.** The turn's outcome word for a failed quick ask goes from `refused` to
+`answer`, because an `Explanation` carries no outcome of its own (the cut-off reads `answer` since
+S264, and the chat page shows the message alone). An MCP client that calls `explain` gets the
+message as an accepted answer instead of an `error` key. A failed typed question counts as one
+`command` on the unattended scorecard where it counted as nothing.
+
+**Found while reading the law, and not decided here.** `OPR-FAIL-02` says an intent with missing
+required fields is refused. Measured: an unknown family is refused, but `approve` with no target,
+`modify` with no name or value and `run` whose parameters are not an object each come back as an
+intent with empty parameters, and a reply with no family comes back as a `status` intent.
+DRIFT-109, work-queue 126.
+
+**Not measured.** A failure met in the dashboard itself: the live ledger holds no failed operator
+call. What a vendor sends for an empty account on OpenAI. A status error whose body is not JSON:
+the SDK then uses the response's raw text, which this sprint shows as it is.
+
+---
+
 ## DL-285 - a reply cut off at the cap is the port's stopped completion on both vendors; the operator records its stop reason and its tokens on both paths and writes the audit, and the chat says one sentence - status: MEASURED and DECIDED (planner, 2026-10-10 00:15 AEDT); specced as [S264](sprints/sprint-264-a-cut-off-reply-is-recorded-and-the-chat-says-so.md); work-queue 124; the failed request is work-queue 125; OpenAI's real cut-off read 2026-10-10 (amendment 1); MERGED as S264 `0.125.02` (`cc050bba`), F1a and F1b on OpenAI passed (amendment 2); work-queue 124 closed
 
 🔁 **Amendment 2, 2026-10-10 02:03 AEDT (planner) — built as decided and merged; what the checks showed; one wording change to the law.** Built by Codex with no amendment to the six decisions; the production code is the prototype line for line. Merged as `0.125.02` (`cc050bba`, GATE PROVEN). *F1a*, on the merged `main` at no cost: this entry's measurement prints, on both vendors, the sentence for every cut-off question, the vendor's counts and stop word on the row, the audits and no fault; the failed-request cases read as before. *F1b on OpenAI*, one paid call ($0.0033; with amendment 1's, $0.0066 for the sprint): the call of amendment 1 on the built code. The chat showed the sentence, the row holds 278 in and 64 out with `max_output_tokens`, the audit reads `refused`, no fault. *Changed at the merge:* the builder's `OPR-FAIL-04` quoted the sentence inside the law; the law now says what the sentence must be and leaves its letters to the test that pins them, so the text exists once. *Owed:* F1b on Anthropic after 2026-10-11. *Still not produced by a vendor:* a cut at the real cap of 4,096; a reply cut inside a function call's arguments or a tool block.

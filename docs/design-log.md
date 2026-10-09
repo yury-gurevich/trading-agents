@@ -10,6 +10,73 @@ and is marked CLOSED here.
 
 ---
 
+## DL-280 - the judge has ruled `revise` on every order since the reward-to-risk floor went to 0, and `revise` changes no order; the causes are in the packet and in the judge's prompt - status: MEASURED; fix PROPOSED (planner, 2026-10-09 10:20 AEDT), told to the operator, not yet confirmed
+
+**The question.** On `sched-2026-10-08` the judge ruled `revise` on TMO because *"the live reward-risk gate
+is effectively disabled at threshold 0"*. That floor is a recorded decision
+([ADR-0027](decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md), Correction 2).
+Is this one ruling or a pattern, and why does it happen?
+
+**Measured 2026-10-09, no LLM call.** Every `DeliberationRun` with a real debate, and the recorded packet and
+turns of TMO's (scripts and outputs: OneDrive `trading-agents-data/f2-sched-2026-10-08/`, `analysis_a.py`).
+
+| Rulings | All | `revise` | `uphold` | `overturn` | Rationale names reward-to-risk |
+| --- | --- | --- | --- | --- | --- |
+| Before 2026-09-17 | 209 | 161 | 26 | 22 | 29 |
+| From 2026-09-17, the floor at 0 (S211) | 35 | 35 | 0 | 0 | 32 |
+
+- 34 of the 35 are Opus's and one is `gpt-5.5`'s, so it is not one vendor's habit.
+- **`revise` has no reader.** Execution drops an order only when its ticker is in `vetoed_tickers`
+  (`agents/execution/deliberation_gate.py::drop_vetoed`). None of the 35 orders was vetoed or changed.
+- **The packet prints the ratio as a gate that passed.** TMO's line: `PM gate outcome: name=reward_risk
+  value_reward_risk_ratio=1.004 threshold_reward_risk_ratio=0 -> PASSED (… comparison=DISCLOSURE_ONLY)`. It
+  has the form of the eight real gates beside it. Nothing says the ratio is printed and not enforced, or why.
+- **The judge's prompt** (`kernel/deliberation_prompts.py::JUDGE_SYSTEM`, version
+  `2026-09-30-s245-v6-judge-claude-opus-5`) says *"If the Challenger catches a grounded
+  implementation-specific flaw from the evidence, do not uphold the decision"*, and all six of its examples
+  rule `revise`. One of them (`alpha158-weight-zero`) rules `revise` because a weight of 0.00 *"is a disabled
+  signal"*, which is the shape of the argument made about the floor.
+- 🪰 The last column counts rationales that name the theme, by a keyword pattern; a rationale can name several.
+- *[not measured]* Whether the judge's earlier prompt versions held the same six examples (77 % `revise`
+  before 2026-09-17 suggests so); what the 35 debates cost.
+
+**Reading.** Three causes that add. The packet shows a disclosed number as a passed gate and does not state
+the decision behind it. The judge may not uphold once an implementation flaw is named, and this one is on
+every order. Every example it was given rules `revise`. So the judge rules on the system's design, which is
+the same for every order, and the ruling cannot tell one order from another. The ruling it then gives is
+read by nothing.
+
+**Consequence for [DL-264](design-log.md)'s order.** Amendment 6's loop gives `revise` an effect: a smaller
+quantity or no order. With this judge it would shrink or drop every order. The judge's contract therefore
+comes before the loop, and before the debaters' typed turn, whose worth is read through the judge.
+
+**Proposed (work-queue 118).**
+
+1. **The packet, deliberator only, so no fidelity decision path moves.** A gate whose detail says
+   `comparison=DISCLOSURE_ONLY` is not rendered as `PM gate outcome … -> PASSED`. One line, in the manner of
+   S255's *rule for every order*, states that the ratio is printed and not enforced, by ADR-0027's decision
+   and on its evidence. The same sprint states that the name's previous lot was stopped out that session
+   ([DL-240](design-log.md) amendment 2; work-queue 98's *past fills in the ticker*).
+2. **The judge's contract**, ahead of the debaters' typed turn: rule on what distinguishes this order from
+   the others; a property shared by every order is recorded as a design note and cannot decide the ruling;
+   the examples include an `uphold` and an `overturn`. It changes a prompt, so ADR-0010's gate and a paid
+   replay apply.
+3. **`revise`** takes its effect from amendment 6's loop, in shadow first.
+
+**Proof before either ships:** the ten stored packets replayed on `gpt-5.5`, about $8, on the operator's
+word. The bar: the rulings are not all the same, and none rests on the floor.
+
+**Ruled out.** *Raising the floor so the gate can fail:* Correction 2 measured that the ratio does not
+predict returns (+0.03 % per trade, 95 % CI −0.17 % to +0.23 %, 47,485 decisions) and that a floor of 0.80
+rejects between 0 % and 99 % of a night's book. *Removing the line from the packet:* the debaters would lose
+the stop and target geometry, and withholding is what work-queue 98 exists to end. *Dropping `revise` from
+the judge's choices now:* under the instruction not to uphold, the rulings may all move to `overturn` and no
+buy would be placed; not measured, so not done blind. *The packet line alone:* the same rationales also name
+fixed-fraction sizing (a distinction the prompt teaches) and the stop's gap risk on most orders, so the
+ruling would probably stay `revise` for another reason shared by every order (not measured).
+
+---
+
 ## DL-279 - the production manager and debaters, run together at four debates at once with a canned model, lose no reply at one request a pass and fail two orders of four open at ten; the harness is specced as S260 - status: MEASURED and DECIDED (planner, 2026-10-09 09:18 AEDT); SPEC [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), packaged for Codex; work-queue 113
 
 **The question.** [DL-277](design-log.md) measured the request side alone: four consumers on one
@@ -3237,6 +3304,24 @@ written, not a defect, and the six that held say it has not cost money so far. I
 entry's question (what the book does with a name after an exit). The replay harness runs the same
 code, so EXP-014's arms include the behaviour. **No decision taken:** a re-entry rule is trading
 policy, the operator's to set, and the place to test one is the exit experiment this entry plans.
+
+**Amendment 2 — the same reading on the broker's own orders, with what each second lot did (measured
+2026-10-09).** On `sched-2026-10-08` the stops on TMO and DE had filled in the session, and the run bought
+TMO again: a limit of $661.63 against a stop fill of $645.43. From Alpaca's closed orders, by fill time:
+**14 of 37** filled stops were followed by a buy order for the same name before the next session opened. Two
+of those orders expired, one is pending and 11 filled: 6 are up and 5 down, **+$252.34** in total, of which
+INTC alone is +$216.01. **3 of the 11 were stopped out a second time** (SCHW, BMY, DE: −$129.81), so a stop
+limits the loss on a lot and not on a name (DE: −4.63 % and then −4.89 % within a week). The second lot was
+bought above the stop's fill in 6 of 11, by +0.51 % on average. **14 of the 37 stops filled in the first 15
+minutes of a session**; TMO's did, at 13:36 UTC, on a day whose low was $635.30 and whose close was $652.00.
+Why the run buys again: the stop is tied to the old lot's entry price, the analyst scores the name afresh at
+the close, and nothing between them carries the stop-out; the debate's packet does not carry it either.
+*[not measured]* how often a stopped name closed back above its stop the same day; any rule on the ten-year
+replay. **Proposed, told to the operator (the rule is theirs):** no cool-down on this evidence, because it
+would have cost this record $252, INTC's recovery; the packet states the stop-out (the packet sprint of
+[DL-280](design-log.md)); *no re-entry for 1, 3 or 5 sessions* becomes an arm of the exit experiment on the
+replay, after the fidelity verdict. The first amendment read the graph's refresh dates and counted 11 of 31
+a week earlier; script `analysis_b.py`, OneDrive `trading-agents-data/f2-sched-2026-10-08/`.
 
 ## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
 

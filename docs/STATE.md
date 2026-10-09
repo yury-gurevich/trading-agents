@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-09 10:03 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.123.04` · **`sched-2026-10-08` read 8 / 8 with the first buy debated on OpenAI, and the F2s of S253 to S257 passed on it; S252's F2 is read once that run's window has closed; [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), the harness for debates side by side, is in build by Codex.**
+**Last updated:** 2026-10-09 10:20 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.123.04` · **`sched-2026-10-08` read 8 / 8 with the first buy debated on OpenAI, and the F2s of S253 to S257 passed on it; S252's F2 is read once that run's window has closed; [S260](sprints/sprint-260-debates-at-once-lose-no-reply-and-the-repo-can-show-it.md), the harness for debates side by side, is in build by Codex.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -90,6 +90,8 @@ second ranking.
 5. **After 2026-10-11:** EXP-019's remainder on Opus, then the debate workflow in the order of
    [DL-264](design-log.md) amendment 5: the other two pieces of step 2 (work-queue 98, and the risk
    figures), the debaters' typed turn, the judge's typed ruling, the loop in shadow.
+   [DL-280](design-log.md) proposes the judge's contract before the typed turn: every ruling since
+   2026-09-17 is `revise`, and `revise` changes no order (work-queue 118).
 6. **From about 2026-10-12:** S241's F4, the first barrier claims settling
    ([S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md)).
 7. **Not while the fidelity count runs** (each touches a decision path): work-queue 103 part two, 105

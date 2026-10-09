@@ -10,7 +10,21 @@ and is marked CLOSED here.
 
 ---
 
-## DL-284 - on OpenAI the operator's forced function goes through the Responses API, its effort resolves from the provider as its model does, and an explicit model of another vendor refuses the chat's binding - status: MEASURED and DECIDED (planner, 2026-10-09 21:11 AEDT); the build is [S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md), work-queue 121
+## DL-284 - on OpenAI the operator's forced function goes through the Responses API, its effort resolves from the provider as its model does, and an explicit model of another vendor refuses the chat's binding - status: MEASURED and DECIDED (planner, 2026-10-09 21:11 AEDT); MERGED as [S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md) `0.125.01` (`9df7dacd`), F1a and F1b passed 2026-10-09; work-queue 121 closed, 124 opened
+
+🔁 **Amendment 1, 2026-10-09 22:49 AEDT (planner) — built as decided and merged; what the paid check confirmed and what it found.**
+
+- **Confirmed (F1b, three calls, $0.27).** Through the dashboard binding on the merged code `gpt-5.5` answered an
+  explain and an interpret at `xhigh`: 797, 233 and 716 output tokens of 4,096, none cut, 12.2 and 13.8 seconds a
+  turn. With the measurement's two that is five replies at `xhigh`, the largest 811.
+- **Decision 3 holds in the adapter and not in the operator's ledger.** The adapter keeps the vendor's word and, on
+  a cut-off, the usage before it raises. The operator agent passes neither on: its ledger rows read `unknown` for
+  every call, on either vendor, and a cut-off call's row holds 0 output tokens stamped `estimated` (measured
+  offline on the merged code). This entry wrote *recorded* as if the adapter's two fields were the record, and
+  S263's Goal repeats it: the adapter and the port were read, the caller was not. Not caused by the sprint;
+  work-queue 124.
+- **Still not observed:** a cached input token (0 on all eleven accepted calls; the two explain prompts differ
+  from their first line, so nothing repeats), a reply the vendor cut off, the return to Anthropic.
 
 **The question.** S262's paid check found the dashboard chat cannot run on OpenAI (DL-282,
 amendment 2): `gpt-5.5` refuses the effort `max`, refuses a function tool with any reasoning effort on

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`
-**Status:** BUILT
+**Status:** MERGED 2026-10-09 — `0.125.01`, fast-forwarded to `9df7dacd`, tag `v0.125.01`, GATE PROVEN `9df7dacd` (CI, CodeQL, Security Findings); no deploy; F1a and F1b passed; 🔴 found by F1b and not caused by this sprint: the operator's ledger row carries no stop reason and drops a cut-off call's tokens (work-queue 124)
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-284](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-282](../design-log.md) amendment 2 (what S262's paid check refuted) · [work-queue 121](../work-queue.md)
@@ -541,7 +541,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s263`, branch `sprint-263-the-operators-chat-makes-its-tool-call-on-openai`; `.env` absent; `UV_OFFLINE=1`, `UV_FROZEN=1`, no vendor call.
 
@@ -1064,7 +1064,28 @@ Re-measured by the planner in `../ta-s263`, not taken from the handback.
 - **Version.** PATCH, `0.125.00` to `0.125.01`; `uv lock` changed the version line alone (180
   packages).
 
-**Still owed after the merge, none of it proven here:** F1a (the replay and the binding's refusal on
+**The gate and the merge.** Windows `make ci` exit 0 on the branch: all 15 steps, 4,558 passed, 8
+skipped, 100.00 % coverage, and the dependency audit the builder could not run found nothing
+unaccepted. `GATE PROVEN` for `9df7dacd28b08a5700e6147414e45c01935806a6`, run from `../ta-s263`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL alerts
+on the branch: 127, the same alert numbers as on the last merged branch and on `main`, none at error
+level. `main` fast-forwarded to that commit and tagged `v0.125.01`.
+
+**After the merge, 2026-10-09 ([functionality checks](../laws/functionality-checks.md)).** *F1a passed*
+on the merged `main`, at no cost: the six captured replies replay as before; with the operator's `.env`
+as it stands the binding returns disconnected with the reason line, and it binds `gpt-5.5` at `xhigh`
+once the model is emptied for the process. *F1b passed* (the operator: *"you have my ok for $.0.58"*):
+one `explain` and one `interpret` through the dashboard binding on `gpt-5.5`, three vendor calls for
+$0.27. Both turns answered, none was cut; 797, 233 and 716 output tokens of 4,096; 12.2 and 13.8
+seconds a turn. 🔴 *Found by F1b, not caused by this sprint:* each of the three ledger rows reads
+`stop_reason: unknown`. The operator agent never passes its client's stop reason to the ledger, and on
+a cut-off it never reads the usage the adapter recorded before raising: measured offline on the merged
+code, such a call's row holds 0 output tokens stamped `estimated`. So this spec's Goal sentence, *a
+reply cut at the output cap is recorded with its tokens*, is true of the adapter (test A3) and
+**verified failing in the operator's ledger row**, on either vendor. The deliberator's wrapper reads
+both on both paths. Work-queue 124. *Not observed:* a cached input token (0 on all three calls).
+
+**Written at the merge, before the checks — still owed after the merge, none of it proven here:** F1a (the replay and the binding's refusal on
 the merged `main`, at no cost), F1b (one paid `explain` and one `interpret` through the dashboard
 binding on `gpt-5.5`), and the operator's `.env`. Not proven by any of them: a reply the vendor cut
 off, and the return to Anthropic.

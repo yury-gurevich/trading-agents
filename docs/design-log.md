@@ -10,6 +10,93 @@ and is marked CLOSED here.
 
 ---
 
+## DL-283 - a sensor for containers that do not start or stop cleanly: the platform's event log already holds when and why, nothing reads it, and no container in the fleet has a shutdown path - status: DECIDED as a direction (planner, 2026-10-09 17:39 AEDT); the sensor is work-queue 119 and the shutdown path is work-queue 116; neither is specced
+
+**The operator's words, 2026-10-09.** *"remind me untill we resolve it: container restarts and
+unexpected falure tracker"*; asked what was meant, *"tracker as in sensor. I want to know when and wht
+containers do not start cleanly"*; and then *"does master properly shutts down (closing onnections,
+logging shutdown)?"*
+
+**Measured** *[2026-10-09, read-only; the raw rows are kept outside the repository, `trading-agents-data/container-starts-2026-10-09/`]*.
+
+- The log workspace `trading-agents-logs` keeps 30 days of the platform's container events
+  (`ContainerAppSystemLogs_CL`). An event reaches it a median 4 seconds after it happens (95 % within
+  7 seconds, the worst 43, over 5,343 events of seven days).
+- In those 30 days it holds **456 crash, kill and failed-start events on 21 days**. None reached the
+  operator, except where a session happened to read the log by hand.
+
+| What the platform recorded | Events | Days | Apps | Last |
+| --- | --- | --- | --- | --- |
+| `Persistent Failure to start container` | 255 | 13 | 16 | 2026-09-29 |
+| Terminated with exit code 1 | 102 | 3 | 13 | 2026-09-25 |
+| The master terminated with exit code 137 | 52 | 16 | 1 | 2026-10-08 |
+| Killed for memory | 38 | 1 | 2 (scanner, reporter) | 2026-09-28 |
+| Another app terminated with exit code 137 | 9 | 5 | 6 | 2026-09-27 |
+
+- 104 of the 456 fell inside a nightly window (22:00 to 00:30 UTC), on six nights, the last
+  2026-09-28. Since 2026-10-03 the only events are the master's five kills of the retag day.
+- 80 of the exits with code 1 came in seven minutes on 2026-09-25 (00:32 to 00:39 UTC) on 13 apps. The
+  one console read (the scanner's) shows its first call to the master failing. Not traced further here.
+- **Noise that must not raise an alarm:** `Waiting for infrastructure to be ready` (744, on every one
+  of the 30 days, all 17 targets), the master's start-up probe refused while it boots (929, every day)
+  and the scaler's messages at a revision change (3,182).
+- 🪤 `first`, `last`, `day` and `kind` are reserved in the query language: a query that names a column
+  so fails with a bare syntax error.
+
+**Shutdown: read in the code, and measured where the platform logs it.**
+
+- No module under `agents/`, `kernel/`, `orchestration/` or `surfaces/` installs a signal handler or
+  an exit hook (searched: none). Every image starts Python directly as the container's command. The
+  master's `serve` runs *"until the process ends"*. Nothing writes `Session.ended_at`, which
+  `MST-OUT-03` names as the mark of a stop that was not a crash. The app sets no stop grace, so it has
+  the platform's 30 seconds.
+- Every stop of the master that the platform logged ended 31 or 32 seconds after `Stopping container`
+  with exit code 137: **52 of 52, and no clean exit on record.** Each is on a new revision (a deploy, a
+  retag, an env update).
+- **So the master does not shut down.** It does not react to the stop signal, logs nothing, closes
+  neither its graph connection nor its socket, never marks its session ended, and is killed. Read from
+  the code, the same holds for the fifteen agents.
+- *Not measured:* the platform logs no exit at an ordinary nightly scale-down, for any app, so
+  whether those also end in a kill is not known from the log; and whether a kill has ever landed
+  between two graph writes of one activation. A single write cannot be torn: the database rolls an
+  unfinished statement back.
+
+**Decided.**
+
+1. **The sensor reads the platform's event log.** It is the only place that holds the reason (exit
+   code, memory kill, start failure). The why is completed by the last error line of that replica's
+   console log.
+2. **It runs in the dispatcher job**, which already ticks every ten minutes through the nightly window,
+   already sends Telegram messages and already writes the morning brief. Each tick reads the events
+   since its last read, so the first tick of a night also covers the day's deploys.
+3. **The operator is told three ways:** a Telegram message at once when a tick finds one (which app,
+   when, why); one line in the morning brief; a record in the graph, so the dashboard and the health
+   signal see it.
+4. **It alarms on** a failed start, a termination with a non-zero exit code and a memory kill. It
+   reports a preemption without alarming. It ignores the three kinds of noise above.
+5. **The shutdown path is a separate fix, built first** (work-queue 116, widened to every container):
+   on the stop signal a process stops taking work, closes what it holds, records the end of its
+   session, logs one line and exits 0 inside the grace. Built in the kernel's serving code and the
+   master's server, so no file under a fidelity decision path changes. It follows S262, which edits
+   the same master entrypoint.
+
+**Ruled out, and why.**
+
+- *An Azure Monitor alert rule that emails the operator.* It works even when the whole fleet is down,
+  but it is a second channel beside Telegram, a monthly charge, and leaves nothing in the graph. Kept
+  as a possible later watchdog for the case the sensor cannot see: the dispatcher itself not starting.
+- *The master as the reader.* It is awake only around the run, and it is the app most often affected.
+- *The dashboard alone.* It shows what is asked for; it does not tell anyone.
+- *Inferring from the graph.* Activations show that a container started twice, never why, and a
+  container that never started leaves nothing at all.
+
+**Needed, to be measured when the sprints are specced.** The dispatcher job has no identity today
+(`identity: None`); reading the workspace needs one, with read access to it. The shape of the graph
+record and where the sensor keeps the time of its last read.
+
+**Until the sensor exists** the fleet check reads the event log by hand (the `check-fleet` skill,
+step 7).
+
 ## DL-282 - the fleet's LLM vendor becomes one declared value that the deliberators, the operator, its chat and the master's probes follow, with one command to apply and prove it - status: DECIDED (planner, 2026-10-09 17:25 AEDT); the build is [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md), work-queue 109
 
 **The question** (operator, 2026-10-06, DL-265): switching the vendor *"SHOULD be a configurational change and a

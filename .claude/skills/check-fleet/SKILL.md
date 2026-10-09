@@ -48,6 +48,18 @@ healthy-idle from broken.
 6. **Last run's verdict** — a fleet audit without a pipeline outcome is half an answer:
    `PYTHONPATH=. uv run python scripts/accept.py --run-id <latest sched-*>`.
 
+7. **Unclean starts and stops (by hand, until the sensor of work-queue 119 exists):** read the
+   platform's event log since the last check. Any row is reported with its time, app and reason.
+
+   ```bash
+   az monitor log-analytics query -w a281f88c-8224-4a8e-8d5d-7c655c8d939e -o json --analytics-query "ContainerAppSystemLogs_CL | where TimeGenerated > ago(1d) | where Reason_s in ('ContainerBackOff','Error','OOMKilled','Preempted') | project TimeGenerated, ContainerAppName_s, Reason_s, Log_s, RevisionName_s | order by TimeGenerated asc"
+   ```
+
+   🪤 Not an alarm: `AssigningReplicaFailed` ("Waiting for infrastructure to be ready") and the
+   master's start-up probe refused while it boots; both occur every day. 🪤 `first`, `last`, `day`
+   and `kind` are reserved words in the query language. 🪤 The master's exit code 137 at a deploy
+   is work-queue 116, known and still reported. The workspace keeps 30 days.
+
 ## Report format
 
 One line per layer (images/tags · job · scale · activation · spine · bus · last verdict) with

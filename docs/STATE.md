@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-09 17:21 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.124.00`, not deployed · **[S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) (work-queue 109: the LLM vendor as one declared value and one command) is specced and packaged for Codex; the first tracker trim is merged for three of five trackers; debates run three at once on the fleet from tonight, as a live setting (operator).**
+**Last updated:** 2026-10-09 17:39 AEDT · **Version:** **0.123.04 deployed** (`s259a`, image-only retag from `49146e40`, rollback `s257`); `main` = `0.124.00`, not deployed · **[S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md) (work-queue 109: the LLM vendor as one declared value and one command) is specced and packaged for Codex; the first tracker trim is merged for three of five trackers; debates run three at once on the fleet from tonight, as a live setting (operator).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -88,7 +88,11 @@ second ranking.
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. **S262's handback** (*Now*): review, merge, then its deploy and F1 on the operator's word.
    **The tracker trim's two remaining files** (*Now*), then the size limits as a step of `make ci`
-   (sprint 261, reserved). Also Codex-sized and off the fidelity decision paths: work-queue 115 and 116.
+   (sprint 261, reserved). Also Codex-sized and off the fidelity decision paths: work-queue 115.
+   **Then the shutdown path and the container sensor** (work-queue 116, then 119;
+   [DL-283](design-log.md); operator, 2026-10-09): no container in the fleet shuts down on the stop
+   signal, and nothing tells the operator when one fails to start or is killed. Until the sensor
+   exists the fleet check reads the platform's event log by hand.
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from
    `sched-2026-10-08`, read from a worktree pinned at `v0.123.04`; on PASS,
    [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md),

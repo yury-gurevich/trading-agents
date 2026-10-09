@@ -1019,6 +1019,58 @@ A1 after explicit import and schema typing repair: RED exit 1 (1 failed in 1.29s
 
 ---
 
+## Planner's review at the merge — 2026-10-09
+
+Re-measured by the planner in `../ta-s263`, not taken from the handback.
+
+- **Scope.** The checklist's scope command against `main` (`02dd0d49`, which has not moved) prints
+  nothing: no fidelity decision path, no pack, no tracker, no version file. The body of `build_llm`
+  is byte for byte the one on `main`. `kernel/llm_openai.py` lost its two alias lines and the blank
+  lines above them, nothing else. Under `agents/deliberator/` one file changed, the rider's test: one
+  added line and its comment. Every changed file is LF in the commit, and the fixture's hash is the
+  one the planner left in the worktree.
+- **The code is the measured prototype.** The built adapter differs from it only in importing
+  `LLMUsage` at run time. The factory's check, the settings' property and the binding's refusal are
+  the prototype's lines.
+- **Existing tests.** Seven existing test functions were edited, each named in Return notes and each
+  as the spec asked: five that pinned the old endpoint or the old default, the security test (which
+  now asserts the outcome is `intent`), and the rider.
+- **Guards.** 43 things broken one at a time, each restored and the tree left clean: **43 went red,
+  no gap.** They cover the fourteen of the checklist and more: the request (the forced choice,
+  `strict`, `store`, the effort, the cap, the two texts swapped, the description), the reply (the
+  first item taken whatever its type, the cut-off raise, the usage or the stop reason set after it,
+  the incomplete reason or the status ignored, the three refusals), the usage (cached not
+  subtracted, the cache read not clamped), the defaults (`high` on OpenAI, `xhigh` on Anthropic, the
+  adapter's own default, an unknown provider given one), the family check (removed, raised for an
+  unknown provider, an unknown family refused, a prefix dropped, the message without the model), the
+  settings (`none` not accepted, the default back at `max`, the resolved value ignoring either
+  side), the binding (the raw effort passed, the reason line removed, the error not caught, a
+  mismatch that still binds) and the rider's line. Checked each against one named test as well: the
+  security test goes red by itself when the adapter is put back on the old endpoint, and the
+  real-SDK test goes red by itself when `strict`, `store` or the effort leaves the request.
+- **The vendor's replies on the built code.** The six accepted replies captured on 2026-10-09,
+  replayed through the real SDK on a fake transport into the built adapter, in a process where DSPy
+  had registered its lazy `openai` module first: each gives back what the paid call returned, with
+  the same stop reason and usage, and the request sent equals the request captured on the wire. A
+  captured reply cut by hand raises after 4,096 output tokens are recorded.
+- **Two changes made by the planner on the branch:**
+  1. *The wire test found its fixture by a path relative to the current directory.* It now reads
+     from the test file's own directory, as the other fixture readers under `tests/` do. Measured:
+     it passes with pytest started from another directory.
+  2. *`docs/laws/INDEX.md`* named the previous sprint beside the two new law versions.
+- **Seen and accepted.** `.env.example` names the three operator variables in a comment and sets
+  none. The handback's `make ci` stopped at the dependency audit, which needs the network the
+  builder does not have; the planner's Windows run is the proof.
+- **Version.** PATCH, `0.125.00` to `0.125.01`; `uv lock` changed the version line alone (180
+  packages).
+
+**Still owed after the merge, none of it proven here:** F1a (the replay and the binding's refusal on
+the merged `main`, at no cost), F1b (one paid `explain` and one `interpret` through the dashboard
+binding on `gpt-5.5`), and the operator's `.env`. Not proven by any of them: a reply the vendor cut
+off, and the return to Anthropic.
+
+---
+
 ## Appendix — the planner's prototype and the captured reply
 
 ### The adapter, as measured

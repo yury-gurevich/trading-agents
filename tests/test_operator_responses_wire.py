@@ -18,9 +18,9 @@ def test_a8_captured_wire_replay() -> None:
     import openai
 
     fixture = json.loads(
-        Path("tests/fixtures/openai_responses_forced_function.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).parent / "fixtures" / "openai_responses_forced_function.json"
+        ).read_text(encoding="utf-8")
     )
     requests: list[httpx.Request] = []
 

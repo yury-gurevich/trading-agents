@@ -14,7 +14,7 @@ import json
 from datetime import UTC, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
-from agents.provider import barrier_history
+from agents.provider import barrier_window
 from agents.provider.barrier_history import (
     find_pending_barrier_history,
     write_barrier_history,
@@ -64,7 +64,7 @@ def test_only_buys_with_both_barriers_get_a_history_from_one_fetch(
     The clock is pinned past the midnight after the fixtures were built: the window
     ends on the clock's UTC date at the call, not on the date this module was
     imported. Unpinned, the test failed whenever the suite straddled 00:00 UTC."""
-    monkeypatch.setattr(barrier_history, "datetime", _PastMidnight)
+    monkeypatch.setattr(barrier_window, "datetime", _PastMidnight)
     graph = InMemoryGraphStore()
     run = analyst_run(graph, *MIXED)
     everyone = tuple(

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-266-a-runs-barrier-history-ends-on-its-as-of`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-287](../design-log.md) (this sprint's six decisions, made and measured) · [DL-255](../design-log.md) / [DL-256](../design-log.md) (part one, the ingest) · [work-queue 103](../work-queue.md), part two · DRIFT-110
@@ -319,23 +319,26 @@ in `orchestration/tests/test_barrier_claim_as_of.py`. Every one cites `PROV-OUT-
 
 ## Success factors
 
-- [ ] A run reached after its as-of writes a `BarrierHistory` whose `window_end` and newest bar are
+- [x] A run reached after its as-of writes a `BarrierHistory` whose `window_end` and newest bar are
       the as-of's, on the in-process pass and on the provider's deployed work list (A1, A2).
-- [ ] Each claim of such a run carries the as-of as its `as_of` and that day's close as its
+- [x] Each claim of such a run carries the as-of as its `as_of` and that day's close as its
       `entry_close` (A1).
-- [ ] A resumed analysis reads its source run's as-of through the cloned lineage (A3).
-- [ ] The clock is not read for a run that has an as-of (B1).
-- [ ] A run with no `MarketData` lineage is served as today (B3, E1); a `MarketData` with no
+- [x] A resumed analysis reads its source run's as-of through the cloned lineage (A3).
+- [x] The clock is not read for a run that has an as-of (B1).
+- [x] A run with no `MarketData` lineage is served as today (B3, E1); a `MarketData` with no
       readable `window_end` fails the work before any fetch (B4).
-- [ ] No decision path changes: the scope command prints nothing.
-- [ ] No file in `agents/forecaster/`, `contracts/`, `kernel/` or `orchestration/` outside
+- [x] No decision path changes: the scope command prints nothing.
+- [x] No file in `agents/forecaster/`, `contracts/`, `kernel/` or `orchestration/` outside
       `orchestration/tests/` changes.
-- [ ] Exactly one existing test edited, in two lines (E1).
-- [ ] The law cycle done: `PROV-OUT-08` amended as written, v1.10, changelog, the test-plan row,
+- [x] Exactly one existing test edited, in two lines (E1).
+- [x] The law cycle done: `PROV-OUT-08` amended as written, v1.10, changelog, the test-plan row,
       both rollup lines, DRIFT-110 CORRECTED; the provider's count stays 24 / 67.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage; any step the sandbox cannot run named NOT RUN.
+      Verified failing: exit 2 at the offline dependency audit. All 4,655 tests pass with
+      100.00 % coverage; dependency audit is NOT RUN offline, and both remaining secrets
+      checks pass when run separately. See Closeout for the commands and output.
 
 ---
 
@@ -549,60 +552,465 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | `test_a_past_runs_claim_is_stated_on_its_own_last_bar` | `orchestration/tests/test_barrier_claim_as_of.py` | PASS | `PROV-OUT-08 / FORE-OUT-07` |
+| A2 | `test_the_deployed_work_list_serves_the_runs_as_of` | `orchestration/tests/test_barrier_claim_as_of.py` | PASS | `PROV-OUT-08 / PROV-TRG-04` |
+| A3 | `test_a_resumed_analysis_uses_its_source_runs_as_of` | `orchestration/tests/test_barrier_claim_as_of.py` | PASS | `PROV-OUT-08` |
+| B1 | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | `agents/provider/tests/test_barrier_window_as_of.py` | PASS | `PROV-OUT-08 / PROV-TRG-05` |
+| B2 | `test_the_as_of_is_read_by_edge_never_by_key` | `agents/provider/tests/test_barrier_window_as_of.py` | PASS | `PROV-OUT-08` |
+| B3 | `test_a_run_with_no_market_data_is_served_today` | `agents/provider/tests/test_barrier_window_as_of.py` | PASS (2 cases) | `PROV-OUT-08 / PROV-TRG-05` |
+| B4 | `test_an_unreadable_window_end_fails_before_any_fetch` | `agents/provider/tests/test_barrier_window_as_of.py` | PASS (2 cases) | `PROV-OUT-08` |
+| E1 | `test_only_buys_with_both_barriers_get_a_history_from_one_fetch` | `agents/provider/tests/test_barrier_history.py` | PASS | `PROV-TRG-04 / PROV-OUT-08 / PROV-TRG-01` |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none. B3 and B4 each have the two planned parameter cases, so A1-A3/B1-B4 add nine cases. The new `orchestration/tests/barrier_as_of_helpers.py` keeps fixtures separate and every Python module under 200 lines.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s266`, branch `sprint-266-a-runs-barrier-history-ends-on-its-as-of`; `.env` absent (checked before tests). Unit fixtures use an in-memory graph and fake sources/fitter. `uv run --frozen` with `UV_OFFLINE=1`; no bare `uv sync`.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** A1/A2 prove that a run reached three days after its as-of writes a history ending on the as-of, with that day's newest bar; A1 proves each claim uses that date and close. A3 proves the resumed lineage preserves the end. B1-B4 prove the unchanged 1,125-day window, the edge-only read, the UTC fallback only for missing lineage, and an exception before any fetch/history write for a broken stored date. All 14 cited test functions resolve and cite `PROV-OUT-08`; their 16 parameter cases pass after all 14 guards have been restored.
 
-**Files changed:** <list>
+**Files changed:**
 
-**Design decisions:** recorded as [`DL-287`](../design-log.md) — <one line on any amendment, or "built as written">
+- `agents/provider/barrier_history.py`
+- `agents/provider/barrier_window.py`
+- `agents/provider/laws/laws.md`
+- `agents/provider/laws/test-plan.md`
+- `agents/provider/tests/test_barrier_history.py`
+- `agents/provider/tests/test_barrier_window_as_of.py`
+- `docs/laws/INDEX.md`
+- `docs/laws/drift-register.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md`
+- `orchestration/tests/barrier_as_of_helpers.py`
+- `orchestration/tests/test_barrier_claim_as_of.py`
+
+**Design decisions:** recorded as [`DL-287`](../design-log.md) — built as written; no amendment.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+Command (UV_OFFLINE=1, PYTHONUTF8=1):
+uv run --frozen pytest --no-cov -vv orchestration/tests/test_barrier_claim_as_of.py
+Captured before any production implementation in red-a1-a2-concise.txt.
+Law reading was already committed as 54b240a1.
+
+============================= test session starts =============================
+collecting ... collected 2 items
+
+orchestration/tests/test_barrier_claim_as_of.py::test_a_past_runs_claim_is_stated_on_its_own_last_bar FAILED [ 50%]
+orchestration/tests/test_barrier_claim_as_of.py::test_the_deployed_work_list_serves_the_runs_as_of FAILED [100%]
+
+================================== FAILURES ===================================
+____________ test_a_past_runs_claim_is_stated_on_its_own_last_bar _____________
+orchestration\tests\test_barrier_claim_as_of.py:45: in test_a_past_runs_claim_is_stated_on_its_own_last_bar
+    assert end == AS_OF
+E   assert datetime.date(2026, 10, 10) == datetime.date(2026, 10, 7)
+______________ test_the_deployed_work_list_serves_the_runs_as_of ______________
+orchestration\tests\test_barrier_claim_as_of.py:73: in test_the_deployed_work_list_serves_the_runs_as_of
+    assert end == AS_OF
+E   assert datetime.date(2026, 10, 10) == datetime.date(2026, 10, 7)
+=========================== short test summary info ===========================
+FAILED orchestration/tests/test_barrier_claim_as_of.py::test_a_past_runs_claim_is_stated_on_its_own_last_bar - assert datetime.date(2026, 10, 10) == datetime.date(2026, 10, 7)
+FAILED orchestration/tests/test_barrier_claim_as_of.py::test_the_deployed_work_list_serves_the_runs_as_of - assert datetime.date(2026, 10, 10) == datetime.date(2026, 10, 7)
+============================== 2 failed in 4.69s ==============================
+RED_EXIT=1
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+============================= test session starts =============================
+collecting ... collected 16 items
+
+agents/provider/tests/test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch PASSED [  6%]
+agents/provider/tests/test_barrier_history_failures.py::test_a_dropped_ticker_carries_its_named_reason PASSED [ 12%]
+agents/provider/tests/test_newest_session_guard.py::test_a_real_history_day_never_drops_a_buy_from_its_barrier_history PASSED [ 18%]
+agents/provider/tests/test_barrier_history_failures.py::test_a_failed_fetch_still_writes_a_failed_node PASSED [ 25%]
+agents/provider/tests/test_barrier_history_failures.py::test_an_exception_in_the_fetch_path_still_writes_a_failed_node PASSED [ 31%]
+agents/provider/tests/test_barrier_history.py::test_the_history_passes_the_packs_vocabulary_guard PASSED [ 37%]
+agents/forecaster/tests/test_barrier_route.py::test_a_failed_fetch_never_leaves_the_forecaster_waiting PASSED [ 43%]
+agents/provider/tests/test_barrier_window_as_of.py::test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock PASSED [ 50%]
+agents/provider/tests/test_barrier_window_as_of.py::test_the_as_of_is_read_by_edge_never_by_key PASSED [ 56%]
+agents/provider/tests/test_barrier_window_as_of.py::test_a_run_with_no_market_data_is_served_today[no-scan] PASSED [ 62%]
+agents/provider/tests/test_barrier_window_as_of.py::test_a_run_with_no_market_data_is_served_today[no-market] PASSED [ 68%]
+agents/provider/tests/test_barrier_window_as_of.py::test_an_unreadable_window_end_fails_before_any_fetch[absent] PASSED [ 75%]
+agents/provider/tests/test_barrier_window_as_of.py::test_an_unreadable_window_end_fails_before_any_fetch[not-a-date] PASSED [ 81%]
+orchestration/tests/test_barrier_claim_as_of.py::test_a_past_runs_claim_is_stated_on_its_own_last_bar PASSED [ 87%]
+orchestration/tests/test_barrier_claim_as_of.py::test_the_deployed_work_list_serves_the_runs_as_of PASSED [ 93%]
+orchestration/tests/test_barrier_claim_as_of.py::test_a_resumed_analysis_uses_its_source_runs_as_of PASSED [100%]
+
+============================= 16 passed in 3.27s ==============================
+CITATION_TEST_EXIT=0
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted:** each mutation was applied separately, its selected test failed with exit 1, then both production files were restored to their exact original bytes before the next mutation. No collection/import failures. The full cited-test green run above was taken after restoration.
 
-**Module line counts:** <file **n**, file **n**>
+| Guard | File | Deliberate break | Failing test | Result / restore |
+| --- | --- | --- | --- | --- |
+| G01 | `agents/provider/barrier_history.py` | as-of never passed to the window | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | RED, exit 1; exact bytes restored |
+| G02 | `agents/provider/barrier_window.py` | window ignores the given as-of | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | RED, exit 1; exact bytes restored |
+| G03 | `agents/provider/barrier_window.py` | window ends the day after the as-of | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | RED, exit 1; exact bytes restored |
+| G04 | `agents/provider/barrier_window.py` | lineage always finds no as-of | `test_the_as_of_is_read_by_edge_never_by_key` | RED, exit 1; exact bytes restored |
+| G05 | `agents/provider/barrier_window.py` | ScanRun sought among the run's descendants | `test_the_as_of_is_read_by_edge_never_by_key` | RED, exit 1; exact bytes restored |
+| G06 | `agents/provider/barrier_window.py` | MarketData sought among the scan's ancestors | `test_the_as_of_is_read_by_edge_never_by_key` | RED, exit 1; exact bytes restored |
+| G07 | `agents/provider/barrier_window.py` | any edge from the ScanRun taken for its MarketData | `test_the_as_of_is_read_by_edge_never_by_key` | RED, exit 1; exact bytes restored |
+| G08 | `agents/provider/barrier_window.py` | window start read as the as-of | `test_the_as_of_is_read_by_edge_never_by_key` | RED, exit 1; exact bytes restored |
+| G09 | `agents/provider/barrier_window.py` | MarketData with no window_end served today | `test_an_unreadable_window_end_fails_before_any_fetch[absent]` | RED, exit 1; exact bytes restored |
+| G10 | `agents/provider/barrier_window.py` | non-date window_end served today | `test_an_unreadable_window_end_fails_before_any_fetch[not-a-date]` | RED, exit 1; exact bytes restored |
+| G11 | `agents/provider/barrier_window.py` | a run with no ScanRun raises | `test_a_run_with_no_market_data_is_served_today[no-scan]` | RED, exit 1; exact bytes restored |
+| G12 | `agents/provider/barrier_window.py` | a ScanRun with no MarketData raises | `test_a_run_with_no_market_data_is_served_today[no-market]` | RED, exit 1; exact bytes restored |
+| G13 | `agents/provider/barrier_window.py` | window margin dropped | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | RED, exit 1; exact bytes restored |
+| G14 | `agents/provider/barrier_window.py` | window length counted in sessions | `test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock` | RED, exit 1; exact bytes restored |
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
-
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+The mutation runner's restoration output:
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+RESTORED_SHA256 agents/provider/barrier_window.py 4d786a3095caf4e6e90c5d13ed60aea0730cbf162e9feb18cd4d9e16da73cc83
+RESTORED_SHA256 agents/provider/barrier_history.py 689d13f43471f463b836f901915d83f4e128c387eb8e6c71e462902e6e864541
+GUARDS_PROVEN=14/14
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+**Module line counts:** `agents/provider/barrier_history.py` **179**, `agents/provider/barrier_window.py` **61**, `agents/provider/tests/test_barrier_history.py` **156**, `agents/provider/tests/test_barrier_window_as_of.py` **162**, `orchestration/tests/barrier_as_of_helpers.py` **122**, `orchestration/tests/test_barrier_claim_as_of.py` **98**. Every touched/new Python module is under 200 lines.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\ta-s266-evidence-20261011\make-ci.txt`, never piped. **Exit 2**, recorded in `make-ci-exit.txt` beside it. **4,655 passed, 8 skipped, 100.00 % coverage.** Steps 1-12 passed. Step 13, dependency audit, is **NOT RUN offline**: the attempted command failed because the blocked proxy could not reach PyPI; no vulnerability audit result was obtained. The overall CI gate is **verified failing**, not green.
+
+The command ran with `UV_OFFLINE=1`, `UV_FROZEN=1`, `PYTHONUTF8=1`; HTTP/HTTPS/ALL proxy pointed at the closed loopback port `127.0.0.1:9`, with localhost exempted. No external network was used. Actual command, relevant log output, and the wrapper's exit output:
+
+```text
+make ci > 'C:\Users\yury_\AppData\Local\Temp\ta-s266-evidence-20261011\make-ci.txt' 2>&1
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1667 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1192 source files
+Contracts: 5 kept, 0 broken.
+docs_seen=270 SPEC=10 BUILT=1 MERGED=259 UNMAPPED=0 MISSING=0
+TOTAL                                                           20245      0   4290      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4655 passed, 8 skipped, 2470 warnings in 429.51s (0:07:09) ==========
+uv run python scripts/check_dependency_audit.py
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:59: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+All 15 steps are accounted for:
+
+| Step | Check | Proven result |
+| --- | --- | --- |
+| 1 | ruff | PASS in `make ci` |
+| 2 | ruff format | PASS in `make ci` |
+| 3 | mypy | PASS in `make ci`, 1,192 source files |
+| 4 | import-linter | PASS in `make ci`, 5 kept / 0 broken |
+| 5 | module size | PASS in `make ci`; existing warnings retained |
+| 6 | module header | PASS in `make ci` |
+| 7 | law coverage | PASS in `make ci` |
+| 8 | PARAM/settings sync | PASS in `make ci`; existing PM envelope warnings retained |
+| 9 | sprint status | PASS in `make ci`, no unmapped/missing statuses |
+| 10 | Markdown links | PASS in `make ci` |
+| 11 | version scheme | PASS in `make ci`; no version/lock edits |
+| 12 | pytest | PASS in `make ci`, 4,655 passed / 8 skipped / 100.00 % |
+| 13 | dependency audit | NOT RUN offline; attempt failed before an audit result |
+| 14 | detect-secrets | NOT RUN within `make ci` after its stop; PASS separately, exit 0 |
+| 15 | untracked secrets | NOT RUN within `make ci` after its stop; PASS separately, exit 0 |
+
+The two remaining commands ran separately under the same offline environment (also redirected, not piped). Their output files are `detect-secrets.txt` and `untracked-secrets.txt` in the evidence directory above, with exit codes in the respective `*-exit.txt` files. Actual command/output:
+
+```text
+uv run --frozen pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run --frozen python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** NOT RUN. The handover forbids pushing or merging, and remote proof is the planner's after its merge-time PATCH bump. No remote gate, merge, deployment, live source, or live graph proof is claimed.
+
+**Not met / verified failing:** `make ci` exit 0 is **not done**: the attempted gate is **verified failing**, exit 2 at the offline dependency audit; the vulnerability audit itself is **NOT RUN** for lack of external network. The eight skipped tests are named above. Remote gates, push, merge, version bump, deployment, Postgres cost measurement, and live F1a/F1b are **not done**, as assigned to the planner. No STOP condition was encountered, and no other requested branch-local proof is missing.
+
+### Scope and exact diffs
+
+The requested protected-scope command **prints nothing**, exit 0. Compared against local `main` at the branch's cut commit `b991d39ef28156d10feef6d2bad9b9dca272be4a`; no moved-main correction was needed. Its captured stdout file `protected-scope.txt` has zero lines. `pyproject.toml` and `uv.lock` are untouched; the planner bumps the version at merge.
+
+```text
+git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/monitor agents/execution agents/forecaster agents/deliberator agents/operator agents/master agents/supervisor agents/reporter agents/curator agents/researcher agents/provider/domain agents/provider/ingest.py agents/provider/ingest_chunked.py agents/provider/poll.py agents/provider/agent.py agents/provider/settings.py agents/provider/entrypoint.py contracts kernel surfaces infra scripts orchestration/packs orchestration/history_window.py orchestration/local_pipeline.py orchestration/resume.py orchestration/start.py pyproject.toml uv.lock docs/STATE.md docs/work-queue.md docs/design-log.md
+```
+
+Whole production diff (`git diff main -- agents/provider/barrier_history.py agents/provider/barrier_window.py`):
+
+```diff
+diff --git a/agents/provider/barrier_history.py b/agents/provider/barrier_history.py
+index b38f5508..4b8cfd83 100644
+--- a/agents/provider/barrier_history.py
++++ b/agents/provider/barrier_history.py
+@@ -12,10 +12,10 @@ External I/O: none directly (delegates to ProviderAgent, which calls the DataSou
+
+ from __future__ import annotations
+
+-import math
+-from datetime import UTC, datetime, timedelta
++from datetime import UTC, datetime
+ from typing import TYPE_CHECKING, Literal
+
++from agents.provider.barrier_window import barrier_window, run_as_of
+ from contracts.analyst import RecommendationSet
+ from contracts.barrier_history import (
+     BARRIER_HISTORY_EDGE,
+@@ -27,23 +27,18 @@ from contracts.barrier_history import (
+     barrier_history_key,
+     is_current_run,
+ )
+-from contracts.common import Window
+ from contracts.provider import DataRequest
+ from kernel.errors import fault_boundary
+ from kernel.graph_pending import pending_nodes
+
+ if TYPE_CHECKING:
+     from agents.provider.agent import ProviderAgent
++    from contracts.common import Window
+     from contracts.provider import DataQualityTrace, MarketData, OHLCVBar
+     from kernel import GraphStore, Node
+     from kernel.errors import AgentFault
+
+ ANALYST_RUN_LABEL = "AnalystRun"
+-#: Calendar days asked per session: 250 a year is below the exchange's 251-253, so
+-#: the window always over-asks (EXP-018: 752 sessions in 1,097 days; DL-241 D3).
+-_DAYS_PER_SESSION = 365.25 / 250
+-#: Slack for a holiday cluster, a non-session end day, a session not yet served.
+-_WINDOW_MARGIN_DAYS = 14
+ #: The quality note the provider's fetch path writes when the source itself failed.
+ _SOURCE_FAILED_NOTE = "source_unavailable"
+
+@@ -72,7 +67,7 @@ def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
+     """Fetch the run's qualifying tickers once and write one linked BarrierHistory."""
+     tickers = _qualifying_tickers(node)
+     sessions = agent._settings.barrier_history_sessions
+-    window = barrier_window(sessions)
++    window = barrier_window(sessions, run_as_of(agent._graph, node))
+     market: MarketData | None = None
+     with fault_boundary(
+         agent.sink,
+@@ -89,13 +84,6 @@ def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
+     agent._graph.add_edge(node, written, BARRIER_HISTORY_EDGE)
+
+
+-def barrier_window(sessions: int) -> Window:
+-    """A calendar window ending today that holds at least ``sessions`` sessions."""
+-    end = datetime.now(tz=UTC).date()
+-    days = math.ceil(sessions * _DAYS_PER_SESSION) + _WINDOW_MARGIN_DAYS
+-    return Window(start=end - timedelta(days=days), end=end)
+-
+-
+ def _qualifying_tickers(node: Node) -> tuple[str, ...]:
+     raw = node.props.get("recommendation_set")
+     if raw is None:
+diff --git a/agents/provider/barrier_window.py b/agents/provider/barrier_window.py
+new file mode 100644
+index 00000000..183c07f3
+--- /dev/null
++++ b/agents/provider/barrier_window.py
+@@ -0,0 +1,61 @@
++"""The window a barrier history covers: how long it is, and the day it ends on.
++
++Agent: provider
++Role: read the as-of of the run an AnalystRun belongs to through the run's lineage
++      (AnalystRun <-ANALYZED_BY- ScanRun -DERIVED_FROM-> MarketData: one node, never
++      a listing of them), the `window_end` the provider itself stored for that run
++      (PROV-TRG-05), and build the calendar window ending on it that holds the
++      sessions a barrier claim is fitted on (PROV-OUT-08, DL-241 D3).
++External I/O: GraphStore reads via the injected backend.
++"""
++
++from __future__ import annotations
++
++import math
++from datetime import UTC, date, datetime, timedelta
++from typing import TYPE_CHECKING
++
++from contracts.common import Window
++
++if TYPE_CHECKING:
++    from kernel import GraphStore, Node
++
++#: Calendar days asked per session: 250 a year is below the exchange's 251-253, so
++#: the window always over-asks (EXP-018: 752 sessions in 1,097 days; DL-241 D3).
++_DAYS_PER_SESSION = 365.25 / 250
++#: Slack for a holiday cluster, a non-session end day, a session not yet served.
++_WINDOW_MARGIN_DAYS = 14
++_ANALYZED_EDGE = "ANALYZED_BY"
++_DERIVED_FROM = "DERIVED_FROM"
++
++
++def run_as_of(graph: GraphStore, analyst_run: Node) -> date | None:
++    """The as-of of the run ``analyst_run`` was scanned for, or None when it has none.
++
++    The `window_end` of the MarketData the run's ScanRun was derived from. Only a
++    run built by hand has no such lineage: the graph-pull analyst recommends
++    nothing without a MarketData.
++    """
++    scan = next(
++        iter(graph.ancestors(analyst_run, max_depth=1, edge_types={_ANALYZED_EDGE})),
++        None,
++    )
++    if scan is None:
++        return None
++    market = next(
++        iter(graph.descendants(scan, max_depth=1, edge_types={_DERIVED_FROM})), None
++    )
++    if market is None:
++        return None
++    return date.fromisoformat(str(market.props["window_end"]))
++
++
++def barrier_window(sessions: int, as_of: date | None = None) -> Window:
++    """A calendar window holding at least ``sessions`` sessions, ending on ``as_of``.
++
++    ``as_of`` is the run's as-of; a run with none is served as an ingest no run
++    triggered is, ending on today's UTC date (PROV-TRG-05).
++    """
++    end = as_of or datetime.now(tz=UTC).date()
++    days = math.ceil(sessions * _DAYS_PER_SESSION) + _WINDOW_MARGIN_DAYS
++    return Window(start=end - timedelta(days=days), end=end)
+```
+
+Whole E1 diff (`git diff main -- agents/provider/tests/test_barrier_history.py`):
+
+```diff
+diff --git a/agents/provider/tests/test_barrier_history.py b/agents/provider/tests/test_barrier_history.py
+index 2222ae3f..05755819 100644
+--- a/agents/provider/tests/test_barrier_history.py
++++ b/agents/provider/tests/test_barrier_history.py
+@@ -14,7 +14,7 @@ import json
+ from datetime import UTC, datetime, time, timedelta
+ from typing import TYPE_CHECKING
+
+-from agents.provider import barrier_history
++from agents.provider import barrier_window
+ from agents.provider.barrier_history import (
+     find_pending_barrier_history,
+     write_barrier_history,
+@@ -64,7 +64,7 @@ def test_only_buys_with_both_barriers_get_a_history_from_one_fetch(
+     The clock is pinned past the midnight after the fixtures were built: the window
+     ends on the clock's UTC date at the call, not on the date this module was
+     imported. Unpinned, the test failed whenever the suite straddled 00:00 UTC."""
+-    monkeypatch.setattr(barrier_history, "datetime", _PastMidnight)
++    monkeypatch.setattr(barrier_window, "datetime", _PastMidnight)
+     graph = InMemoryGraphStore()
+     run = analyst_run(graph, *MIXED)
+     everyone = tuple(
+```
+
+**No other existing test changed.** Comparing E1's final content with the base after just the two authorized substitutions proves those are its only changes.
+
+```text
+PROVIDER_CLAUSES_DECLARED=67; CHANGED=['PROV-OUT-08']
+ONLY_EXISTING_TEST_CHANGED=agents/provider/tests/test_barrier_history.py
+E1_EXACTLY_THE_TWO_AUTHORIZED_LINES=True
+```
+
+### Exact law-cycle record
+
+**Provider version:** LOCKED v1.9 -> LOCKED v1.10. No new clause; 24 / 67 unchanged. No forecaster file changed.
+
+`PROV-OUT-08`, quoted as written:
+
+```text
+- `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
+  through its own fetch path (the source's feed and end rule, then validation and the extreme-move
+  guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers,
+  over a calendar window holding at least `barrier_history_sessions` sessions
+  **that ends on the run's as-of** (the `window_end` of the `MarketData` the run was scanned
+  from, read through the run's lineage `AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→
+  MarketData`: one node, never a listing of them; `PROV-TRG-05`), **whenever the provider reaches
+  the run**, and writes **one**
+  `BarrierHistory` node keyed from the `AnalystRun`'s key, linked
+  `AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds
+  the last ≤ `barrier_history_sessions` daily bars as (date, open, high, low, close) and the bar
+  count; a requested ticker with no bars is listed under `dropped` with its **named reason** (the
+  extreme-move guard, or nothing served), never silently absent; a served ticker whose last bar is
+  stale is listed as `stale`. A **failed fetch still writes the node**, `status: failed` with the
+  reason and every ticker dropped with it, so no reader waits forever — never an empty success, never
+  no node. A barrier fetch holds too few tickers for the `PROV-OUT-09` guard to fire (its √(n−1)
+  ceiling), so this path **leans on the daily request's guard**: its newest session is the one the
+  daily request judged, and a ticker the daily request excluded never becomes a buy.
+  A run with no such `MarketData` has no as-of and is served as an ingest no run triggered is:
+  its window ends on the UTC date of the fetch (`PROV-TRG-05`). A `MarketData` whose
+  `window_end` is absent or not a date is a broken node, not a run with no as-of: the work fails
+  before any fetch and no node is written.
+  *(DL-241 D10; DRIFT-090, DL-247 D4; DRIFT-110, S266, DL-287.)*
+```
+
+Its test-plan row, quoted as written:
+
+```text
+| PROV-OUT-08 | One OHLCV request through the fetch path (feed and end rule, validation, the `PROV-OUT-09` guard) shared with the daily request, for exactly the qualifying tickers over a calendar window holding `barrier_history_sessions` sessions and ending on the run's as-of (`MarketData.window_end` read through `ANALYZED_BY` then `DERIVED_FROM`, one node per hop), whenever the provider reaches the run; no lineage ends on the fetch's UTC date, but an absent or unparseable stored `window_end` raises before any fetch and writes no history; one linked `BarrierHistory` with ≤ 760 bars and the count per ticker; dropped tickers named; stale ones marked; a failed fetch still writes a failed node. | happy + partial + fault + past as-of + resume + no lineage + broken date | `test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch; test_barrier_history_failures.py::test_a_dropped_ticker_carries_its_named_reason; test_newest_session_guard.py::test_a_real_history_day_never_drops_a_buy_from_its_barrier_history; test_barrier_history_failures.py::test_a_failed_fetch_still_writes_a_failed_node; test_barrier_history_failures.py::test_an_exception_in_the_fetch_path_still_writes_a_failed_node; test_barrier_history.py::test_the_history_passes_the_packs_vocabulary_guard; agents/forecaster/tests/test_barrier_route.py::test_a_failed_fetch_never_leaves_the_forecaster_waiting; test_barrier_window_as_of.py::test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock; test_barrier_window_as_of.py::test_the_as_of_is_read_by_edge_never_by_key; test_barrier_window_as_of.py::test_a_run_with_no_market_data_is_served_today; test_barrier_window_as_of.py::test_an_unreadable_window_end_fails_before_any_fetch; orchestration/tests/test_barrier_claim_as_of.py::test_a_past_runs_claim_is_stated_on_its_own_last_bar; orchestration/tests/test_barrier_claim_as_of.py::test_the_deployed_work_list_serves_the_runs_as_of; orchestration/tests/test_barrier_claim_as_of.py::test_a_resumed_analysis_uses_its_source_runs_as_of` | 🟩 |
+```
+
+DRIFT-110's status cell, quoted as written:
+
+```text
+**CORRECTED (S266, provider laws v1.10, 2026-10-11; [DL-287](../design-log.md)).** `PROV-OUT-08` amended: the history ends on the run's as-of by lineage, no lineage serves the fetch's UTC date, and a broken stored date raises before any fetch or history write. Unit-proven by A1-A3 (`orchestration/tests/test_barrier_claim_as_of.py`) and B1-B4 (`agents/provider/tests/test_barrier_window_as_of.py`), with E1's moved clock pin; no live or remote proof claimed.
+```
+
+`docs/laws/ledger.md`, whole provider rollup:
+
+```text
+| provider | ✅ v1.10 (LOCKED) | 24 / 67 | 🟨 partial — **24 of 67 clauses proven** after S266 (DL-287) amends and re-proves `PROV-OUT-08`: the barrier history ends on the run's as-of by lineage whenever the provider reaches it, missing lineage serves the fetch's UTC date, and a broken stored date raises before any fetch or history write (DRIFT-110); count unchanged; before that S255 (DL-269) amends and re-proves `PROV-OUT-02`: the regime records its four label thresholds; count unchanged; before that S251 (DL-260) amends four clauses to the code: `PROV-TRG-01` names every recorded data need (a bus request, an unconsumed `RunRequest`, an `AnalystRun`'s qualifying buys) and is re-proven with no bus event (DRIFT-082); `PROV-TRG-02` states the poll's key-and-edge bound and turns green (DRIFT-086); `PROV-OUT-07` says served bars are raw (DRIFT-084); `PROV-OUT-04` is narrowed to fetch time and the fallback flag and turns green (DRIFT-040, the vendor gap is work-queue 105); before that S249 (DL-256) adds and proves `PROV-TRG-05`: an ingest a `RunRequest` triggers serves that run's as-of whenever the provider reaches it (window, coverage check, regime, news and earnings anchors), an unusable as-of is refused before any fetch, and an ingest with no run serves today (DRIFT-095); before that S243 (DL-247) adds and proves `PROV-OUT-09`: the extreme-move guard judges each ticker's newest session only, against that session's cross-section, so a real extreme day in a name's history never drops it (DRIFT-088), and states the guard's √(n−1) ceiling (DRIFT-090, CORRECTED: the barrier path leans on the daily request's guard, DL-247 D4); `PROV-OUT-08` amended and re-proven; before that S239 (DL-241 D10) adds and proves `PROV-TRG-04` / `PROV-OUT-08` (the `BarrierHistory` per `AnalystRun`, one batched fetch, dropped tickers named, a failed fetch still written); before that S238 adds and proves `PROV-OUT-07`: a bar's volume is the consolidated tape's (the Alpaca feed defaults to SIP), a SIP request never ends inside the plan's 15-minute recent-data window, and a refusal fails loud with no IEX fallback (DRIFT-080); S213 sharpens and proves `PROV-OUT-03` for FMP `^VIX` freshness without adding clauses; S187 added PARAM rows only; S204 gives every clause a row and promotes missing rows to a hard gate; S169-sweep demoted `PROV-OUT-04` |
+```
+
+`docs/laws/INDEX.md`, whole provider rollup:
+
+```text
+| provider | ✅ LOCKED v1.10 (S266, DL-287) | 24 / 67 | S266 (DL-287) amends and re-proves `PROV-OUT-08`: barrier history ends on the run's as-of by lineage whenever the provider reaches it, missing lineage serves the fetch's UTC date, and a broken stored date fails before any fetch or history write (DRIFT-110); count unchanged; S255 (DL-269) amends and re-proves `PROV-OUT-02`: the regime records its four label thresholds; count unchanged; S251 amends `PROV-TRG-01` (every recorded data need, re-proven on graph-pull; DRIFT-082), `PROV-TRG-02` (the poll's key-and-edge bound, now green; DRIFT-086), `PROV-OUT-07` (served bars are raw; DRIFT-084) and narrows `PROV-OUT-04` (fetch time and fallback flag, now green; DRIFT-040); S249 adds and proves `PROV-TRG-05` (a `RunRequest`'s ingest serves the run's as-of whenever the provider reaches it; an unusable as-of is refused before any fetch; no run serves today; DRIFT-095); S243 adds and proves `PROV-OUT-09` (the extreme-move guard judges each ticker's newest session only; its √(n−1) ceiling stated) and amends `PROV-OUT-08`; S239 adds and proves `PROV-TRG-04` / `PROV-OUT-08` (the `BarrierHistory` per `AnalystRun`) and reconciles `PROV-TRG-02` with graph-pull; S238 adds and proves `PROV-OUT-07` (consolidated-tape volume, entitlement-respecting requests, loud refusal; DRIFT-080); DL-203 reconciles `PARAM` only; S213 adds FMP `^VIX` regime freshness evidence and proves `PROV-OUT-03` without adding clauses; S187 adds PARAM rows only; counters are clauses proven / clauses declared; S204 gives every clause a row and makes rowless clauses a hard gate |
+```
+
+**Law gate:** `uv run --frozen python scripts/check_law_coverage.py`, redirected to `law-coverage.txt`: stdout/stderr empty, exit 0. The command wrapper printed:
+
+```text
+LAW_COVERAGE_EXIT=0
+```
+
+**Every `PROV-OUT-08` citation:** each file and function was resolved with Python AST, its docstring checked for the clause, and the cases then executed (16 passed above).
+
+```text
+ALL_CITATIONS_RESOLVED_AND_DOCSTRINGS_CHECKED=14
+agents/provider/tests/test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch
+agents/provider/tests/test_barrier_history_failures.py::test_a_dropped_ticker_carries_its_named_reason
+agents/provider/tests/test_newest_session_guard.py::test_a_real_history_day_never_drops_a_buy_from_its_barrier_history
+agents/provider/tests/test_barrier_history_failures.py::test_a_failed_fetch_still_writes_a_failed_node
+agents/provider/tests/test_barrier_history_failures.py::test_an_exception_in_the_fetch_path_still_writes_a_failed_node
+agents/provider/tests/test_barrier_history.py::test_the_history_passes_the_packs_vocabulary_guard
+agents/forecaster/tests/test_barrier_route.py::test_a_failed_fetch_never_leaves_the_forecaster_waiting
+agents/provider/tests/test_barrier_window_as_of.py::test_a_runs_barrier_history_ends_on_its_as_of_without_reading_the_clock
+agents/provider/tests/test_barrier_window_as_of.py::test_the_as_of_is_read_by_edge_never_by_key
+agents/provider/tests/test_barrier_window_as_of.py::test_a_run_with_no_market_data_is_served_today
+agents/provider/tests/test_barrier_window_as_of.py::test_an_unreadable_window_end_fails_before_any_fetch
+orchestration/tests/test_barrier_claim_as_of.py::test_a_past_runs_claim_is_stated_on_its_own_last_bar
+orchestration/tests/test_barrier_claim_as_of.py::test_the_deployed_work_list_serves_the_runs_as_of
+orchestration/tests/test_barrier_claim_as_of.py::test_a_resumed_analysis_uses_its_source_runs_as_of
+```
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held. D1-D6 were built as written; no amendment to DL-287 was needed. Production changes are confined to the two named provider modules. E1 changes exactly its import and `setattr` lines; all other tests are new. `pyproject.toml`, `uv.lock`, the state trackers, and the design log are untouched. No push or merge was performed.
+- No law/spec contradiction was found. The brief's provider test-plan footer does not exist in the current file; no footer was invented. The provider count remains 24 / 67 in the existing rollups, with only PROV-OUT-08 amended. Shared fixture setup lives in the new `orchestration/tests/barrier_as_of_helpers.py` so both test modules stay under 200 lines. Empty diff context lines in the pasted whole diffs have their trailing space removed for the whitespace gate; all hunks and changed content are retained.
+- Unit and mutation proof establish the requested lineage, date, price, fallback, and pre-fetch failure behavior. They do not establish Postgres read cost, live source equality, or live fleet/resume behavior. F1a/F1b, the merge-time version bump, remote gates, merge, deployment, and live proof remain the planner's work. No remaining implementation uncertainty was found within the authorized unit-test scope.
 
 ---
 

@@ -12,10 +12,10 @@ External I/O: none directly (delegates to ProviderAgent, which calls the DataSou
 
 from __future__ import annotations
 
-import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
+from agents.provider.barrier_window import barrier_window, run_as_of
 from contracts.analyst import RecommendationSet
 from contracts.barrier_history import (
     BARRIER_HISTORY_EDGE,
@@ -27,23 +27,18 @@ from contracts.barrier_history import (
     barrier_history_key,
     is_current_run,
 )
-from contracts.common import Window
 from contracts.provider import DataRequest
 from kernel.errors import fault_boundary
 from kernel.graph_pending import pending_nodes
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
+    from contracts.common import Window
     from contracts.provider import DataQualityTrace, MarketData, OHLCVBar
     from kernel import GraphStore, Node
     from kernel.errors import AgentFault
 
 ANALYST_RUN_LABEL = "AnalystRun"
-#: Calendar days asked per session: 250 a year is below the exchange's 251-253, so
-#: the window always over-asks (EXP-018: 752 sessions in 1,097 days; DL-241 D3).
-_DAYS_PER_SESSION = 365.25 / 250
-#: Slack for a holiday cluster, a non-session end day, a session not yet served.
-_WINDOW_MARGIN_DAYS = 14
 #: The quality note the provider's fetch path writes when the source itself failed.
 _SOURCE_FAILED_NOTE = "source_unavailable"
 
@@ -72,7 +67,7 @@ def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
     """Fetch the run's qualifying tickers once and write one linked BarrierHistory."""
     tickers = _qualifying_tickers(node)
     sessions = agent._settings.barrier_history_sessions
-    window = barrier_window(sessions)
+    window = barrier_window(sessions, run_as_of(agent._graph, node))
     market: MarketData | None = None
     with fault_boundary(
         agent.sink,
@@ -87,13 +82,6 @@ def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
     history = _history(node.key, tickers, window, sessions, market, capture.fault)
     written = _write(agent._graph, history)
     agent._graph.add_edge(node, written, BARRIER_HISTORY_EDGE)
-
-
-def barrier_window(sessions: int) -> Window:
-    """A calendar window ending today that holds at least ``sessions`` sessions."""
-    end = datetime.now(tz=UTC).date()
-    days = math.ceil(sessions * _DAYS_PER_SESSION) + _WINDOW_MARGIN_DAYS
-    return Window(start=end - timedelta(days=days), end=end)
 
 
 def _qualifying_tickers(node: Node) -> tuple[str, ...]:

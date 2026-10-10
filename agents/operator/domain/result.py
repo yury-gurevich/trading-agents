@@ -14,9 +14,10 @@ from typing import TYPE_CHECKING, Literal
 from agents.operator.domain.grammar import apply_confirmation_policy
 from contracts.common import Explanation, Provenance
 from contracts.operator import CommandResult, TypedIntent
+from kernel.llm_error_text import vendor_status_error
 
 if TYPE_CHECKING:
-    from kernel import Node
+    from kernel import AgentFault, Node
 
 Outcome = Literal["intent", "refused", "needs_clarification"]
 
@@ -24,6 +25,28 @@ CUT_OFF_REPLY = (
     "The model's reply was cut off at its output limit before it finished, "
     "so there is no answer. Ask again, or ask something narrower."
 )
+
+
+FAILED_REQUEST_REPLY = (
+    "The request to the language model failed, so there is no answer."
+)
+
+
+def failed_request_reply(fault: AgentFault) -> str:
+    """Say the model request failed, then the error's own reason in plain words."""
+    status = vendor_status_error(fault.message)
+    if status is not None:
+        reason = f"The vendor answered HTTP {status[0]}: {status[1]}"
+    else:
+        reason = (
+            fault.message.strip() or f"The error gave no reason ({fault.error_type})."
+        )
+    return f"{FAILED_REQUEST_REPLY} {reason}"
+
+
+def failed_request(fault: AgentFault) -> dict[str, object]:
+    """Read a model request that failed as a refusal; no grammar is applied to it."""
+    return {"outcome": "refused", "reason": failed_request_reply(fault)}
 
 
 def parse_json(raw: str | None) -> dict[str, object]:

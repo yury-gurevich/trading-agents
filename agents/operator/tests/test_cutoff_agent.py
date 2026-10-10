@@ -119,21 +119,28 @@ def test_c4_finished_call_records_the_clients_stop_reason(
     assert not _faults(agent)
 
 
-def test_c5_failed_interpret_keeps_the_old_fault_and_refusal() -> None:
-    """OPR-FAIL-01: time-outs retain the old refusal, one fault, and no audit."""
+def test_c5_failed_interpret_says_why_and_writes_linked_audit() -> None:
+    """OPR-FAIL-01: time-outs say why, with one fault and a linked refusal audit."""
     agent, graph = _agent(CompletionStub(failed=True))
     result = agent._interpret(
         HumanCommand(text="question", actor="operator", channel="dashboard")
     )
     assert result.outcome == "refused"
-    assert result.message.summary == "Operator could not parse the command."
+    assert result.message.summary == (
+        "The request to the language model failed, so there is no answer. "
+        "fixture request timed out"
+    )
     assert len(_faults(agent)) == 1
     assert _faults(agent)[0].error_type == "TimeoutError"
     rows = graph.list_nodes("LLMCall")
     assert len(rows) == 1
     assert rows[0].props["stop_reason"] == "unknown"
     assert rows[0].props.get("token_source") == "estimated"
-    assert not graph.list_nodes("CommandAudit")
+    (audit,) = graph.list_nodes("CommandAudit")
+    assert audit.props["outcome"] == "refused"
+    assert (
+        tuple(graph.descendants(audit, max_depth=1, edge_types={"PRODUCED_BY"})) == rows
+    )
     assert not graph.list_nodes("Intent")
 
 

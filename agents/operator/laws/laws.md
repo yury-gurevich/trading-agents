@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -102,8 +102,21 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Failure, recovery & rollback (`FAIL`)
 
-- **OPR-FAIL-01** — LLM call failure (network error, timeout, malformed JSON): `fault_boundary`
-  captures; `CommandResult(outcome="refused", ...)` returned; fault emitted.
+- **OPR-FAIL-01** — A model request that fails (a network error, a time-out, a status the vendor
+  refuses the request with: anything the client raises other than the cut-off of `OPR-FAIL-04`) is a
+  fault and never an answer, for `interpret` and for `explain`, on every vendor. `fault_boundary`
+  captures it around the model call alone: one fault, carrying the error's own type, and nothing
+  raised to the bus. The call is recorded as `OPR-STA-03` says and its `CommandAudit` is written and
+  linked as for any call (`OPR-OUT-06`), with outcome `refused` for `interpret` and `explain` for
+  `explain`. `interpret` returns `CommandResult(outcome="refused", ...)` and `explain` an
+  `Explanation`, each carrying the failed-request message; the explicit command grammar is not
+  applied and no `Intent` is written. The failed-request message is one fixed sentence that says the
+  request failed and names no vendor, model or number, followed by the error's own reason in plain
+  words: the HTTP status and the vendor's message for a status error, the error's text otherwise,
+  the error's type when it has no text. The SDK's rendering of a status error is never shown, and
+  the error's text is written to no graph record. Its letters are pinned by tests, not quoted here.
+  A model reply that is not valid JSON is not a fault: it is the explained refusal of `OPR-OUT-05`.
+  A graph write that fails is `OPR-FAIL-03`'s.
 - **OPR-FAIL-02** — LLM returns unrecognised intent family or missing required fields: `parse_json`
   returns `None`; result is `outcome="refused"`.
 - **OPR-FAIL-03** — Graph write failure (CommandAudit / LLMCall node): fault recorded; the
@@ -209,6 +222,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.8 — S265 / DL-286 (2026-10-10): rewords `OPR-FAIL-01` for request
+  failures on both capabilities and every vendor: one operator fault, a linked
+  audit before the fixed plain reason, no explicit grammar or graph error text.
+  Malformed JSON remains an explained refusal without a fault (DRIFT-108).
+  DRIFT-107/108 corrected; no clause added; 20 / 51 unchanged.
 
 - v1.7 — S264 / DL-285 (2026-10-10): `OPR-STA-03` also records vendor stop reasons
   and billed token counts on finished and cut-off replies, retaining stamped estimates for

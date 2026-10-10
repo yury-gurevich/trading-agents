@@ -20,6 +20,8 @@ from agents.operator.domain.prompts import (
 )
 from agents.operator.domain.result import (
     CUT_OFF_REPLY,
+    failed_request,
+    failed_request_reply,
     intent_from_data,
     message,
     outcome,
@@ -28,7 +30,7 @@ from agents.operator.domain.result import (
     request_correlation,
     with_graph,
 )
-from agents.operator.ledger import complete_recorded, record_llm_call
+from agents.operator.ledger import recorded_completion
 from agents.operator.settings import OperatorSettings
 from agents.operator.store import write_command_audit, write_intent
 from contracts.common import Explanation
@@ -48,9 +50,11 @@ from kernel import (
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
+
     from pydantic import BaseModel
 
-    from kernel import LLMClient, MessageBus
+    from kernel import FaultCapture, LLMClient, MessageBus
 
 
 class OperatorAgent(AgentBase):
@@ -73,15 +77,18 @@ class OperatorAgent(AgentBase):
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.handlers = {"interpret": self._interpret, "explain": self._explain}
 
-    def _interpret(self, request: BaseModel) -> CommandResult:
-        command = HumanCommand.model_validate(request)
-        with fault_boundary(
+    def _boundary(self, capability: str) -> AbstractContextManager[FaultCapture]:
+        return fault_boundary(
             self.sink,
             agent="operator",
             module="agents.operator.agent",
-            capability="interpret",
+            capability=capability,
             reraise=False,
-        ) as capture:
+        )
+
+    def _interpret(self, request: BaseModel) -> CommandResult:
+        command = HumanCommand.model_validate(request)
+        with self._boundary("interpret") as capture:
             result = self._interpret_command(command)
         if capture.fault is not None:
             return refused("Operator could not parse the command.")
@@ -97,17 +104,16 @@ class OperatorAgent(AgentBase):
         )
         system = build_explain_system()
         user = build_explain_user(explain.subject, evidence)
-        with record_llm_call(
+        row, raw, fault = recorded_completion(
             self._graph,
+            self._llm,
+            self._boundary("explain"),
             correlation_id=corr,
             model=self._settings.resolved_model,
-            prompt=user,
-            system_prompt=system,
-        ) as call:
-            raw = complete_recorded(
-                call, self._llm, system=system, user=user, tool_schema={}
-            )
-        assert call.node is not None
+            system=system,
+            user=user,
+            tool_schema={},
+        )
         write_command_audit(
             self._graph,
             correlation_id=corr,
@@ -115,8 +121,10 @@ class OperatorAgent(AgentBase):
             channel="dashboard",
             text=explain.subject,
             outcome="explain",
-            llm_call_node=call.node,
+            llm_call_node=row,
         )
+        if fault is not None:
+            return Explanation(summary=failed_request_reply(fault))
         if raw is None:
             return Explanation(summary=CUT_OFF_REPLY)
         return Explanation(summary=raw.strip() or "No explanation returned.")
@@ -127,22 +135,20 @@ class OperatorAgent(AgentBase):
         )
         system = self._settings.system_prompt or build_interpret_system()
         user = build_interpret_user(command)
-        with record_llm_call(
+        row, raw, fault = recorded_completion(
             self._graph,
+            self._llm,
+            self._boundary("interpret"),
             correlation_id=corr,
             model=self._settings.resolved_model,
-            prompt=user,
-            system_prompt=system,
-        ) as call:
-            raw = complete_recorded(
-                call,
-                self._llm,
-                system=system,
-                user=user,
-                tool_schema=INTENT_TOOL_SCHEMA,
-            )
-        assert call.node is not None
-        data = normalize_explicit_intent(command.text, parse_json(raw))
+            system=system,
+            user=user,
+            tool_schema=INTENT_TOOL_SCHEMA,
+        )
+        if fault is not None:
+            data = failed_request(fault)
+        else:
+            data = normalize_explicit_intent(command.text, parse_json(raw))
         parsed_outcome = outcome(data)
         audit = write_command_audit(
             self._graph,
@@ -151,7 +157,7 @@ class OperatorAgent(AgentBase):
             channel=command.channel,
             text=command.text,
             outcome=parsed_outcome,
-            llm_call_node=call.node,
+            llm_call_node=row,
         )
         if parsed_outcome != "intent":
             return CommandResult(outcome=parsed_outcome, message=message(data))

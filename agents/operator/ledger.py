@@ -17,8 +17,9 @@ from kernel.llm_ledger import record_llm_call as _record_llm_call
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from contextlib import AbstractContextManager
 
-    from kernel import GraphStore, LLMClient
+    from kernel import AgentFault, FaultCapture, GraphStore, LLMClient, Node
 
 
 @contextmanager
@@ -73,3 +74,38 @@ def complete_recorded(
     call.set_stop_reason(llm_stop_reason(llm))
     call.set_usage(llm_usage(llm))
     return raw
+
+
+def recorded_completion(
+    graph: GraphStore,
+    llm: LLMClient,
+    boundary: AbstractContextManager[FaultCapture],
+    *,
+    correlation_id: str,
+    model: str,
+    system: str,
+    user: str,
+    tool_schema: dict[str, object],
+) -> tuple[Node, str | None, AgentFault | None]:
+    """Make one recorded call inside the caller's fault boundary; never raise for it.
+
+    The row is written whatever happens. A reply comes back as text, a cut-off as
+    None, and a request that failed as None with the fault the boundary captured:
+    the caller audits all three and says which it was.
+    """
+    raw: str | None = None
+    with (
+        record_llm_call(
+            graph,
+            correlation_id=correlation_id,
+            model=model,
+            prompt=user,
+            system_prompt=system,
+        ) as call,
+        boundary as failed,
+    ):
+        raw = complete_recorded(
+            call, llm, system=system, user=user, tool_schema=tool_schema
+        )
+    assert call.node is not None
+    return call.node, raw, failed.fault

@@ -82,7 +82,11 @@ def test_interpret_llm_exception_returns_refusal() -> None:
     bus = _bound_bus(graph, _RaisingLLM({}))
     result = _interpret(bus, "run")
     assert result.outcome == "refused"
-    assert "could not parse" in result.message.summary
+    assert result.message.summary == (
+        "The request to the language model failed, so there is no answer. model down"
+    )
+    (audit,) = graph.list_nodes("CommandAudit")
+    assert audit.props["outcome"] == "refused"
 
 
 def test_explain_returns_text_and_writes_audit_and_llm_call() -> None:

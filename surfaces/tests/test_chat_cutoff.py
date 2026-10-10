@@ -99,9 +99,13 @@ def test_d3_outage_distinguishes_failed_request_from_cutoff(
     assert not is_silent_call(cut_graph.list_nodes("LLMCall")[0])
     assert not cut_sink.faults
     assert is_silent_call(failed_graph.list_nodes("LLMCall")[0])
-    assert failed["message"] == "fixture request timed out"
+    assert failed["message"] == (
+        "The request to the language model failed, so there is no answer. "
+        "fixture request timed out"
+    )
     assert failed["message"] != EXPECTED_REPLY
-    assert failed["outcome"] == "refused"
+    assert failed["outcome"] == "answer"
     assert len(failed_sink.faults) == 1
     assert failed_sink.faults[0].error_type == "TimeoutError"
-    assert not failed_graph.list_nodes("CommandAudit")
+    (audit,) = failed_graph.list_nodes("CommandAudit")
+    assert audit.props["outcome"] == "explain"

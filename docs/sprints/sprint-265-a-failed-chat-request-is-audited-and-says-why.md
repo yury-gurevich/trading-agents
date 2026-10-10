@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-265-a-failed-chat-request-is-audited-and-says-why`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-286](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-285](../design-log.md) (where the defect was found) · [work-queue 125](../work-queue.md) · DRIFT-107 · DRIFT-108
@@ -346,27 +346,27 @@ Anthropic's 401 and 400 (write the request id as `req_011`), and each SDK's time
 
 ## Success factors
 
-- [ ] On both vendors a failed request leaves a `CommandAudit` linked to its row: `explain` for an
+- [x] On both vendors a failed request leaves a `CommandAudit` linked to its row: `explain` for an
       explain call, `refused` for an interpret call (C1, C2, D1).
-- [ ] The quick ask and a typed question show the same message for the same failure, on both
+- [x] The quick ask and a typed question show the same message for the same failure, on both
       vendors; a status error reads as its HTTP status and the vendor's message, and never as the
       SDK rendered it (A3, D1, D2).
-- [ ] Exactly one fault is recorded for a failed request, by the operator's boundary, with the
+- [x] Exactly one fault is recorded for a failed request, by the operator's boundary, with the
       error's own type; the bus records none (B1, C1, D1).
-- [ ] An explicit approve whose request fails is refused; any other fault keeps today's sentence
+- [x] An explicit approve whose request fails is refused; any other fault keeps today's sentence
       (C3, C4).
-- [ ] A reply that came back, cut off or whole, behaves exactly as on `main` (B2, B3, D4), and
+- [x] A reply that came back, cut off or whole, behaves exactly as on `main` (B2, B3, D4), and
       `plain_error` returns what it returned (A5).
-- [ ] Nothing of an error's text is in the graph (C6).
-- [ ] Exactly three existing tests are edited, as E1 to E3 say; no other existing test changes.
-- [ ] Every file the invariant names is unchanged; the command in the handback checklist prints
+- [x] Nothing of an error's text is in the graph (C6).
+- [x] Exactly three existing tests are edited, as E1 to E3 say; no other existing test changes.
+- [x] Every file the invariant names is unchanged; the command in the handback checklist prints
       nothing.
-- [ ] The law cycle done: `OPR-FAIL-01` reworded as given and proven, the changelog, the version,
+- [x] The law cycle done: `OPR-FAIL-01` reworded as given and proven, the changelog, the version,
       the test-plan rows, both rollup lines, DRIFT-107 and DRIFT-108 CORRECTED.
-- [ ] Design decisions built as recorded in DL-286, or an amendment under it.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched or new module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] Design decisions built as recorded in DL-286, or an amendment under it.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched or new module under 200 lines.
+- [ ] `make ci` exit 0, 100.00 % coverage. **Not done:** coverage is 100.00 %, but the overall gate fails at the offline dependency audit, named below.
 
 ---
 
@@ -602,15 +602,39 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Kernel status text and surface wording | `surfaces/laws/laws.md` and `test-plan.md`, `docs/laws/conventions.md`, `surfaces/plain_errors.py` (whole) | SRF-FAIL-02 / SRF-OUT-05 | No: move the exact pattern; retain the surface sentence. |
+| Operator ledger and both capabilities | `agents/operator/laws/laws.md` and `test-plan.md`, `kernel/errors.py` (whole) | OPR-STA-03 / OPR-FAIL-01 / OPR-FAIL-03 / OPR-FAIL-04 / OPR-OUT-04 / OPR-OUT-05 / OPR-OUT-06 / OPR-IN-03 / OPR-OBS-03 / OPR-IDM-01 | No: ledger outside, request boundary inside; audit before returning; other faults retain the old sentence. |
+| Operator result and tests | Both law books and both test plans (whole), `docs/laws/conventions.md` and `drift-register.md` (whole), DL-286 and DL-285 (whole) | OPR-FAIL-01 / OPR-OUT-05 / OPR-NEV-06 / OPR-SEC-02 / SRF-FAIL-02 / SRF-OUT-03 | No: D1-D7 are made; error text stays out of graph properties; malformed JSON remains a fault-free refusal. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+Reading recorded before the first code change, on 2026-10-10 in
+`C:/Users/yury_/Downloads/project/ta-s265`, branch
+`sprint-265-a-failed-chat-request-is-audited-and-says-why`. The tree was clean,
+`.env` absent, HEAD and local `origin/main` both
+`436ca19e18b93ab04d0273f3224645c0aa944856` (the branch-cut baseline). No network
+refresh was made. CLAUDE.md was read; its `docs/STATE.md` tracker stays untouched
+under this handover's explicit exclusion. `pyproject.toml` and `uv.lock` stay
+untouched; the planner owns the PATCH bump at merge. No push or merge is authorized.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
+No contract changes; yes, the failed-request guarantee grows. Confirmed the owed
+cycle: reword OPR-FAIL-01 only, operator v1.7 to v1.8 with changelog; extend the
+three named citation rows, both operator rollups, and correct DRIFT-107/108.
+The counts remain operator 20 / 51 and surfaces 30 / 37. Implementation and
+law amendment were not yet done at this reading record. At handback, the owed
+cycle is completed: v1.8, exact clause and changelog, three citation rows, both
+rollups, and DRIFT-107/108 CORRECTED, with the tests below.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Contradictions found between a law and this spec:** none beyond the expressly
+adjudicated OPR-FAIL-01 wording replaced by this cycle (DRIFT-107/108).
+DRIFT-109 remains out of scope and unchanged.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Laws found silent where a decision was needed:** no additional silence beyond
+DRIFT-107, already decided in DL-286.
+
+**Clauses that were ⬜ and are now proven:** none at reading. Binding gray clauses
+OPR-FAIL-03, OPR-NEV-06, OPR-SEC-02, OPR-OBS-03 and OPR-IDM-01 are acknowledged
+as unproven whole clauses; focused new assertions will not change their status
+or the 20 / 51 rollup.
 
 ---
 
@@ -618,60 +642,565 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| A1 | `test_s265_a1_status_text_is_split`; `test_s265_a1_other_text_is_not_a_status_error` | `agents/operator/tests/test_failed_request_result.py` | PASS | SRF-FAIL-02 |
+| A2 | `test_s265_a2_failed_request_lead_is_pinned` | `agents/operator/tests/test_failed_request_result.py` | PASS | OPR-FAIL-01 |
+| A3 | `test_s265_a3_status_reason_is_plain_and_whole`; `test_s265_a3_other_reason_is_stripped_and_whole`; `test_s265_a3_no_reason_names_the_error_type` | `agents/operator/tests/test_failed_request_result.py` | PASS | OPR-FAIL-01 |
+| A4 | `test_s265_a4_failed_request_is_an_explained_refusal` | `agents/operator/tests/test_failed_request_result.py` | PASS | OPR-FAIL-01 |
+| A5 | `test_vendor_status_error_reads_as_one_sentence`; `test_other_errors_pass_through_unchanged`; `test_dispatch_rewrites_raised_and_returned_vendor_errors` | `surfaces/tests/test_status_fleet_check.py` | PASS | — (existing controls, unedited) |
+| B1 | `test_s265_b1_failed_request_returns_its_one_fault_and_silent_row` | `agents/operator/tests/test_failed_request_ledger.py` | PASS | OPR-FAIL-01 / OPR-STA-03 |
+| B2 | `test_s265_b2_reply_retains_text_stop_reason_and_vendor_usage` | `agents/operator/tests/test_failed_request_ledger.py` | PASS | OPR-STA-03 |
+| B3 | `test_s265_b3_cutoff_is_not_a_failed_request` | `agents/operator/tests/test_failed_request_ledger.py` | PASS | OPR-FAIL-04 / OPR-STA-03 |
+| B4 | `test_s265_b4_ledger_write_failure_escapes_request_boundary` | `agents/operator/tests/test_failed_request_ledger.py` | PASS | OPR-FAIL-03 |
+| C1 | `test_s265_c1_failed_explain_is_audited_and_answers_through_bus` | `agents/operator/tests/test_failed_request_agent.py` | PASS | OPR-FAIL-01 / OPR-OUT-06 / OPR-IN-03 |
+| C2 | `test_s265_c2_failed_interpret_is_audited_and_says_why` | `agents/operator/tests/test_failed_request_agent.py` | PASS | OPR-FAIL-01 / OPR-OUT-06 / OPR-OUT-05 |
+| C3 | `test_s265_c3_failed_approve_never_enters_explicit_grammar` | `agents/operator/tests/test_failed_request_agent.py` | PASS | OPR-FAIL-01 |
+| C4 | `test_s265_c4_other_fault_keeps_the_old_sentence` | `agents/operator/tests/test_failed_request_faults.py` | PASS | OPR-FAIL-03 |
+| C5 | `test_s265_c5_failed_request_then_failed_audit_keeps_both_faults` | `agents/operator/tests/test_failed_request_faults.py` | PASS | OPR-FAIL-01 / OPR-FAIL-03 |
+| C6 | `test_s265_c6_error_text_and_type_reach_no_graph_property` | `agents/operator/tests/test_failed_request_faults.py` | PASS | OPR-FAIL-01 / OPR-NEV-06 / OPR-SEC-02 |
+| C7 | `test_s265_c7_malformed_json_is_a_fault_free_audited_refusal` | `agents/operator/tests/test_failed_request_faults.py` | PASS | OPR-FAIL-01 / OPR-OUT-05 |
+| D1 | `test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors` | `surfaces/tests/test_chat_failed_request.py` | PASS | SRF-FAIL-02 / SRF-OUT-03 / OPR-FAIL-01 |
+| D2 | `test_s265_d2_status_sdk_rendering_is_never_shown` | `surfaces/tests/test_chat_failed_request.py` | PASS | SRF-FAIL-02 |
+| D3 | `test_s265_d3_scorecard_counts_only_the_failed_interpret` | `surfaces/tests/test_chat_failed_request.py` | PASS | SRF-OUT-08 / OPR-FAIL-01 |
+| D4 | `test_d1_cutoff_chat_is_equal_on_both_vendors`; `test_d2_partial_tool_answer_is_never_shown` | `surfaces/tests/test_chat_cutoff.py` | PASS | SRF-FAIL-02 / SRF-OUT-03 / OPR-FAIL-04 |
+| E1 | `test_interpret_llm_exception_returns_refusal` | `agents/operator/tests/test_operator_agent.py` | PASS | OPR-FAIL-01 / OPR-IN-03 |
+| E2 | `test_c5_failed_interpret_says_why_and_writes_linked_audit` | `agents/operator/tests/test_cutoff_agent.py` | PASS | OPR-FAIL-01 |
+| E3 | `test_d3_outage_distinguishes_failed_request_from_cutoff` | `surfaces/tests/test_chat_cutoff.py` | PASS | OPR-FAIL-01 / OPR-FAIL-04 |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** no additional behavior rows. Extra parameter cases cover a multiline SDK body (DOTALL), both timeout texts in the non-status reader, stripping a padded reason, a status with no readable body, both empty and whitespace-only reasons, and malformed list/empty replies. These guard unchanged parsing and whole-reason disclosure. The focused run contains 58 new cases and 29 existing controls (87 passed).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s265`, branch `sprint-265-a-failed-chat-request-is-audited-and-says-why`; `.env` absent. Branch-cut main baseline `436ca19e18b93ab04d0273f3224645c0aa944856`; no vendor or network proof.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** Unit-proven with both real operator adapters on fake SDKs: failed quick asks and typed questions show the fixed failed-request sentence and the whole plain reason, leave linked audits (`explain` / `refused`), and record one operator fault with the original error type. Failed explicit approval creates no intent; graph failures keep the old refusal; malformed JSON remains fault-free. The focused suite passed 87 cases; all 32 temporary guard breaks failed and passed after exact restoration. No live vendor was called.
 
-**Files changed:** <list>
+**Files changed:**
 
-**Design decisions:** recorded as [`DL-286`](../design-log.md) — <one line on any amendment, or "built as written">
+- `agents/operator/agent.py`
+- `agents/operator/domain/result.py`
+- `agents/operator/laws/laws.md`
+- `agents/operator/laws/test-plan.md`
+- `agents/operator/ledger.py`
+- `agents/operator/tests/failed_request_helpers.py`
+- `agents/operator/tests/failed_request_texts.py`
+- `agents/operator/tests/test_cutoff_agent.py`
+- `agents/operator/tests/test_failed_request_agent.py`
+- `agents/operator/tests/test_failed_request_faults.py`
+- `agents/operator/tests/test_failed_request_ledger.py`
+- `agents/operator/tests/test_failed_request_result.py`
+- `agents/operator/tests/test_operator_agent.py`
+- `docs/laws/INDEX.md`
+- `docs/laws/drift-register.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-265-a-failed-chat-request-is-audited-and-says-why.md`
+- `kernel/llm_error_text.py`
+- `surfaces/laws/test-plan.md`
+- `surfaces/plain_errors.py`
+- `surfaces/tests/chat_failed_request_helpers.py`
+- `surfaces/tests/test_chat_cutoff.py`
+- `surfaces/tests/test_chat_failed_request.py`
+
+**Design decisions:** recorded as [`DL-286`](../design-log.md) — D1-D7 built as written; no amendment and no change to `docs/design-log.md`.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+Before any production edit; uv run pytest agents/operator/tests/test_failed_request_agent.py surfaces/tests/test_chat_failed_request.py --no-cov -q; exit 1.
+FFFFFFFFFF                                                               [100%]
+================================== FAILURES ===================================
+_______ test_s265_c1_failed_explain_is_audited_and_answers_through_bus ________
+agents\operator\tests\test_failed_request_agent.py:25: in test_s265_c1_failed_explain_is_audited_and_answers_through_bus
+    assert response.message_type == "response"
+E   AssertionError: assert 'error' == 'response'
+E
+E     - response
+E     + error
+_ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-quick] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'Request timed out.' == 'The request ...st timed out.'
+E
+E     - The request to the language model failed, so there is no answer. Request timed out.
+E     + Request timed out.
+_ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-parse] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'Operator cou... the command.' == 'The request ...st timed out.'
+E
+E     - The request to the language model failed, so there is no answer. Request timed out.
+E     + Operator could not parse the command.
+_ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-answer] _
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'Request timed out.' == 'The request ...st timed out.'
+E
+E     - The request to the language model failed, so there is no answer. Request timed out.
+E     + Request timed out.
+__ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-quick] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'The language...cess the API.' == 'The request ...cess the API.'
+E
+E     - The request to the language model failed, so there is no answer. The vendor answered HTTP 400: Your credit balance is too low to access the API.
+E     + The language model refused the request (HTTP 400): Your credit balance is too low to access the API.
+__ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-parse] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'Operator cou... the command.' == 'The request ...cess the API.'
+E
+E     - The request to the language model failed, so there is no answer. The vendor answered HTTP 400: Your credit balance is too low to access the API.
+E     + Operator could not parse the command.
+_ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-answer] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'The language...cess the API.' == 'The request ...cess the API.'
+E
+E     - The request to the language model failed, so there is no answer. The vendor answered HTTP 400: Your credit balance is too low to access the API.
+E     + The language model refused the request (HTTP 400): Your credit balance is too low to access the API.
+__ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-quick] ___
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert '' == 'The request ...imeoutError).'
+E
+E     - The request to the language model failed, so there is no answer. The error gave no reason (TimeoutError).
+__ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-parse] ___
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert 'Operator cou... the command.' == 'The request ...imeoutError).'
+E
+E     - The request to the language model failed, so there is no answer. The error gave no reason (TimeoutError).
+E     + Operator could not parse the command.
+__ test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-answer] __
+surfaces\tests\test_chat_failed_request.py:34: in test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors
+    assert turn["message"] == expected
+E   AssertionError: assert '' == 'The request ...imeoutError).'
+E
+E     - The request to the language model failed, so there is no answer. The error gave no reason (TimeoutError).
+=========================== short test summary info ===========================
+FAILED agents/operator/tests/test_failed_request_agent.py::test_s265_c1_failed_explain_is_audited_and_answers_through_bus
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-quick]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-parse]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[timeout-answer]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-quick]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-parse]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[status-answer]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-quick]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-parse]
+FAILED surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors[empty-answer]
+10 failed in 2.26s
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+........................................................................ [ 82%]
+...............                                                          [100%]
+87 passed in 3.30s
+GREEN_EXIT=0
+
+make ci (output redirected; outbound requests blocked by loopback-only proxies)
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+Success: no issues found in 1188 source files
+Contracts: 5 kept, 0 broken.
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4646 passed, 8 skipped, 2470 warnings in 524.61s (0:08:44) ==========
+  File "C:\Users\yury_\Downloads\project\ta-s265\.venv\Lib\site-packages\requests\adapters.py", line 723, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:59: ci] Error 1
+make ci exit code: 2
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted:** 32 / 32 behavioral failures, no import or syntax failures; each source restored byte-for-byte and its guard suite re-run green. Red and restored logs are `guard-NN-red.txt` and `guard-NN-restored.txt` in the proof directory.
 
-**Module line counts:** <file **n**, file **n**>
-
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
-
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+- G01 `kernel/llm_error_text.py`: Status text recognized away from start — RED exit 1 (A1); exact bytes restored; GREEN exit 0.
+- G02 `kernel/llm_error_text.py`: Status and message swapped — RED exit 1 (A1, A3, D1, D2); exact bytes restored; GREEN exit 0.
+- G03 `kernel/llm_error_text.py`: Status error never recognized — RED exit 1 (A1, A3, D1, D2); exact bytes restored; GREEN exit 0.
+- G04 `agents/operator/domain/result.py`: Lead sentence reworded — RED exit 1 (A2, A3, A4); exact bytes restored; GREEN exit 0.
+- G05 `agents/operator/domain/result.py`: Lead sentence names vendor — RED exit 1 (A2, A3, A4); exact bytes restored; GREEN exit 0.
+- G06 `agents/operator/domain/result.py`: SDK status rendering relayed — RED exit 1 (A3, D1, D2); exact bytes restored; GREEN exit 0.
+- G07 `agents/operator/domain/result.py`: Empty error has no type name — RED exit 1 (A3, D1); exact bytes restored; GREEN exit 0.
+- G08 `agents/operator/domain/result.py`: Error reason dropped — RED exit 1 (A3, A4, C1, C2, C3); exact bytes restored; GREEN exit 0.
+- G09 `agents/operator/domain/result.py`: Vendor message dropped — RED exit 1 (A3, D1, D2); exact bytes restored; GREEN exit 0.
+- G10 `agents/operator/domain/result.py`: Failed request asks clarification — RED exit 1 (A4, C2, C3); exact bytes restored; GREEN exit 0.
+- G11 `agents/operator/domain/result.py`: Failed request refuses without reason — RED exit 1 (A4, C2, C3); exact bytes restored; GREEN exit 0.
+- G12 `agents/operator/ledger.py`: Boundary outside ledger capture — RED exit 1 (B4); exact bytes restored; GREEN exit 0.
+- G13 `agents/operator/ledger.py`: Captured fault not returned — RED exit 1 (B1, C1, C2, C3); exact bytes restored; GREEN exit 0.
+- G14 `agents/operator/ledger.py`: Client called without complete_recorded — RED exit 1 (B2, B3); exact bytes restored; GREEN exit 0.
+- G15 `agents/operator/agent.py`: Failed explain answers before audit — RED exit 1 (C1, D1); exact bytes restored; GREEN exit 0.
+- G16 `agents/operator/agent.py`: Failed explain audited refused — RED exit 1 (C1, D1, D3); exact bytes restored; GREEN exit 0.
+- G17 `agents/operator/agent.py`: Failed explain raises to bus — RED exit 1 (C1, D1, D2); exact bytes restored; GREEN exit 0.
+- G18 `agents/operator/agent.py`: Failed explain mistaken for cutoff — RED exit 1 (C1, D1, D2); exact bytes restored; GREEN exit 0.
+- G19 `agents/operator/agent.py`: Failed interpret enters grammar — RED exit 1 (C3); exact bytes restored; GREEN exit 0.
+- G20 `agents/operator/agent.py`: Failed interpret mistaken for cutoff — RED exit 1 (C2, C3, D1, D2); exact bytes restored; GREEN exit 0.
+- G21 `agents/operator/agent.py`: Failed interpret returns before audit — RED exit 1 (C2, C3); exact bytes restored; GREEN exit 0.
+- G22 `agents/operator/agent.py`: Failed interpret says old sentence — RED exit 1 (C2, C3, D1, D2); exact bytes restored; GREEN exit 0.
+- G23 `agents/operator/agent.py`: Every interpret fault relays request text — RED exit 1 (C4, C5); exact bytes restored; GREEN exit 0.
+- G24 `agents/operator/agent.py`: Explain fault labelled interpret — RED exit 1 (C1, D1); exact bytes restored; GREEN exit 0.
+- G25 `agents/operator/agent.py`: Failed interpret raises after audit — RED exit 1 (C2, C3, D1, D2); exact bytes restored; GREEN exit 0.
+- G26 `agents/operator/agent.py`: Failed interpret audited explain — RED exit 1 (C2, C3, D1, D3); exact bytes restored; GREEN exit 0.
+- G27 `agents/operator/agent.py`: Operator boundary reraises — RED exit 1 (C1, C2, C3, C4, C5, C6); exact bytes restored; GREEN exit 0.
+- G28 `agents/operator/agent.py`: Fault names another module — RED exit 1 (C1, C2, D1); exact bytes restored; GREEN exit 0.
+- G29 `agents/operator/agent.py`: Error text written on audit — RED exit 1 (C6); exact bytes restored; GREEN exit 0.
+- G30 `agents/operator/domain/result.py`: Malformed JSON raises instead of refusing — RED exit 1 (C7); exact bytes restored; GREEN exit 0.
+- G31 `surfaces/plain_errors.py`: Surface passes through SDK rendering — RED exit 1 (A5); exact bytes restored; GREEN exit 0.
+- G32 `surfaces/plain_errors.py`: Surface drops vendor message — RED exit 1 (A5); exact bytes restored; GREEN exit 0.
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+01: RED exit 1; exact bytes restored; GREEN exit 0; Status text recognized away from start
+02: RED exit 1; exact bytes restored; GREEN exit 0; Status and message swapped
+03: RED exit 1; exact bytes restored; GREEN exit 0; Status error never recognized
+04: RED exit 1; exact bytes restored; GREEN exit 0; Lead sentence reworded
+05: RED exit 1; exact bytes restored; GREEN exit 0; Lead sentence names vendor
+06: RED exit 1; exact bytes restored; GREEN exit 0; SDK status rendering relayed
+07: RED exit 1; exact bytes restored; GREEN exit 0; Empty error has no type name
+08: RED exit 1; exact bytes restored; GREEN exit 0; Error reason dropped
+09: RED exit 1; exact bytes restored; GREEN exit 0; Vendor message dropped
+10: RED exit 1; exact bytes restored; GREEN exit 0; Failed request asks clarification
+11: RED exit 1; exact bytes restored; GREEN exit 0; Failed request refuses without reason
+12: RED exit 1; exact bytes restored; GREEN exit 0; Boundary outside ledger capture
+13: RED exit 1; exact bytes restored; GREEN exit 0; Captured fault not returned
+14: RED exit 1; exact bytes restored; GREEN exit 0; Client called without complete_recorded
+15: RED exit 1; exact bytes restored; GREEN exit 0; Failed explain answers before audit
+16: RED exit 1; exact bytes restored; GREEN exit 0; Failed explain audited refused
+17: RED exit 1; exact bytes restored; GREEN exit 0; Failed explain raises to bus
+18: RED exit 1; exact bytes restored; GREEN exit 0; Failed explain mistaken for cutoff
+19: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret enters grammar
+20: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret mistaken for cutoff
+21: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret returns before audit
+22: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret says old sentence
+23: RED exit 1; exact bytes restored; GREEN exit 0; Every interpret fault relays request text
+24: RED exit 1; exact bytes restored; GREEN exit 0; Explain fault labelled interpret
+25: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret raises after audit
+26: RED exit 1; exact bytes restored; GREEN exit 0; Failed interpret audited explain
+27: RED exit 1; exact bytes restored; GREEN exit 0; Operator boundary reraises
+28: RED exit 1; exact bytes restored; GREEN exit 0; Fault names another module
+29: RED exit 1; exact bytes restored; GREEN exit 0; Error text written on audit
+30: RED exit 1; exact bytes restored; GREEN exit 0; Malformed JSON raises instead of refusing
+31: RED exit 1; exact bytes restored; GREEN exit 0; Surface passes through SDK rendering
+32: RED exit 1; exact bytes restored; GREEN exit 0; Surface drops vendor message
+32 of 32 guard breaks failed on behavior and passed after exact restoration.
+GUARD_RUN_EXIT=0
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+**Module line counts:** every touched or new Python module, all below 200.
+
+| File | Lines |
+| --- | --- |
+| `agents/operator/agent.py` | 174 |
+| `agents/operator/domain/result.py` | 123 |
+| `agents/operator/ledger.py` | 111 |
+| `agents/operator/tests/failed_request_helpers.py` | 77 |
+| `agents/operator/tests/failed_request_texts.py` | 42 |
+| `agents/operator/tests/test_cutoff_agent.py` | 157 |
+| `agents/operator/tests/test_failed_request_agent.py` | 96 |
+| `agents/operator/tests/test_failed_request_faults.py` | 129 |
+| `agents/operator/tests/test_failed_request_ledger.py` | 108 |
+| `agents/operator/tests/test_failed_request_result.py` | 115 |
+| `agents/operator/tests/test_operator_agent.py` | 186 |
+| `kernel/llm_error_text.py` | 27 |
+| `surfaces/plain_errors.py` | 19 |
+| `surfaces/tests/chat_failed_request_helpers.py` | 73 |
+| `surfaces/tests/test_chat_cutoff.py` | 111 |
+| `surfaces/tests/test_chat_failed_request.py` | 115 |
+
+**`make ci`:** redirected to `C:/Users/yury_/Downloads/project/trading-agents-data/s265-codex-proof/make-ci.txt`. Exit code **2**. `4646 passed, 8 skipped, 2470 warnings in 524.61s (0:08:44)`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`. **Dependency audit: NOT RUN against the live advisory feed**: no network is authorized; HTTP/HTTPS outbound traffic was routed to an unavailable loopback proxy, and step 13 could not obtain an audit report. No bypass and no green overall CI claim. Steps 1-12 passed. Steps 14-15 were run explicitly after make stopped, both exit 0, with output below. `.secrets.baseline` unchanged.
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** NOT RUN — no push or network is authorized. Remote CI and Security Findings for the final branch commit are not proven; the planner owns them before merge. No `GATE PROVEN` claim.
+
+**Not met / verified failing:** the overall `make ci` gate is verified failing (exit 2) at the network-dependent dependency audit; current advisory proof is NOT RUN. A full green CI gate, remote gates, version bump, push, merge, deploy, and live dashboard/vendor checks are not done here. No unresolved implementation uncertainty found in the authorized unit-test scope; real vendor failure behavior in the dashboard remains unproven.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held. The protected-file diff prints nothing against the branch-cut main named below. `pyproject.toml` and `uv.lock` were not touched; the planner bumps the PATCH version at merge. Only E1-E3 changed among existing tests; no contracts, adapters, decision paths, prompt/grammar files, bus, or excluded production surface changed.
+- No disagreement requiring a design amendment. The reading confirmed the intended OPR-FAIL-01 law cycle. DRIFT-109 remains OPEN and unchanged. Gray clauses acknowledged in the reading record remain gray; neither law count changed.
+- The measured prototype baseline `f3e37421` is historical; this branch was prepared at `436ca19e18b93ab04d0273f3224645c0aa944856`, also main at both scope checks. S265 test names carry `s265` to distinguish them from S264. An explain failure is still reading (`answer` / audit `explain`); a failed typed parse counts as one command. Every D fixture pins provider and deletes model/effort overrides. The law gate emits no output on success and does not validate every citation: all 24 citations were resolved separately below. Pasted command text is complete; invisible trailing spaces were removed to satisfy the whitespace hook. No vendor was called, no retry added, and no raw error text or type added to graph properties.
+
+---
+
+### Scope and complete diff evidence (handback items 5-7)
+
+```text
+Scope baseline: main at branch-cut 436ca19e18b93ab04d0273f3224645c0aa944856
+git diff main --stat -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration kernel/llm.py kernel/llm_ledger.py kernel/llm_tokens.py kernel/llm_factory.py kernel/llm_outage.py kernel/llm_openai.py kernel/llm_openai_operator.py kernel/llm_anthropic.py kernel/llm_anthropic_responses.py kernel/bus.py kernel/errors.py agents/deliberator agents/operator/store.py agents/operator/settings.py agents/operator/domain/grammar.py agents/operator/domain/prompts.py surfaces/dashboard surfaces/queries surfaces/context.py surfaces/operator_tools.py surfaces/mcp_tools.py surfaces/laws/laws.md pyproject.toml uv.lock docs/STATE.md docs/work-queue.md
+Output: nothing (no stdout); protected-file scope held.
+docs/design-log.md also unchanged; D1-D7 built as written.
+Exactly E1-E3 changed; AST outside those three functions unchanged; no other existing test changed.
+complete_recorded is character-for-character unchanged.
+The status pattern's text is the same characters as on the branch-cut main; the matching call remains .match(text).
+No existing kernel file changed; surfaces/plain_errors.py is the only changed surface production file.
+.env absent; pyproject.toml and uv.lock unchanged; no version pinned or bumped.
+SCOPE_EXIT=0
+```
+
+The requested `git diff main -- surfaces/plain_errors.py kernel/llm_error_text.py`, whole:
+
+```diff
+diff --git a/kernel/llm_error_text.py b/kernel/llm_error_text.py
+new file mode 100644
+index 00000000..09babde0
+--- /dev/null
++++ b/kernel/llm_error_text.py
+@@ -0,0 +1,27 @@
++"""Read the text a vendor SDK gives an API status error.
++
++Agent: kernel
++Role: split an SDK status-error string into its HTTP status and the vendor's message.
++External I/O: none.
++"""
++
++from __future__ import annotations
++
++import re
++
++# The Anthropic and OpenAI SDKs both render an API status error as
++# "Error code: <status> - <python dict of the body>". A caller that relays or
++# records str(exc) has only that text, so the text is what is read here.
++_VENDOR_ERROR = re.compile(
++    r"^Error code: (?P<status>\d{3}) - "
++    r".*?['\"]message['\"]: (?P<quote>['\"])(?P<message>.*?)(?P=quote)",
++    re.DOTALL,
++)
++
++
++def vendor_status_error(text: str) -> tuple[str, str] | None:
++    """Return (HTTP status, the vendor's message) for a status error, else None."""
++    match = _VENDOR_ERROR.match(text)
++    if match is None:
++        return None
++    return match["status"], match["message"]
+diff --git a/surfaces/plain_errors.py b/surfaces/plain_errors.py
+index 20d22442..88b562f5 100644
+--- a/surfaces/plain_errors.py
++++ b/surfaces/plain_errors.py
+@@ -7,24 +7,13 @@ External I/O: none.
+
+ from __future__ import annotations
+
+-import re
+-
+-# The Anthropic and OpenAI SDKs both render an API status error as
+-# "Error code: <status> - <python dict of the body>". It reaches the surface as
+-# text (the operator relays str(exc) over the bus), so the text is all there is.
+-_VENDOR_ERROR = re.compile(
+-    r"^Error code: (?P<status>\d{3}) - "
+-    r".*?['\"]message['\"]: (?P<quote>['\"])(?P<message>.*?)(?P=quote)",
+-    re.DOTALL,
+-)
++from kernel.llm_error_text import vendor_status_error
+
+
+ def plain_error(text: str) -> str:
+     """Return a vendor status error as one sentence; any other text unchanged."""
+-    match = _VENDOR_ERROR.match(text)
+-    if match is None:
++    parsed = vendor_status_error(text)
++    if parsed is None:
+         return text
+-    return (
+-        f"The language model refused the request (HTTP {match['status']}): "
+-        f"{match['message']}"
+-    )
++    status, message = parsed
++    return f"The language model refused the request (HTTP {status}): {message}"
+```
+
+The pattern's text is the same characters as on the branch-cut main (AST source-segment comparison); the anchored matching call is unchanged.
+
+The requested `git diff main` of the three existing tests, whole:
+
+```diff
+diff --git a/agents/operator/tests/test_cutoff_agent.py b/agents/operator/tests/test_cutoff_agent.py
+index d1a4a32a..2889e75d 100644
+--- a/agents/operator/tests/test_cutoff_agent.py
++++ b/agents/operator/tests/test_cutoff_agent.py
+@@ -119,21 +119,28 @@ def test_c4_finished_call_records_the_clients_stop_reason(
+     assert not _faults(agent)
+
+
+-def test_c5_failed_interpret_keeps_the_old_fault_and_refusal() -> None:
+-    """OPR-FAIL-01: time-outs retain the old refusal, one fault, and no audit."""
++def test_c5_failed_interpret_says_why_and_writes_linked_audit() -> None:
++    """OPR-FAIL-01: time-outs say why, with one fault and a linked refusal audit."""
+     agent, graph = _agent(CompletionStub(failed=True))
+     result = agent._interpret(
+         HumanCommand(text="question", actor="operator", channel="dashboard")
+     )
+     assert result.outcome == "refused"
+-    assert result.message.summary == "Operator could not parse the command."
++    assert result.message.summary == (
++        "The request to the language model failed, so there is no answer. "
++        "fixture request timed out"
++    )
+     assert len(_faults(agent)) == 1
+     assert _faults(agent)[0].error_type == "TimeoutError"
+     rows = graph.list_nodes("LLMCall")
+     assert len(rows) == 1
+     assert rows[0].props["stop_reason"] == "unknown"
+     assert rows[0].props.get("token_source") == "estimated"
+-    assert not graph.list_nodes("CommandAudit")
++    (audit,) = graph.list_nodes("CommandAudit")
++    assert audit.props["outcome"] == "refused"
++    assert (
++        tuple(graph.descendants(audit, max_depth=1, edge_types={"PRODUCED_BY"})) == rows
++    )
+     assert not graph.list_nodes("Intent")
+
+
+diff --git a/agents/operator/tests/test_operator_agent.py b/agents/operator/tests/test_operator_agent.py
+index ed18eddd..086824e5 100644
+--- a/agents/operator/tests/test_operator_agent.py
++++ b/agents/operator/tests/test_operator_agent.py
+@@ -82,7 +82,11 @@ def test_interpret_llm_exception_returns_refusal() -> None:
+     bus = _bound_bus(graph, _RaisingLLM({}))
+     result = _interpret(bus, "run")
+     assert result.outcome == "refused"
+-    assert "could not parse" in result.message.summary
++    assert result.message.summary == (
++        "The request to the language model failed, so there is no answer. model down"
++    )
++    (audit,) = graph.list_nodes("CommandAudit")
++    assert audit.props["outcome"] == "refused"
+
+
+ def test_explain_returns_text_and_writes_audit_and_llm_call() -> None:
+diff --git a/surfaces/tests/test_chat_cutoff.py b/surfaces/tests/test_chat_cutoff.py
+index f7a5eb7c..e79f1db0 100644
+--- a/surfaces/tests/test_chat_cutoff.py
++++ b/surfaces/tests/test_chat_cutoff.py
+@@ -99,9 +99,13 @@ def test_d3_outage_distinguishes_failed_request_from_cutoff(
+     assert not is_silent_call(cut_graph.list_nodes("LLMCall")[0])
+     assert not cut_sink.faults
+     assert is_silent_call(failed_graph.list_nodes("LLMCall")[0])
+-    assert failed["message"] == "fixture request timed out"
++    assert failed["message"] == (
++        "The request to the language model failed, so there is no answer. "
++        "fixture request timed out"
++    )
+     assert failed["message"] != EXPECTED_REPLY
+-    assert failed["outcome"] == "refused"
++    assert failed["outcome"] == "answer"
+     assert len(failed_sink.faults) == 1
+     assert failed_sink.faults[0].error_type == "TimeoutError"
+-    assert not failed_graph.list_nodes("CommandAudit")
++    (audit,) = failed_graph.list_nodes("CommandAudit")
++    assert audit.props["outcome"] == "explain"
+```
+
+No other existing test changed; AST outside E1-E3 is unchanged.
+
+### Law-cycle quotes and citation resolution (handback items 8-9)
+
+Operator law book: **LOCKED v1.7 → LOCKED v1.8**. No clause added; 20 / 51 unchanged. Surfaces laws stay LOCKED v1.5, unchanged, 30 / 37. OPR-FAIL-01, as written:
+
+> **OPR-FAIL-01** — A model request that fails (a network error, a time-out, a status the vendor
+> refuses the request with: anything the client raises other than the cut-off of `OPR-FAIL-04`) is a
+> fault and never an answer, for `interpret` and for `explain`, on every vendor. `fault_boundary`
+> captures it around the model call alone: one fault, carrying the error's own type, and nothing
+> raised to the bus. The call is recorded as `OPR-STA-03` says and its `CommandAudit` is written and
+> linked as for any call (`OPR-OUT-06`), with outcome `refused` for `interpret` and `explain` for
+> `explain`. `interpret` returns `CommandResult(outcome="refused", ...)` and `explain` an
+> `Explanation`, each carrying the failed-request message; the explicit command grammar is not
+> applied and no `Intent` is written. The failed-request message is one fixed sentence that says the
+> request failed and names no vendor, model or number, followed by the error's own reason in plain
+> words: the HTTP status and the vendor's message for a status error, the error's text otherwise,
+> the error's type when it has no text. The SDK's rendering of a status error is never shown, and
+> the error's text is written to no graph record. Its letters are pinned by tests, not quoted here.
+> A model reply that is not valid JSON is not a fault: it is the explained refusal of `OPR-OUT-05`.
+> A graph write that fails is `OPR-FAIL-03`'s.
+
+The three test-plan rows, verbatim:
+
+```text
+| OPR-FAIL-01 | 🟩 | A model request that fails (a network error, a time-out, a status the vendor refuses the request with: anything the client raises other than the cut-off of `OPR-FAIL-04`) is a fault and never an answer, for `interpret` and for `explain`, on every vendor. `fault_boundary` captures it around the model call alone: one fault, carrying the error's own type, and nothing raised to the bus. The call is recorded as `OPR-STA-03` says and its `CommandAudit` is written and linked as for any call (`OPR-OUT-06`), with outcome `refused` for `interpret` and `explain` for `explain`. `interpret` returns `CommandResult(outcome="refused", ...)` and `explain` an `Explanation`, each carrying the failed-request message; the explicit command grammar is not applied and no `Intent` is written. The failed-request message is one fixed sentence that says the request failed and names no vendor, model or number, followed by the error's own reason in plain words: the HTTP status and the vendor's message for a status error, the error's text otherwise, the error's type when it has no text. The SDK's rendering of a status error is never shown, and the error's text is written to no graph record. Its letters are pinned by tests, not quoted here. A model reply that is not valid JSON is not a fault: it is the explained refusal of `OPR-OUT-05`. A graph write that fails is `OPR-FAIL-03`'s. Proven by: `agents/operator/tests/test_operator_agent.py::test_interpret_llm_exception_returns_refusal`; `agents/operator/tests/test_failed_request_result.py::test_s265_a2_failed_request_lead_is_pinned`; `agents/operator/tests/test_failed_request_result.py::test_s265_a3_status_reason_is_plain_and_whole`; `agents/operator/tests/test_failed_request_result.py::test_s265_a3_other_reason_is_stripped_and_whole`; `agents/operator/tests/test_failed_request_result.py::test_s265_a3_no_reason_names_the_error_type`; `agents/operator/tests/test_failed_request_result.py::test_s265_a4_failed_request_is_an_explained_refusal`; `agents/operator/tests/test_failed_request_ledger.py::test_s265_b1_failed_request_returns_its_one_fault_and_silent_row`; `agents/operator/tests/test_failed_request_agent.py::test_s265_c1_failed_explain_is_audited_and_answers_through_bus`; `agents/operator/tests/test_failed_request_agent.py::test_s265_c2_failed_interpret_is_audited_and_says_why`; `agents/operator/tests/test_failed_request_agent.py::test_s265_c3_failed_approve_never_enters_explicit_grammar`; `agents/operator/tests/test_failed_request_faults.py::test_s265_c5_failed_request_then_failed_audit_keeps_both_faults`; `agents/operator/tests/test_failed_request_faults.py::test_s265_c6_error_text_and_type_reach_no_graph_property`; `agents/operator/tests/test_failed_request_faults.py::test_s265_c7_malformed_json_is_a_fault_free_audited_refusal`; `surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors` |
+| OPR-OUT-06 | 🟩 | `test_interpret_maps_all_ten_families_with_confirmation_policy`, `test_explain_returns_text_and_writes_audit_and_llm_call`; `agents/operator/tests/test_failed_request_agent.py::test_s265_c1_failed_explain_is_audited_and_answers_through_bus`; `agents/operator/tests/test_failed_request_agent.py::test_s265_c2_failed_interpret_is_audited_and_says_why` |
+| SRF-FAIL-02 | Chat, MCP, and operator-tool errors reach the operator in plain words, not raw SDK JSON or tracebacks. | `surfaces/tests/test_dashboard_chat.py::test_chat_unbound_invalid_requests_and_method_guard`; `surfaces/tests/test_mcp_server.py::test_command_tool_refusal_returns_reason`; `surfaces/tests/test_mcp_server.py::test_error_paths_and_tool_catalog`; `surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors`; `surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors`; `surfaces/tests/test_chat_failed_request.py::test_s265_d2_status_sdk_rendering_is_never_shown` | 🟩 |
+```
+
+DRIFT-107 and DRIFT-108 status cells, verbatim:
+
+```text
+DRIFT-107: **CORRECTED (S265 / DL-286, operator v1.8, 2026-10-10).** Linked audits on both capabilities, one operator request fault and one plain reason, no grammar or graph error text; proven by `test_failed_request_agent.py` C1-C3, `test_failed_request_faults.py` C5-C6, and `test_chat_failed_request.py` D1-D3, with real adapters on fake SDKs. No vendor called.
+DRIFT-108: **CORRECTED (S265 / DL-286, operator v1.8, 2026-10-10).** OPR-FAIL-01 now states malformed JSON is an explained refusal without a fault; production parsing unchanged. Proven by `agents/operator/tests/test_failed_request_faults.py::test_s265_c7_malformed_json_is_a_fault_free_audited_refusal` on non-JSON, a list and an empty reply.
+```
+
+Both operator rollup lines (`docs/laws/ledger.md`, then `docs/laws/INDEX.md`), verbatim:
+
+```text
+| operator | ✅ v1.8 (LOCKED) | 20 / 51 | 🟨 partial — **20 of 51 clauses proven** after S265 (DL-286) rewords and re-proves `OPR-FAIL-01`: failed requests are audited on both capabilities, one operator fault and one plain reason, no grammar or error text in graph; malformed JSON is a fault-free refusal; DRIFT-107/108 corrected; no clause added; before that S264 (DL-285) re-proves `OPR-STA-03` for vendor stop reasons and billed counts on both reply paths and adds/proves `OPR-FAIL-04` for audited, fault-free cut-offs with one sentence and explicit grammar preserved; DRIFT-106 corrected; before that S263 (DL-284) amends and re-proves `OPR-DEP-01` for provider effort resolution and pre-call model-family refusal; PARAM effort and CAP reconciled; before that S262 (DL-282) amends and re-proves `OPR-DEP-01` for the selected vendor, model resolution and no fallback; PARAM reconciled; before that S256 (DL-272) rewrites and proves `OPR-IDM-02`: duplicate commands share audit/intent while every model call has its own row; DRIFT-104 corrected; S222 proves `OPR-SEC-01` key containment and `OPR-DEP-01` Anthropic-only dependency; S205 rewrites and proves `OPR-TYP-01`; 31 have a gray row |
+| operator | ✅ LOCKED v1.8 (S265, DL-286) | 20 / 51 | S265 (DL-286) rewords and re-proves `OPR-FAIL-01`: failed requests are audited on both capabilities, one operator fault and one plain reason, no grammar or error text in graph; malformed JSON is a fault-free refusal; DRIFT-107/108 corrected; no clause added; before that S264 (DL-285) re-proves `OPR-STA-03` for vendor stop reasons and billed counts on both reply paths and adds/proves `OPR-FAIL-04` for audited, fault-free cut-offs with one sentence and explicit grammar preserved; DRIFT-106 corrected; before that S263 (DL-284) amends and re-proves `OPR-DEP-01` for provider effort resolution and pre-call model-family refusal; PARAM effort and CAP reconciled; before that S262 (DL-282) amends and re-proves `OPR-DEP-01` for the selected vendor, model resolution and no fallback; PARAM reconciled; before that S256 (DL-272) rewrites and proves `OPR-IDM-02`: duplicate commands share the audit and intent, but every model call has its own ledger row; DRIFT-104 corrected; S222 proves `OPR-SEC-01` key containment and `OPR-DEP-01` Anthropic-only dependency; S205 rewrites and proves `OPR-TYP-01`; counters are clauses proven / clauses declared |
+```
+
+Law gate command and output:
+
+```text
+uv run python scripts/check_law_coverage.py
+(no stdout or stderr)
+LAW_GATE_EXIT=0
+```
+
+Every citation in those three rows, resolved to its file and clause docstring:
+
+```text
+OPR-FAIL-01: 14 live citations
+  agents/operator/tests/test_operator_agent.py::test_interpret_llm_exception_returns_refusal [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_result.py::test_s265_a2_failed_request_lead_is_pinned [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_result.py::test_s265_a3_status_reason_is_plain_and_whole [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_result.py::test_s265_a3_other_reason_is_stripped_and_whole [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_result.py::test_s265_a3_no_reason_names_the_error_type [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_result.py::test_s265_a4_failed_request_is_an_explained_refusal [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_ledger.py::test_s265_b1_failed_request_returns_its_one_fault_and_silent_row [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_agent.py::test_s265_c1_failed_explain_is_audited_and_answers_through_bus [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_agent.py::test_s265_c2_failed_interpret_is_audited_and_says_why [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_agent.py::test_s265_c3_failed_approve_never_enters_explicit_grammar [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_faults.py::test_s265_c5_failed_request_then_failed_audit_keeps_both_faults [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_faults.py::test_s265_c6_error_text_and_type_reach_no_graph_property [exists; docstring cites OPR-FAIL-01]
+  agents/operator/tests/test_failed_request_faults.py::test_s265_c7_malformed_json_is_a_fault_free_audited_refusal [exists; docstring cites OPR-FAIL-01]
+  surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors [exists; docstring cites OPR-FAIL-01]
+OPR-OUT-06: 4 live citations
+  agents/operator/tests/test_operator_agent.py::test_interpret_maps_all_ten_families_with_confirmation_policy [exists; docstring cites OPR-OUT-06]
+  agents/operator/tests/test_operator_agent.py::test_explain_returns_text_and_writes_audit_and_llm_call [exists; docstring cites OPR-OUT-06]
+  agents/operator/tests/test_failed_request_agent.py::test_s265_c1_failed_explain_is_audited_and_answers_through_bus [exists; docstring cites OPR-OUT-06]
+  agents/operator/tests/test_failed_request_agent.py::test_s265_c2_failed_interpret_is_audited_and_says_why [exists; docstring cites OPR-OUT-06]
+SRF-FAIL-02: 6 live citations
+  surfaces/tests/test_dashboard_chat.py::test_chat_unbound_invalid_requests_and_method_guard [exists; docstring cites SRF-FAIL-02]
+  surfaces/tests/test_mcp_server.py::test_command_tool_refusal_returns_reason [exists; docstring cites SRF-FAIL-02]
+  surfaces/tests/test_mcp_server.py::test_error_paths_and_tool_catalog [exists; docstring cites SRF-FAIL-02]
+  surfaces/tests/test_chat_cutoff.py::test_d1_cutoff_chat_is_equal_on_both_vendors [exists; docstring cites SRF-FAIL-02]
+  surfaces/tests/test_chat_failed_request.py::test_s265_d1_failed_chat_is_equal_on_both_paths_and_vendors [exists; docstring cites SRF-FAIL-02]
+  surfaces/tests/test_chat_failed_request.py::test_s265_d2_status_sdk_rendering_is_never_shown [exists; docstring cites SRF-FAIL-02]
+OPR-FAIL-01 exact spec words verified; operator v1.7 -> v1.8, 20 / 51 unchanged.
+Operator footer: ## Green: 20 / 51
+CITATION_EXIT=0
+```
 
 ---
 

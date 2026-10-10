@@ -1,7 +1,7 @@
 """Select GitHub image builds whose logs published a requested tag.
 
 Agent: surfaces
-Role: filter successful image workflow evidence by published Docker tag.
+Role: filter successful image workflow evidence by Docker tag across every attempt.
 External I/O: none directly; uses the injected reader's GitHub helpers.
 """
 
@@ -40,7 +40,7 @@ def image_builds_for_tag(
         for row in runs
         for build in (reader._build_from_run(row),)
         if clean_sha is None or _run_commit_is_on_main(reader, row, build.git_sha)
-        if run_log_mentions_tag(reader, build.run_id, clean_tag)
+        if run_log_mentions_tag(reader, build.run_id, clean_tag, _attempts(row))
     )
     if not matches and clean_sha is not None:
         return ()
@@ -51,13 +51,25 @@ def image_builds_for_tag(
     return matches
 
 
-def run_log_mentions_tag(reader: GitHubActionsReader, run_id: int, tag: str) -> bool:
-    """Return whether any workflow log names the requested image tag."""
-    url = (
-        f"https://api.github.com/repos/{reader._repository}/actions/runs/{run_id}/logs"
-    )
-    raw = reader._read_bytes(url)
+def run_log_mentions_tag(
+    reader: GitHubActionsReader, run_id: int, tag: str, attempts: int = 1
+) -> bool:
+    """Return whether any attempt's workflow log names the requested image tag.
+
+    GitHub's log archive for a run is its latest attempt's, and after a re-run of
+    the failed jobs that is those jobs' logs alone (DL-278). The latest is read
+    first, then each earlier attempt, newest first, until one names the tag.
+    """
+    base = f"https://api.github.com/repos/{reader._repository}/actions/runs/{run_id}"
     marker = f"trading-agents-master:{tag}".encode()
+    urls = (
+        f"{base}/logs",
+        *(f"{base}/attempts/{number}/logs" for number in range(attempts - 1, 0, -1)),
+    )
+    return any(_archive_names_tag(reader._read_bytes(url), marker) for url in urls)
+
+
+def _archive_names_tag(raw: bytes, marker: bytes) -> bool:
     try:
         with ZipFile(BytesIO(raw)) as archive:
             return any(
@@ -66,6 +78,14 @@ def run_log_mentions_tag(reader: GitHubActionsReader, run_id: int, tag: str) -> 
             )
     except BadZipFile:
         raise GitHubReadError("GitHub build log response was incomplete") from None
+
+
+def _attempts(row: dict[str, object]) -> int:
+    """How many attempts the run has had; a row that does not say has had one."""
+    attempts = row.get("run_attempt", 1)
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < 1:
+        raise GitHubReadError("GitHub build response was incomplete")
+    return attempts
 
 
 def _run_commit_is_on_main(

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-267-a-tag-is-proven-from-any-attempt-of-its-build`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-288](../design-log.md) (this sprint's six decisions, made and measured) · [DL-278](../design-log.md) (where the defect was met) · [work-queue 115](../work-queue.md) · DRIFT-111
@@ -268,19 +268,19 @@ for**. Most assertions are on that order.
 
 ## Success factors
 
-- [ ] A successful run whose latest archive does not name the tag and whose earlier attempt does is
+- [x] A successful run whose latest archive does not name the tag and whose earlier attempt does is
       returned as a build, and a deploy is recorded from it (T1).
-- [ ] The latest archive is read first, at today's path; an earlier attempt is read only when the
+- [x] The latest archive is read first, at today's path; an earlier attempt is read only when the
       later ones did not name the tag, newest first (T2, T3).
-- [ ] A run of one attempt costs one read (T4).
-- [ ] The complete-tag rule and the `main`-history rule hold for every attempt (T5, T8).
-- [ ] An earlier archive or an attempt count that cannot be read is an error (T6, T7).
-- [ ] No production file other than `surfaces/dashboard/github_tag_builds.py` changes; no existing
+- [x] A run of one attempt costs one read (T4).
+- [x] The complete-tag rule and the `main`-history rule hold for every attempt (T5, T8).
+- [x] An earlier archive or an attempt count that cannot be read is an error (T6, T7).
+- [x] No production file other than `surfaces/dashboard/github_tag_builds.py` changes; no existing
       test changes.
-- [ ] The law cycle done: `SRF-DEP-04` as written, v1.6, changelog, the test-plan row, both rollup
+- [x] The law cycle done: `SRF-DEP-04` as written, v1.6, changelog, the test-plan row, both rollup
       lines with the gate's count, DRIFT-111 CORRECTED.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage; any step the sandbox cannot run named NOT RUN.
 
 ---
@@ -466,15 +466,32 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Tag-build reader and new attempt tests | Whole `surfaces/laws/laws.md` and `surfaces/laws/test-plan.md`; whole `docs/laws/conventions.md` and `docs/laws/drift-register.md` | `SRF-DEP-01`, `SRF-SEC-02`, `SRF-FAIL-01`, `SRF-PERF-02`; new `SRF-DEP-04` | No change to D1-D6. `SRF-DEP-01`, `SRF-SEC-02` and `SRF-PERF-02` are currently unproven; T6 will prove the GitHub error limb only, not turn those whole clauses green. Unreadable evidence remains an error. |
+| Preserved reader and deploy-record boundaries | Whole `surfaces/dashboard/github_tag_builds.py`, `surfaces/dashboard/github_builds.py`, `orchestration/deploy_record.py`; whole `surfaces/tests/test_github_builds.py`, `test_github_build_tag_guards.py`, `test_github_build_tag_ancestry.py`, `test_github_builds_env.py`; DL-288 and DL-278 in `docs/design-log.md`; this whole spec, then `CLAUDE.md` | `SRF-DEP-04` as specified, `SRF-SEC-02` | No. Preserve main-history filtering before log reads, complete-tag matching and existing sanitised errors; change only `github_tag_builds.py` in production. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+Reading completed on 2026-10-11 before any Python edit. Worktree:
+`C:\Users\yury_\Downloads\project\ta-s267`; branch
+`sprint-267-a-tag-is-proven-from-any-attempt-of-its-build`; clean starting HEAD,
+`main` and `origin/main`: `c8926756841cfc991d98a6e638c89e18953423a7`. No `.env`.
+`docs/STATE.md` is the active tracker in `CLAUDE.md`; the explicit handover excludes
+editing it, `docs/work-queue.md`, `.claude/`, `pyproject.toml` and `uv.lock`.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
+No contract change; yes, one new surfaces guarantee. Owed: `SRF-DEP-04` verbatim,
+v1.5 to v1.6 and changelog, T1-T8 citation row, both derived rollups, DRIFT-111
+CORRECTED. This record precedes the tests and implementation; completion is
+reported below only after proof. D1-D6 and the ruled-out options are already
+recorded in DL-288; no new decision or amendment is needed.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Contradictions found between a law and this spec:** none.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Laws found silent where a decision was needed:** tag-proof semantics are silent
+in v1.5; the existing OPEN DRIFT-111 records this gap, and DL-288 D1-D6 settle it.
+
+**Clauses that were ⬜ and are now proven:** new `SRF-DEP-04` is proven by all
+eight named tests (16 cases). No existing gray clause is promoted. The gate
+derived surfaces **31 / 38**; both `ledger.md` and `INDEX.md` now carry that count
+and v1.6.
 
 ---
 
@@ -482,60 +499,371 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| T1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| T1 | `test_t1_earlier_attempt_proves_tag_and_records_deploy` | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T2 | `test_t2_stops_at_first_matching_attempt` (2 cases) | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T3 | `test_t3_no_attempt_names_tag_reads_all_newest_first` | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T4 | `test_t4_one_or_omitted_attempt_count_reads_latest_once` (2 cases) | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T5 | `test_t5_earlier_attempt_requires_the_complete_tag` | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T6 | `test_t6_unreadable_earlier_archive_is_a_sanitised_error` (2 cases) | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04`, `SRF-SEC-02` |
+| T7 | `test_t7_invalid_attempt_count_refuses_before_log_reads` (6 cases) | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
+| T8 | `test_t8_off_main_run_is_rejected_before_any_archive_read` | `surfaces/tests/test_github_build_tag_attempts.py` | PASS | `SRF-DEP-04` |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** no additional test function; T2's two cases are
+parametrised separately (16 cases total), and T4 also exercises the unchanged
+three-argument `run_log_mentions_tag` call. The fake places master evidence in
+the archive's second file, after another image, to retain the all-files rule.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):**
+`C:\Users\yury_\Downloads\project\ta-s267`, branch
+`sprint-267-a-tag-is-proven-from-any-attempt-of-its-build`; `.env` absent.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** T1 returns the build whose first attempt published the complete tag
+and writes exactly one in-memory `DeployRecord` for that tag and commit. T2-T8
+pass for early stopping, newest-first absence, one/omitted attempt counts,
+complete tags, unreadable earlier evidence, invalid counts and off-main refusal.
+The related suite passes **55 tests**, including every unedited existing test.
 
-**Files changed:** <list>
+**Files changed:** `surfaces/dashboard/github_tag_builds.py`;
+new `surfaces/tests/github_build_attempts_helpers.py` and
+`surfaces/tests/test_github_build_tag_attempts.py`; `surfaces/laws/laws.md` and
+`test-plan.md`; `docs/laws/ledger.md`, `INDEX.md`, `drift-register.md`;
+this sprint file and `docs/sprints/README.md`.
 
-**Design decisions:** recorded as [`DL-288`](../design-log.md) — <one line on any amendment, or "built as written">
+**Design decisions:** recorded as [`DL-288`](../design-log.md) — built as written;
+no amendment. No file in `contracts/` changes.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+Command (before changing `github_tag_builds.py`):
+uv run pytest surfaces/tests/test_github_build_tag_attempts.py --no-cov
+Log: C:\Users\yury_\AppData\Local\Temp\s267-20261011-c892675\red.txt
+Exit code: 1
+
+============================= test session starts =============================
+collected 2 items
+
+surfaces\tests\test_github_build_tag_attempts.py FF                      [100%]
+
+================================== FAILURES ===================================
+____________ test_t1_earlier_attempt_proves_tag_and_records_deploy ____________
+surfaces\tests\test_github_build_tag_attempts.py:26: in test_t1_earlier_attempt_proves_tag_and_records_deploy
+    assert github.reader.image_builds_for_tag("s259", SHA) == (BUILD,)
+E   AssertionError: assert () == (MainImageBui...mple/run/7'),)
+E
+E     Right contains one more item: MainImageBuild(git_sha='s267-commit', run_id=7, url='https://example/run/7')
+E     Use -v to get more diff
+_____________ test_t3_no_attempt_names_tag_reads_all_newest_first _____________
+surfaces\tests\test_github_build_tag_attempts.py:49: in test_t3_no_attempt_names_tag_reads_all_newest_first
+    assert github.archives == ["logs", "attempts/2/logs", "attempts/1/logs"]
+E   AssertionError: assert ['logs'] == ['logs', 'att...empts/1/logs']
+E
+E     Right contains 2 more items, first extra item: 'attempts/2/logs'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED surfaces/tests/test_github_build_tag_attempts.py::test_t1_earlier_attempt_proves_tag_and_records_deploy
+FAILED surfaces/tests/test_github_build_tag_attempts.py::test_t3_no_attempt_names_tag_reads_all_newest_first
+============================== 2 failed in 2.21s ==============================
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+Command: uv run pytest surfaces/tests/test_github_build_tag_attempts.py surfaces/tests/test_github_builds.py surfaces/tests/test_github_build_tag_ancestry.py surfaces/tests/test_github_build_tag_guards.py surfaces/tests/test_github_builds_env.py orchestration/tests/test_deploy_record_verification.py --no-cov
+Exit code: 0
+
+============================= test session starts =============================
+collected 55 items
+
+surfaces\tests\test_github_build_tag_attempts.py ................        [ 29%]
+surfaces\tests\test_github_builds.py ...........                         [ 49%]
+surfaces\tests\test_github_build_tag_ancestry.py ...                     [ 54%]
+surfaces\tests\test_github_build_tag_guards.py ................          [ 83%]
+surfaces\tests\test_github_builds_env.py ..                              [ 87%]
+orchestration\tests\test_deploy_record_verification.py .......           [100%]
+
+============================= 55 passed in 1.93s ==============================
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
-
-**Module line counts:** <file **n**, file **n**>
-
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
-
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**Guards planted:** each mutation compiled, failed on test behaviour (no
+collection error), and restored the exact original bytes in a `finally` block.
+Runner exit code 0; individual failure outputs and `mutations.json` are in
+`C:\Users\yury_\AppData\Local\Temp\s267-20261011-c892675`. G01-G15 cover the required plants; G19 also checks literal
+all-archives-before-any-search preloading. G16-G18 additionally guard
+the main-history check order, default argument and all-files archive search.
+G19 was added after the full suite; the restored bytes match that CI run,
+and `uv run pytest surfaces/tests/test_github_build_tag_attempts.py --no-cov`
+then passed all 16 cases (`restored.txt`, exit 0).
 
 ```text
-GATE PROVEN for <sha>:
-  Security Findings: success
-  CI: success
+G01: attempt count not passed; exit 1; 12 behavioral failures; restored=True
+G02: latest attempt read twice by number; exit 1; 8 behavioral failures; restored=True
+G03: first attempt skipped; exit 1; 5 behavioral failures; restored=True
+G04: earlier attempts oldest first; exit 1; 2 behavioral failures; restored=True
+G05: eager archive reads; exit 1; 2 behavioral failures; restored=True
+G06: latest archive skipped; exit 1; 9 behavioral failures; restored=True
+G07: only last archive decides; exit 1; 2 behavioral failures; restored=True
+G08: below-one attempt count accepted; exit 1; 2 behavioral failures; restored=True
+G09: boolean attempt count accepted; exit 1; 1 behavioral failures; restored=True
+G10: any attempt-count type accepted; exit 1; 6 behavioral failures; restored=True
+G11: missing attempt count refused; exit 1; 1 behavioral failures; restored=True
+G12: count read from wrong field; exit 1; 12 behavioral failures; restored=True
+G13: bad zip treated as absent tag; exit 1; 1 behavioral failures; restored=True
+G14: tag prefix accepted as proof; exit 1; 1 behavioral failures; restored=True
+G15: wrong attempt archive path; exit 1; 6 behavioral failures; restored=True
+G16: logs searched before main-history check; exit 1; 1 behavioral failures; restored=True
+G17: legacy default increased to two; exit 1; 2 behavioral failures; restored=True
+G18: search only first file of archive; exit 1; 4 behavioral failures; restored=True
+G19: every archive read before any search; exit 1; 2 behavioral failures; restored=True
+19/19 guards red and restored; production SHA256 222328211e49f480a4ebc0ec1e229fd6477aab7855fecfe3a1cec78c304c6355
 ```
 
-**Not met / verified failing:** <plainly, or "none">
+**Module line counts:** `surfaces/dashboard/github_tag_builds.py` **114**;
+`surfaces/tests/github_build_attempts_helpers.py` **91**;
+`surfaces/tests/test_github_build_tag_attempts.py` **135**. All are under 200.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s267-20261011-c892675\ci.txt`. Exit code **2**,
+so the overall gate is **verified failing**, not green. All first 12 steps
+passed; `4662 passed, 8 skipped, 2470 warnings in 497.46s (0:08:17)`, coverage **100.00 %**.
+**Dependency audit: NOT RUN**, because the handover forbids network. An
+external `offline/sitecustomize.py` stops that command at Python start-up
+with the explicit NOT RUN message and exit 1; the Makefile and audit script
+are unchanged. `UV_OFFLINE=1`, `UV_NO_SYNC=1` and localhost-only proxy
+settings prevent dependency fetching. Both following secret steps were
+run separately, without bypassing the failing `make ci` status:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+Exit code: 0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+Exit code: 0
+```
+
+Selected real output from `ci.txt` (the full output remains in that file):
+
+```text
+Success: no issues found in 1190 source files
+Contracts: 5 kept, 0 broken.
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4662 passed, 8 skipped, 2470 warnings in 497.46s (0:08:17) ==========
+NOT RUN: dependency audit requires network; S267 forbids network.
+make: *** [Makefile:59: ci] Error 1
+```
+
+**`make gate-ran`:** not done. This handover forbids pushing and merging and
+authorises fixture-only proof without network or a GitHub token. Exact-SHA
+remote gates, merge, F1 and any live proof remain the planner's work.
+
+**Not met / verified failing:** full `make ci` exit 0 is not met (dependency
+audit NOT RUN, network forbidden). Push, remote gates, version bump, merge,
+F1 on GitHub, deploy and live deploy-record proof are **not done**, as assigned
+to the planner. No unresolved implementation uncertainty found.
+
+**No test added by this sprint calls the network:** every GitHub read uses
+`AttemptGitHub.open`; deploy verification uses `InMemoryGraphStore`.
+
+**Scope proof:** the protected-path command below printed nothing (exit 0).
+Comparison ref: `main`, branch-cut commit `c8926756841cfc991d98a6e638c89e18953423a7`.
+
+```text
+git diff main --stat -- agents contracts kernel orchestration scripts infra .claude surfaces/dashboard/github_builds.py surfaces/dashboard/github_tree_diff.py surfaces/context.py surfaces/queries surfaces/tests/test_github_builds.py surfaces/tests/test_github_build_tag_guards.py surfaces/tests/test_github_build_tag_ancestry.py surfaces/tests/test_github_builds_env.py pyproject.toml uv.lock docs/STATE.md docs/work-queue.md docs/design-log.md
+(stdout empty)
+Exit code: 0
+```
+
+No other production file changed. The whole production diff is pasted here:
+
+```diff
+diff --git a/surfaces/dashboard/github_tag_builds.py b/surfaces/dashboard/github_tag_builds.py
+index 4bf113f6..0167945f 100644
+--- a/surfaces/dashboard/github_tag_builds.py
++++ b/surfaces/dashboard/github_tag_builds.py
+@@ -1,7 +1,7 @@
+ """Select GitHub image builds whose logs published a requested tag.
+
+ Agent: surfaces
+-Role: filter successful image workflow evidence by published Docker tag.
++Role: filter successful image workflow evidence by Docker tag across every attempt.
+ External I/O: none directly; uses the injected reader's GitHub helpers.
+ """
+
+@@ -40,7 +40,7 @@ def image_builds_for_tag(
+         for row in runs
+         for build in (reader._build_from_run(row),)
+         if clean_sha is None or _run_commit_is_on_main(reader, row, build.git_sha)
+-        if run_log_mentions_tag(reader, build.run_id, clean_tag)
++        if run_log_mentions_tag(reader, build.run_id, clean_tag, _attempts(row))
+     )
+     if not matches and clean_sha is not None:
+         return ()
+@@ -51,13 +51,25 @@ def image_builds_for_tag(
+     return matches
+
+
+-def run_log_mentions_tag(reader: GitHubActionsReader, run_id: int, tag: str) -> bool:
+-    """Return whether any workflow log names the requested image tag."""
+-    url = (
+-        f"https://api.github.com/repos/{reader._repository}/actions/runs/{run_id}/logs"
+-    )
+-    raw = reader._read_bytes(url)
++def run_log_mentions_tag(
++    reader: GitHubActionsReader, run_id: int, tag: str, attempts: int = 1
++) -> bool:
++    """Return whether any attempt's workflow log names the requested image tag.
++
++    GitHub's log archive for a run is its latest attempt's, and after a re-run of
++    the failed jobs that is those jobs' logs alone (DL-278). The latest is read
++    first, then each earlier attempt, newest first, until one names the tag.
++    """
++    base = f"https://api.github.com/repos/{reader._repository}/actions/runs/{run_id}"
+     marker = f"trading-agents-master:{tag}".encode()
++    urls = (
++        f"{base}/logs",
++        *(f"{base}/attempts/{number}/logs" for number in range(attempts - 1, 0, -1)),
++    )
++    return any(_archive_names_tag(reader._read_bytes(url), marker) for url in urls)
++
++
++def _archive_names_tag(raw: bytes, marker: bytes) -> bool:
+     try:
+         with ZipFile(BytesIO(raw)) as archive:
+             return any(
+@@ -68,6 +80,14 @@ def run_log_mentions_tag(reader: GitHubActionsReader, run_id: int, tag: str) ->
+         raise GitHubReadError("GitHub build log response was incomplete") from None
+
+
++def _attempts(row: dict[str, object]) -> int:
++    """How many attempts the run has had; a row that does not say has had one."""
++    attempts = row.get("run_attempt", 1)
++    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < 1:
++        raise GitHubReadError("GitHub build response was incomplete")
++    return attempts
++
++
+ def _run_commit_is_on_main(
+     reader: GitHubActionsReader, row: dict[str, object], git_sha: str
+ ) -> bool:
+```
+
+No existing test changed. Only these two new files appear:
+
+```text
+git diff main --stat -- surfaces/tests orchestration/tests
+surfaces/tests/github_build_attempts_helpers.py  |  91 +++++++++++++++
+ surfaces/tests/test_github_build_tag_attempts.py | 135 +++++++++++++++++++++++
+ 2 files changed, 226 insertions(+)
+git diff main --name-status -- surfaces/tests orchestration/tests
+A	surfaces/tests/github_build_attempts_helpers.py
+A	surfaces/tests/test_github_build_tag_attempts.py
+```
+
+**Law cycle:** old **LOCKED v1.5**, new **LOCKED v1.6**, both test-plan
+header versions v1.6; one new clause after `SRF-DEP-03`, one changelog entry.
+`SRF-DEP-04`, quoted as written:
+
+```text
+- **SRF-DEP-04** — The GitHub reader counts a successful image-build run as evidence that a tag
+  was published only when one of the run's logs names the master image under that tag as a
+  complete tag (`trading-agents-master:<tag>`; a longer tag that begins with it proves nothing).
+  **Every attempt of the run is evidence**: the latest attempt's log archive is read first, then
+  each earlier attempt's, newest first, until one names the tag, because after a re-run the run's
+  own archive holds the re-run jobs alone. With a commit given, a run counts only when that
+  commit is on `main`'s history, and a run that does not count is not read. An archive, a
+  comparison or an attempt count that cannot be read is an error, never an absent tag; a row
+  that names no attempt count has had one attempt. *(DRIFT-111, S267, DL-288.)*
+```
+
+Its test-plan row, quoted:
+
+```text
+| SRF-DEP-04 | A successful image-build run proves a published master-image tag only from a complete-tag match in a log; a longer tag that begins with the requested tag proves nothing. Read the latest archive first, then earlier attempts newest first until a match; rerun archives hold only rerun jobs. With a commit given, require main history before log reads. Unreadable archives, comparisons or attempt counts are errors, never absent tags; an omitted count means one attempt. | `surfaces/tests/test_github_build_tag_attempts.py::test_t1_earlier_attempt_proves_tag_and_records_deploy`; `surfaces/tests/test_github_build_tag_attempts.py::test_t2_stops_at_first_matching_attempt`; `surfaces/tests/test_github_build_tag_attempts.py::test_t3_no_attempt_names_tag_reads_all_newest_first`; `surfaces/tests/test_github_build_tag_attempts.py::test_t4_one_or_omitted_attempt_count_reads_latest_once`; `surfaces/tests/test_github_build_tag_attempts.py::test_t5_earlier_attempt_requires_the_complete_tag`; `surfaces/tests/test_github_build_tag_attempts.py::test_t6_unreadable_earlier_archive_is_a_sanitised_error`; `surfaces/tests/test_github_build_tag_attempts.py::test_t7_invalid_attempt_count_refuses_before_log_reads`; `surfaces/tests/test_github_build_tag_attempts.py::test_t8_off_main_run_is_rejected_before_any_archive_read` | 🟩 |
+```
+
+DRIFT-111's status cell, quoted:
+
+```text
+**CORRECTED (S267 / DL-288, surfaces laws v1.6, 2026-10-11).** New `SRF-DEP-04` states complete-tag proof from every attempt of a successful run, latest first and earlier attempts newest first until a match; main history and sanitised errors remain required, and absent attempt counts default to one. Proven by T1-T8 in `surfaces/tests/test_github_build_tag_attempts.py` (16 cases), including an in-memory verified deploy from the earlier attempt. No live or remote proof claimed.
+```
+
+Both rollup lines, quoted:
+
+```text
+docs/laws/ledger.md
+| surfaces | ✅ v1.6 (LOCKED) | 31 / 38 | 🟨 partial — **31 of 38 clauses proven**; S267 (DL-288) adds and proves `SRF-DEP-04`: complete-tag evidence from every attempt of a successful image-build run, latest first and earlier attempts newest first, with main-history and unreadable-evidence guards; DRIFT-111 corrected; before that S263 (DL-284) amends and re-proves `SRF-DEP-03` for model-family disconnection and its start-up reason; before that S262 (DL-282) adds and proves `SRF-DEP-03`: dashboard chat binds only through its selected provider and disconnects for absent keys, unknown providers and either vendor configuration error; DRIFT-105 corrected; before that S251 narrows `SRF-OUT-03` to model-composed answers and names the quick asks as graph reads that write no audit fact (DRIFT-078), count unchanged; after S236 adds and proves `SRF-OUT-08` (the unattended vital and the `scorecard` answer: G1, G3 and two clocks from the acceptance gate's verdict and the records human actions leave) and lists `scorecard` in `SRF-TRG-02`; DRIFT-078 is filed for `SRF-OUT-03`'s silence on the quick asks. S228 added and proved `SRF-OUT-07` (28 of 35); S229 authored the book (27 of 34). Covers dashboard, CLI, MCP, chat and operator-intent write boundaries; selected-run scoping cites DRIFT-022 as already corrected. |
+
+docs/laws/INDEX.md
+| surfaces | ✅ LOCKED v1.6 (S267, S263, S262, S251, S236, S229, S228) | 31 / 38 | S267 (DL-288) adds and proves `SRF-DEP-04`: complete-tag evidence from every attempt of a successful image-build run, latest first and earlier attempts newest first, with main-history and unreadable-evidence guards; DRIFT-111 corrected; before that S263 (DL-284) amends and re-proves `SRF-DEP-03` for model-family disconnection and its start-up reason; before that S262 (DL-282) adds and proves `SRF-DEP-03`: dashboard chat binds only through its selected provider and disconnects for absent keys, unknown providers and either vendor configuration error; DRIFT-105 corrected; before that S251 narrows `SRF-OUT-03` (quick asks write no audit fact; DRIFT-078); Component book under `surfaces/laws/`; dashboard, CLI, MCP, chat and operator-intent write boundaries; S236 adds and proves `SRF-OUT-08` (the unattended scorecard) and the `scorecard` tool, and files DRIFT-078; selected-run scoping cites corrected DRIFT-022 |
+```
+
+**Law gate:** `uv run python scripts/check_law_coverage.py`, exit **0**,
+stdout empty (`law-green.txt`). Its initial derivation output, before
+updating the rollups, establishes the count:
+
+```text
+[FAIL] docs/laws/ledger.md:53: surfaces claims 30 / 37; derived 31 / 38
+[FAIL] docs/laws/INDEX.md:55: surfaces claims 30 / 37; derived 31 / 38
+Exit code: 1 (rollup mismatch, subsequently corrected)
+```
+
+Every test cited by that row was independently resolved from its file and
+docstring, beyond the gate's at-least-one-citation rule:
+
+```text
+surfaces/tests/test_github_build_tag_attempts.py::test_t1_earlier_attempt_proves_tag_and_records_deploy: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t2_stops_at_first_matching_attempt: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t3_no_attempt_names_tag_reads_all_newest_first: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t4_one_or_omitted_attempt_count_reads_latest_once: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t5_earlier_attempt_requires_the_complete_tag: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t6_unreadable_earlier_archive_is_a_sanitised_error: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t7_invalid_attempt_count_refuses_before_log_reads: resolved; docstring cites SRF-DEP-04
+surfaces/tests/test_github_build_tag_attempts.py::test_t8_off_main_run_is_rejected_before_any_archive_read: resolved; docstring cites SRF-DEP-04
+8/8 row citations resolved independently; no dead or ambiguous citation
+Exit code: 0
+```
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: only the named production reader changed; no existing test,
+  contract, kernel, agent, orchestration, infrastructure or `.claude/` file
+  changed. `docs/STATE.md`, `docs/work-queue.md`, `docs/design-log.md`,
+  `pyproject.toml` and `uv.lock` are untouched. The planner bumps at merge.
+- No disagreement with the laws or D1-D6. The added clause precedes Python
+  edits, as conventions section 7 requires; its remaining law bookkeeping
+  follows the passing tests. No DL-288 amendment.
+- Counts clarified: T2 is parametrised, so the plan produces 16 cases rather
+  than the prototype's 15. The production module measures 114 lines rather
+  than the Appendix's 115; the final formatted file is the quoted diff.
+- A complete local CI gate is still owed: network-enabled dependency audit,
+  then the planner's version bump and exact-HEAD remote gates before merge.
+  The temporary audit guard is outside git and must not be used to claim a
+  green gate. All other 14 local steps passed; the last two ran separately.
+- The slow refusal fallback remains unchanged. F1 is a read-only GitHub
+  check assigned to the planner after merge; no live graph record is proven.
+
+- CI output includes historical test counts from the sprint-status step;
+  the actual pytest summary is the banner reporting 4,662 passed and
+  8 skipped. The closeout extractor was corrected before commit.
+- Blank context lines in the quoted diff have trailing spaces trimmed
+  for the whitespace hook; the exact raw diff is `production-diff.txt`
+  beside the CI log. No content line of the diff was removed.
 
 ---
 

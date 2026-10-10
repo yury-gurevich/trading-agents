@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -135,6 +135,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   other. A missing key for that provider, an unknown provider, or its adapter's configuration
   failure, or an explicit model belonging to another provider's family leaves chat disconnected.
   For a model-family mismatch the dashboard's start-up output names that cause.
+- **SRF-DEP-04** — The GitHub reader counts a successful image-build run as evidence that a tag
+  was published only when one of the run's logs names the master image under that tag as a
+  complete tag (`trading-agents-master:<tag>`; a longer tag that begins with it proves nothing).
+  **Every attempt of the run is evidence**: the latest attempt's log archive is read first, then
+  each earlier attempt's, newest first, until one names the tag, because after a re-run the run's
+  own archive holds the re-run jobs alone. With a commit given, a run counts only when that
+  commit is on `main`'s history, and a run that does not count is not read. An archive, a
+  comparison or an attempt count that cannot be read is an error, never an absent tag; a row
+  that names no attempt count has had one attempt. *(DRIFT-111, S267, DL-288.)*
 
 ## Observability & audit (`OBS`)
 
@@ -215,6 +224,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
+
+- v1.6 — S267 / DL-288 (2026-10-11): new `SRF-DEP-04` declares tag proof from
+  every attempt of a successful image-build run, latest first and earlier attempts
+  newest first, stopping at the first complete-tag match. Main history and
+  sanitised errors remain required; an omitted attempt count defaults to one.
+  DRIFT-111 records the previous silence. No other clause changes.
 
 - v1.5 — S263 / DL-284 (2026-10-09): `SRF-DEP-03` adds cross-provider model-family
   refusal to the disconnection causes and requires its reason on dashboard start-up output.

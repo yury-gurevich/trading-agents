@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-265-a-failed-chat-request-is-audited-and-says-why`
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — `0.125.03`, fast-forwarded to `c32398fc`, tag `v0.125.03`, GATE PROVEN `c32398fc` (CI, CodeQL, Security Findings); no deploy; F1a and F1b passed, both at no cost
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-286](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-285](../design-log.md) (where the defect was found) · [work-queue 125](../work-queue.md) · DRIFT-107 · DRIFT-108
@@ -366,7 +366,7 @@ Anthropic's 401 and 400 (write the request id as `req_011`), and each SDK's time
 - [x] Design decisions built as recorded in DL-286, or an amendment under it.
 - [x] Every guard planted, watched to fail, restored, stated per guard.
 - [x] Every touched or new module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage. **Not done:** coverage is 100.00 %, but the overall gate fails at the offline dependency audit, named below.
+- [x] `make ci` exit 0, 100.00 % coverage. The builder's run stopped at the dependency audit, which needs the network; the planner's Windows run at the merge is exit 0 (the review block below).
 
 ---
 
@@ -672,7 +672,7 @@ or the 20 / 51 rollup.
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s265`, branch `sprint-265-a-failed-chat-request-is-audited-and-says-why`; `.env` absent. Branch-cut main baseline `436ca19e18b93ab04d0273f3224645c0aa944856`; no vendor or network proof.
 
@@ -1246,7 +1246,32 @@ between the two days.
 - **Version.** PATCH, `0.125.02` to `0.125.03`; `uv lock` changed the version line alone (180
   packages).
 
-**Written at the merge, before the gate — still owed, none of it proven here:** the planner's
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `c32398fc`: all 15 steps,
+4,646 passed, 8 skipped, 100.00 % coverage, and the dependency audit the builder could not run
+found nothing unaccepted (one accepted advisory re-checked). `GATE PROVEN` for `c32398fc`, run from
+`../ta-s265`, the printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`.
+Open CodeQL alerts on the branch: 127, the same alert numbers as on the last merged branch, none at
+error level and none in a file this sprint touched. `main` fast-forwarded to that commit and tagged
+`v0.125.03`.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1a passed* on the merged `main`, from the main checkout, at no cost: the planner's end-to-end
+script prints exactly what it printed on the prototype, 24 turns. On both vendors each of the 16
+failed-request turns shows the message, writes its audits linked to their rows and records one
+fault from the operator's boundary; the eight control turns (cut-offs and good replies) read as
+before the sprint. *F1b passed on both vendors*, at no cost: each real adapter on the real SDK with
+a key that is not a key, a quick ask and a typed question through the chat handler on an in-memory
+graph. Both vendors answered HTTP 401. The chat showed the lead sentence and then *"The vendor
+answered HTTP 401: "* with the vendor's own message (OpenAI's *"Incorrect API key provided: …"*,
+Anthropic's *"invalid x-api-key"*), and nothing of the SDK's rendering. The audit reads `explain`
+for the quick ask and `refused` for the typed question, each linked to its row; the row is read
+silent; one `AuthenticationError` fault from `agents.operator.agent`; no `Intent`; neither the
+vendor's words nor the error's type in any graph property. The same script on `main` before the
+merge (`436ca19e`) failed 14 of its 40 checks: no audit on any turn, the typed question saying
+*"Operator could not parse the command."*, and the quick ask's fault recorded by the bus. *Not
+proven:* a time-out, a dropped connection or an empty account met in the dashboard itself.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's
 Windows `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block;
 then F1a (the measurement on the merged `main`) and F1b (each real adapter refused by its vendor
 for a key that is not a key), both at no cost.

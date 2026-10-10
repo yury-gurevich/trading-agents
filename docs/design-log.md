@@ -10,6 +10,48 @@ and is marked CLOSED here.
 
 ---
 
+## DL-287 - a run's barrier history ends on the run's as-of, read through the run's lineage; the other eight wall-clock date reads S249 left stay as they are - status: MEASURED and DECIDED (planner, 2026-10-11 07:52 AEDT); specced as [S266](sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md); work-queue 103 part two
+
+**Why.** S249 (DL-255, DL-256) made a run's ingest follow the run's as-of and left nine wall-clock date reads as work-queue 103's second part, with *"which of them run inside a graph-pull run is not measured"*. The operator asked for the next sprint (2026-10-11); the queue's first row was this one.
+
+**Measured (2026-10-11).** A spy on each of the nine reads, and a run placed for an as-of three days back, in memory with a fake source and no `.env`, down the three paths a run can take (the planner's `wq103b_clock_reads.py`):
+
+- *Fleet-shaped* (each container entrypoint's own find/process pair; the forecaster on its own bus with the deployed legs): **two** of the nine are reached. `agents/provider/barrier_history.py:94` (`barrier_window`) returns today. `agents/forecaster/settlement_pass.py::_pass_date` returns the run's creation date, read from its `created_at` stamp; it reads the clock only for a run with no readable stamp (DL-243 D3).
+- *The in-process pass* (`cascade_once`): the same two, plus the forecaster's news window (`agent.py:164`) and return window (`price_signal.py:79`), both returning today. The factor window (`factor_signal.py:78`) is not reached: no factor is enabled by default.
+- *The served agents on a `run.trigger` event*: the scanner's, the analyst's, the portfolio manager's and the monitor's (`agent.py:182`, `:128`, `:119`, `provider_client.py:63`). The event carries a run id and a universe and no as-of. Nothing outside tests constructs `Dispatcher` or sends a request to those four agents; `SCAN-STA-03` says the scanner's served window is calculated from the clock.
+
+What the one live read does: for that run `MarketData.window_end` and `RegimeContext.window_end` are the as-of, `BarrierHistory.window_end` and its newest bar are today's, and each `BarrierForecast` carries today as `as_of` and today's close as `entry_close` (101.7538 where the as-of's close is 101.7995), for a stop and a target the analyst computed on the as-of's bars. The same on both graph-pull paths. A run resumed from the analyst stage on a later day does the same: its `AnalystRun` is new, so the 24-hour rule (DL-241 D11) counts it. `PROV-OUT-08` already assumes otherwise: *"its newest session is the one the daily request judged"*.
+
+On the live graph (read-only, `neon_barrier_ledger.py`): **0 of 8** `BarrierHistory` nodes end off their run's as-of, 0 hold a bar after it, 0 lack a `MarketData` lineage; **0 of 28** claims are dated after their run's as-of (one is dated a day before: TGT of `verify-2026-10-01-s248-a`, whose `MarketData` window followed the clock before S249). So nothing in the ledger is misdated yet; the first claims settle from about 2026-10-12.
+
+**Decided.**
+
+- **D1 - the as-of is the `window_end` of the `MarketData` the run was scanned from**, found by edge: the run's `ANALYZED_BY` ancestor, then that node's `DERIVED_FROM` descendant. The walk the portfolio manager and the forecaster's settlement already make, and the one a resume clone keeps (`orchestration/resume.py:110-111`, `:126`).
+- **D2 - a run with no such lineage has no as-of, and its window ends on the UTC date of the fetch**, as an ingest no run triggered does under `PROV-TRG-05`. Only a hand-built run can be one: the graph-pull analyst recommends nothing without a `MarketData`.
+- **D3 - a `MarketData` whose `window_end` is absent or not a date fails the work before any fetch** (`KeyError`, `ValueError`); no node is written and it is not served today. The scanner raises on the same node, so no pipeline run reaches this.
+- **D4 - one new module, `agents/provider/barrier_window.py`**, holds the lineage read and the window helper with its two constants; `barrier_history.py` goes from 191 lines to 179.
+- **D5 - the other eight reads stay.** The four served windows answer a request that carries no as-of, in decision-path agents, with no caller outside tests. The settlement pass's date is the run's creation date on purpose. The forecaster's three advisory windows are fired by the in-process pass and an RPC caller only, their request (`FORE-IN-01`, `FORE-IN-02`) carries no as-of, and nothing outside tests places a past as-of on that pass (`scripts/run_local.py` has no `--as-of`). **Named:** before any of the three legs is deployed, or run for a past as-of, its window must take the run's as-of, which is a field on `ForecastRequest` and a forecaster law cycle.
+- **D6 - `PROV-OUT-08` is amended, no clause is added**; DRIFT-110 records the gap. No contract, graph property, env key or tunable changes; no forecaster file changes.
+
+**Ruled out.**
+
+- *Stamp the as-of on the `AnalystRun`* - it changes the analyst's write path while the fidelity count runs and adds a graph property (a full `up`); the 88 runs already written would not carry it.
+- *Read the run id out of a key and fetch the small `RegimeContext` or `RunRequest` by it* - a resume clone's `MarketData` is keyed `resume-link:...`, so the parse fails on the runs this is for.
+- *A props-light read in the graph port* - a port change, for about 1.9 MB a night.
+- *Refuse a run with no lineage with a failed node* - `BarrierHistory` requires its window's two dates, so the node would need an invented window or a contract change, for a case only a hand-built run can produce.
+- *Skip a run reached after its as-of* - the claim on the run's own bars is the honest one, and a re-run for a past session that states the scheduled run's claim again merges into it.
+- *Fix all nine reads in one sprint* - seven are not reached by a fleet run, four of those sit in decision-path agents, and three need a contract field for legs nothing deployed fires.
+
+**Named consequences.** A run reached after its as-of now states its claim under the as-of's date: it merges into the scheduled run's claim for that ticker when the barriers agree, and is refused with a fault when they differ, the first standing (`FORE-IDM-04`, unchanged). A claim stated for an as-of ten or more sessions back can settle on the next run's pass, and the barrier scorecard does not tell it from a forward claim. The provider reads one `ScanRun` (mean 46 KB) and one `MarketData` (mean 1.85 MB, largest 2.78 MB, over 88 live nodes) more for each run that holds a qualifying buy; that the read costs exactly those two nodes on Postgres is assumed, not measured.
+
+**A correction to the tracker.** STATE's *Next* held work-queue 103 part two back *"while the fidelity count runs (each touches a decision path)"*. That was written of the eight reads in five agents before any was measured. The one change this sprint makes is in the provider's barrier history, a side branch only the forecaster's shadow claim reads (`FORE-NEV-02`); no decision path changes, and the spec's scope command says so file by file.
+
+**Prototype (measured, then removed from `../ta-s266`).** On the prototype the same run stores the as-of for the history's end, its newest bar and each claim, with `entry_close` 101.7995, and nothing else in the measurement's output differs. One of 4,646 existing tests breaks (a clock pin that patches a name that moved); with its two lines edited and nine planned tests, the full suite reads 4,655 passed, 8 skipped, 100.00 %. Three end-to-end tests are red on the unchanged code on behaviour. Fourteen planted breaks, fourteen red.
+
+**Not claimed.** Point-in-time replay. A past-dated run on the deployed fleet. Anything about a run whose as-of is today, placed while the session is open (its ingest reads that day's unfinished bar, here and before).
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq103b-2026-10-11/`.
+
 ## DL-286 - a model request that fails in the operator's chat is a fault inside the operator's own boundary, is audited on both capabilities, and is answered with one message that says why - status: MEASURED and DECIDED (planner, 2026-10-10 10:47 AEDT); specced as [S265](sprints/sprint-265-a-failed-chat-request-is-audited-and-says-why.md); work-queue 125; DRIFT-107 and DRIFT-108; MERGED as S265 `0.125.03` (`c32398fc`), F1a and F1b passed at no cost (amendment 1); work-queue 125 closed
 
 🔁 **Amendment 1, 2026-10-11 07:28 AEDT (planner) — built as decided and merged; what the checks showed.** Built by Codex with no amendment to the seven decisions; the five production files are the prototype byte for byte. Merged as `0.125.03` (`c32398fc`, GATE PROVEN). *F1a*, on the merged `main` at no cost: this entry's measurement prints, on both vendors, the message, the linked audits and one fault for each of the 16 failed-request turns, and the eight control turns as before. *F1b*, at no cost, the first time a real vendor's refusal went through the built path: each real adapter on the real SDK with a key that is not a key. Both vendors answered HTTP 401, and on the quick ask and on a typed question the chat showed the lead sentence, the status and the vendor's own message, with the audit written and one fault (40 of 40 checks; 14 of them fail on the code before the merge). *Changed at the merge:* nothing; the clause is as this entry gave it. *Still not produced by a vendor through this path:* a time-out, a dropped connection, an account with no credit (HTTP 400), a rate limit (HTTP 429).

@@ -528,15 +528,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Provider barrier history and window | `agents/provider/laws/laws.md` (whole, LOCKED v1.9) and `test-plan.md` (whole) | `PROV-OUT-08`, `PROV-TRG-04`, `PROV-TRG-05`, `PROV-OUT-09`, `PROV-STA-04` | No: D1-D6 are compatible. Read the as-of before the fetch boundary; missing lineage and broken stored dates remain distinct. These binding rows are green. |
+| Forecaster claim and lineage (read only) | `agents/forecaster/laws/laws.md` (whole, LOCKED v1.10) and `test-plan.md` (whole); `agents/forecaster/settling_bars.py` (whole) | `FORE-IN-07`, `FORE-OUT-07`, `FORE-IDM-04`, `FORE-TRG-01`, `FORE-NEV-02`, `FORE-NEV-04` | No: the claim already uses the history's last bar and stays advisory. No forecaster changes. `FORE-IN-02`, `FORE-IDM-03`, `FORE-OBS-01` remain gray; this sprint does not claim those guarantees. |
+| Payload and resumed lineage (read only) | `contracts/barrier_history.py`; relevant `contracts/provider.py` payload/property declarations; `agents/provider/barrier_history.py` (whole); `orchestration/resume.py` (whole) | `PROV-OUT-08`, `PROV-TRG-05`, `FORE-IN-07` | No: existing required history dates and copied `MarketData.window_end` support the edge walk without a property or contract change. |
+| Governance and recorded decisions | `CLAUDE.md`, `AGENTS.md`, docs indexes; `docs/laws/conventions.md` and `drift-register.md` (whole); DL-287, DL-255, DL-256, DL-241 (including D3/D10/D11), DL-243 (including D3) | conventions sections 2-4, 7, 7a, 9; LAW-02, LAW-06 | No: build DL-287 as written. Older DL-255's barrier deferral is resolved by DL-287. The sprint's explicit exclusions override general tracker, version, and push instructions. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes for the provider's stronger window-end guarantee; no `contracts/` change and no new clause. Owed after implementation: the exact `PROV-OUT-08` insertions, v1.9 to v1.10, changelog, cited row, both rollups, DRIFT-110 CORRECTED; 24 / 67 unchanged. No forecaster law cycle.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** none. `AGENTS.md` still says merge requires instruction while `CLAUDE.md` removes that permission requirement; reported here under its source-of-truth rule. The explicit sprint instruction forbids merging in either case.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** the barrier window end and broken stored-date handling are already recorded as DRIFT-110 and decided in DL-287 D1-D3/D6; no additional silence found.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** none; the amendment re-proves the existing green `PROV-OUT-08`, leaving 24 / 67.
+
+**Pre-code reading gate:** recorded on 2026-10-11 in `C:\Users\yury_\Downloads\project\ta-s266`, branch `sprint-266-a-runs-barrier-history-ends-on-its-as-of`, clean starting HEAD/base `b991d39ef28156d10feef6d2bad9b9dca272be4a` (also local `main` and `origin/main` at reading). `.env` absent. No Python changes preceded this record. `docs/STATE.md`, `docs/work-queue.md`, `docs/design-log.md`, `pyproject.toml`, and `uv.lock` are excluded by the handover.
 
 ---
 

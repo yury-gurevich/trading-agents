@@ -1204,6 +1204,55 @@ CITATION_EXIT=0
 
 ---
 
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s265` at the builder's commit `88def4e5`, not taken from the
+handback. The review began on 2026-10-10 and was finished on 2026-10-11; the commit did not move
+between the two days.
+
+- **Scope.** The checklist's scope command against `main` (`436ca19e`, which has not moved, and
+  `origin/main` equals it) prints nothing, with `docs/design-log.md` added to it: no decision path,
+  no adapter, no contract, no grammar or prompt file, no tracker, no version file. Sixteen Python
+  files changed: three production modules edited, one kernel module added, one surface module
+  edited, eight test files added and three edited. Every changed file is LF.
+- **The code is the measured prototype**, byte for byte: each of the five production files has the
+  blob id the prototype's diff names (129 lines added, 48 removed).
+- **The measurement on the built code.** The planner's end-to-end script (each real adapter on a
+  fake SDK through the chat handler, 24 cases) prints on the built code exactly what it printed on
+  the prototype: for every failed-request case on both vendors the message, the audits and one
+  fault; the eight control cases as on `main`.
+- **Guards.** The planner's 32 breaks, one at a time against the builder's tests, each restored and
+  the tree left clean: **32 went red, none survived, none failed to apply.**
+- **The tests, read.** 21 new functions in five files, 58 cases, each citing its clause. D1 writes
+  the message out and compares what was observed on the two vendors. Every D test sets the
+  provider and deletes the model and effort overrides itself.
+- **The three edited tests, read from git.** E1 keeps its name, asserts the whole message for its
+  error's text and one `CommandAudit` with outcome `refused`. E2 is renamed
+  `test_c5_failed_interpret_says_why_and_writes_linked_audit` and asserts the message, one audit
+  `refused` linked to the row, and still one `TimeoutError` fault, the row `unknown` and
+  `estimated`, no `Intent`. E3 keeps its name and asserts the message, outcome `answer` and one
+  audit `explain`, and still the cut-off row not silent with no fault, the failed row silent and
+  one `TimeoutError` fault. No other existing test changed.
+- **The law cycle.** Operator law book v1.7 to v1.8, `OPR-FAIL-01` as the spec gave it, no clause
+  added, 20 / 51 on both rollup lines, DRIFT-107 and DRIFT-108 CORRECTED. **Each of the 24 tests
+  the three rows cite was resolved by hand** (`OPR-FAIL-01` 14, `OPR-OUT-06` 4, `SRF-FAIL-02` 6):
+  every one is a live function whose docstring names the clause. The law gate does not check each
+  citation, so this is the proof, not the gate.
+- **No change made by the planner on the branch** beyond this block and the version.
+- **Seen and accepted.** The handback's `make ci` stopped at the dependency audit, which needs the
+  network the builder does not have; the planner's Windows run is the proof. The two consequences
+  named in the spec stand: a failed typed question counts as one `command` on the unattended
+  scorecard (D3), and a failed quick ask's outcome word is `answer`.
+- **Version.** PATCH, `0.125.02` to `0.125.03`; `uv lock` changed the version line alone (180
+  packages).
+
+**Written at the merge, before the gate — still owed, none of it proven here:** the planner's
+Windows `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block;
+then F1a (the measurement on the merged `main`) and F1b (each real adapter refused by its vendor
+for a key that is not a key), both at no cost.
+
+---
+
 ## Appendix — the planner's prototype
 
 Measured on `main` at `f3e37421`: with this diff applied, 4,584 of the 4,588 existing tests pass

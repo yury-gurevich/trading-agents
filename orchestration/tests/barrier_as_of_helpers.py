@@ -57,10 +57,16 @@ class PastRunSource(ReboundingDataSource):
 
 
 def past_run() -> tuple[InMemoryGraphStore, ProviderAgent, PastRunSource]:
-    """Place a run three days back; its source can serve three later bars."""
+    """Place a run three days back; its source can serve three later bars.
+
+    The run's bars are dated from ``AS_OF``, not from a second clock read:
+    ``entry_bars`` dates its bars at the call, so with a fixed three-day shift a
+    suite that straddled 00:00 UTC put their newest bar a day after the as-of."""
     graph = InMemoryGraphStore()
+    fixture = entry_bars()
+    shift = max(bar.bar_date for bar in fixture) - AS_OF
     entry = tuple(
-        bar.model_copy(update={"bar_date": bar.bar_date - LAG}) for bar in entry_bars()
+        bar.model_copy(update={"bar_date": bar.bar_date - shift}) for bar in fixture
     )
     source = PastRunSource(
         entry=entry,

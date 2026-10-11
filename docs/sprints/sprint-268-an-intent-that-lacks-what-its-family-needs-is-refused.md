@@ -803,6 +803,60 @@ During the build, `main` and `origin/main` advanced from the base `b8f112af6437e
 
 ---
 
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s268` on the builder's tree, which was handed back uncommitted
+on `b8f112af`; the planner committed it as `e54759bd`. Nothing here is taken from the handback.
+
+- **Scope.** Sixteen files: the four production modules, one test file added and two edited, the
+  fixture, the operator's two law files, the drift register, `.secrets.baseline`, the two version
+  files, this file and its README row. No file in `agents/supervisor`, `surfaces/` or `contracts/`,
+  no design-log entry, no test in `test_failed_request_*.py` or `test_cutoff_*.py`. Every one is LF.
+- **The code is the measured prototype byte for byte.** The four production files and the fixture
+  have the prototype's blob ids (`f53f78f9`, `6a1c1227`, `fe9b066c`, `d4a9a83e`, `69d77d5a`), read
+  by applying the prototype's patch to `b8f112af` in a scratch index.
+- **Guards.** The planner's 19 breaks, one at a time against the builder's tests alone, each
+  restored: **19 went red, none survived, none failed to apply**; the restored tree is green.
+- **The planner's own tests** (35 cases, written for the prototype) were placed beside the
+  builder's and run on the built code: 35 passed. They are not committed.
+- **The tests, read.** Seven functions, 35 cases, each citing `OPR-FAIL-02`. A1 to A5 drive the
+  real `OperatorAgent` on an in-memory graph with a canned reply and assert the outcome, the
+  message, the one `CommandAudit`'s outcome, one `LLMCall` and the count of `Intent`. A6 pins both
+  sentences letter for letter.
+- **The three existing tests.** `test_operator_agent.py` gives the five families their parameters
+  through its `_raw` helper where the prototype added a second helper (197 lines either way);
+  `test_operator_grammar.py` is the prototype's plus a docstring that cites the clause.
+- **The law cycle.** Operator law v1.8 to v1.9; `OPR-FAIL-02` is the spec's text word for word
+  (compared by script, 892 characters); Changelog; DRIFT-109 CORRECTED; 20 / 51 unchanged. **Each
+  of the eight tests the row cites was resolved by hand:** every one is collected and its
+  docstring names the clause.
+- **A miss in the spec, mended by the builder.** The fixture's recipe hash is fingerprinted in
+  `.secrets.baseline`, and the spec named the fixture and not the baseline, so the builder's
+  second `make ci` stopped at detect-secrets. One fingerprint changed and nothing else: it is the
+  SHA-1 of the new hash (`80eaf1c8…`), as the old one was of the old hash (`4cb73d92…`).
+- **Four changes made by the planner on the branch, all in docs.**
+  1. `docs/laws/INDEX.md` and `docs/laws/ledger.md` still read operator v1.8. A gap in the spec,
+     which said the gate would recompute the rollups: the gate checks the counts, not the version
+     label. Both rows now read v1.9 and say what this sprint did.
+  2. The DRIFT-109 row said "The Appendix checks", which means nothing outside this file. It now
+     says "The operator checks".
+  3. One blank line removed from this file: the markdown hook stopped the first commit on it.
+  4. The builder's block in `docs/STATE.md` is not carried. STATE is written at the merge.
+- **Seen and accepted.** The builder's first `make ci` failed on import order in the new test
+  file and its second on detect-secrets; the third passed. The builder planted the twelve breaks
+  the spec lists.
+- **`main` moved during the build:** two docs commits, the tracker trim (`20597d82`) and the S261
+  spec (`28d77906`). They were merged into this branch (`b3618d8f`); the two met in one file,
+  `docs/sprints/README.md`, on neighbouring rows, resolved row by row (every row but this
+  sprint's is `main`'s, byte for byte).
+- **Version.** PATCH, `0.125.05` to `0.125.06`; `uv lock` changed the version line alone.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1a
+(the cases of A1 to A5 through the chat handler, at no cost); then F1b, paid, on the operator's word.
+
+---
+
 ## Appendix — the production diff, measured on the planner's prototype
 
 ```diff

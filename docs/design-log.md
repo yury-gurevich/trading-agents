@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-288 - a tag is proven from any attempt of its build: the reader reads the latest log archive first and then each earlier attempt's - status: MEASURED and DECIDED (planner, 2026-10-11 10:21 AEDT); specced as [S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md); work-queue 115
+## DL-288 - a tag is proven from any attempt of its build: the reader reads the latest log archive first and then each earlier attempt's - status: MEASURED and DECIDED (planner, 2026-10-11 10:21 AEDT); specced as [S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md); work-queue 115; MERGED as S267 `0.125.05` (`475dba3c`), F1 passed at no cost (amendment 1); work-queue 115 closed
 
 **Why.** DL-278 met the defect on 2026-10-08: a build in which one failed job was re-run read `success`, and `scripts/record_deploy.py` refused to record the deploy made from it. The reader's fix was left as work-queue 115, behind a rule in the deploy skill (*never re-run a failed job*). The operator asked for another sprint (2026-10-11) while S266 was being built; this was the next row that could be specced.
 
@@ -43,6 +43,8 @@ and is marked CLOSED here.
 **Not claimed.** A real deploy recorded on the live graph from a build with a re-run job: that waits for the next job that fails.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq115-2026-10-11/`.
+
+🔁 **Amendment 1, 2026-10-11 11:42 AEDT (planner) — built as decided and merged; what the check showed; one gap in the spec's own test plan.** Built by Codex with no amendment to the six decisions; the reader is the prototype in every line of code (the module docstring's `Role:` line alone differs, 114 lines for 115). Merged as `0.125.05` (`475dba3c`, GATE PROVEN). *F1*, on the merged `main`, at no cost and read-only on GitHub: for `s259` and commit `49146e40` the reader returns run `37767377219` after reading its latest archive (25,420 bytes) and then `/attempts/1/logs` (434,794 bytes); `s259a` returns run `37770503860` and `s25` none, as before; `record_verified_deploy` records `s259` on an in-memory graph; 4 of 4, the prototype's output line for line. *The gap:* D5's clause says an archive, a comparison or an attempt count that cannot be read is an error, and the plan's eight tests planted the archive and the count, never the comparison; that limb was covered only by an older test that cites no clause. The planner added a ninth test on the branch (a comparison GitHub refuses, one with no `ahead_by`, one whose `ahead_by` is a boolean: the reader's error, no host in it, no archive read) and broke the comparison five ways against it alone, five red. *Ruled out at the review:* citing the older test in the row instead (it lives in a file at 198 of 200 lines and asserts nothing about what was read). The deploy skill's rule is changed: a failed job may be re-run before the retag. *Still not claimed:* a real deploy recorded on the live graph from a build with a re-run job.
 
 ## DL-287 - a run's barrier history ends on the run's as-of, read through the run's lineage; the other eight wall-clock date reads S249 left stay as they are - status: MEASURED and DECIDED (planner, 2026-10-11 07:52 AEDT); specced as [S266](sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md); work-queue 103 part two; MERGED as S266 `0.125.04` (`b1580076`), F1a and F1b passed at no cost (amendment 1); work-queue 103 closed
 

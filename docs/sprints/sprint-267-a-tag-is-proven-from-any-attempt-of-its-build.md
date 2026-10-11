@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-267-a-tag-is-proven-from-any-attempt-of-its-build`
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — `0.125.05`, fast-forwarded to `475dba3c`, tag `v0.125.05`, GATE PROVEN `475dba3c` (CI, CodeQL, Security Findings); no deploy; F1 passed at no cost
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-288](../design-log.md) (this sprint's six decisions, made and measured) · [DL-278](../design-log.md) (where the defect was met) · [work-queue 115](../work-queue.md) · DRIFT-111
@@ -281,7 +281,9 @@ for**. Most assertions are on that order.
       lines with the gate's count, DRIFT-111 CORRECTED.
 - [x] Every new guard planted, watched to fail, restored, stated per guard.
 - [x] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage; any step the sandbox cannot run named NOT RUN.
+- [x] `make ci` exit 0, 100.00 % coverage; any step the sandbox cannot run named NOT RUN.
+      *(The builder's run stopped at the dependency audit, NOT RUN with no network; the planner's
+      Windows run at `475dba3c` is exit 0, all 15 steps.)*
 
 ---
 
@@ -517,7 +519,7 @@ the archive's second file, after another image, to retain the all-files rule.
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):**
 `C:\Users\yury_\Downloads\project\ta-s267`, branch
@@ -912,6 +914,23 @@ handback.
   gate reads exit 0 on the merged tree.
 - **Version.** PATCH, `0.125.04` to `0.125.05`; `uv lock` changed the version line alone (180
   packages).
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `475dba3c`: all 15 steps,
+4,674 passed, 8 skipped, 100.00 % coverage, and the dependency audit the builder could not run
+found nothing unaccepted (one accepted advisory re-checked). `GATE PROVEN` for `475dba3c`, run from
+`../ta-s267`, the printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`.
+Open CodeQL alerts on the branch: 127, the same alert numbers as on the last merged branch, none at
+error level; the two in the reader's file are import-cycle notes on lines this sprint did not
+change. `main` fast-forwarded to that commit and tagged `v0.125.05`.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1 passed*, 4 of 4, on the merged `main`, from the main checkout, at no cost and read-only on
+GitHub: the repo's reader returns run `37767377219` for `s259` after reading its latest archive
+(25,420 bytes, the re-run job alone) and then its first attempt's (434,794 bytes); `s259a` returns
+run `37770503860` and `s25` none, as before the sprint; `record_verified_deploy` records `s259` on
+an in-memory graph. The output is the prototype's line for line. The deploy skill's line now says
+a failed job may be re-run before the retag. *Not proven:* a real deploy recorded on the live
+graph from a build with a re-run job; that waits for the next job that fails.
 
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1

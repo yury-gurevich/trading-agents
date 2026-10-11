@@ -155,7 +155,18 @@ def _family_llm() -> FakeLLMClient:
 
 
 def _raw(outcome: str, *, family: str = "status", reason: str = "") -> str:
-    payload = {"outcome": outcome, "family": family, "parameters": {}}
+    parameters = {
+        "reject": {"target": "flag:case-1"},
+        "modify": {"name": "limit", "value": "0"},
+        "mode": {"mode": "paper"},
+        "stage": {"stage": "paper"},
+        "resume": {"stage": "analyst"},
+    }
+    payload = {
+        "outcome": outcome,
+        "family": family,
+        "parameters": parameters.get(family, {}),
+    }
     if reason:
         payload["reason"] = reason
     return json.dumps(payload)

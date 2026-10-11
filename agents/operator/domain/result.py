@@ -11,7 +11,11 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Literal
 
-from agents.operator.domain.grammar import apply_confirmation_policy
+from agents.operator.domain.grammar import (
+    INTENT_FAMILIES,
+    apply_confirmation_policy,
+    missing_parameters,
+)
 from contracts.common import Explanation, Provenance
 from contracts.operator import CommandResult, TypedIntent
 from kernel.llm_error_text import vendor_status_error
@@ -30,6 +34,33 @@ CUT_OFF_REPLY = (
 FAILED_REQUEST_REPLY = (
     "The request to the language model failed, so there is no answer."
 )
+
+
+UNKNOWN_FAMILY_REPLY = (
+    "The model's reply named no command this system has, so nothing was done."
+)
+
+
+def missing_parameters_reply(family: str, missing: tuple[str, ...]) -> str:
+    """Say which parameters a command of this family was given without."""
+    return (
+        f"A {family} command needs its {' and '.join(missing)}, and the model's "
+        "reply gave none, so nothing was done. Say it again and name it."
+    )
+
+
+def checked_intent(data: dict[str, object]) -> dict[str, object]:
+    """Read an intent of no known family, or lacking what it needs, as a refusal."""
+    if outcome(data) != "intent":
+        return data
+    family = data.get("family")
+    if not isinstance(family, str) or family not in INTENT_FAMILIES:
+        return {"outcome": "refused", "reason": UNKNOWN_FAMILY_REPLY}
+    missing = missing_parameters(family, _params(data.get("parameters", {})))
+    if missing:
+        reason = missing_parameters_reply(family, missing)
+        return {"outcome": "refused", "reason": reason}
+    return data
 
 
 def failed_request_reply(fault: AgentFault) -> str:
@@ -68,20 +99,15 @@ def outcome(data: dict[str, object]) -> Outcome:
     return "refused"
 
 
-def intent_from_data(
-    data: dict[str, object], correlation_id: str
-) -> TypedIntent | None:
-    """Build a TypedIntent and apply grammar-owned confirmation policy."""
-    try:
-        intent = TypedIntent(
-            family=str(data.get("family", "status")),  # type: ignore[arg-type]
-            parameters=_params(data.get("parameters", {})),
-            requires_confirmation=False,
-            provenance=Provenance(run_id=correlation_id, source_agent="operator"),
-        )
-        return apply_confirmation_policy(intent.family, intent)
-    except ValueError:
-        return None
+def intent_from_data(data: dict[str, object], correlation_id: str) -> TypedIntent:
+    """Build a TypedIntent from checked data; the grammar owns the confirmation."""
+    intent = TypedIntent(
+        family=data["family"],  # type: ignore[arg-type]
+        parameters=_params(data.get("parameters", {})),
+        requires_confirmation=False,
+        provenance=Provenance(run_id=correlation_id, source_agent="operator"),
+    )
+    return apply_confirmation_policy(intent.family, intent)
 
 
 def message(data: dict[str, object]) -> Explanation:

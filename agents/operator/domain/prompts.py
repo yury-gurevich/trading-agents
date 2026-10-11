@@ -34,7 +34,9 @@ INTENT_TOOL_SCHEMA: dict[str, object] = {
 def build_interpret_system() -> str:
     """Build the bounded command-interpretation system prompt."""
     families = ", ".join(
-        f"{name}: {spec.description}" for name, spec in INTENT_FAMILIES.items()
+        f"{name}: {spec.description}"
+        + (f" (parameters: {', '.join(spec.params)})" if spec.params else "")
+        for name, spec in INTENT_FAMILIES.items()
     )
     return (
         "Map the operator command to exactly one allowed trading-system intent, "
@@ -43,7 +45,10 @@ def build_interpret_system() -> str:
         "health. Commands that say approve <subject-ref> or ask to confirm "
         "approval for a subject are approve intents with that exact target; "
         "never classify them as status. "
-        f"Allowed families: {families}."
+        f"Allowed families: {families}. "
+        "Give each parameter in `parameters` under exactly the name listed. If the "
+        "command does not say one the intent cannot do without, ask for "
+        "clarification; never guess it."
     )
 
 

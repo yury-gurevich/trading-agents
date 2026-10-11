@@ -20,6 +20,7 @@ from agents.operator.domain.prompts import (
 )
 from agents.operator.domain.result import (
     CUT_OFF_REPLY,
+    checked_intent,
     failed_request,
     failed_request_reply,
     intent_from_data,
@@ -148,7 +149,9 @@ class OperatorAgent(AgentBase):
         if fault is not None:
             data = failed_request(fault)
         else:
-            data = normalize_explicit_intent(command.text, parse_json(raw))
+            data = checked_intent(
+                normalize_explicit_intent(command.text, parse_json(raw))
+            )
         parsed_outcome = outcome(data)
         audit = write_command_audit(
             self._graph,
@@ -162,8 +165,6 @@ class OperatorAgent(AgentBase):
         if parsed_outcome != "intent":
             return CommandResult(outcome=parsed_outcome, message=message(data))
         intent = intent_from_data(data, corr)
-        if intent is None:
-            return CommandResult(outcome="refused", message=message(data))
         node = write_intent(
             self._graph, correlation_id=corr, audit_node=audit, intent=intent
         )

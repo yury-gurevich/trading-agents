@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -117,8 +117,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the error's text is written to no graph record. Its letters are pinned by tests, not quoted here.
   A model reply that is not valid JSON is not a fault: it is the explained refusal of `OPR-OUT-05`.
   A graph write that fails is `OPR-FAIL-03`'s.
-- **OPR-FAIL-02** — LLM returns unrecognised intent family or missing required fields: `parse_json`
-  returns `None`; result is `outcome="refused"`.
+- **OPR-FAIL-02** — A reply whose outcome is `intent` is checked before anything is written
+  for it. It is refused when its family is absent, is not a string or is not one of the
+  grammar's families, and when it lacks a parameter the grammar marks required for its family.
+  A required parameter is given when any of its accepted names holds a value that is not blank.
+  `interpret` then returns `CommandResult(outcome="refused", ...)` with a message that says so
+  (for a missing parameter it names the family and each missing parameter by its first accepted
+  name), the `CommandAudit` reads `refused` and no `Intent` is written. The check runs after
+  the explicit command grammar, so a typed approve is not refused for the model's omission. A
+  reply whose outcome is not `intent` is not checked. The system prompt states each family's
+  parameter names. The sentences are pinned by tests, not quoted here.
 - **OPR-FAIL-03** — Graph write failure (CommandAudit / LLMCall node): fault recorded; the
   `CommandResult` is still returned.
 - **OPR-FAIL-04** — A reply the vendor cut off at the output cap is neither a fault nor an
@@ -222,6 +230,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.9 — S268 / DL-290 (2026-10-11): rewords OPR-FAIL-02
 
 - v1.8 — S265 / DL-286 (2026-10-10): rewords `OPR-FAIL-01` for request
   failures on both capabilities and every vendor: one operator fault, a linked

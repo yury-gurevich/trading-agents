@@ -11,6 +11,8 @@ from agents.operator.domain.evidence import _RUN_CHAIN, _compact, gather_evidenc
 from agents.operator.domain.grammar import INTENT_FAMILIES, apply_confirmation_policy
 from agents.operator.domain.prompts import build_interpret_system
 from agents.operator.domain.result import (
+    UNKNOWN_FAMILY_REPLY,
+    checked_intent,
     correlation_id,
     intent_from_data,
     message,
@@ -57,12 +59,16 @@ def test_confirmation_policy_overrides_model_value_for_each_family() -> None:
 
 
 def test_result_helpers_normalize_invalid_or_refused_output() -> None:
+    """OPR-FAIL-02: unknown intent families are checked as an explained refusal."""
     assert parse_json("not-json")["outcome"] == "refused"
     assert parse_json("[]")["outcome"] == "refused"
     assert outcome({"outcome": "bogus"}) == "refused"
     assert message({"reason": "no"}).summary == "no"
     assert refused("blocked").message.summary == "blocked"
-    assert intent_from_data({"family": "not-real"}, "corr") is None
+    assert checked_intent({"outcome": "intent", "family": "not-real"}) == {
+        "outcome": "refused",
+        "reason": UNKNOWN_FAMILY_REPLY,
+    }
     assert intent_from_data({"family": "status", "parameters": "bad"}, "corr")
 
 

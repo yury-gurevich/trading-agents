@@ -22,22 +22,36 @@ class FamilySpec:
     description: str
     params: tuple[str, ...]
     requires_confirmation: bool
+    #: Each parameter the family cannot do without, as the names its readers take.
+    required: tuple[tuple[str, ...], ...] = ()
 
 
 INTENT_FAMILIES: dict[IntentFamily, FamilySpec] = {
     "status": FamilySpec("read system status", (), False),
     "explain": FamilySpec("explain a decision or artifact", ("subject",), False),
-    "approve": FamilySpec("approve a pending item", ("target",), True),
-    "reject": FamilySpec("reject a pending item", ("target",), True),
-    "modify": FamilySpec("change a parameter", ("name", "value"), True),
+    "approve": FamilySpec(
+        "approve a pending item", ("target",), True, (("target", "subject"),)
+    ),
+    "reject": FamilySpec(
+        "reject a pending item", ("target",), True, (("target", "subject"),)
+    ),
+    "modify": FamilySpec(
+        "change a parameter", ("name", "value"), True, (("name",), ("value",))
+    ),
     "run": FamilySpec("start a trading run", ("stage",), True),
-    "mode": FamilySpec("switch operating mode", ("mode",), True),
-    "stage": FamilySpec("promote or demote execution stage", ("stage",), True),
+    "mode": FamilySpec("switch operating mode", ("mode",), True, (("mode",),)),
+    "stage": FamilySpec(
+        "promote or demote execution stage",
+        ("stage",),
+        True,
+        (("stage", "target"),),
+    ),
     "pause": FamilySpec("pause scheduling", (), False),
     "resume": FamilySpec(
         "resume a selected run from one pipeline stage",
         ("run_id", "stage"),
         True,
+        (("stage", "from_stage"),),
     ),
 }
 
@@ -66,6 +80,17 @@ def normalize_explicit_intent(
         "family": "approve",
         "parameters": {**existing, "target": target},
     }
+
+
+def missing_parameters(
+    family: IntentFamily, parameters: dict[str, str]
+) -> tuple[str, ...]:
+    """Name each required parameter that none of its accepted names gives."""
+    return tuple(
+        names[0]
+        for names in INTENT_FAMILIES[family].required
+        if not any(parameters.get(name, "").strip() for name in names)
+    )
 
 
 def apply_confirmation_policy(family: IntentFamily, intent: TypedIntent) -> TypedIntent:

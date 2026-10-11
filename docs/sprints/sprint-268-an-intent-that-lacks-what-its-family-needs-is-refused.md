@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** MERGED 2026-10-11 — `0.125.06`, fast-forwarded to `e9f4f4a8`, tag `v0.125.06`, GATE PROVEN `e9f4f4a8` (CI, CodeQL, Security Findings); no deploy; F1a passed at no cost; F1b passed on OpenAI ($0.04), not run on Anthropic
+**Version:** `0.125.06` (PATCH)
 **Effort:** S
 **Decisions:** [DL-290](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-286](../design-log.md) (where the defect was met) · [work-queue 126](../work-queue.md) · DRIFT-109
 
@@ -224,15 +224,16 @@ Existing tests to edit, and no other:
 
 ## Success factors
 
-- [ ] Every row of the Test plan is a passing test that cites `OPR-FAIL-02`.
-- [ ] The production diff equals the Appendix (`git diff main -- agents/operator/agent.py agents/operator/domain`).
-- [ ] No test in `test_failed_request_*.py` or `test_cutoff_*.py` changed.
-- [ ] Exactly the three existing tests named above changed.
-- [ ] The operator recipe hash equals the Measured table's, or the difference is explained.
-- [ ] Law cycle done: clause text as given, v1.9, Changelog, test-plan row, DRIFT-109 corrected.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] Every row of the Test plan is a passing test that cites `OPR-FAIL-02`.
+- [x] The production diff equals the Appendix (`git diff main -- agents/operator/agent.py agents/operator/domain`).
+      *(As handed back. The planner then changed one word of the refusal sentence: see the review.)*
+- [x] No test in `test_failed_request_*.py` or `test_cutoff_*.py` changed.
+- [x] Exactly the three existing tests named above changed.
+- [x] The operator recipe hash equals the Measured table's, or the difference is explained.
+- [x] Law cycle done: clause text as given, v1.9, Changelog, test-plan row, DRIFT-109 corrected.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -338,15 +339,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| `domain/grammar.py` | `agents/operator/laws/laws.md` v1.8 and `test-plan.md`, whole | `OPR-FAIL-02`, `OPR-OUT-07`, `OPR-NEV-01`, `OPR-NEV-02` | No redesign: apply the Appendix; accepted names follow DL-290 and confirmation policy stays grammar-owned. |
+| `domain/result.py`, `agent.py` | Same operator laws and test-plan, whole | `OPR-FAIL-02`, `OPR-OUT-05`, `OPR-OUT-06`, `OPR-FAIL-01`, `OPR-FAIL-04` | Check only an intent, after explicit grammar and before audit; failed-request and cut-off guarantees remain binding. |
+| `domain/prompts.py` | Same operator laws and test-plan, whole | `OPR-IN-01`, `OPR-STA-03`, `OPR-NEV-05` | State parameter names in the prompt; keep `INTENT_TOOL_SCHEMA` unchanged; compute the recipe from LF bytes. |
+| New tests and the three named existing tests | Same operator laws and test-plan, whole; `docs/laws/conventions.md`, whole; `docs/laws/drift-register.md` DRIFT-109 | `OPR-FAIL-02`; conventions sections 2, 3, 4, 7, 7a | Every planned test cites the clause; red proof precedes implementation; guards are planted one at a time. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. No contract file changes and no clause is added. The authorized amendment rewords `OPR-FAIL-02`, bumps the operator law to v1.9 with the given Changelog line, expands its existing green test-plan row and marks DRIFT-109 corrected (S268 / DL-290). Rollup counts are left to `make ci`.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** None beyond the stale `OPR-FAIL-02` parsing description explicitly identified by DRIFT-109 and authorized for correction here. Its intended refusal agrees with this spec. Repository workflow discrepancy: AGENTS.md requires merge permission while CLAUDE.md retires it; this build follows the user's stricter instruction to stay in this worktree and never work on main.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** The required families, aliases and blank-value rule were not enumerated by v1.8. DL-290 and the Appendix already decide them; no new decision or design-log entry is needed.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Clauses that were ⬜ and are now proven:** None. `OPR-FAIL-02` was already green; its amended guarantee is re-proven by all 35 planned cases. The law-coverage gate accepted the unchanged operator rollup of 20 / 51 in both ledger and INDEX.
 
 ---
 
@@ -354,41 +358,534 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *to be filled by the builder* | | | | |
+| A1 | `test_a1_missing_required_parameter_is_refused` | `agents/operator/tests/test_required_parameters.py` | PASS (11 cases) | `OPR-FAIL-02` |
+| A2 | `test_a2_complete_family_parameters_are_passed_on` | `agents/operator/tests/test_required_parameters.py` | PASS (14 cases) | `OPR-FAIL-02` |
+| A3 | `test_a3_unknown_family_is_refused` | `agents/operator/tests/test_required_parameters.py` | PASS (5 cases) | `OPR-FAIL-02` |
+| A4 | `test_a4_non_intent_reply_is_not_checked` | `agents/operator/tests/test_required_parameters.py` | PASS (2 cases) | `OPR-FAIL-02` |
+| A5 | `test_a5_explicit_approve_supplies_target_before_check` | `agents/operator/tests/test_required_parameters.py` | PASS (1 case) | `OPR-FAIL-02` |
+| A6 | `test_a6_missing_names_and_refusal_sentences_are_pinned` | `agents/operator/tests/test_required_parameters.py` | PASS (1 case) | `OPR-FAIL-02` |
+| A7 | `test_a7_grammar_requirements_and_prompt_parameters_are_declared` | `agents/operator/tests/test_required_parameters.py` | PASS (1 case) | `OPR-FAIL-02` |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** None. Seven test functions, 35 parametrized cases, exactly A1–A7.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to be filled by the builder*
+**Status:** MERGED
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s268`, branch `sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused`, base HEAD `b8f112af6437eb87f725fc9019371b03f3d19292`. `.env` present: False. All proofs used this worktree; no main worktree edit. Changes remain uncommitted; version and lock are staged.
 
-**Result:** *to be filled by the builder*
+**Result:** A model intent without a known family or a required nonblank parameter is refused before its command audit and intent write; the audit reads `refused` and no `Intent` is written. Accepted aliases, optional fields, non-intents and explicit approve behave as specified. Proven: all 35 planned cases, 143 operator tests, twelve red/restored breaks, and full `make ci` exit 0 (4709 passed, 8 skipped, 2470 warnings in 661.53s (0:11:01), 100.00 % coverage). Production bytes equal the Appendix; recipe `43df2c61922b478cb4dc0c505fb9f104f6b3d07d2a65093fd8dd5af72b621392` matches the measured LF tree.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:**
 
-**Proof — the red run first:** *to be filled by the builder*
+- `agents/operator/agent.py`
+- `agents/operator/domain/grammar.py`
+- `agents/operator/domain/prompts.py`
+- `agents/operator/domain/result.py`
+- `agents/operator/tests/test_required_parameters.py`
+- `agents/operator/tests/test_operator_agent.py`
+- `agents/operator/tests/test_operator_grammar.py`
+- `tests/fixtures/guided_turn_main_records.json`
+- `agents/operator/laws/laws.md`
+- `agents/operator/laws/test-plan.md`
+- `.secrets.baseline`
+- `docs/laws/drift-register.md`
+- `docs/sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md`
+- `docs/sprints/README.md`
+- `docs/STATE.md`
+- `pyproject.toml`
+- `uv.lock`
 
-**Proof — the green run:** *to be filled by the builder*
+`docs/STATE.md` records the intent and proven result required by CLAUDE.md; no design-log entry was added. Independent scope/Appendix measurement output:
 
-**Guards planted:** *to be filled by the builder*
+```text
+Appendix applies to main snapshot: exit 0
+Appendix byte equality: agents/operator/agent.py
+Appendix byte equality: agents/operator/domain/grammar.py
+Appendix byte equality: agents/operator/domain/prompts.py
+Appendix byte equality: agents/operator/domain/result.py
+INTENT_TOOL_SCHEMA AST unchanged
+Exactly three named existing test/fixture files changed
+Every other existing test function AST unchanged
+Fixture changed only operator_prompt_recipe_hash
+Supervisor, surfaces, contracts, design-log, failed-request and cut-off test files unchanged
+.env present: False
+Module lines: agents/operator/agent.py = 175
+Module lines: agents/operator/domain/grammar.py = 109
+Module lines: agents/operator/domain/prompts.py = 73
+Module lines: agents/operator/domain/result.py = 149
+Module lines: agents/operator/tests/test_operator_agent.py = 197
+Module lines: agents/operator/tests/test_operator_grammar.py = 141
+Module lines: agents/operator/tests/test_required_parameters.py = 193
+New test file contains no noqa
+```
 
-**Module line counts:** *to be filled by the builder*
+**Proof — the red run first:** `git diff --exit-code -- agents/operator/agent.py agents/operator/domain/grammar.py agents/operator/domain/result.py agents/operator/domain/prompts.py` exit 0 before the run (unchanged production). `uv run --frozen pytest agents/operator/tests/test_required_parameters.py --no-cov`, exit 1. Output pasted in full:
 
-**`make ci`:** *to be filled by the builder*
+```text
+============================= test session starts =============================
+collected 35 items
 
-**`make gate-ran`:** owed by the planner if the sandbox has no network.
+agents\operator\tests\test_required_parameters.py FFFFFFFFFFF........... [ 62%]
+...FFFFF...FF                                                            [100%]
 
-**Not met / verified failing:** *to be filled by the builder*
+================================== FAILURES ===================================
+_ test_a1_missing_required_parameter_is_refused[approve-parameters0-missing0] _
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[reject-parameters1-missing1] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[modify-parameters2-missing2] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[modify-parameters3-missing3] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[modify-parameters4-missing4] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__ test_a1_missing_required_parameter_is_refused[mode-parameters5-missing5] ___
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__ test_a1_missing_required_parameter_is_refused[stage-parameters6-missing6] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[resume-parameters7-missing7] __
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[approve-parameters8-missing8] _
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[approve-not an object-missing9] _
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_a1_missing_required_parameter_is_refused[stage-parameters10-missing10] _
+agents\operator\tests\test_required_parameters.py:49: in test_a1_missing_required_parameter_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__________________ test_a3_unknown_family_is_refused[data0] ___________________
+agents\operator\tests\test_required_parameters.py:105: in test_a3_unknown_family_is_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__________________ test_a3_unknown_family_is_refused[data1] ___________________
+agents\operator\tests\test_required_parameters.py:107: in test_a3_unknown_family_is_refused
+    _audit(graph, "refused")
+agents\operator\tests\test_required_parameters.py:191: in _audit
+    assert audit.props["outcome"] == outcome
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__________________ test_a3_unknown_family_is_refused[data2] ___________________
+agents\operator\tests\test_required_parameters.py:107: in test_a3_unknown_family_is_refused
+    _audit(graph, "refused")
+agents\operator\tests\test_required_parameters.py:191: in _audit
+    assert audit.props["outcome"] == outcome
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__________________ test_a3_unknown_family_is_refused[data3] ___________________
+agents\operator\tests\test_required_parameters.py:107: in test_a3_unknown_family_is_refused
+    _audit(graph, "refused")
+agents\operator\tests\test_required_parameters.py:191: in _audit
+    assert audit.props["outcome"] == outcome
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__________________ test_a3_unknown_family_is_refused[data4] ___________________
+agents\operator\tests\test_required_parameters.py:107: in test_a3_unknown_family_is_refused
+    _audit(graph, "refused")
+agents\operator\tests\test_required_parameters.py:191: in _audit
+    assert audit.props["outcome"] == outcome
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+___________ test_a6_missing_names_and_refusal_sentences_are_pinned ____________
+agents\operator\tests\test_required_parameters.py:141: in test_a6_missing_names_and_refusal_sentences_are_pinned
+    assert grammar.missing_parameters("modify", {}) == ("name", "value")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agents.operator.domain.grammar' has no attribute 'missing_parameters'
+_______ test_a7_grammar_requirements_and_prompt_parameters_are_declared _______
+agents\operator\tests\test_required_parameters.py:159: in test_a7_grammar_requirements_and_prompt_parameters_are_declared
+    name for name, spec in grammar.INTENT_FAMILIES.items() if spec.required
+                                                              ^^^^^^^^^^^^^
+E   AttributeError: 'FamilySpec' object has no attribute 'required'
+=========================== short test summary info ===========================
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters0-missing0]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[reject-parameters1-missing1]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[modify-parameters2-missing2]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[modify-parameters3-missing3]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[modify-parameters4-missing4]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[mode-parameters5-missing5]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[stage-parameters6-missing6]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[resume-parameters7-missing7]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters8-missing8]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-not an object-missing9]
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[stage-parameters10-missing10]
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data0]
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data1]
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data2]
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data3]
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data4]
+FAILED agents/operator/tests/test_required_parameters.py::test_a6_missing_names_and_refusal_sentences_are_pinned
+FAILED agents/operator/tests/test_required_parameters.py::test_a7_grammar_requirements_and_prompt_parameters_are_declared
+======================== 18 failed, 17 passed in 3.18s ========================
+```
+
+**Proof — the green run:** `uv run --frozen pytest agents/operator --no-cov` before the guards: exit 0, `143 passed in 1.61s`. The guard script's final identical command after restoring all source bytes: exit 0; full output follows.
+
+```text
+============================= test session starts =============================
+collected 143 items
+
+agents\operator\tests\test_cutoff_adapter.py .........                   [  6%]
+agents\operator\tests\test_cutoff_agent.py ..........                    [ 13%]
+agents\operator\tests\test_cutoff_ledger.py .....                        [ 16%]
+agents\operator\tests\test_failed_request_agent.py ...                   [ 18%]
+agents\operator\tests\test_failed_request_faults.py .......              [ 23%]
+agents\operator\tests\test_failed_request_ledger.py .....                [ 27%]
+agents\operator\tests\test_failed_request_result.py .................... [ 41%]
+..                                                                       [ 42%]
+agents\operator\tests\test_operator_agent.py ......                      [ 46%]
+agents\operator\tests\test_operator_approve_routing.py ......            [ 51%]
+agents\operator\tests\test_operator_boundary.py ..                       [ 52%]
+agents\operator\tests\test_operator_entrypoint.py .                      [ 53%]
+agents\operator\tests\test_operator_evidence_flags.py ..                 [ 54%]
+agents\operator\tests\test_operator_grammar.py .......                   [ 59%]
+agents\operator\tests\test_operator_llm.py ........                      [ 65%]
+agents\operator\tests\test_operator_llm_usage.py ....                    [ 67%]
+agents\operator\tests\test_operator_settings.py ........                 [ 73%]
+agents\operator\tests\test_operator_store.py .                           [ 74%]
+agents\operator\tests\test_provider_model.py ..                          [ 75%]
+agents\operator\tests\test_required_parameters.py ...................... [ 90%]
+.............                                                            [100%]
+
+============================= 143 passed in 1.82s =============================
+```
+
+**Guards planted:** All twelve listed under Traps, one at a time, running `python -m pytest agents/operator --no-cov` for each. Every process exited 1 and failed a planned test; each source restoration was asserted equal to its saved bytes before the next break. No full-suite recipe test counted as a guard. Pasted failure lines and final pytest lines per guard:
+
+```text
+G01 — check not applied — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters0-missing0]
+======================= 16 failed, 127 passed in 2.05s ========================
+G02 — non-intent replies checked too — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a4_non_intent_reply_is_not_checked[refused]
+======================== 4 failed, 139 passed in 1.69s ========================
+G03 — unknown family uses model reason — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a3_unknown_family_is_refused[data1]
+======================== 1 failed, 142 passed in 2.35s ========================
+G04 — missing parameter not refused — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters0-missing0]
+======================= 11 failed, 132 passed in 1.99s ========================
+G05 — last accepted name reported — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters0-missing0]
+======================== 8 failed, 135 passed in 1.82s ========================
+G06 — blank value counted as given — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[approve-parameters8-missing8]
+======================== 2 failed, 141 passed in 1.67s ========================
+G07 — only first accepted name read — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a2_complete_family_parameters_are_passed_on[approve-parameters6]
+======================== 6 failed, 137 passed in 1.95s ========================
+G08 — resume requires nothing — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a1_missing_required_parameter_is_refused[resume-parameters7-missing7]
+======================== 3 failed, 140 passed in 1.65s ========================
+G09 — run requires a stage — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a2_complete_family_parameters_are_passed_on[run-parameters3]
+======================== 5 failed, 138 passed in 1.69s ========================
+G10 — explain requires a subject — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a2_complete_family_parameters_are_passed_on[explain-parameters2]
+======================== 3 failed, 140 passed in 1.63s ========================
+G11 — prompt omits parameter lists — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a7_grammar_requirements_and_prompt_parameters_are_declared
+======================== 1 failed, 142 passed in 1.60s ========================
+G12 — prompt omits clarification sentence — exit 1; restored exact bytes
+FAILED agents/operator/tests/test_required_parameters.py::test_a7_grammar_requirements_and_prompt_parameters_are_declared
+======================== 1 failed, 142 passed in 1.66s ========================
+```
+
+**Module line counts:** Every touched Python module is below 200; the gate also passed the repository size check.
+
+```text
+agents/operator/agent.py = 175
+agents/operator/domain/grammar.py = 109
+agents/operator/domain/prompts.py = 73
+agents/operator/domain/result.py = 149
+agents/operator/tests/test_operator_agent.py = 197
+agents/operator/tests/test_operator_grammar.py = 141
+agents/operator/tests/test_required_parameters.py = 193
+```
+
+**`make ci`:** `make ci > $ciLog 2>&1`, where `$ciLog` is `C:/Users/yury_/AppData/Local/Temp/ta-s268-evidence/make-ci.txt`; the captured `$LASTEXITCODE` was **0**. The whole file was read; all 15 commands ran, including dependency audit, detect-secrets and untracked-secrets. Verbatim output from every command is pasted below; only unchanged repository module warnings, old sprint rows, test progress, warning details and individual coverage rows are omitted. The complete redirected file was read. The first attempt was verified failing on new-test import ordering (`I001`), corrected by `ruff check agents/operator/tests/test_required_parameters.py --fix`. The second complete attempt was verified failing at detect-secrets on the changed public recipe digest in the fixture. Only that existing baseline entry's fingerprint was updated and staged after verifying the source-derived value; the targeted fixture secret check then passed. This final complete rerun passed. `uv lock` succeeded (`Resolved 180 packages`, `Updated trading-agents v0.125.5 -> v0.125.6`); only the root package version changed, and `pyproject.toml` / `uv.lock` are staged.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1670 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 1195 source files
+uv run lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 649 files, 2223 dependencies.
+--------------------------------------
+
+Agents may not import one another (talk only via messages) KEPT
+Substrate imports no pack module KEPT
+Agents may not reach into surfaces or orchestration KEPT
+Kernel is pure plumbing — no domain, no contracts, no agents KEPT
+Contracts declare schemas only — never import agents or runtime layers KEPT
+
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+[WARN] agents/operator/agent.py: 175 lines (warn 150, hard block 200)
+[WARN] agents/operator/tests/test_cutoff_agent.py: 157 lines (warn 150, hard block 200)
+[WARN] agents/operator/tests/test_operator_agent.py: 197 lines (warn 150, hard block 200)
+[WARN] agents/operator/tests/test_required_parameters.py: 193 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+uv run python scripts/check_sprint_status.py
+docs/sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md: SPEC | **Status:** SPEC
+docs_seen=272 SPEC=11 BUILT=0 MERGED=261 UNMAPPED=0 MISSING=0
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+collected 4717 items
+TOTAL                                                           20264      0   4296      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4709 passed, 8 skipped, 2470 warnings in 661.53s (0:11:01) ==========
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 1 new file(s)
+```
+
+The second CI attempt's verified failure, and the scoped false-positive correction (the production Appendix and fixture value were kept exact):
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Failed
+- hook id: detect-secrets
+- exit code: 1
+
+ERROR: Potential secrets about to be committed to git repo!
+
+Secret Type: Hex High Entropy String
+Location:    tests\fixtures\guided_turn_main_records.json:5
+
+Possible mitigations:
+  - For information about putting your secrets in a safer place, please ask in
+    #security
+  - Mark false positives with an inline `pragma: allowlist secret` comment
+
+If a secret has already been committed, visit
+https://help.github.com/articles/removing-sensitive-data-from-a-repository
+
+make: *** [Makefile:60: ci] Error 1
+```
+
+```text
+Reviewed source recipe digest (not a credential): 43df2c61922b478cb4dc0c505fb9f104f6b3d07d2a65093fd8dd5af72b621392
+Existing fixture line-5 baseline fingerprint only: 4cb73d92b065f4985b287281bc1229d94aa53420 -> 80eaf1c833db840d12230d6a84d32e5a1c238208
+All plugin settings, review flags and other baseline entries unchanged.
+```
+
+**`make gate-ran`:** not done for Sprint 268. The build is uncommitted and unpushed; running it against the base HEAD would prove the base, not these changes. The planner owes exact-commit remote proof before merge, as in the sequencing section.
+
+**Not met / verified failing:** No sprint build success factor remains unmet. Commit/push, remote gates, planner re-measure and CodeQL set-diff, merge, F1a chat-handler proof and paid F1b vendor proof: not done. Deploy: not done and none is required by this sprint. The initial CI import-order failure and the recipe-digest false positive were corrected; the final full rerun passed. Model names returned by real vendors and the unattended scorecard's treatment remain not measured; the build makes no claim about either.
 
 ---
 
 ## Return notes
 
-*to be filled by the builder*
+Built as specified on the named branch, PATCH `0.125.06`; version and lock staged. The Appendix applied cleanly and the separate main-snapshot application produced identical bytes for all four production files.
+
+Only the three named existing test/fixture files changed; all other existing test function bodies are unchanged. Failed-request and cut-off files, `INTENT_TOOL_SCHEMA`, supervisor, surfaces, contracts and design-log are unchanged. No new law clause or `noqa`. The largest touched module is 197 lines. One extra gate artifact changed: `.secrets.baseline` replaces only the fixture recipe digest's existing reviewed false-positive fingerprint. The plugin settings, review flags and every other entry were preserved; the staged baseline passed the targeted fixture check before the final full gate.
+
+The authorized v1.9 clause text, Changelog, seven test-plan citations and DRIFT-109 correction are complete. Both rollup counts remain 20 / 51, accepted by `make ci`. `docs/STATE.md` records the required session evidence.
+
+No real model, broker or deployed fleet was called for the behavior proofs; dependency resolution and audit ran as the gate requires. F1a/F1b and the other planner steps are not done. The next handoff is the planner's independent re-measure and proof of the exact eventual commit; no main work or deployment was performed. The actual skipped tests and their reasons are pasted above; the prototype count is historical, and the measured Windows count in this handback is the build result.
+
+Final handback checks, after the BUILT status changes, all passed:
+
+```text
+docs/sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md: BUILT | **Status:** BUILT
+docs_seen=272 SPEC=10 BUILT=1 MERGED=261 UNMAPPED=0 MISSING=0
+Post-handback sprint status exit: 0
+Post-handback law coverage exit: 0
+Post-handback Markdown links exit: 0
+Detect secrets...........................................................Passed
+Post-handback detect-secrets exit: 0
+```
+
+During the build, `main` and `origin/main` advanced from the base `b8f112af6437eb87f725fc9019371b03f3d19292` to `28d77906cc347cee0f8970cc4dbb67c2190c92d3` with documentation-only changes. The four production files, version files and baseline are unchanged between those commits. Owned changes are checked against this worktree's unchanged base HEAD; no main checkout, rebase or merge was performed. The planner must preserve the newer documentation when integrating. Pasted logs trim trailing whitespace only; the production Appendix bytes are unchanged.
+
+---
+
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s268` on the builder's tree, which was handed back uncommitted
+on `b8f112af`; the planner committed it as `e54759bd`. Nothing here is taken from the handback.
+
+- **Scope.** Sixteen files: the four production modules, one test file added and two edited, the
+  fixture, the operator's two law files, the drift register, `.secrets.baseline`, the two version
+  files, this file and its README row. No file in `agents/supervisor`, `surfaces/` or `contracts/`,
+  no design-log entry, no test in `test_failed_request_*.py` or `test_cutoff_*.py`. Every one is LF.
+- **As handed back, the code was the measured prototype byte for byte.** The four production
+  files and the fixture had the prototype's blob ids (`f53f78f9`, `6a1c1227`, `fe9b066c`,
+  `d4a9a83e`, `69d77d5a`), read by applying the prototype's patch to `b8f112af` in a scratch
+  index. One word of one of them was then changed by the planner (below).
+- **Guards.** The planner's 19 breaks, one at a time against the builder's tests alone, each
+  restored: **19 went red, none survived, none failed to apply**; the restored tree is green.
+- **The planner's own tests** (35 cases, written for the prototype) were placed beside the
+  builder's and run on the built code: 35 passed. They are not committed.
+- **The tests, read.** Seven functions, 35 cases, each citing `OPR-FAIL-02`. A1 to A5 drive the
+  real `OperatorAgent` on an in-memory graph with a canned reply and assert the outcome, the
+  message, the one `CommandAudit`'s outcome, one `LLMCall` and the count of `Intent`. A6 pins both
+  sentences letter for letter.
+- **The three existing tests.** `test_operator_agent.py` gives the five families their parameters
+  through its `_raw` helper where the prototype added a second helper (197 lines either way);
+  `test_operator_grammar.py` is the prototype's plus a docstring that cites the clause.
+- **The law cycle.** Operator law v1.8 to v1.9; `OPR-FAIL-02` is the spec's text word for word
+  (compared by script, 892 characters); Changelog; DRIFT-109 CORRECTED; 20 / 51 unchanged. **Each
+  of the eight tests the row cites was resolved by hand:** every one is collected and its
+  docstring names the clause.
+- **A miss in the spec, mended by the builder.** The fixture's recipe hash is fingerprinted in
+  `.secrets.baseline`, and the spec named the fixture and not the baseline, so the builder's
+  second `make ci` stopped at detect-secrets. One fingerprint changed and nothing else: it is the
+  SHA-1 of the new hash (`80eaf1c8…`), as the old one was of the old hash (`4cb73d92…`).
+- **One change made by the planner in the code, a fault in the planner's own prototype.** Run
+  through the chat handler, the refusal for an approve read *"A approve command needs its
+  target"*. The sentence now begins *"The {family} command"* (`result.py`, one word), A6 pins the
+  new letters and the approve sentence's opening, and with the old word put back A6 goes red. So
+  `result.py` differs from the Appendix below in that word and the test file is 196 lines. The
+  recipe hash does not read `result.py` and is unchanged. The 19 breaks were run again on the
+  final code: 19 red.
+- **Four changes made by the planner in docs.**
+  1. `docs/laws/INDEX.md` and `docs/laws/ledger.md` still read operator v1.8. A gap in the spec,
+     which said the gate would recompute the rollups: the gate checks the counts, not the version
+     label. Both rows now read v1.9 and say what this sprint did.
+  2. The DRIFT-109 row said "The Appendix checks", which means nothing outside this file. It now
+     says "The operator checks".
+  3. One blank line removed from this file: the markdown hook stopped the first commit on it.
+  4. The builder's block in `docs/STATE.md` is not carried. STATE is written at the merge.
+- **Seen and accepted.** The builder's first `make ci` failed on import order in the new test
+  file and its second on detect-secrets; the third passed. The builder planted the twelve breaks
+  the spec lists.
+- **`main` moved during the build:** two docs commits, the tracker trim (`20597d82`) and the S261
+  spec (`28d77906`). They were merged into this branch (`b3618d8f`); the two met in one file,
+  `docs/sprints/README.md`, on neighbouring rows, resolved row by row (every row but this
+  sprint's is `main`'s, byte for byte).
+- **Version.** PATCH, `0.125.05` to `0.125.06`; `uv lock` changed the version line alone.
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `e9f4f4a8`: all 15 steps, 4,709
+passed, 8 skipped, 100.00 % coverage. `GATE PROVEN` for `e9f4f4a8`, run from `../ta-s268`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 127, the same alert numbers as on the last merged branch, none at error
+level. `main` fast-forwarded to that commit and tagged `v0.125.06`.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1a passed*, 180 of 180 checks over 33 cases, on the merged `main`, from the main checkout, at no
+cost: each case of A1 to A5 as one typed message through the dashboard's chat handler, a fresh
+in-memory context and one canned model reply a case. The eleven incomplete intents and the five of
+no known family are each answered with the fixed sentence, audited `refused`, with no `Intent`
+written and one model call; the fourteen complete ones are passed on with their parameters as
+given (a `resume` gains the selected run from the surface); the two replies that are not intents
+keep the model's outcome and reason; a typed `approve flag:case-1` is passed on although the
+model's reply names no target. The same script on `main` before the merge (`28d77906`) failed 68
+of 180: every incomplete intent came back *"confirmation required - resubmit with
+confirmed=true"*. *F1b passed on OpenAI*, 8 of 8, paid (the operator: *"go for it"*, to OpenAI alone),
+**$0.0422**: eight typed commands through the chat handler on `main` at `9237ec24` with the
+real adapter (`gpt-5.5`, effort `xhigh`, cap 4,096). Each of the six complete commands came
+back under the first accepted name the prompt lists and no alias did; each of the two that
+omit a parameter was answered `needs_clarification`. *Not run on Anthropic.* *Met on the
+way:* a required parameter returned as `null` counts as given (DRIFT-112, work-queue 128).
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1a
+(the cases of A1 to A5 through the chat handler, at no cost); then F1b, paid, on the operator's word.
 
 ---
 

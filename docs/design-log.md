@@ -12,6 +12,35 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128
+
+**Why.** DRIFT-112 ([DL-290](design-log.md) amendment 2): S268's check turns every value into text before it looks, so a required parameter returned as `null` is the text `None` and counts as given. The operator asked for it to be specced (2026-10-11: *"yes"*).
+
+**Measured (2026-10-11, no vendor call; `main` at `3fb617ce`).** Each case is one typed message through the dashboard's chat handler on a fresh in-memory context with a canned reply, unconfirmed and then confirmed. *[measured]* A `null` under a required name is passed on for all six families with a requirement. A confirmed `approve` of `None` answers *"Command routed to supervisor.resolve_flag."*; a confirmed `run` whose stage is `null` is routed to `orchestration.execute_run`; `stage` and `resume` are refused by the supervisor (*"invalid stage target: None"*); `reject`, `modify` and `mode` stop at the build phase. *[read]* The supervisor reads the first name that is not empty (`subject or target`, `stage or target`), so a `null` under the first name hides a real value under the second. *[read]* `explain` falls back to the typed question only when the subject is empty, so a `null` subject asks the model to explain `None`. *[measured]* A list or an object is passed on as Python's rendering of it: `["flag:case-1"]` becomes the target `['flag:case-1']` and is routed after confirmation. *[measured]* A number and a boolean are carried as text (`8`, `0`, `False`), before and after. *[measured]* Both readers of a reply's parameters, the check and the intent that is built, call one function, `_params`. *[measured, paid, S268's check]* gpt-5.5 returned no `null` in eight calls; *[ASSUMED - not measured]* whether Anthropic's model does, and what `resolve_flag` does with a subject no flag has.
+
+**Decided.**
+
+- **D1 - a value is text, a number or a boolean.** A `null`, a list and an object are not values.
+- **D2 - the mend is in `_params`**, the one function both readers call, so the check, the built intent and the stored `Intent` agree.
+- **D3 - a parameter that holds no value is left out of the intent, required or not.** A required one is then missing and the intent is refused; an `explain` falls back to the typed question; a real value under a second accepted name is no longer hidden.
+- **D4 - a structure is dropped whole, never flattened.**
+- **D5 - no new sentence and no fault.** The sentence S268 added says the model's reply gave none.
+- **D6 - blank text does not move:** missing where required, carried as it is where not.
+- **D7 - a number and a boolean are carried as the text Python gives them, as today** (`false` is `False`).
+
+**Ruled out.**
+
+- *Mend the check alone* - the text `None` would still be stored, still replace the typed question in `explain`, and still hide a real value under the second name.
+- *Drop a `null` only* - a list is passed on as text and routed after confirmation; no reader takes a structure.
+- *Take the one item of a one-item list* - a guess at what the model meant.
+- *One name per parameter in the supervisor* - as in DL-290: a second agent's law cycle, and the other readers stay as they are.
+
+**Named, not built.** Leaving out a parameter that is not required writes no note anywhere: the typed intent the operator confirms shows what is left. A `run` with no stage is still passed on (DL-290). `OPR-FAIL-02` gains one sentence (operator law v1.10); no clause is added.
+
+**On the prototype.** One function, five more lines (`result.py` 149 to 154). The new tests: 19 of 26 fail on the unchanged code and all pass on the prototype; the seven that pass before are the guards that numbers, booleans and blank text do not move. No existing test breaks (4,735 passed, 8 skipped, the 26 new cases among them); 12 planted breaks, 12 red. The recipe hash does not move. The reach measurement on the prototype: every `null`, list and object under a required name is refused with the sentence, and the others are left out.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
+
 ## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117
 
 **Why.** The housekeeping charter (OPS-TRIM, gate G-SIZE, 2026-10-09) limits the seven most-edited trackers in bytes and says the limits become a step of `make ci`. Until today they were measured by hand, and two files were never trimmed: the design log stood at 1,323,742 bytes against 512 KB and the functionality-check register at 285,316 against 160 KB. The operator asked for another sprint for Codex on 2026-10-11; the gate was the next small one that touches no file S268 does.
@@ -34,7 +63,7 @@ and is marked CLOSED here.
 
 **Named consequences.** A commit to `main` that takes a tracker over its limit turns `main`'s CI red and every branch that then merges it; a docs commit reaches `main` without the gate, so the step is run before one is pushed. The sprint table will need its trim again within a few sprints. Not decided: whether 96 KB is the right limit for it.
 
-## DL-290 - an intent is passed on only when its family is known and every parameter that family cannot do without is given under a name its readers take; the model is told the names - status: MEASURED and DECIDED (planner, 2026-10-11 14:15 AEDT); specced as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md); work-queue 126
+## DL-290 - an intent is passed on only when its family is known and every parameter that family cannot do without is given under a name its readers take; the model is told the names - status: MEASURED and DECIDED (planner, 2026-10-11 14:15 AEDT); specced as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md); work-queue 126; MERGED as S268 `0.125.06` (`e9f4f4a8`), F1a passed at no cost (amendment 1); F1b passed on OpenAI (amendment 2); work-queue 126 closed
 
 **Why.** DRIFT-109 (DL-286): `OPR-FAIL-02` says an intent with missing required fields is refused, and an `approve` with no target, a `modify` with no name or value and a reply with no family at all are passed on. Work-queue 126 left open whether to refuse or to reword the clause.
 
@@ -58,6 +87,10 @@ and is marked CLOSED here.
 - *Per-family parameter properties in the tool schema* - not measured on either vendor.
 
 **Named, not built.** A `run` whose reply carries no `stage` passes the supervisor's hard-NO for `live`, as before. No value is validated by the operator: a `stage` of an unknown name is the supervisor's to refuse. A deployment that sets its own operator system prompt does not get the parameter names.
+
+🔁 **Amendment 1, 2026-10-11 17:57 AEDT (planner) — built as decided and merged; what the check showed; one fault in the prototype's own sentence and two gaps in the spec.** Built by Codex with no amendment to the seven decisions; as handed back the four production files were the prototype byte for byte. Merged as `0.125.06` (`e9f4f4a8`, GATE PROVEN). *F1a*, on the merged `main`, at no cost: the cases of the test plan's A1 to A5, each as one typed message through the dashboard's chat handler on an in-memory context with one canned reply, 180 of 180 checks over 33 cases; on `main` before the merge the same script failed 68, each incomplete intent answered *"confirmation required - resubmit with confirmed=true"*. *The fault:* the prototype's sentence read *"A approve command needs its target"*. It was met only when the cases were printed through the chat handler, because the tests compared the message with the function that builds it. It now begins *"The {family} command"* and a test pins the letters. *The gaps:* the spec named the fixture's recipe hash and not its fingerprint in `.secrets.baseline`, so the builder's gate stopped at detect-secrets until that one fingerprint was replaced; and it left the operator's version in the law index and the ledger to the gate, which checks the counts and not the label. *Still not measured:* which names each real model returns for each family and whether a command that omits a parameter is answered with a question (F1b, paid, on the operator's word); what the unattended scorecard counts for a refusal of this kind. Evidence outside the repo: OneDrive `trading-agents-data/wq126-2026-10-11/`.
+
+🔁 **Amendment 2, 2026-10-11 18:05 AEDT (planner) — F1b on OpenAI: the names come back as told and an omission is answered with a question; one gap met.** The operator: *"go for it"*, to the option of OpenAI alone (the vendor the chat is set to). Eight typed commands through the dashboard's chat handler on merged `main` (`9237ec24`), the real operator adapter as the chat builds it (`gpt-5.5`, effort `xhigh`, cap 4,096, the forced `parse_intent` call), a fresh in-memory graph a command: **$0.0422** at the price pack's rates, against a worst case of $0.9992 priced beforehand (350 to 356 input tokens a call; 30 to 43 output tokens for six of them, 180 and 539 for the two in which the model reasoned). *The six complete commands* each came back as an intent of the right family under the first accepted name the prompt lists: `approve` and `reject` a `target`, `modify` a `name` and a `value`, `mode` a `mode`, `stage` a `stage`, `resume` a `stage` and the selected run's `run_id`. No alias (`subject`, `from_stage`) came back. *The two that omit a parameter* (`change the mode`, `change max_positions`) were each answered `needs_clarification` with a reason, audited as such, with no `Intent`: the model asked and the check did not have to refuse. So decision 7 (name the parameters in the prompt, leave the tool schema alone) holds on this vendor. *Read on the way:* `modify`'s value came back as the JSON number `8` and was passed on as `"8"`; the check reads every value as text. **The gap, DRIFT-112, work-queue 128:** for the same reason a required parameter returned as `null` is read as the text `None` and counts as given (measured on `checked_intent` directly, no vendor call: `null`, `[]` and `{}` under `target` each pass). Not seen from the real model in these eight calls. *Not measured:* Anthropic (not run, by the operator's choice of one vendor); what either model returned before the prompt change (no paid before-run was made); the unattended scorecard's count.
 
 ---
 

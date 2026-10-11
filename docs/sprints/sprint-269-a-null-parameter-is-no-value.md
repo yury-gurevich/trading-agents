@@ -692,6 +692,39 @@ The '*test*' glob also matches the mandated laws/test-plan.md amendment; the Pyt
 
 ---
 
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s269` on the builder's commit `85add8c5`. Nothing here is
+taken from the handback.
+
+- **The code is the measured prototype byte for byte.** `git hash-object
+  agents/operator/domain/result.py` prints `f47d86083f8091aa5b27e8d0e4abc99e92ba7be9`, the
+  Appendix's blob id. The commit changes the eleven files the spec names and no other; no existing
+  test is changed, and no working file was left with CRLF line endings.
+- **Guards.** The planner's 12 breaks of `result.py`, one at a time against the operator's tests,
+  each restored: **12 went red, none survived, none failed to apply**, and the restored tree is
+  green.
+- **The planner's own tests** (written for the prototype) were placed beside the builder's and run
+  on the built code together with the builder's file and `tests/test_dspy_recipe.py`: 55 passed.
+  They are not committed.
+- **The law cycle, read by hand where the gate does not look.** `OPR-FAIL-02` is the given text,
+  the law reads v1.10 and the Changelog has its line; the test-plan row keeps its eight citations
+  and gains B1 to B4; the operator's row reads v1.10 in `docs/laws/INDEX.md` and in
+  `docs/laws/ledger.md`; DRIFT-112 is marked corrected; the counts stand at 20 / 51.
+- **`main` moved during the build:** S261's merge and its records. They were merged into this
+  branch (`a3a769c8`); the two met in one file, `docs/sprints/README.md`, resolved row by row
+  (S261's row is `main`'s, this sprint's is the branch's).
+- **The handback's fifteen steps were every step its tree had.** S261 added the sixteenth, the
+  tracker-size step, while this sprint was being built. On the merged tree that step exits 0 and
+  warns twice: `docs/work-queue.md` at 91 % and `docs/sprints/README.md` at 93 % of their limits.
+- **PATCH bump to `0.125.07`**; the change to `uv.lock` is the one version line.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, all sixteen steps, the remote gate and the CodeQL set-diff for the commit that holds
+this block; then F1 at no cost.
+
+---
+
 ## Appendix — the function, measured on the planner's prototype
 
 Replace `_params` in `agents/operator/domain/result.py` with exactly this. It is the last

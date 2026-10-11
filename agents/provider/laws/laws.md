@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -109,7 +109,11 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
   through its own fetch path (the source's feed and end rule, then validation and the extreme-move
   guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers,
-  over a calendar window holding at least `barrier_history_sessions` sessions, and writes **one**
+  over a calendar window holding at least `barrier_history_sessions` sessions
+  **that ends on the run's as-of** (the `window_end` of the `MarketData` the run was scanned
+  from, read through the run's lineage `AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→
+  MarketData`: one node, never a listing of them; `PROV-TRG-05`), **whenever the provider reaches
+  the run**, and writes **one**
   `BarrierHistory` node keyed from the `AnalystRun`'s key, linked
   `AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds
   the last ≤ `barrier_history_sessions` daily bars as (date, open, high, low, close) and the bar
@@ -120,7 +124,11 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   no node. A barrier fetch holds too few tickers for the `PROV-OUT-09` guard to fire (its √(n−1)
   ceiling), so this path **leans on the daily request's guard**: its newest session is the one the
   daily request judged, and a ticker the daily request excluded never becomes a buy.
-  *(DL-241 D10; DRIFT-090, DL-247 D4.)*
+  A run with no such `MarketData` has no as-of and is served as an ingest no run triggered is:
+  its window ends on the UTC date of the fetch (`PROV-TRG-05`). A `MarketData` whose
+  `window_end` is absent or not a date is a broken node, not a run with no as-of: the work fails
+  before any fetch and no node is written.
+  *(DL-241 D10; DRIFT-090, DL-247 D4; DRIFT-110, S266, DL-287.)*
 - `PROV-OUT-09` — The **extreme-move guard** judges each served ticker's **newest bar only**: its
   open-to-close move against the pooled (population mean and σ) open-to-close moves of every
   ticker's bar on **that same session**. A move beyond `max_daily_move_sigma` σ excludes the ticker,
@@ -504,3 +512,9 @@ status:
 - **v1.9 — S255 / DL-269 (2026-10-07).** Amends and re-proves only `PROV-OUT-02`: the regime
   also carries the four VIX thresholds from the settings used to select its label. Default and moved
   threshold boundaries are pinned. No classification or policy change; no new clause: 24 / 67 unchanged.
+- **v1.10 — S266 / DL-287 (2026-10-11).** Amends and re-proves only `PROV-OUT-08`:
+  the barrier history's window ends on the run's as-of, read through its `ScanRun`'s
+  `MarketData` lineage, whenever the provider reaches the run. Missing lineage keeps the
+  fetch's UTC date; an absent or unparseable stored `window_end` fails before any fetch or
+  history write. Why: the clock shifted a late run's history and claim beyond the bars its
+  barriers came from (DRIFT-110). No new clause, contract, property or tunable; 24 / 67 unchanged.

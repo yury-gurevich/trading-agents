@@ -12,6 +12,28 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117
+
+**Why.** The housekeeping charter (OPS-TRIM, gate G-SIZE, 2026-10-09) limits the seven most-edited trackers in bytes and says the limits become a step of `make ci`. Until today they were measured by hand, and two files were never trimmed: the design log stood at 1,323,742 bytes against 512 KB and the functionality-check register at 285,316 against 160 KB. The operator asked for another sprint for Codex on 2026-10-11; the gate was the next small one that touches no file S268 does.
+
+**Decided first: trim, then gate; no exemption list.** The earlier plan froze the two over-limit files at their measured size. *[reasoned, then the alternative measured]* A frozen design log that may only shrink stops its own next entry, and one that may grow is a warning that passes (the shape work-queue 33 retired). So both files were trimmed before the spec (`20597d82`): the log keeps its newest forty entries and the seven older ones that the work queue or STATE link (DL-160, 186, 228, 230, 236, 237, 240), 329 KB; the register keeps its newest sixty sprint rows, its production-operations table and its harness lesson, 97 KB. 252 entries and 102 rows moved verbatim to `docs/design-log-archive/` and `docs/laws/functionality-checks-archive/`; relative links re-based; 13 links to a moved entry repointed. *[measured]* The 299 sections before equal the 47 live and 252 archived, and the 163 dated rows equal 61 and 102, compared as text with the re-based links set aside. Charter v0.3 records what the two rules learned.
+
+**What the trim met that the rules did not say.** The log is not in number order (it was written at both ends and seven numbers were used twice), so the archive files hold entries in the order the log held them and the index lists each file's numbers. The register is one sprint table, an operations table, a paragraph, and two further runs of sprint rows with no header; a few old rows have a cell too many or too few, kept as written, with two table lint rules switched off in the archive files. An amendment to an archived entry is written in the live log as a new entry that names it.
+
+**The gate's decisions.**
+
+1. **The script reads the limits from the charter's table and holds no number.** Ruled out: constants in the script with a test comparing them to the charter (two lists, and the comparison is the same parse; a limit raised in code would not show in the rule the operator reads).
+2. **A KB is 1,000 bytes, measured as git stores the file (CRLF counted as LF).** *[measured]* 64,151 bytes was treated as over 64 KB on 2026-10-10, so 1,000 is what the limit has meant in use. Ruled out: bytes on disk (a working file saved with CRLF reads larger than its blob, so the step would fail on one machine and pass on the remote); the size of the blob at `HEAD` (measures the last commit, not the tree being checked).
+3. **At the limit passes; one byte over fails.**
+4. **Anything unreadable fails the whole check and reports no tracker as within its limit:** a missing or unreadable charter, a second OPS-TRIM section, a second or missing limit table, an empty table, a tracker listed twice, a missing tracker, a row whose first two cells are not a backticked path and a whole number of KB. Ruled out: skipping such a row (a typo in a limit would take that tracker out of the gate without a word).
+5. **From 90 % a tracker is reported as due for the next trim, and passes.** Ruled out: failing at 90 % (the sprint table is at 94 % directly after a trim, with twelve full rows).
+6. **The self-test case lives in a new module**, because `gate_selftest_cases.py` is frozen at 346 lines; two invariants keep the step wired in the `Makefile` and in `ci.yml`.
+7. **No version bump:** the script ships in no image.
+
+**Measured on the prototype** (`../ta-s261`): the step exits 0 on `main` with seven lines; exits 1 on the seven files as they stood before the trim, one byte over a limit, and on `64KB` for `64 KB`; 36 planted breaks, 36 red, against 24 tests.
+
+**Named consequences.** A commit to `main` that takes a tracker over its limit turns `main`'s CI red and every branch that then merges it; a docs commit reaches `main` without the gate, so the step is run before one is pushed. The sprint table will need its trim again within a few sprints. Not decided: whether 96 KB is the right limit for it.
+
 ## DL-290 - an intent is passed on only when its family is known and every parameter that family cannot do without is given under a name its readers take; the model is told the names - status: MEASURED and DECIDED (planner, 2026-10-11 14:15 AEDT); specced as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md); work-queue 126
 
 **Why.** DRIFT-109 (DL-286): `OPR-FAIL-02` says an intent with missing required fields is refused, and an `approve` with no target, a `modify` with no name or value and a reply with no family at all are passed on. Work-queue 126 left open whether to refuse or to reword the clause.

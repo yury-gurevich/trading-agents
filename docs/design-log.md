@@ -41,7 +41,7 @@ and is marked CLOSED here.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
 
-## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117
+## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117; MERGED as S261, no bump (`be7594cb`), F1 passed at no cost (amendment 1); work-queue 117 closed
 
 **Why.** The housekeeping charter (OPS-TRIM, gate G-SIZE, 2026-10-09) limits the seven most-edited trackers in bytes and says the limits become a step of `make ci`. Until today they were measured by hand, and two files were never trimmed: the design log stood at 1,323,742 bytes against 512 KB and the functionality-check register at 285,316 against 160 KB. The operator asked for another sprint for Codex on 2026-10-11; the gate was the next small one that touches no file S268 does.
 
@@ -62,6 +62,8 @@ Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
 **Measured on the prototype** (`../ta-s261`): the step exits 0 on `main` with seven lines; exits 1 on the seven files as they stood before the trim, one byte over a limit, and on `64KB` for `64 KB`; 36 planted breaks, 36 red, against 24 tests.
 
 **Named consequences.** A commit to `main` that takes a tracker over its limit turns `main`'s CI red and every branch that then merges it; a docs commit reaches `main` without the gate, so the step is run before one is pushed. The sprint table will need its trim again within a few sprints. Not decided: whether 96 KB is the right limit for it.
+
+🔁 **Amendment 1, 2026-10-11 19:00 AEDT (planner) — built as decided and merged; what the check showed; what the builder named.** Built by Codex with no amendment to the decisions; every production file is the prototype byte for byte. Merged with no version bump (`be7594cb`, GATE PROVEN); 36 planted breaks, 36 red. *F1*, at no cost: the step exits 0 on merged `main`; on a scratch copy it passes with a tracker at exactly its limit and exits 1 one byte over, naming the file and the overshoot; the remote run shows the step green. The first tracker it would have stopped was STATE, at 95 % when the sprint merged: trimmed in the merge record's commit. *Named by the builder, filed and not measured:* the remote workflow runs neither the parameter step nor the untracked-secrets step on the normal tree (work-queue 129); the parameter self-test leaves a compiled file behind (work-queue 130). Evidence outside the repo: OneDrive `trading-agents-data/s261-2026-10-11/`.
 
 ## DL-290 - an intent is passed on only when its family is known and every parameter that family cannot do without is given under a name its readers take; the model is told the names - status: MEASURED and DECIDED (planner, 2026-10-11 14:15 AEDT); specced as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md); work-queue 126; MERGED as S268 `0.125.06` (`e9f4f4a8`), F1a passed at no cost (amendment 1); F1b passed on OpenAI (amendment 2); work-queue 126 closed
 

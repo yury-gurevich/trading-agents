@@ -64,6 +64,24 @@ INVARIANTS: tuple[Invariant, ...] = (
         must_contain=("scripts/check_sprint_status.py",),
     ),
     Invariant(
+        name="tracker-size-gate-wired-locally",
+        why=(
+            "S261: a tracker limit that make ci does not run is measured by hand, "
+            "which is how the design log reached 1.3 MB against 512 KB"
+        ),
+        path="Makefile",
+        must_contain=("scripts/check_tracker_size.py",),
+    ),
+    Invariant(
+        name="tracker-size-gate-wired-in-ci",
+        why=(
+            "S261: CI enumerates quality commands independently from the "
+            "Makefile, so both paths must retain the tracker size check"
+        ),
+        path=".github/workflows/ci.yml",
+        must_contain=("scripts/check_tracker_size.py",),
+    ),
+    Invariant(
         name="untracked-scan-wired-into-ci",
         why=(
             "the DL-55 fix is only real while `make ci` actually calls it; a "

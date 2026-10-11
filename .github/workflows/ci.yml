@@ -50,6 +50,8 @@ jobs:
         run: uv run python scripts/check_law_coverage.py
       - name: Sprint status classification
         run: uv run python scripts/check_sprint_status.py
+      - name: Tracker size limits
+        run: uv run python scripts/check_tracker_size.py
       - name: Markdown link integrity
         run: uv run python scripts/check_markdown_links.py
       - name: Project version scheme

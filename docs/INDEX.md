@@ -15,6 +15,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
 | [next-leg-plan.md](next-leg-plan.md) | What comes after the build? The proposed next leg (P16–P20: scoreboard, ten-year replay, edge gate, operator out of the loop, second pack), with unit-of-work estimates, to be cut into sprints |
 | [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
+| [design-log-archive/](design-log-archive/INDEX.md) | What did an older design-log entry say? Entries moved out of the log at the tracker trim, verbatim and frozen (first trim 2026-10-11, DL-001 to DL-249 bar the seven still linked): read its INDEX first |
 | [state-archive/](state-archive/INDEX.md) | Frozen older STATE history, split out to keep STATE.md scannable (S36→P0 … S233 across seventeen files) — read its INDEX first |
 
 ---

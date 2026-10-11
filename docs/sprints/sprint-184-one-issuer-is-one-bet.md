@@ -391,7 +391,7 @@ deliberator PM rendering/value labels; PM rejection rendering; deploy env-pack w
 tunables and new issuer-map pack; focused PM/contract/orchestration fixture tests; law/test-plan,
 drift, ledger, index, design-log and state docs.
 
-**Design decisions:** [DL-122](../design-log.md#dl-122---s184-concentration-gates-issuer-correlation-and-not-evaluated-evidence---status-decided-2026-08-20)
+**Design decisions:** [DL-122](../design-log-archive/DL-001-to-140.md#dl-122---s184-concentration-gates-issuer-correlation-and-not-evaluated-evidence---status-decided-2026-08-20)
 records the five decisions and rejected alternatives before implementation: `GateOutcome.outcome`
 enum; issuer map as trading-pack data; cluster recomputed against the running issuer book; PM-local
 correlation from run `MarketData` cached per evaluation; not-evaluated outcomes name the missing

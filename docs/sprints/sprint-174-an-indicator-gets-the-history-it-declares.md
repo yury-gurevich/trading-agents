@@ -183,7 +183,7 @@ WHEN TO STOP AND ASK
 `tests/test_dispatch_scheduled_run.py`, `docs/design-log.md`, `docs/STATE.md`, `pyproject.toml`,
 and `uv.lock`.
 
-**Route chosen:** [DL-107](../design-log.md#dl-107---s174-carries-declared-indicator-history-on-the-runrequest---status-decided-2026-08-12)
+**Route chosen:** [DL-107](../design-log-archive/DL-086-to-112.md#dl-107---s174-carries-declared-indicator-history-on-the-runrequest---status-decided-2026-08-12)
 uses `RunRequest.lookback_days` plus `RunRequest.required_history_bars`. The dispatcher derives the
 calendar lookback from analyst-declared bar requirements and the NYSE session calendar, with the
 provider `max_staleness_days` buffer so a same-day unpublished bar does not drop the retained series

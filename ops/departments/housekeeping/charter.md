@@ -3,7 +3,7 @@ department: housekeeping
 tier: x cross-cutting
 owner: operator + AI housekeeping loop  (→ candidate "Librarian" agent)
 status: draft
-version: 0.2
+version: 0.3
 implements_with: [.gitignore, ops/maintenance/ledger.md, "del-folder convention (../trading-agent-del/)"]
 ---
 
@@ -88,9 +88,11 @@ that grows sideways, so these limits are in bytes.**
 | `docs/work-queue.md` | 64 KB | a row that is closed or folded; the dated recount paragraphs above the table | `docs/work-queue-archive/` |
 | `docs/sprints/README.md` | 96 KB | for a MERGED sprint outside the newest twelve rows: its status cell beyond the first clause and its goal cell beyond the lead sentence | nowhere: the sprint's own document holds both, and git holds the row as it was |
 | `docs/sprints/INDEX.md` | 48 KB | a row of the queued table whose sprint is MERGED and has a README row | nowhere: the README row is the record |
-| `docs/design-log.md` | 512 KB | every entry but the newest forty | `docs/design-log-archive/`, by number range, verbatim |
-| `docs/laws/functionality-checks.md` | 160 KB | every row but the newest sixty | `docs/laws/functionality-checks-archive/`, one file a month |
+| `docs/design-log.md` | 512 KB | every entry but the newest forty and any older entry that the work queue or STATE links | `docs/design-log-archive/`, by number range, verbatim, in the order the log held them |
+| `docs/laws/functionality-checks.md` | 160 KB | every sprint row but the newest sixty; the production-operations table and the harness lesson stay | `docs/laws/functionality-checks-archive/`, one file a month by the row's date |
 | `docs/laws/drift-register.md` | 160 KB | nothing yet; its rule is decided when it nears the limit | |
+
+**A KB here is 1,000 bytes**, counted on the file as git stores it (line ends as LF): 40 KB is 40,000.
 
 **The trim moves text; it does not rewrite it.** A moved row or entry is byte for byte what it was,
 except that a relative link is re-based for its new folder. The two sprint tables are the exception
@@ -168,4 +170,5 @@ become a specific agent.")
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — registers the root / INDEX / README / git-size housekeeping process; names the future Librarian agent |
+| 0.3 | 2026-10-11 | first trim of the design log and the functionality-check register, and what it taught the two rules: an older design-log entry that the work queue or STATE links stays live; the register's operations table and harness lesson stay; a KB is 1,000 bytes on the file as git stores it |
 | 0.2 | 2026-10-09 | the tracker trim (OPS-TRIM) and gate G-SIZE: size limits in bytes for the seven most-edited trackers, what leaves each and where it goes, weekly cadence (operator: *"yes, please"* to a maintenance schedule for frequently edited files) |

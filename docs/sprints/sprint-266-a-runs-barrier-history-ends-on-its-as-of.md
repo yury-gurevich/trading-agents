@@ -1101,3 +1101,57 @@ def barrier_window(sessions: int, as_of: date | None = None) -> Window:
 `from agents.provider import barrier_history` becomes `from agents.provider import barrier_window`,
 and `monkeypatch.setattr(barrier_history, "datetime", _PastMidnight)` becomes
 `monkeypatch.setattr(barrier_window, "datetime", _PastMidnight)`.
+
+---
+
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s266` at the builder's commit `49edf3f5`, not taken from the
+handback.
+
+- **Scope.** The checklist's scope command against the commit the branch was cut from
+  (`b991d39e`) prints nothing: no decision path, no contract, no kernel or surface file, no
+  tracker, no version file. Six Python files changed: one production module edited and one added,
+  one existing test edited, two test files and one test helper added. No orchestration file
+  outside `orchestration/tests/`. Every changed file is LF. `main` moved once during the review,
+  to `c8926756` (the S267 spec, documents only), and was merged in: one conflict, two adjacent
+  rows of the sprint list, both kept. Against that `main` the scope command prints the version's
+  two files and nothing else.
+- **The code is the measured prototype**, byte for byte: each of the two production files has the
+  blob id recorded with the prototype (65 lines added, 16 removed).
+- **The measurement on the built code.** The planner's script (the nine wall-clock date reads
+  wrapped, a run three days back driven down the three paths a run can take) prints on the built
+  code exactly what it printed on the prototype: on both graph-pull paths the history's end, its
+  newest bar and each claim's `as_of` and `entry_close` are the as-of's, and every other line is as
+  on `main`.
+- **Guards.** The planner's 14 breaks, one at a time against the builder's tests, each restored and
+  the tree left clean: **14 went red, none survived, none failed to apply.** Run again after the
+  planner's change below: 14 red again.
+- **The tests, read.** Seven new functions in two files, nine cases, each citing `PROV-OUT-08`. The
+  long-history source honours the window's end (the trap the spec named), and each end-to-end test
+  asserts the source did hold a later bar. B2 also refuses a lookup by key and a listing, and pins
+  both graph calls with their edge types. The fixture bars are consecutive calendar days, so no
+  test depends on the day of the week.
+- **The one edited test, read from git.** E1 changes its import line and its `setattr` line and
+  nothing else. No other existing test changed.
+- **The law cycle.** Provider law book v1.9 to v1.10, `PROV-OUT-08` with the two insertions and the
+  note word for word as the spec gave them, no clause added, 24 / 67 on both rollup lines, DRIFT-110
+  CORRECTED. **Each of the 14 tests the row cites was resolved by hand**: every one is a live
+  function whose docstring names the clause (seven from before this sprint, seven new). The law
+  gate exits 0 and does not check each citation, so this is the proof, not the gate. The spec asked
+  for a footer in the provider's test plan that does not exist; the builder added none, rightly.
+- **One change by the planner on the branch, to mend the planner's own recipe.** 🔴 A1, A2 and A3
+  failed when the suite straddled 00:00 UTC. The spec's fixture fixed the as-of when the module was
+  imported and moved `entry_bars()` back three days, but `entry_bars()` dates its bars at the call:
+  imported on one UTC date and run on the next, the run's newest bar fell a day after its as-of, no
+  buy came out and no `BarrierHistory` was written. Measured by moving every import-time date one
+  day back and calling the nine cases: **3 failed on `49edf3f5`, 0 after the change.**
+  `past_run()` in `orchestration/tests/barrier_as_of_helpers.py` now dates the run's bars from the
+  as-of. No production file and no assertion changed.
+- **Seen and accepted.** The handback's `make ci` stopped at the dependency audit, which needs the
+  network the builder does not have; the planner's Windows run is the proof. The three consequences
+  named in the spec stand: a run reached after its as-of states its claim under the as-of's date, a
+  claim for an as-of ten or more sessions back can settle at once, and about 1.9 MB more is read on
+  a night with a qualifying buy.
+- **Version.** PATCH, `0.125.03` to `0.125.04`; `uv lock` changed the version line alone (180
+  packages).

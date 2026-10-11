@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -121,12 +121,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   for it. It is refused when its family is absent, is not a string or is not one of the
   grammar's families, and when it lacks a parameter the grammar marks required for its family.
   A required parameter is given when any of its accepted names holds a value that is not blank.
-  `interpret` then returns `CommandResult(outcome="refused", ...)` with a message that says so
-  (for a missing parameter it names the family and each missing parameter by its first accepted
-  name), the `CommandAudit` reads `refused` and no `Intent` is written. The check runs after
-  the explicit command grammar, so a typed approve is not refused for the model's omission. A
-  reply whose outcome is not `intent` is not checked. The system prompt states each family's
-  parameter names. The sentences are pinned by tests, not quoted here.
+  A value is text, a number or a boolean: a parameter that holds `null`, a list or an object
+  holds no value and is left out of the intent, whether its family requires it or not.
+  When a reply is refused, `interpret` returns `CommandResult(outcome="refused", ...)` with a
+  message that says so (for a missing parameter it names the family and each missing parameter
+  by its first accepted name), the `CommandAudit` reads `refused` and no `Intent` is written.
+  The check runs after the explicit command grammar, so a typed approve is not refused for the
+  model's omission. A reply whose outcome is not `intent` is not checked. The system prompt
+  states each family's parameter names. The sentences are pinned by tests, not quoted here.
 - **OPR-FAIL-03** — Graph write failure (CommandAudit / LLMCall node): fault recorded; the
   `CommandResult` is still returned.
 - **OPR-FAIL-04** — A reply the vendor cut off at the output cap is neither a fault nor an
@@ -230,6 +232,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | — | — | — | no known drift |
 
 ## Changelog
+
+- v1.10 — S269 / DL-292 (2026-10-11): rewords OPR-FAIL-02
 
 - v1.9 — S268 / DL-290 (2026-10-11): rewords OPR-FAIL-02
 

@@ -144,6 +144,11 @@ def request_correlation(request_id: str | None, *parts: str) -> str:
 
 
 def _params(value: object) -> dict[str, str]:
+    """Keep the parameters that hold text, a number or a boolean; drop every other."""
     if not isinstance(value, dict):
         return {}
-    return {str(key): str(item) for key, item in value.items()}
+    return {
+        str(key): str(item)
+        for key, item in value.items()
+        if isinstance(item, (str, int, float))  # a bool is an int
+    }

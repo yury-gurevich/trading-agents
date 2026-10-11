@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-269-a-null-parameter-is-no-value`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.125.07` (PATCH)
 **Effort:** S
 **Decisions:** [DL-292](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-290](../design-log.md) amendment 2 (where the defect was met) · [work-queue 128](../work-queue.md) · DRIFT-112
 
@@ -209,14 +209,14 @@ Existing tests to edit: **none.** If one fails, stop and report.
 
 ## Success factors
 
-- [ ] Every row of the Test plan is a passing test that cites `OPR-FAIL-02`.
-- [ ] `git hash-object agents/operator/domain/result.py` prints `f47d86083f8091aa5b27e8d0e4abc99e92ba7be9` on LF bytes, or the difference is explained.
-- [ ] No existing test changed (`git diff --stat main -- '*test*'` shows the one new file).
-- [ ] `tests/test_dspy_recipe.py` passes untouched and `tests/fixtures/` and `.secrets.baseline` are unchanged.
-- [ ] Law cycle done, every item: clause text as given, v1.10, Changelog, test-plan row, the operator's row in `INDEX.md` and in `ledger.md`, DRIFT-112 corrected.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] Every row of the Test plan is a passing test that cites `OPR-FAIL-02`.
+- [x] `git hash-object agents/operator/domain/result.py` prints `f47d86083f8091aa5b27e8d0e4abc99e92ba7be9` on LF bytes, or the difference is explained.
+- [x] No existing test changed (`git diff --stat main -- '*test*'` shows the one new file).
+- [x] `tests/test_dspy_recipe.py` passes untouched and `tests/fixtures/` and `.secrets.baseline` are unchanged.
+- [x] Law cycle done, every item: clause text as given, v1.10, Changelog, test-plan row, the operator's row in `INDEX.md` and in `ledger.md`, DRIFT-112 corrected.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -324,15 +324,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| `agents/operator/domain/result.py` | `agents/operator/laws/laws.md` v1.9 and `test-plan.md`, whole | `OPR-FAIL-02`, `OPR-OUT-03`, `OPR-OUT-05`, `OPR-OUT-06`, `OPR-OUT-07`, `OPR-NEV-01`, `OPR-NEV-05` | No: both parameter readers must use the Appendix's scalar filter; refusal, audit and intent storage stay on the existing paths. Read before any code change on 2026-10-11. |
+| `agents/operator/tests/test_parameter_values.py` | Same operator law book and test plan, whole; `docs/laws/conventions.md` | `OPR-FAIL-02`; conventions §§3, 7, 7a, 10 | No: exercise the real operator with a synthetic model and in-memory graph, cite the clause in every test, and prove red before implementation. |
+| Operator law amendment and rollup rows | `docs/laws/INDEX.md`, `docs/laws/conventions.md`, DRIFT-112 in `docs/laws/drift-register.md`; operator law book and test plan | `OPR-FAIL-02`; conventions §§2, 4, 7a, 9 | No: the spec authorizes one deliberate amendment to v1.10, retaining all eight current test citations and the 20 / 51 counts; both version labels must be edited by hand. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Owed: the given `OPR-FAIL-02` rewording, v1.10 and Changelog, test-plan text and new citations, both operator rollup rows, and DRIFT-112 corrected. The reading record preceded code. The given clause, v1.10 and Changelog, test-plan text with all eight existing citations plus B1-B4, both v1.10 rollup rows, and DRIFT-112 correction are done. The law gate exits 0; the counts remain 20 / 51.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** none. Conventions §4 permits the deliberate amendment specified here; no other clause is changed.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** none beyond the value definition already adjudicated in DL-292 and recorded as DRIFT-112; no new drift row is needed.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** none. `OPR-FAIL-02` is already 🟩; the operator rollup remains 20 / 51 after passing B1-B4 and the law gate (exit 0, no stdout).
 
 ---
 
@@ -340,54 +342,353 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| B1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| B1 | `test_b1_required_parameter_without_value_is_refused` (11 cases) | `agents/operator/tests/test_parameter_values.py` | PASS | `OPR-FAIL-02` |
+| B2 | `test_b2_parameter_without_value_is_omitted` (8 cases) | `agents/operator/tests/test_parameter_values.py` | PASS | `OPR-FAIL-02` |
+| B3 | `test_b3_scalar_parameter_is_kept` (6 cases) | `agents/operator/tests/test_parameter_values.py` | PASS | `OPR-FAIL-02` |
+| B4 | `test_b4_blank_text_keeps_existing_behavior` (required blank and optional empty text) | `agents/operator/tests/test_parameter_values.py` | PASS | `OPR-FAIL-02` |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none. B4 proves both blank-text paths in one test, giving 26 collected cases as measured in the spec.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s269`, branch `sprint-269-a-null-parameter-is-no-value`, `.env`: no. Starting clean HEAD: `9e565885ad7654c9783026dfc520d1858cf1ba97`.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** B1-B4 prove required `null`, list and object parameters are refused with the existing missing-parameter sentence, one refused audit and no Intent; optional non-values are omitted from both the returned parameters and stored JSON. Text, numbers, booleans and blank text keep their prior behavior. All 26 new cases and the operator/recipe run pass; all 12 planted breaks fail and all 12 restored runs pass.
 
-**Files changed:** <list>
+**Files changed:** `agents/operator/domain/result.py`, `agents/operator/tests/test_parameter_values.py`, `agents/operator/laws/laws.md`, `agents/operator/laws/test-plan.md`, `docs/laws/INDEX.md`, `docs/laws/ledger.md`, `docs/laws/drift-register.md`, `docs/sprints/sprint-269-a-null-parameter-is-no-value.md`, `docs/sprints/README.md`, `pyproject.toml`, `uv.lock`.
 
 **Design decisions:** recorded as [DL-292](../design-log.md); none added by the build.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+uv run pytest agents/operator/tests/test_parameter_values.py --no-cov -q
+Exit code: 1
+FFFFFFFFFFFFFFFFFFF.......                                               [100%]
+================================== FAILURES ===================================
+______ test_b1_required_parameter_without_value_is_refused[approve-null] ______
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+___ test_b1_required_parameter_without_value_is_refused[approve-empty-list] ___
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__ test_b1_required_parameter_without_value_is_refused[approve-empty-object] __
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+______ test_b1_required_parameter_without_value_is_refused[approve-list] ______
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_____ test_b1_required_parameter_without_value_is_refused[approve-object] _____
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+__ test_b1_required_parameter_without_value_is_refused[reject-null-aliases] ___
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+___ test_b1_required_parameter_without_value_is_refused[modify-null-value] ____
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+____ test_b1_required_parameter_without_value_is_refused[modify-null-name] ____
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_______ test_b1_required_parameter_without_value_is_refused[mode-null] ________
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+_ test_b1_required_parameter_without_value_is_refused[stage-nonvalue-aliases] _
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+___ test_b1_required_parameter_without_value_is_refused[resume-null-stage] ____
+agents\operator\tests\test_parameter_values.py:59: in test_b1_required_parameter_without_value_is_refused
+    _assert_refused(result, graph, family, missing)
+agents\operator\tests\test_parameter_values.py:148: in _assert_refused
+    assert result.outcome == "refused"
+E   AssertionError: assert 'intent' == 'refused'
+E
+E     - refused
+E     + intent
+______ test_b2_parameter_without_value_is_omitted[approve-keeps-subject] ______
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'target': 'N...'flag:case-1'} == {'subject': 'flag:case-1'}
+E
+E     Omitting 1 identical items, use -vv to show
+E     Left contains 1 more item:
+E     {'target': 'None'}
+E     Use -v to get more diff
+______ test_b2_parameter_without_value_is_omitted[approve-keeps-target] _______
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'subject': '...'flag:case-1'} == {'target': 'flag:case-1'}
+E
+E     Omitting 1 identical items, use -vv to show
+E     Left contains 1 more item:
+E     {'subject': '[]'}
+E     Use -v to get more diff
+_______ test_b2_parameter_without_value_is_omitted[stage-keeps-target] ________
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'stage': 'No...get': 'paper'} == {'target': 'paper'}
+E
+E     Omitting 1 identical items, use -vv to show
+E     Left contains 1 more item:
+E     {'stage': 'None'}
+E     Use -v to get more diff
+_____ test_b2_parameter_without_value_is_omitted[resume-keeps-from-stage] _____
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'stage': '{}...e': 'analyst'} == {'from_stage': 'analyst'}
+E
+E     Omitting 1 identical items, use -vv to show
+E     Left contains 1 more item:
+E     {'stage': '{}'}
+E     Use -v to get more diff
+______ test_b2_parameter_without_value_is_omitted[explain-null-subject] _______
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'subject': 'None'} == {}
+E
+E     Left contains 1 more item:
+E     {'subject': 'None'}
+E     Use -v to get more diff
+_________ test_b2_parameter_without_value_is_omitted[run-null-stage] __________
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   AssertionError: assert {'stage': 'None'} == {}
+E
+E     Left contains 1 more item:
+E     {'stage': 'None'}
+E     Use -v to get more diff
+_________ test_b2_parameter_without_value_is_omitted[run-list-stage] __________
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   assert {'stage': "['live']"} == {}
+E
+E     Left contains 1 more item:
+E     {'stage': "['live']"}
+E     Use -v to get more diff
+____ test_b2_parameter_without_value_is_omitted[status-unknown-nonvalues] _____
+agents\operator\tests\test_parameter_values.py:98: in test_b2_parameter_without_value_is_omitted
+    _assert_intent(result, graph, family, expected)
+agents\operator\tests\test_parameter_values.py:164: in _assert_intent
+    assert result.intent.parameters == expected
+E   assert {'unknown_nul...': 'case-1'}"} == {}
+E
+E     Left contains 2 more items:
+E     {'unknown_null': 'None', 'unknown_object': "{'id': 'case-1'}"}
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[approve-null]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[approve-empty-list]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[approve-empty-object]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[approve-list]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[approve-object]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[reject-null-aliases]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[modify-null-value]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[modify-null-name]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[mode-null]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[stage-nonvalue-aliases]
+FAILED agents/operator/tests/test_parameter_values.py::test_b1_required_parameter_without_value_is_refused[resume-null-stage]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[approve-keeps-subject]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[approve-keeps-target]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[stage-keeps-target]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[resume-keeps-from-stage]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[explain-null-subject]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[run-null-stage]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[run-list-stage]
+FAILED agents/operator/tests/test_parameter_values.py::test_b2_parameter_without_value_is_omitted[status-unknown-nonvalues]
+19 failed, 7 passed in 1.60s
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+uv run pytest agents/operator/tests/test_parameter_values.py --no-cov -q
+Exit code: 0
+..........................                                               [100%]
+26 passed in 1.36s
+
+uv run pytest agents/operator/tests tests/test_dspy_recipe.py --no-cov -q
+Exit code: 0
+........................................................................ [ 41%]
+........................................................................ [ 83%]
+............................                                             [100%]
+172 passed in 3.01s
+
+uv run python scripts/check_law_coverage.py
+Exit code: 0 (no stdout)
+
+uv lock
+Exit code: 0
+Resolved 180 packages in 3.28s
+Updated trading-agents v0.125.6 -> v0.125.7
 ```
 
-**Guards planted:** <per guard: what was planted, that it failed, that it was restored>
+**Guards planted:** each mutation was applied alone to `agents/operator/domain/result.py`; the new operator tests were run with `uv run pytest agents/operator/tests/test_parameter_values.py --no-cov -q`. Each red run exited 1 with assertion failures; the original file bytes were restored in `finally`, then the same tests exited 0. Actual per-guard output:
 
-**Module line counts:** <file **n**, file **n**>
+```text
+G01 every value kept: red exit 1, 19 failed, 7 passed in 1.71s; restored exit 0, 26 passed in 1.02s
+G02 null kept: red exit 1, 12 failed, 14 passed in 1.93s; restored exit 0, 26 passed in 1.14s
+G03 list kept: red exit 1, 5 failed, 21 passed in 1.50s; restored exit 0, 26 passed in 1.07s
+G04 object kept: red exit 1, 4 failed, 22 passed in 1.96s; restored exit 0, 26 passed in 1.26s
+G05 only null dropped: red exit 1, 9 failed, 17 passed in 2.46s; restored exit 0, 26 passed in 1.56s
+G06 number dropped: red exit 1, 4 failed, 22 passed in 1.42s; restored exit 0, 26 passed in 1.42s
+G07 boolean dropped: red exit 1, 2 failed, 24 passed in 1.50s; restored exit 0, 26 passed in 1.69s
+G08 float dropped: red exit 1, 1 failed, 25 passed in 1.93s; restored exit 0, 26 passed in 1.65s
+G09 blank text dropped too: red exit 1, 1 failed, 25 passed in 1.49s; restored exit 0, 26 passed in 1.34s
+G10 falsy value dropped: red exit 1, 3 failed, 23 passed in 1.91s; restored exit 0, 26 passed in 1.47s
+G11 check reading raw parameters: red exit 1, 11 failed, 15 passed in 1.96s; restored exit 0, 26 passed in 1.62s
+G12 intent built from raw parameters: red exit 1, 8 failed, 18 passed in 2.06s; restored exit 0, 26 passed in 1.31s
+```
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+**Module line counts:** `agents/operator/domain/result.py` **154**, `agents/operator/tests/test_parameter_values.py` **173**. The production blob is exactly `f47d86083f8091aa5b27e8d0e4abc99e92ba7be9` on LF bytes.
+
+**`make ci`:** redirected to `C:/Users/yury_/AppData/Local/Temp/ta-s269-codex-20261011/make-ci.txt`; the file was read. Exit code **0**; all **15** target steps completed. **4,735 passed, 8 skipped**, coverage **100.00 %**. Dependency audit: **No unaccepted vulnerabilities; 1 accepted advisory re-checked** (`PYSEC-2026-2447`, the existing diskcache acceptance). detect-secrets **Passed**; untracked-secrets check **no untracked files to scan**. `.secrets.baseline` unchanged. Actual commands and result lines, pasted from the redirected file:
+
+```text
+make ci > 'C:\Users\yury_\AppData\Local\Temp\ta-s269-codex-20261011\make-ci.txt' 2>&1
+Exit code: 0
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1671 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1196 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+[WARN] agents/operator/domain/result.py: 154 lines (warn 150, hard block 200)
+[WARN] agents/operator/tests/test_parameter_values.py: 173 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+docs_seen=274 SPEC=11 BUILT=1 MERGED=262 UNMAPPED=0 MISSING=0
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           20264      0   4296      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4735 passed, 8 skipped, 2470 warnings in 633.07s (0:10:33) ==========
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+```
+
+**Scope and amendment verification — actual output:**
+
+```text
+Branch and scope: PASS; exactly 11 authorized files; no .env; all excluded files unchanged.
+Appendix blob and module sizes: PASS; result.py 154; test_parameter_values.py 173; LF bytes.
+Law amendment: PASS; exact given clause; only OPR-FAIL-02 changed; no clause added.
+Test-plan: PASS; all eight existing citations retained; B1-B4 cite OPR-FAIL-02; 20 / 51 unchanged.
+Both operator version labels: PASS v1.10; DRIFT-112 corrected for S269 / DL-292.
+agents/operator/tests/test_parameter_values.py | 173 +++++++++++++++++++++++++
+ 1 file changed, 173 insertions(+)
+The '*test*' glob also matches the mandated laws/test-plan.md amendment; the Python-only glob shows one new test file.
+```
 
 **`make gate-ran`:** not the builder's: the planner runs it for the exact commit that merges.
 
-**Not met / verified failing:** <plainly, or "none">
+**Not met / verified failing:** none of the builder's success factors. The eight environment/dependency-gated tests are skipped as pasted above; those scenarios are not done. Branch push, remote gate, merge, the planner's independent prototype/CodeQL checks and post-merge F1 are not done by the builder. No paid check or deploy is called for; vendor/live proof is not done.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: the Appendix is the only production change, one new test file, the named law-cycle files, PATCH metadata and the two sprint handback files. All excluded paths, existing tests, `tests/fixtures/`, `.secrets.baseline`, `docs/STATE.md` and `docs/design-log.md` are unchanged.
+- No disagreement after reading the laws. The given deliberate amendment is permitted by conventions §4; no new clause or guarantee is added, and no new design entry is owed.
+- The first run reproduced 19 failed / 7 passed; the Appendix reproduced its exact LF blob. B4 checks two fresh graph/client contexts in one test, so the planned file collects 26 cases. Every canned reply uses neutral text, storage assertions decode JSON and the empty Intent tuple is checked as `()`.
+- The broad `*test*` diff glob also matches the required `agents/operator/laws/test-plan.md` amendment; the Python-only diff shows exactly one new test file and no existing test changes. Both v1.10 labels were checked explicitly, because the law gate does not check them.
+- `uv lock` resolved 180 packages successfully; its only diff is the virtual package version `0.125.6` → `0.125.7`. The lock was generated by uv, not edited manually, and staged with `pyproject.toml` `0.125.07`. Full CI retains existing warnings and the eight skips shown above; none is claimed as live proof.
+- The planner still owns exact-commit `make gate-ran`, the independent Appendix/tests/break-script and CodeQL set-diff checks, then F1 on merged `main` (sixteen chat-handler cases, unconfirmed and confirmed). Those are not done here. No paid check and no deploy are needed.
 
 ---
 

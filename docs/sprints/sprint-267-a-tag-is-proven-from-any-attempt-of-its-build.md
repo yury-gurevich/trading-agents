@@ -867,6 +867,59 @@ Exit code: 0
 
 ---
 
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s267` at the builder's commit `3f4dde1c`, not taken from the
+handback.
+
+- **Scope.** The checklist's scope command against the commit the branch was cut from
+  (`c8926756`, which was `main` when the review began) prints nothing: no agent, contract, kernel
+  or orchestration file, no other reader module, no existing test, no tracker, no version file.
+  Ten files changed: one production module edited, two test files added, the two surfaces law
+  files, the three shared law files, this file and its README row. Every one is LF.
+- **The code is the measured prototype in every line of code.** The file's blob id is not the
+  prototype's (`0167945f` against `6768b878`): the two differ in the module docstring's `Role:`
+  line alone, one line where the prototype had two, so the module is 114 lines and not 115.
+- **Guards.** The planner's 15 breaks, one at a time against the builder's tests, each restored
+  and the file's hash checked after the last: **15 went red, none survived, none failed to
+  apply.**
+- **The tests, read.** Eight functions, 16 cases, each citing `SRF-DEP-04`. The fake serves a
+  different archive at each path and keeps the order they were asked for, and every test asserts
+  that order. T1 records the deploy on an in-memory graph. T2 plants an assertion error in the
+  attempt that must not be read.
+- **No existing test changed:** between `c8926756` and `3f4dde1c` the two test folders show two
+  added files and nothing else.
+- **The law cycle.** Surfaces law book v1.5 to v1.6; `SRF-DEP-04` is the spec's clause word for
+  word (compared by script); changelog; 31 / 38 on both rollup lines, which is what the gate
+  derives; DRIFT-111 CORRECTED. **Each of the eight tests the row cited was resolved by hand:**
+  every one is a live function whose docstring names the clause.
+- **One change made by the planner on the branch, a gap in the planner's own test plan.** The
+  clause says *an archive, a comparison or an attempt count that cannot be read is an error*, and
+  T1 to T8 plant the archive and the count, never the comparison. That behaviour was covered
+  only by an older test that cites no clause, and the builder's fake had a branch for it that no
+  test reached. **T9**, `test_t9_unreadable_comparison_is_an_error_and_no_archive_is_read`
+  (three cases: a comparison GitHub refuses, one with no `ahead_by`, one whose `ahead_by` is a
+  boolean), raises the reader's error with no host in its message and reads no archive, while an
+  earlier attempt names the tag. Five breaks of the comparison were planted against T9 alone and
+  **five went red**. The row now cites nine tests; the test file is 152 lines.
+- **Seen and accepted.** The handback's `make ci` stopped at the dependency audit, which needs the
+  network the builder does not have; the planner's Windows run is the proof. The plan's 15 cases
+  are 16 because T2's two cases are parametrised apart. The builder planted four breaks beyond
+  the fifteen asked for.
+- **`main` moved during the review:** sprint 266 was merged (`b1580076`, `0.125.04`). It was
+  merged into this branch; the two sprints met in one file, `docs/sprints/README.md`, on
+  neighbouring rows, resolved row by row (sprint 266's row is `main`'s, byte for byte). The law
+  gate reads exit 0 on the merged tree.
+- **Version.** PATCH, `0.125.04` to `0.125.05`; `uv lock` changed the version line alone (180
+  packages).
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1
+(the reader on the real run of 2026-10-08, read-only on GitHub, at no cost); then the deploy
+skill's line on re-running a failed job.
+
+---
+
 ## Appendix — the planner's prototype
 
 Measured in `../ta-s267` at `b991d39e` on 2026-10-11 and then removed, so the worktree is clean.

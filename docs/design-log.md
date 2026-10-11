@@ -48,7 +48,7 @@ Evidence outside the repo: OneDrive `trading-agents-data/wq131-2026-10-11/`.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wake-window-2026-10-11/` (the 16 rules before and after).
 
-## DL-293 - the remote gate is one check short of `make ci`, and it is not the one that was named: the module header in `orchestration/` and `surfaces/` - status: MEASURED (planner, 2026-10-11 20:30 AEDT); mend proposed, not built; work-queue 129
+## DL-293 - the remote gate is one check short of `make ci`, and it is not the one that was named: the module header in `orchestration/` and `surfaces/` - status: MEASURED (planner, 2026-10-11 20:30 AEDT); MENDED and MERGED, no bump (`ff10da34`), F1 passed (amendment 1); work-queue 129 closed
 
 **Why.** S261's builder read that the workflow runs neither `check_param_law_sync.py` nor `check_untracked_secrets.py` on the normal tree. `CLAUDE.md` says the remote gate runs the steps `make ci` runs, and a handback is proven by the remote gate alone.
 
@@ -67,6 +67,8 @@ Evidence outside the repo: OneDrive `trading-agents-data/wake-window-2026-10-11/
 **Not measured.** Whether any other argument list differs between the two (read: only the header step's does; the test step adds `-m "not llm_qualification and not live"`, whose effect on which tests run was not counted).
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq129-2026-10-11/`.
+
+🔁 **Amendment 1, 2026-10-12 00:10 AEDT (planner) — mended by the planner as proposed, and merged.** The workflow's header step and the hook's pattern name the five packages; the workflow gains the parameter step; four invariants in a new `scripts/gate_selftest_parity_invariants.py` pin the arguments in the Makefile, the workflow and the hook (the first invariants file is at 186 lines). Windows `make ci` exit 0, sixteen steps (4,748 passed, 8 skipped, 100.00 %); `GATE PROVEN` for `ff10da34`; 128 open CodeQL alerts, none new. Five planted reverts each failed the self-test. *F1*, at no cost: the same headerless module in `surfaces/`, pushed on a throwaway branch (`07027791`, deleted; committed with the hook bypassed, because the hook refuses it: *"header missing Agent:, Role:"*), failed the remote `quality` job at *Module header guard*. **Not guarded:** a runner that stops reading an invariant table still exits 0 with fewer checks; true of every table. The remote gate now runs every step of `make ci` but the untracked-secrets scan, which has nothing to read on a fresh checkout.
 
 ## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128; MERGED as S269, `0.125.07` (`4b536d7e`), F1 passed at no cost (amendment 1); work-queue 128 closed
 

@@ -10,6 +10,40 @@ and is marked CLOSED here.
 
 ---
 
+## DL-288 - a tag is proven from any attempt of its build: the reader reads the latest log archive first and then each earlier attempt's - status: MEASURED and DECIDED (planner, 2026-10-11 10:21 AEDT); specced as [S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md); work-queue 115
+
+**Why.** DL-278 met the defect on 2026-10-08: a build in which one failed job was re-run read `success`, and `scripts/record_deploy.py` refused to record the deploy made from it. The reader's fix was left as work-queue 115, behind a rule in the deploy skill (*never re-run a failed job*). The operator asked for another sprint (2026-10-11) while S266 was being built; this was the next row that could be specced.
+
+**Measured (2026-10-11, read-only on GitHub).** Run `37767377219` (commit `49146e40`, tag `s259`) reads `run_attempt` 2 and `success`. `/actions/runs/{id}/logs`, the path `surfaces/dashboard/github_tag_builds.py` reads, serves the latest attempt's archive: 25,420 bytes, the scanner job alone, no mention of `trading-agents-master:s259`. `/actions/runs/{id}/attempts/1/logs` serves 434,794 bytes over 30 entries and names the tag five times as a complete tag; `/attempts/3/logs` answers HTTP 404. The run rows the reader already lists carry `run_attempt`: on 100 of the last 100 successful runs, 99 of them with one attempt. Through the repo's own reader: on `main` the tag `s259` has no build for the commit; on the prototype it has that run, after two reads, and `record_verified_deploy` on an in-memory graph records it. DL-278's sizes for the same archives (953 KB, 56 KB, ten mentions) were not reproduced three days on; the finding stands.
+
+**Decided.**
+
+- **D1 - every attempt of a successful run is evidence.** The reader lists only runs whose latest attempt concluded `success`; a job that was not re-run succeeded in the attempt whose log names it; a re-run builds the same commit with the same inputs.
+- **D2 - the latest archive first, at today's path, then each earlier attempt, newest first, stopping at the first that names the tag.** A run of one attempt costs the one read it costs today, and no existing test's fake changes.
+- **D3 - the attempt count is the run row's `run_attempt`.** Absent, one attempt; present and not an integer of one or more (a boolean included), the reader's incomplete-response error before any archive is read.
+- **D4 - an earlier archive that cannot be read is an error**, the same sanitised errors the latest archive raises.
+- **D5 - one new clause, `SRF-DEP-04`**, states the whole rule for proving a tag (the complete tag, every attempt, `main`'s history, unreadable is not absent). The surfaces' law had none; DRIFT-111.
+- **D6 - the change stays in `github_tag_builds.py`** (94 lines, 115 in the prototype): a fourth parameter on `run_log_mentions_tag`, defaulting to 1.
+
+**Ruled out.**
+
+- *Prove the tag from the registry* - a second credential scope and a second source for which commit a tag was built from.
+- *Read the first attempt first, or every attempt always* - 99 of 100 runs have one attempt; their one read and its path would change under every existing test.
+- *Read each job's log through the jobs API* - more calls for the same text.
+- *Take an earlier archive that cannot be read for an absent tag* - unreadable evidence and absent evidence must not look alike.
+- *Cap the attempts read* - no number to justify; each read is bounded by the timeout.
+- *Keep the skill's rule and close the row* - it costs a second build and a second tag each time one job flakes.
+
+**Named consequences.** After the merge and its check the deploy skill's rule can change: a failed job may be re-run before the fleet is retagged. The rule that a tag the fleet has pulled is never pushed again stands. A run of the same commit with more than one attempt that does not name the tag costs one more download for each earlier attempt.
+
+**Seen and left.** When no run of the commit names the tag, `record_verified_deploy` asks again without the commit and the reader downloads the archive of each of the last 100 successful `main` runs: on `main` the record step for `s259` did not finish in 280 seconds. It is the path that refuses, and it refuses correctly.
+
+**Prototype (measured, then removed from `../ta-s267`).** No existing test breaks (the 39 of the five related files pass unedited). Twelve of the fifteen planned tests fail on the unchanged code on behaviour; the three that pass state what does not change. Fifteen planted breaks, fifteen red.
+
+**Not claimed.** A real deploy recorded on the live graph from a build with a re-run job: that waits for the next job that fails.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq115-2026-10-11/`.
+
 ## DL-287 - a run's barrier history ends on the run's as-of, read through the run's lineage; the other eight wall-clock date reads S249 left stay as they are - status: MEASURED and DECIDED (planner, 2026-10-11 07:52 AEDT); specced as [S266](sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md); work-queue 103 part two
 
 **Why.** S249 (DL-255, DL-256) made a run's ingest follow the run's as-of and left nine wall-clock date reads as work-queue 103's second part, with *"which of them run inside a graph-pull run is not measured"*. The operator asked for the next sprint (2026-10-11); the queue's first row was this one.

@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128
+## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128; MERGED as S269, `0.125.07` (`4b536d7e`), F1 passed at no cost (amendment 1); work-queue 128 closed
 
 **Why.** DRIFT-112 ([DL-290](design-log.md) amendment 2): S268's check turns every value into text before it looks, so a required parameter returned as `null` is the text `None` and counts as given. The operator asked for it to be specced (2026-10-11: *"yes"*).
 
@@ -40,6 +40,8 @@ and is marked CLOSED here.
 **On the prototype.** One function, five more lines (`result.py` 149 to 154). The new tests: 19 of 26 fail on the unchanged code and all pass on the prototype; the seven that pass before are the guards that numbers, booleans and blank text do not move. No existing test breaks (4,735 passed, 8 skipped, the 26 new cases among them); 12 planted breaks, 12 red. The recipe hash does not move. The reach measurement on the prototype: every `null`, list and object under a required name is refused with the sentence, and the others are left out.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
+
+🔁 **Amendment 1, 2026-10-11 20:05 AEDT (planner) — built as decided and merged; what the check showed.** Built by Codex with no amendment to the seven decisions; `result.py` is the prototype byte for byte. Merged as `0.125.07` (`4b536d7e`, GATE PROVEN); 12 planted breaks, 12 red; no existing test changed. *F1*, at no cost: the sixteen cases through the chat handler on merged `main` print what the prototype printed, line for line. Nothing was found on the way and nothing is filed. Still not measured: whether a real model returns a `null`, and what `resolve_flag` does with a subject no flag has.
 
 ## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117; MERGED as S261, no bump (`be7594cb`), F1 passed at no cost (amendment 1); work-queue 117 closed
 

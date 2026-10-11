@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-269-a-null-parameter-is-no-value`
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — `0.125.07`, fast-forwarded to `4b536d7e`, tag `v0.125.07`, GATE PROVEN `4b536d7e` (CI, CodeQL, Security Findings); no deploy; F1 passed at no cost
 **Version:** `0.125.07` (PATCH)
 **Effort:** S
 **Decisions:** [DL-292](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-290](../design-log.md) amendment 2 (where the defect was met) · [work-queue 128](../work-queue.md) · DRIFT-112
@@ -353,7 +353,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s269`, branch `sprint-269-a-null-parameter-is-no-value`, `.env`: no. Starting clean HEAD: `9e565885ad7654c9783026dfc520d1858cf1ba97`.
 
@@ -722,6 +722,19 @@ taken from the handback.
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, all sixteen steps, the remote gate and the CodeQL set-diff for the commit that holds
 this block; then F1 at no cost.
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `4b536d7e`: all sixteen steps,
+4,748 passed, 8 skipped, 100.00 % coverage. `GATE PROVEN` for `4b536d7e`, run from `../ta-s269`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 128, the same 128 as on the last merged branch; none at error level. `main`
+fast-forwarded to that commit, tag `v0.125.07`.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1 passed*, at no cost: on the merged `main`, sixteen cases through the dashboard's chat handler,
+each typed once and then confirmed, print what the prototype printed, line for line. Every `null`,
+list and object under a required name is refused with S268's sentence, audited `refused`, no
+`Intent` written; under a name that is not required it is left out and the intent is passed on.
+No paid check and no deploy, as sequenced.
 
 ---
 

@@ -12,6 +12,22 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-294 - the fleet wakes on weekdays only and for one hour, 22:30 to 23:30 UTC - status: DECIDED (operator, 2026-10-11 21:00 AEDT) and APPLIED to the live fleet; the deploy script's defaults follow in a chore; work-queue 131
+
+**Why.** The operator asked why the window is two hours wide. *[measured 2026-10-11, the graph's records of two nights]* The run's last record was written at 22:44 UTC on 2026-10-08 and at 22:40 on 2026-10-09, from a 22:30 start; after that only the master's hourly readiness check ran (23:26, 00:26). Both nights had one debate; a night with several is not measured. *[measured, the live rules and the graph]* The wake rules fired every day while the dispatcher works on weekdays, so on Saturday and Sunday UTC the fleet woke with no run: the master's checks of 2026-10-10 are in the graph. Why the end was 00:30 is recorded nowhere; it predates DL-179.
+
+**Decided (operator).** *"yes, the shortest possible period. This may be reviewed later when we start managing error recoveries, but at the moment it is ok to save money"*, then, to the planner's 23:50: *"no, 9:30 to 10:30"* Melbourne time, which is 22:30 to 23:30 UTC. The master's start stays 20:25 UTC (DL-179's two retries).
+
+**Applied 2026-10-11.** Each of the 16 apps, its own rule name, start `25 20 * * 1-5` (master) or `30 22 * * 1-5`, end `30 23 * * 1-5`; each read back with `show`: 16 of 16 as set, one rule each, replica bounds and image (`s262`) unchanged. The rule each app had before is saved outside the repo.
+
+**Named, accepted for now.** A held run can be answered *Run now* until 23:20 UTC ([DL-183](design-log-archive/INDEX.md)); with the end at 23:30 a run placed that late is cut off after ten minutes. A run on a night with several debates may also need more than an hour: not measured. Both belong to the review the operator named.
+
+**Ruled out.** *End at 23:50* (the planner's proposal, the held-run path kept whole) - the operator chose the shorter hour. *Wind the fleet down when the run completes* (the operator's idea, the real saving) - it needs code: stopping an app drains it, but a stopped app ignores its next window, so something must start it again ([DL-219](design-log-archive/INDEX.md)); filed as work-queue 131, not built.
+
+**Found on the way.** `docs/deployment.md` gave the master's start as 22:25 and the dispatcher's schedule as once at 22:30; corrected. The status board read a weekday-only window as open on a weekend; `infra/status.ps1` now reads the weekday of the day the window starts on, and its *LAST RUNS* line, which lists the job's fires, is named *LAST FIRES*. The dispatcher's line says `placed` on each of five fires for a run placed once, and gives the calendar's reason when the true one is the time of day (work-queue 131).
+
+Evidence outside the repo: OneDrive `trading-agents-data/wake-window-2026-10-11/` (the 16 rules before and after).
+
 ## DL-293 - the remote gate is one check short of `make ci`, and it is not the one that was named: the module header in `orchestration/` and `surfaces/` - status: MEASURED (planner, 2026-10-11 20:30 AEDT); mend proposed, not built; work-queue 129
 
 **Why.** S261's builder read that the workflow runs neither `check_param_law_sync.py` nor `check_untracked_secrets.py` on the normal tree. `CLAUDE.md` says the remote gate runs the steps `make ci` runs, and a handback is proven by the remote gate alone.

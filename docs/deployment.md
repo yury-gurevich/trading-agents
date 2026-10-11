@@ -231,17 +231,17 @@ Default schedule:
 | Component | Schedule |
 | --- | --- |
 | `dispatcher-cron` job | `*/10 22-23 * * 1-5` UTC: every ten minutes, weekdays; it places a run only from 22:30 to 23:20 ([DL-183](design-log-archive/INDEX.md)) |
-| `master` app cron scale window | starts `25 20 * * *` UTC, two hours before the agents, for the readiness checks at 20:25, 21:25 and 22:25 ([DL-179](design-log-archive/INDEX.md)); measured on the live rule 2026-10-11 |
-| 12 agent app cron scale window | starts `30 22 * * *` UTC |
-| all app scale windows | end `30 00 * * *` UTC |
+| `master` app cron scale window | starts `25 20 * * 1-5` UTC, two hours before the agents, for the readiness checks at 20:25, 21:25 and 22:25 ([DL-179](design-log-archive/INDEX.md)); measured on the live rule 2026-10-11 |
+| 15 agent app cron scale window | starts `30 22 * * 1-5` UTC |
+| all app scale windows | end `30 23 * * 1-5` UTC (operator, 2026-10-11, [DL-294](design-log.md): weekdays only, one hour; it was every day until 00:30) |
 
 These are deployment parameters, not code literals:
 
 ```powershell
 pwsh infra/deploy-agents.ps1 up -Tag latest `
-  -MasterScaleStart '25 20 * * *' `
-  -AgentScaleStart '30 22 * * *' `
-  -ScaleEnd '30 00 * * *' `
+  -MasterScaleStart '25 20 * * 1-5' `
+  -AgentScaleStart '30 22 * * 1-5' `
+  -ScaleEnd '30 23 * * 1-5' `
   -ScaleTimezone UTC `
   -ScaleDesiredReplicas 1 `
   -DispatcherCron '*/10 22-23 * * 1-5'

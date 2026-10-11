@@ -173,8 +173,19 @@ function Test-InWindow([string]$Start, [string]$End) {
   if ($e[0] -notmatch '^\d+$' -or $e[1] -notmatch '^\d+$') { return $null }
   $now = [DateTime]::UtcNow; $mins = $now.Hour * 60 + $now.Minute
   $from = [int]$s[1] * 60 + [int]$s[0]; $to = [int]$e[1] * 60 + [int]$e[0]
-  if ($from -le $to) { return ($mins -ge $from -and $mins -lt $to) }
-  return ($mins -ge $from -or $mins -lt $to)   # window crosses midnight
+  # The day-of-week field belongs to the day the window STARTS on: a window that crossed
+  # midnight and is still open started yesterday. Without this a weekday-only window read
+  # as open on a weekend, and 0 pods inside it as a fault (2026-10-11).
+  $startDay = $now
+  if ($from -le $to) { $open = ($mins -ge $from -and $mins -lt $to) }
+  else {
+    $open = ($mins -ge $from -or $mins -lt $to)   # window crosses midnight
+    if ($mins -lt $to) { $startDay = $now.AddDays(-1) }
+  }
+  if (-not $open) { return $false }
+  if ($s.Count -lt 5) { return $true }
+  $dow = [int]$startDay.DayOfWeek
+  return ((Test-CronField $s[4] $dow) -or ($dow -eq 0 -and (Test-CronField $s[4] 7)))
 }
 
 function Format-WindowClock([string]$CronLike) {
@@ -284,7 +295,7 @@ function Show-Board {
   }
   $rows = @(@($execs) | Where-Object { $_ })
   if ($rows.Count) {
-    Write-Host "  LAST RUNS  " -ForegroundColor Yellow -NoNewline
+    Write-Host "  LAST FIRES " -ForegroundColor Yellow -NoNewline
     foreach ($e in $rows) {
       $mark = switch ($e.status) { 'Succeeded' { '✓' } 'Failed' { '✗' } default { '·' } }
       $c = switch ($e.status) { 'Succeeded' { 'Green' } 'Failed' { 'Red' } default { 'Yellow' } }

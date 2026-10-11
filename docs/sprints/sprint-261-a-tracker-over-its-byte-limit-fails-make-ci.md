@@ -760,6 +760,37 @@ FINAL SCOPE PROOF: PASS
 
 ---
 
+## Planner's review at the merge — 2026-10-11
+
+Re-measured by the planner in `../ta-s261` on the builder's tree, which was handed back uncommitted
+on `28d77906`; the planner committed it as `6782ba22`. Nothing here is taken from the handback.
+
+- **The code is the measured prototype byte for byte.** Every production file has the prototype's
+  blob id, read by applying the prototype's patch to `28d77906` in a scratch index: the new step
+  (`d2fc19a7`), the self-test runner, its invariants and its new case table, the `Makefile`, the
+  workflow, the charter, `CLAUDE.md` and `AGENTS.md`. The builder's two test files are its own.
+- **Guards.** The planner's 36 breaks of `scripts/check_tracker_size.py`, one at a time against
+  the builder's tests alone, each restored: **36 went red, none survived, none failed to apply.**
+- **The planner's own tests** (24 cases, written for the prototype) were placed beside the
+  builder's with their own fixtures and run on the built code: all passed. They are not committed.
+- **The step on the real tree.** After `main` was merged in it exits 0 and warns twice:
+  `docs/STATE.md` at 95 % and `docs/sprints/README.md` at 92 % of their limits.
+- **`main` moved during the build:** S268's merge and its records, and the S269 spec. They were
+  merged into this branch (`954a9a29`); the two met in one file, `docs/sprints/README.md`,
+  resolved row by row (every row but this sprint's is `main`'s, byte for byte).
+- **One working file was CRLF** (`scripts/check_tracker_size.py`; the committed bytes are LF).
+- **No version bump**, by the spec: the step ships no package behaviour.
+- **Two things the builder named, neither built here.** The parameter self-test leaves a compiled
+  file under its probe root that the empty-folder sweep cannot remove. And the workflow runs
+  neither `check_param_law_sync.py` nor `check_untracked_secrets.py` on the normal tree, although
+  `make ci` does: the remote gate is two steps short of the local one. Both go to the work queue.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1
+at no cost.
+
+---
+
 ## Appendix — the code, measured on the planner's prototype
 
 ### `scripts/check_tracker_size.py` (new, whole file)

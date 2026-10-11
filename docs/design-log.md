@@ -10,6 +10,41 @@ and is marked CLOSED here.
 
 ---
 
+## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT), design PROPOSED by the planner, not specced; work-queue 123 widened to it
+
+**Why.** Work-queue 123 asked the operator what a debater does when its vendor refuses its configured effort or model: refuse to start (no debate record, so under the binding posture every buy of the night is dropped) or fail each order open (the buys go undebated). The operator took neither: *"Refuse to start when another LLM can do the job and miss a day's run is not a best Idea. Let's create a list of LLM that can replace currently not working one ... we can switch Andropic with OpenAI or make a list of LLM+Effort combinations."* Before that, the operator asked whether the error can be recognised at run time: *"Does a return code tell you it is a 'effort mismatch'?"*
+
+**Measured (2026-10-11, three requests `gpt-5.5` refused before generation, no cost).** The HTTP status does not name the cause; the error body does.
+
+| Request | HTTP | `code` | `param` |
+| --- | --- | --- | --- |
+| effort `max`, Chat Completions | 400 | `unsupported_value` | `reasoning_effort` |
+| effort `max`, Responses API | 400 | `unsupported_value` | `reasoning.effort` |
+| model `claude-opus-5-5` | 404 | `model_not_found` | none |
+
+Each body's `type` is `invalid_request_error`, and the effort message lists the accepted values (`none`, `low`, `medium`, `high`, `xhigh`). *[read]* The master's LLM probes in `trading_credential_tests.json` send a model and no effort, so a refused effort passes activation today and is met on the first debate turn. *[read]* Since S262 the master runs the declared vendor's probes alone and hands over that vendor's key alone (`agents/master/credential_selection.py`); `build_llm`'s docstring says *"never silently switch vendors"*. *[not measured]* What Anthropic answers to an effort or a model it does not take; the Anthropic error bodies already in this log carry a `type` and a message and no `code` or `param`.
+
+**Proposed.**
+
+- **P1 - the declaration is an ordered list.** `orchestration/packs/trading_llm.json` holds candidates, each a vendor, a model and an effort, the preferred one first. The proposed first list: `openai` / `gpt-5.5` / `high`, then `anthropic` / `claude-opus-5` / `max` (the operator keeps the debate on OpenAI while the DSPy work is plumbed: operator, 2026-10-07, work-queue 110). The effort belongs to its entry, so the default mismatch of work-queue 123 cannot be declared by accident.
+- **P2 - the choice is made at activation, before the night's work.** The master probes each candidate with its own model and effort, in order, and an agent runs on the first that passes. This covers an empty account, a bad key, a refused effort and a missing model. A candidate that fails is recorded and told to the operator; it does not make the run degraded. An agent is refused only when no candidate passes.
+- **P3 - a switch during the night.** A turn whose request the vendor refuses before generation is retried once on the next candidate, and the process stays on that candidate. Each ledger row already names the model that answered; the debate record says which candidate ran and why an earlier one was passed over, and the morning brief says so.
+
+**What it costs, to be stated in the spec.** An LLM agent holds the key of every candidate that passed, which reverses S262's rule that only the selected vendor's key is handed over (DL-282). `build_llm`'s rule becomes: never switch to a vendor that is not declared, and never without a record. A debate may hold turns from two vendors after a switch in the night. A fallback spends the other vendor's account.
+
+**Ruled out.**
+
+- *Refuse to start* - a night's buys are lost while another model could have debated them (operator, 2026-10-11).
+- *Fail every order open, as today* - the buys go undebated, with no attempt on the other vendor.
+- *A retry inside the same vendor alone* (the planner's proposal earlier the same day: retry once at the vendor's default effort or model) - it mends the effort and the model name and does nothing for an empty account, which is the failure the fleet has met (2026-10-06, DL-265).
+- *Every vendor's probe required at activation*, as before S262 - one empty account made the run degraded and held every buy (work-queue 109).
+
+**Open, for the spec.** Whether a time-out moves to the next candidate: the manager waits 240 seconds for a turn and execution 1,800 for the record, so a second attempt costs debate time (work-queue 113). Whether the change restarts the fidelity count (DL-237): the list lives outside the tunables pack, the deliberator's code changes. Whether the operator's chat follows the same list. Anthropic's two refusals, measured the way OpenAI's were.
+
+**Size.** A feature, in two sprints: the list and the choice at activation (P1, P2), then the switch during the night (P3). Work-queue 123's two fixes are inside the first.
+
+---
+
 ## DL-288 - a tag is proven from any attempt of its build: the reader reads the latest log archive first and then each earlier attempt's - status: MEASURED and DECIDED (planner, 2026-10-11 10:21 AEDT); specced as [S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md); work-queue 115; MERGED as S267 `0.125.05` (`475dba3c`), F1 passed at no cost (amendment 1); work-queue 115 closed
 
 **Why.** DL-278 met the defect on 2026-10-08: a build in which one failed job was re-run read `success`, and `scripts/record_deploy.py` refused to record the deploy made from it. The reader's fix was left as work-queue 115, behind a rule in the deploy skill (*never re-run a failed job*). The operator asked for another sprint (2026-10-11) while S266 was being built; this was the next row that could be specced.

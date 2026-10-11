@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-11 11:42 AEDT · **Version:** **0.125.05 on `main`, not deployed; the fleet is on `s262` = 0.125.00** (image-only retag from `d01b71b3`, rollback `s259a` with the master's eight-probe pack) · **[S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md) is merged and its check passed at no cost (work-queue 115 closed: a tag is proven from any attempt of its build, so a failed job may be re-run before a retag); [S266](sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md) is merged and both its checks passed at no cost (work-queue 103 closed: a run's barrier history ends on the run's as-of); [S265](sprints/sprint-265-a-failed-chat-request-is-audited-and-says-why.md) is merged and both its checks passed (work-queue 125 closed); [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md)'s F2 passed on `sched-2026-10-09`; debates run three at once, as a live setting.**
+**Last updated:** 2026-10-11 12:41 AEDT · **Version:** **0.125.05 on `main`, not deployed; the fleet is on `s262` = 0.125.00** (image-only retag from `d01b71b3`, rollback `s259a` with the master's eight-probe pack) · **[S267](sprints/sprint-267-a-tag-is-proven-from-any-attempt-of-its-build.md) is merged and its check passed at no cost (work-queue 115 closed: a tag is proven from any attempt of its build, so a failed job may be re-run before a retag); [S266](sprints/sprint-266-a-runs-barrier-history-ends-on-its-as-of.md) is merged and both its checks passed at no cost (work-queue 103 closed: a run's barrier history ends on the run's as-of); [S265](sprints/sprint-265-a-failed-chat-request-is-audited-and-says-why.md) is merged and both its checks passed (work-queue 125 closed); [S262](sprints/sprint-262-the-llm-vendor-is-one-declared-value-and-one-command-applies-it.md)'s F2 passed on `sched-2026-10-09`; debates run three at once, as a live setting.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -100,9 +100,11 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 second ranking.
 
 1. **Small fixes off the fidelity
-   decision paths:** **the debaters' effort and model checks**
-   (work-queue 123, a decision first) and **an intent that lacks its required parameters**
-   (work-queue 126).
+   decision paths:** **an intent that lacks its required parameters** (work-queue 126), and
+   **the size limits as a step of `make ci`** (sprint 261, the two files over their limit frozen
+   at their measured size). **The debaters' effort and model checks (work-queue 123) are widened
+   by the operator, 2026-10-11, to a declared list of fallback models** ([DL-289](design-log.md)):
+   proposed, not specced, a feature in two sprints.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. **The tracker trim's two remaining files** (*Now*), then the size limits as a step of `make ci`

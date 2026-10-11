@@ -10,6 +10,33 @@ and is marked CLOSED here.
 
 ---
 
+## DL-290 - an intent is passed on only when its family is known and every parameter that family cannot do without is given under a name its readers take; the model is told the names - status: MEASURED and DECIDED (planner, 2026-10-11 14:15 AEDT); specced as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md); work-queue 126
+
+**Why.** DRIFT-109 (DL-286): `OPR-FAIL-02` says an intent with missing required fields is refused, and an `approve` with no target, a `modify` with no name or value and a reply with no family at all are passed on. Work-queue 126 left open whether to refuse or to reword the clause.
+
+**Measured (2026-10-11, no vendor call).** Refusing on the grammar as it stands would refuse commands that work. *[measured]* The grammar's `params` are read by no code. *[read]* The system prompt lists each family with its description alone and the tool schema's `parameters` is a bare object, so the model is told no parameter name. *[read]* The readers take other names: the supervisor reads an `approve` as `subject` or `target`, a `stage` as `stage` or `target`, a `resume`'s stage as `from_stage` or `stage`; the chat surface falls back to the typed text for an `explain` with no `subject` and adds the selected run's id to a `resume`; no reader takes a `run`'s `stage` except the hard-NO for `live`. *[read]* An unknown family is refused today with its audit reading `intent`. *[measured, prototype in the sprint worktree]* Three existing tests break and no other of 4,675; with them edited and the new tests added 4,710 pass; 19 planted breaks, 19 red. *[not measured]* Which names each real model returns per family, and what the unattended scorecard counts for such a refusal.
+
+**Decided.**
+
+- **D1 - required:** `approve` and `reject` a `target` (or `subject`); `modify` a `name` and a `value`; `mode` a `mode`; `stage` a `stage` (or `target`); `resume` a `stage` (or `from_stage`). The grammar holds, for each, the names its readers take; the first is the one told to the model and named in a refusal.
+- **D2 - not required:** `explain`'s `subject` (the surface has the typed text), `run`'s `stage` (no reader takes it), `resume`'s `run_id` (the surface supplies it).
+- **D3 - a blank value is a missing one; a `parameters` that is not an object is no parameters.**
+- **D4 - no family, a family that is not a string, or an unknown one is refused with one fixed sentence.** A reply with no family is no longer a `status` intent, and the model's own reason is not shown for it.
+- **D5 - the check runs after the explicit command grammar and only on an `intent`.**
+- **D6 - the audit of a refused intent reads `refused`.** For an unknown family it read `intent` with no `Intent` written.
+- **D7 - the system prompt states each family's parameter names** and tells the model to ask for clarification when the command does not give one the intent cannot do without. The operator's prompt recipe hash changes.
+
+**Ruled out.**
+
+- *Reword the clause to what the code does* - an `approve` that names nothing asks the operator to confirm nothing.
+- *Refuse on the grammar's list as it stands* - see Measured.
+- *One name per parameter in the supervisor* - a second agent's law cycle for no gain.
+- *Per-family parameter properties in the tool schema* - not measured on either vendor.
+
+**Named, not built.** A `run` whose reply carries no `stage` passes the supervisor's hard-NO for `live`, as before. No value is validated by the operator: a `stage` of an unknown name is the supervisor's to refuse. A deployment that sets its own operator system prompt does not get the parameter names.
+
+---
+
 ## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT), design PROPOSED by the planner, not specced; work-queue 123 widened to it
 
 **Why.** Work-queue 123 asked the operator what a debater does when its vendor refuses its configured effort or model: refuse to start (no debate record, so under the binding posture every buy of the night is dropped) or fail each order open (the buys go undebated). The operator took neither: *"Refuse to start when another LLM can do the job and miss a day's run is not a best Idea. Let's create a list of LLM that can replace currently not working one ... we can switch Andropic with OpenAI or make a list of LLM+Effort combinations."* Before that, the operator asked whether the error can be recognised at run time: *"Does a return code tell you it is a 'effort mismatch'?"*

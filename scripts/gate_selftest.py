@@ -26,6 +26,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.gate_selftest_cases import FAILURE_CASES  # noqa: E402
+from scripts.gate_selftest_docs_cases import DOCS_FAILURE_CASES  # noqa: E402
 from scripts.gate_selftest_invariants import INVARIANTS  # noqa: E402
 from scripts.gate_selftest_types import (  # noqa: E402
     PROBE_PREFIX,
@@ -125,7 +126,7 @@ def main() -> int:
         print(f"swept {len(stale)} stale probe file(s): {', '.join(stale)}")
 
     results: list[tuple[str, bool, str]] = []
-    for case in FAILURE_CASES:
+    for case in (*FAILURE_CASES, *DOCS_FAILURE_CASES):
         ok, detail = run_failure_case(case, root)
         results.append((f"can-fail: {case.name}", ok, detail))
         print(f"{'PASS' if ok else 'FAIL'}  can-fail: {case.name} — {detail}")

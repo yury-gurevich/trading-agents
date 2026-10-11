@@ -53,6 +53,7 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run python scripts/check_law_coverage.py
 	uv run python scripts/check_param_law_sync.py
 	uv run python scripts/check_sprint_status.py
+	uv run python scripts/check_tracker_size.py
 	uv run python scripts/check_markdown_links.py
 	uv run python scripts/check_version_scheme.py
 	uv run pytest

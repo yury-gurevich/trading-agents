@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-261-a-tracker-over-its-byte-limit-fails-make-ci` (worktree `../ta-s261`, prepared)
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-291](../design-log.md) the gate reads its limits from the charter · work-queue 117 · [housekeeping charter](../../ops/departments/housekeeping/charter.md) G-SIZE, OPS-TRIM
@@ -209,19 +209,19 @@ in a 63-line helper module, `tests/tracker_size_fixtures.py`; one file of both w
 
 ## Success factors
 
-- [ ] `uv run python scripts/check_tracker_size.py` exits 0 on the branch and prints seven lines.
-- [ ] The thirteen tests pass, and each was seen red before the script existed.
-- [ ] `scripts/check_tracker_size.py` is the Appendix's text byte for byte, and `scripts/` holds no
+- [x] `uv run python scripts/check_tracker_size.py` exits 0 on the branch and prints seven lines.
+- [x] The thirteen tests pass, and each was seen red before the script existed.
+- [x] `scripts/check_tracker_size.py` is the Appendix's text byte for byte, and `scripts/` holds no
       limit as a number.
-- [ ] `make ci` runs 16 steps, the new one directly after sprint status; `ci.yml` has the same step in
+- [x] `make ci` runs 16 steps, the new one directly after sprint status; `ci.yml` has the same step in
       the same place.
-- [ ] `uv run python scripts/gate_selftest.py` exits 0 and prints `PASS  can-fail: tracker-size` and
+- [x] `uv run python scripts/gate_selftest.py` exits 0 and prints `PASS  can-fail: tracker-size` and
       the two `tracker-size-gate-wired` invariants.
-- [ ] No tracker, law book, contract or agent file is edited; `git diff --stat main` lists only the
+- [x] No tracker, law book, contract or agent file is edited; `git diff --stat main` lists only the
       files of the Blast radius row and this document and its README row.
-- [ ] Every planted break of the Traps list went red and was restored — stated per break.
-- [ ] Every touched module < 200 lines; `gate_selftest_cases.py` still 346.
-- [ ] `make ci` exit 0, 100.00 % coverage. No version bump.
+- [x] Every planted break of the Traps list went red and was restored — stated per break.
+- [x] Every touched module < 200 lines; `gate_selftest_cases.py` still 346.
+- [x] `make ci` exit 0, 100.00 % coverage. No version bump.
 
 ---
 
@@ -346,11 +346,14 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Rule file(s) read | What binds it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <the gate or section> | <Yes/No + what changed> |
+| Checker and thirteen tests | `ops/departments/housekeeping/charter.md` (whole); this spec (whole) | G-SIZE and OPS-TRIM: seven charter limits, decimal KB, git-stored LF bytes, over-limit failure | No: implement the Appendix exactly; use isolated planted charters and trackers. |
+| Self-test case, runner and invariants | `scripts/module_size_baseline.py` (whole); `CLAUDE.md`, Module size | Hard block at 200 lines; `gate_selftest_cases.py` is frozen at 346 and may only shrink | No: put the new case in the Appendix's separate module; split test fixtures into a helper. |
+| Makefile and CI workflow | `CLAUDE.md`, CI gate | Run every step, redirect to a file, read its exit and output; keep both command lists aligned | No: add tracker size directly after sprint status in both lists. |
+| CLAUDE.md, AGENTS.md and charter | This spec's Appendix; both rule files (whole); charter (whole) | Exact step-count and G-SIZE wording changes; no limit or table-row changes | No: apply the supplied diff without extending scope. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + why>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No: no contracts or agents change; the checker enforces the existing G-SIZE guarantee.
 
-**Contradictions found between the charter and this spec:** <none | what, and what you did>
+**Contradictions found between the charter and this spec:** none. OPS-TRIM already says a tracker over its limit fails once the gate exists; the Appendix updates that wording and makes equality explicit. Reading recorded before any code change in `../ta-s261`, branch `sprint-261-a-tracker-over-its-byte-limit-fails-make-ci`; initial tree clean, checker absent, `.env` absent, HEAD `28d77906cc347cee0f8970cc4dbb67c2190c92d3`.
 
 ---
 
@@ -358,52 +361,402 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status |
 | --- | --- | --- | --- |
-| T1 | <name> | <file> | PASS/FAIL |
+| T1 | `test_under_limit_reports_exact_size` | `tests/test_check_tracker_size.py` | PASS |
+| T2 | `test_one_byte_over_fails_and_exact_limit_still_reported` | `tests/test_check_tracker_size.py` | PASS |
+| T3 | `test_crlf_counts_git_stored_bytes` | `tests/test_check_tracker_size.py` | PASS |
+| T4 | `test_utf8_counts_bytes_not_characters` | `tests/test_check_tracker_size.py` | PASS |
+| T5 | `test_missing_tracker_fails` | `tests/test_check_tracker_size.py` | PASS |
+| T6 | `test_ninety_percent_warns_without_failing` | `tests/test_check_tracker_size.py` | PASS |
+| T7 | `test_unreadable_rows_fail_without_partial_reports` | `tests/test_check_tracker_size.py` | PASS |
+| T8 | `test_absent_ambiguous_empty_or_duplicate_table_fails` | `tests/test_check_tracker_size.py` | PASS |
+| T9 | `test_missing_unreadable_or_duplicate_sections_fail` | `tests/test_check_tracker_size.py` | PASS |
+| T10 | `test_padded_cells_and_aligned_rule_rows_read` | `tests/test_check_tracker_size.py` | PASS |
+| T11 | `test_only_ops_trim_limit_table_is_read` | `tests/test_check_tracker_size.py` | PASS |
+| T12 | `test_repository_charter_tracks_seven_existing_files` | `tests/test_check_tracker_size.py` | PASS |
+| T13 | `test_no_argument_uses_working_directory` | `tests/test_check_tracker_size.py` | PASS |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none. Thirteen test functions; T7 loops over all eight malformed rows, T8 over all five bad table shapes, and T9 over the two file failures and duplicate sections.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s261`, branch `sprint-261-a-tracker-over-its-byte-limit-fails-make-ci`; `.env` no. Initial HEAD `28d77906cc347cee0f8970cc4dbb67c2190c92d3`; all proof commands ran from this worktree's root.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** The checker reports all seven real trackers within their charter limits and exits 0. The thirteen tests pass, including one-byte overflow, exact-limit equality, LF byte counting, missing trackers and fail-closed charter parsing. All twelve prescribed breaks made those tests red and were restored to green. Both gate lists run tracker size directly after sprint status; the self-test rejected its planted overflow and passed both wiring invariants. Local `make ci` completed all sixteen commands with exit 0 and 100.00 % coverage; the gate self-test passed 34/34.
 
-**Files changed:** <list>
+**Files changed:** new `scripts/check_tracker_size.py`, `scripts/gate_selftest_docs_cases.py`, `tests/test_check_tracker_size.py`, `tests/tracker_size_fixtures.py`; edited `scripts/gate_selftest.py`, `scripts/gate_selftest_invariants.py`, `Makefile`, `.github/workflows/ci.yml`, `CLAUDE.md`, `AGENTS.md`, `ops/departments/housekeeping/charter.md`, this sprint document and only the Sprint 261 status token in `docs/sprints/README.md`.
+
+**Preflight:** the Appendix checker was executed in memory before its file existed, against the untouched branch's trackers: exit 0. `git apply --check` on the Appendix diff: exit 0. No charter/spec contradiction. No tracker trim or limit change was needed.
 
 **Proof — the red run first:**
 
+Ran `uv run pytest tests/test_check_tracker_size.py --no-cov -q` before the checker existed; exit 1. Redirected to `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/red-tests.txt`.
+
 ```text
-<the failing test output, before the script existed>
+FFFFFFFFFFFFF                                                            [100%]
+================================== FAILURES ===================================
+_____________________ test_under_limit_reports_exact_size _____________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:25: in test_under_limit_reports_exact_size
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+___________ test_one_byte_over_fails_and_exact_limit_still_reported ___________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:33: in test_one_byte_over_fails_and_exact_limit_still_reported
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+______________________ test_crlf_counts_git_stored_bytes ______________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:48: in test_crlf_counts_git_stored_bytes
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+____________________ test_utf8_counts_bytes_not_characters ____________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:59: in test_utf8_counts_bytes_not_characters
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+_________________________ test_missing_tracker_fails __________________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:67: in test_missing_tracker_fails
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+__________________ test_ninety_percent_warns_without_failing __________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:75: in test_ninety_percent_warns_without_failing
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+______________ test_unreadable_rows_fail_without_partial_reports ______________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:90: in test_unreadable_rows_fail_without_partial_reports
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+____________ test_absent_ambiguous_empty_or_duplicate_table_fails _____________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:101: in test_absent_ambiguous_empty_or_duplicate_table_fails
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+_____________ test_missing_unreadable_or_duplicate_sections_fail ______________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:110: in test_missing_unreadable_or_duplicate_sections_fail
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+________________ test_padded_cells_and_aligned_rule_rows_read _________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:124: in test_padded_cells_and_aligned_rule_rows_read
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+___________________ test_only_ops_trim_limit_table_is_read ____________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:137: in test_only_ops_trim_limit_table_is_read
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+_____________ test_repository_charter_tracks_seven_existing_files _____________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:144: in test_repository_charter_tracks_seven_existing_files
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+___________________ test_no_argument_uses_working_directory ___________________
+tests\tracker_size_fixtures.py:29: in load_checker
+    return importlib.import_module("scripts.check_tracker_size")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'scripts.check_tracker_size'
+
+During handling of the above exception, another exception occurred:
+tests\test_check_tracker_size.py:161: in test_no_argument_uses_working_directory
+    checker = load_checker()
+              ^^^^^^^^^^^^^^
+tests\tracker_size_fixtures.py:31: in load_checker
+    pytest.fail(f"tracker size checker is missing: {exc}")
+E   Failed: tracker size checker is missing: No module named 'scripts.check_tracker_size'
+=========================== short test summary info ===========================
+FAILED tests/test_check_tracker_size.py::test_under_limit_reports_exact_size
+FAILED tests/test_check_tracker_size.py::test_one_byte_over_fails_and_exact_limit_still_reported
+FAILED tests/test_check_tracker_size.py::test_crlf_counts_git_stored_bytes - ...
+FAILED tests/test_check_tracker_size.py::test_utf8_counts_bytes_not_characters
+FAILED tests/test_check_tracker_size.py::test_missing_tracker_fails - Failed:...
+FAILED tests/test_check_tracker_size.py::test_ninety_percent_warns_without_failing
+FAILED tests/test_check_tracker_size.py::test_unreadable_rows_fail_without_partial_reports
+FAILED tests/test_check_tracker_size.py::test_absent_ambiguous_empty_or_duplicate_table_fails
+FAILED tests/test_check_tracker_size.py::test_missing_unreadable_or_duplicate_sections_fail
+FAILED tests/test_check_tracker_size.py::test_padded_cells_and_aligned_rule_rows_read
+FAILED tests/test_check_tracker_size.py::test_only_ops_trim_limit_table_is_read
+FAILED tests/test_check_tracker_size.py::test_repository_charter_tracks_seven_existing_files
+FAILED tests/test_check_tracker_size.py::test_no_argument_uses_working_directory
+13 failed in 4.24s
 ```
 
 **Proof — the green run:**
 
+`uv run pytest tests/test_check_tracker_size.py --no-cov -q`, exit 0; redirected to `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/green-tests.txt`.
+
 ```text
-<the passing output, and the step's seven lines>
+.............                                                            [100%]
+13 passed in 1.35s
 ```
 
-**Guards planted:** <per break of the Traps list: that it failed, that it was restored>
+`uv run python scripts/check_tracker_size.py`, exit 0 after the README status change; redirected to `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/tracker-size-final.txt`.
 
-**Gate self-test:** redirected to `<path>`. Exit code <n>. <the `can-fail: tracker-size` line and the two invariant lines>
+```text
+[WARN] docs/STATE.md: 36,320 of 40,000 bytes (90 %)
+[OK] docs/work-queue.md: 55,865 of 64,000 bytes (87 %)
+[WARN] docs/sprints/README.md: 91,745 of 96,000 bytes (95 %)
+[OK] docs/sprints/INDEX.md: 23,863 of 48,000 bytes (49 %)
+[OK] docs/design-log.md: 334,004 of 512,000 bytes (65 %)
+[OK] docs/laws/functionality-checks.md: 96,790 of 160,000 bytes (60 %)
+[OK] docs/laws/drift-register.md: 130,343 of 160,000 bytes (81 %)
+```
 
-**Module line counts:** <file **n**, file **n**>
+**Guards planted:** each prescribed break was planted alone, ran `uv run pytest tests/test_check_tracker_size.py --no-cov -q`, failed, and was restored before the next break. Pasted test summaries follow; logs are `guard-NN-red.txt` and `guard-NN-restored.txt` under `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/` (break 6's final restoration is `guard-06-restored-final.txt`).
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+| Break | Guard | Planted result | Restoration result |
+| --- | --- | --- | --- |
+| 1 | equality is allowed | `2 failed, 11 passed in 1.81s`; exit 1 | restored; `13 passed in 1.26s`; exit 0 |
+| 2 | CRLF normalization | `1 failed, 12 passed in 1.44s`; exit 1 | restored; `13 passed in 1.22s`; exit 0 |
+| 3 | warning boundary | `1 failed, 12 passed in 1.47s`; exit 1 | restored; `13 passed in 1.22s`; exit 0 |
+| 4 | decimal KB | `8 failed, 5 passed in 1.52s`; exit 1 | restored; `13 passed in 1.24s`; exit 0 |
+| 5 | whole limit cell | `1 failed, 12 passed in 1.53s`; exit 1 | restored; `13 passed in 1.44s`; exit 0 |
+| 6 | unreadable row rejection | `1 failed, 12 passed in 1.90s`; exit 1 | restored; `13 passed in 1.27s`; exit 0 |
+| 7 | unique table | `1 failed, 12 passed in 1.46s`; exit 1 | restored; `13 passed in 1.27s`; exit 0 |
+| 8 | section end | `11 failed, 2 passed in 1.49s`; exit 1 | restored; `13 passed in 1.25s`; exit 0 |
+| 9 | table end | `10 failed, 3 passed in 1.53s`; exit 1 | restored; `13 passed in 1.29s`; exit 0 |
+| 10 | failure exit | `3 failed, 10 passed in 1.49s`; exit 1 | restored; `13 passed in 1.26s`; exit 0 |
+| 11 | missing tracker failure | `1 failed, 12 passed in 1.70s`; exit 1 | restored; `13 passed in 1.42s`; exit 0 |
+| 12 | working directory root | `1 failed, 12 passed in 1.77s`; exit 1 | restored; `13 passed in 1.62s`; exit 0 |
 
-**Not met / verified failing:** <plainly, or "none">
+Break 6's first restoration patch matched the separator-row `continue` rather than the malformed-row branch; that intermediate restoration was verified failing (`11 failed, 2 passed in 1.79s`, exit 1). Both branches were corrected, the checker was compared byte for byte to the Appendix, and the final restoration passed before break 7.
+
+**Gate self-test:** `uv run python scripts/gate_selftest.py`, redirected to `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/gate-selftest.txt`. Exit code **0**. The complete file was read; actual output:
+
+```text
+PASS  can-fail: ruff — rejected (exit 1)
+PASS  can-fail: module-size — rejected (exit 1)
+PASS  can-fail: module-size-reads-scripts — rejected (exit 1)
+PASS  can-fail: module-header — rejected (exit 1)
+PASS  can-fail: law-coverage — rejected (exit 1)
+PASS  can-fail: param-law-sync — rejected (exit 1)
+PASS  can-fail: sprint-status — rejected (exit 1)
+PASS  can-fail: markdown-links — rejected (exit 1)
+PASS  can-fail: version-scheme — rejected (exit 1)
+PASS  can-fail: untracked-secrets — rejected (exit 1)
+PASS  can-fail: pip-audit-cve — rejected (exit 1)
+PASS  can-fail: accepted-advisory-re-check — rejected (exit 1)
+PASS  can-fail: gate-ran-rejects-abbreviated-sha — rejected (exit 1)
+PASS  can-fail: gate-ran-rejects-zero-runs — rejected (exit 1)
+PASS  can-fail: gate-ran-judges-the-newest-attempt-not-the-first — rejected (exit 1)
+PASS  can-fail: tracker-size — rejected (exit 1)
+PASS  invariant: merge-procedure-asserts-a-run-exists — present
+PASS  invariant: gate-ran-target-exists — present
+PASS  invariant: security-gate-runs-on-push — present
+PASS  invariant: ci-runs-on-push — present
+PASS  invariant: sprint-status-gate-wired-locally — present
+PASS  invariant: sprint-status-gate-wired-in-ci — present
+PASS  invariant: tracker-size-gate-wired-locally — present
+PASS  invariant: tracker-size-gate-wired-in-ci — present
+PASS  invariant: untracked-scan-wired-into-ci — present
+PASS  invariant: dependency-audit-not-ignored-by-ci — present
+PASS  invariant: dependency-audit-wired-in-ci — present
+PASS  invariant: size-block-reads-scripts-locally — present
+PASS  invariant: size-block-reads-scripts-in-ci — present
+PASS  invariant: dependabot-pins-python-to-3-13 — present
+PASS  invariant: graph-vocabulary-guard-wired — present
+PASS  invariant: graph-vocabulary-injected-at-deploy — present
+PASS  invariant: codeql-custom-query-referenced — present
+PASS  invariant: codeql-config-queries-not-overridden — present
+
+gate self-test: 34/34 passed
+```
+
+**Module line counts:** `scripts/check_tracker_size.py` **115**, `scripts/gate_selftest_docs_cases.py` **45**, `scripts/gate_selftest.py` **156**, `scripts/gate_selftest_invariants.py` **186**, `tests/test_check_tracker_size.py` **165**, `tests/tracker_size_fixtures.py` **71**. All touched Python modules are below 200; untouched `scripts/gate_selftest_cases.py` remains **346**. Both new scripts match the Appendix byte for byte, and the seven diffed files match its target git blob hashes.
+
+**`make ci`:** redirected to `C:/Users/yury_/Downloads/project/ta-s261-evidence/2026-10-11/make-ci.txt`, with no pipe. Exit code **0** (`MAKE_CI_EXIT=0`). The complete 2,157-line file was read and its sixteen commands compared with the expanded `ci:` target in order. **4,687 passed, 8 skipped**, coverage **100.00 %**. Dependency audit passed: no unaccepted vulnerabilities, one existing accepted advisory re-checked. detect-secrets passed for both tracked files and all four new files. Actual final output:
+
+```text
+TOTAL                                                           20252      0   4292      0  100.00%
+Coverage HTML written to dir htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4687 passed, 8 skipped, 2470 warnings in 573.26s (0:09:33) ==========
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 4 new file(s)
+```
+
+**Not met / verified failing:** no unresolved failure in the build scope. Eight conditional tests are not done (skipped: local `.env`/Service Bus/Celery/Postgres proof, optional SciPy oracle and provider network probes; exact reasons above). Commit, push, remote gates, the planner's 24 tests and 36 breaks, merge, F1 and the later tracker closeouts are **not done**; they belong to the planner's subsequent sequence. No version bump; `uv.lock` untouched.
+
+---
+
+**Final documentation and scope checks:** after filling the handback and setting both statuses to BUILT, the sprint-status, Markdown-link and documentation secret checks passed. Logs are `final-sprint-status.txt`, `final-markdown-links.txt` and `final-docs-secrets.txt` in the same external evidence directory. The final scope check compared both new scripts with the Appendix, all seven diffed files with its target blobs, the README byte change with HEAD and all excluded files with HEAD; it checked all thirteen changed/new files for LF and every touched Python module for the line block. Actual output:
+
+```text
+SPRINT_STATUS_EXIT=0
+docs_seen=273 SPEC=11 BUILT=1 MERGED=261 UNMAPPED=0 MISSING=0
+MARKDOWN_LINKS_EXIT=0
+DOCS_SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+SCOPE: all 13 files allowed; LF; BUILT; handback filled; correct branch; no .env; no script probe residue
+FINAL SCOPE PROOF: PASS
+```
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the charter.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: all thirteen changed/new files are in the specified blast radius or handback. No tracker was trimmed, moved or shortened; the only tracker edit changes the Sprint 261 README status token from SPEC to BUILT, adding one byte. No agent, contract, law book, limit, exemption, version, lockfile, frozen case table or excluded tracker changed. Working files have LF line ends. Changes remain uncommitted and unpushed on the requested branch.
+- No disagreement with the spec after reading the charter. The initial branch passed the Appendix checker in memory, and the supplied diff applied cleanly; both new scripts are byte-for-byte Appendix copies and all seven diffed files match the Appendix's target blob hashes. Use branch-specific context when restoring repeated `continue` statements: the corrected break 6 restoration and its extra red evidence are recorded above.
+- The current branch emits two passing size warnings: `docs/STATE.md` at 90 % and `docs/sprints/README.md` at 95 %. The README was 91,744 bytes before the status change and is 91,745 after it; no size limit moved. The planner's review, push/exact-SHA remote proof, merge, F1 and later work-queue/STATE/functionality-register closeouts are not done. The completed status and evidence edits passed the affected documentation checks recorded above.
+- The existing PARAM self-test leaves an ignored 676-byte `settings.cpython-313.pyc` under its probe root, preventing the empty-directory cleanup. The generated bytecode was removed by its verified literal path, then the existing empty-directory sweep removed the probe directories. The final scope check confirms no script probe residue. A runner cleanup change is not done: the runner stays exactly at the Appendix's version.
+- Existing workflow parity gap, outside this Appendix: `ci.yml` has no standalone normal-tree `check_param_law_sync.py` or `check_untracked_secrets.py` command, while the local sixteen-command target does. Its gate self-test exercises the planted cases. The specified tracker-size step is wired in both places; extending unrelated remote steps is not done because this sprint requires the exact Appendix diff. Remote gate execution remains not done.
 
 ---
 

@@ -3,7 +3,7 @@ department: housekeeping
 tier: x cross-cutting
 owner: operator + AI housekeeping loop  (→ candidate "Librarian" agent)
 status: draft
-version: 0.3
+version: 0.4
 implements_with: [.gitignore, ops/maintenance/ledger.md, "del-folder convention (../trading-agent-del/)"]
 ---
 
@@ -60,7 +60,7 @@ file, docs that lie about reality. **Blast radius is comprehension, not runtime.
 | G-HIST | no large binary in git history; artifacts gitignored | `git count-objects` pack small | gitignore; history rewrite only via PNR-HK-01 |
 | G-LINK | a move/rename left no dead inbound links | all links resolve | fix the references |
 | G-DOC | README/INDEX reflect the current structure | current | refresh in the same change |
-| G-SIZE | each live tracker is under its size limit, counted in bytes | the table under OPS-TRIM | run the tracker trim |
+| G-SIZE | each live tracker is at or under its size limit, counted in bytes | `scripts/check_tracker_size.py`, a step of `make ci`, reading the table under OPS-TRIM | run the tracker trim |
 
 ## OPS-ACT · Actions / Runbooks
 
@@ -104,8 +104,10 @@ entry on which something is still owed.
 
 **Who and when.** The Librarian, at the first session of each week, and whenever a tracker passes its
 limit. `STATE.md` is trimmed by whoever is writing it that session, because deciding what is still
-owed there is not housekeeping. Until `make ci` checks the limits the trim measures them by hand;
-the gate step is a chore of its own, and once it exists a tracker over its limit fails the gate.
+owed there is not housekeeping. `make ci` checks the limits (`scripts/check_tracker_size.py`, S261). It reads the table above and holds
+no number of its own: a tracker over its limit fails the gate, and so does a row of that table it
+cannot read. A row is read as the tracker's path in backticks in its first cell and a whole number
+of KB in its second; from 90 % of its limit a tracker is reported as due for the next trim.
 
 ## OPS-PNR · Points of no return
 
@@ -170,5 +172,6 @@ become a specific agent.")
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — registers the root / INDEX / README / git-size housekeeping process; names the future Librarian agent |
+| 0.4 | 2026-10-11 | G-SIZE is checked by `make ci` (S261): the gate reads the limits from the table under OPS-TRIM |
 | 0.3 | 2026-10-11 | first trim of the design log and the functionality-check register, and what it taught the two rules: an older design-log entry that the work queue or STATE links stays live; the register's operations table and harness lesson stay; a KB is 1,000 bytes on the file as git stores it |
 | 0.2 | 2026-10-09 | the tracker trim (OPS-TRIM) and gate G-SIZE: size limits in bytes for the seven most-edited trackers, what leaves each and where it goes, weekly cadence (operator: *"yes, please"* to a maintenance schedule for frequently edited files) |

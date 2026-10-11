@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused`
-**Status:** MERGED 2026-10-11 — `0.125.06`, fast-forwarded to `e9f4f4a8`, tag `v0.125.06`, GATE PROVEN `e9f4f4a8` (CI, CodeQL, Security Findings); no deploy; F1a passed at no cost; F1b waits for the operator's word
+**Status:** MERGED 2026-10-11 — `0.125.06`, fast-forwarded to `e9f4f4a8`, tag `v0.125.06`, GATE PROVEN `e9f4f4a8` (CI, CodeQL, Security Findings); no deploy; F1a passed at no cost; F1b passed on OpenAI ($0.04), not run on Anthropic
 **Version:** `0.125.06` (PATCH)
 **Effort:** S
 **Decisions:** [DL-290](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-286](../design-log.md) (where the defect was met) · [work-queue 126](../work-queue.md) · DRIFT-109
@@ -876,7 +876,12 @@ given (a `resume` gains the selected run from the surface); the two replies that
 keep the model's outcome and reason; a typed `approve flag:case-1` is passed on although the
 model's reply names no target. The same script on `main` before the merge (`28d77906`) failed 68
 of 180: every incomplete intent came back *"confirmation required - resubmit with
-confirmed=true"*. *F1b is not done:* paid, on both vendors, on the operator's word.
+confirmed=true"*. *F1b passed on OpenAI*, 8 of 8, paid (the operator: *"go for it"*, to OpenAI alone),
+**$0.0422**: eight typed commands through the chat handler on `main` at `9237ec24` with the
+real adapter (`gpt-5.5`, effort `xhigh`, cap 4,096). Each of the six complete commands came
+back under the first accepted name the prompt lists and no alias did; each of the two that
+omit a parameter was answered `needs_clarification`. *Not run on Anthropic.* *Met on the
+way:* a required parameter returned as `null` counts as given (DRIFT-112, work-queue 128).
 
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1a

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-270-the-deploy-defaults-are-the-live-wake-window`
-**Status:** BUILT
+**Status:** MERGED 2026-10-12 — `0.125.08`, fast-forwarded to `5d242a8e`, tag `v0.125.08`, GATE PROVEN `5d242a8e` (CI, CodeQL, Security Findings); F1 passed at no cost; deploy owed
 **Version:** `0.125.08` (PATCH)
 **Effort:** S
 **Decisions:** [DL-295](../design-log.md) (this sprint's five decisions, made and measured) · [DL-294](../design-log.md) (the operator's window, applied to the live fleet) · [work-queue 131](../work-queue.md) part (e)
@@ -381,7 +381,7 @@ None. W1-W7 are 29 new collected cases; the existing invariants file still colle
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):**
 
@@ -885,6 +885,19 @@ Nothing here is taken from the handback.
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, all sixteen steps, the remote gate and the CodeQL set-diff for the commit that holds
 this block; then F1 at no cost, and the deploy the operator asked for.
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `5d242a8e`: all sixteen steps,
+4,777 passed, 8 skipped, 100.00 % coverage. `GATE PROVEN` for `5d242a8e`, run from `../ta-s270`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 128, the same 128 as on the last merged branch; none at error level. `main`
+fast-forwarded to that commit, tag `v0.125.08`.
+
+**After the merge, 2026-10-12 ([functionality checks](../laws/functionality-checks.md)).**
+*F1 passed*, at no cost and read-only: on the merged `main` the script's three defaults equal the
+scale rule of each of the 16 live apps; the dashboard's settings give the window cards as
+07:25-10:30 and 09:30-10:30 Melbourne, and name Monday 20:25 UTC as the next check from a
+Saturday noon, a Sunday evening and a Monday morning, and none while Monday's window is open.
+The deploy is not done.
 
 ---
 

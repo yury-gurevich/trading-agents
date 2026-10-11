@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-295 - the deploy script's defaults become the live wake window, and the dashboard learns the window's weekdays - status: MEASURED and DECIDED (planner, 2026-10-11 22:30 AEDT); specced as [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md); work-queue 131 part (e)
+## DL-295 - the deploy script's defaults become the live wake window, and the dashboard learns the window's weekdays - status: MEASURED and DECIDED (planner, 2026-10-11 22:30 AEDT); specced as [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md); work-queue 131 part (e); MERGED as `0.125.08` (`5d242a8e`), F1 passed (amendment 1)
 
 **Why.** [DL-294](design-log.md) was applied to the live apps by hand. `infra/deploy-agents.ps1` still defaults to every day until 00:30 and passes its defaults at every app's create and update, so a full `up` reverts the window silently. The dashboard copies its window from those defaults and has no weekday: on a Saturday it names Saturday 20:25 UTC as the next fleet check.
 
@@ -31,6 +31,8 @@ and is marked CLOSED here.
 **On the prototype.** One existing test breaks, the one that pins the old literal; 21 of the 41 cases in the two test files fail on the unchanged code and all pass on the prototype; full suite 4,777 passed, 8 skipped, 100.00 %; 15 planted breaks, 15 red; the script parses.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq131-2026-10-11/`.
+
+🔁 **Amendment 1, 2026-10-12 01:10 AEDT (planner) — built as decided and merged.** Built by Codex with no amendment to the five decisions; the three production files are the prototype byte for byte. Merged as `0.125.08` (`5d242a8e`, GATE PROVEN); 15 planted breaks, 15 red. *F1*, at no cost: the script's defaults equal the 16 live rules, and the dashboard names Monday 20:25 UTC as the next check across a weekend. Nothing found on the way. The deploy the operator asked for is owed.
 
 ## DL-294 - the fleet wakes on weekdays only and for one hour, 22:30 to 23:30 UTC - status: DECIDED (operator, 2026-10-11 21:00 AEDT) and APPLIED to the live fleet; the deploy script's defaults follow in a chore; work-queue 131
 

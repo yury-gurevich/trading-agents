@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-266-a-runs-barrier-history-ends-on-its-as-of`
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — `0.125.04`, fast-forwarded to `b1580076`, tag `v0.125.04`, GATE PROVEN `b1580076` (CI, CodeQL, Security Findings); not deployed (image-only, with the next retag); F1a and F1b passed, both at no cost
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-287](../design-log.md) (this sprint's six decisions, made and measured) · [DL-255](../design-log.md) / [DL-256](../design-log.md) (part one, the ingest) · [work-queue 103](../work-queue.md), part two · DRIFT-110
@@ -567,7 +567,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s266`, branch `sprint-266-a-runs-barrier-history-ends-on-its-as-of`; `.env` absent (checked before tests). Unit fixtures use an in-memory graph and fake sources/fitter. `uv run --frozen` with `UV_OFFLINE=1`; no bare `uv sync`.
 
@@ -1155,3 +1155,37 @@ handback.
   a night with a qualifying buy.
 - **Version.** PATCH, `0.125.03` to `0.125.04`; `uv lock` changed the version line alone (180
   packages).
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch before `main` was merged in: all
+15 steps, 4,655 passed, 8 skipped, 100.00 % coverage, and the dependency audit the builder could
+not run found nothing unaccepted (one accepted advisory re-checked). On the merged tree, where no
+Python file differs from the one the full gate ran on, every step but the tests was run again and
+passed. `GATE PROVEN` for `b1580076`, run from `../ta-s266`, the printed SHA equal to its `HEAD`:
+CI, CodeQL and Security Findings each `success`. Open CodeQL alerts on the branch: 127, the same
+alert numbers as on the last merged branch, none at error level and none in a file this sprint
+touched. `main` fast-forwarded to that commit and tagged `v0.125.04`.
+
+**The same fault looked for in the whole suite.** With the clock moved one day forward once
+collection had finished, so that every test ran a UTC day after its module was imported, the suite
+read 4,654 passed and 1 failed. The one failure is not a date fault: an execution test measures a
+grace of 900 seconds from a time fixed at import, so it fails when the suite reaches it more than
+fifteen minutes after collection and not when a run crosses midnight. The same shifted clock fails
+the three end-to-end tests on the builder's fixture and passes them on the mended one. Nothing
+else failed.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1a passed* on the merged `main`, from the main checkout, at no cost: the planner's script prints
+what it printed on the prototype, the two dates apart (the UTC date had moved from 2026-10-10 to
+2026-10-11). On the fleet-shaped path and on the in-process pass a run for an as-of three days back
+stores a `BarrierHistory` ending on the as-of, each ticker's newest bar the as-of's, and each claim
+dated and priced on it. Of the nine reads a fleet-shaped run reaches two: the barrier window, which
+now returns the as-of, and the settlement pass's date, which stays by decision.
+*F1b passed*, 7 of 7 checks, at no cost: the merged provider on the live market source and an
+in-memory graph was given `sched-2026-10-08`'s two buys on 2026-10-11, three calendar days after
+the run's as-of. Its history's window is 2023-09-09 to 2026-10-08, the scheduled run's own, and
+GOOGL and TMO each hold 760 bars, bar for bar what the scheduled run stored on the live graph
+(newest 2026-10-08, closes 348.29 and 651.98). The control, a run with no lineage, ends on
+2026-10-11 and its newest bar is 2026-10-09's: a later bar was there to take. The same script
+failed 4 of 7 checks on `main` before the merge. **Not proven by either:** a past-dated run or an
+analyst-stage resume on the deployed fleet, which runs the code before this sprint until the next
+retag.

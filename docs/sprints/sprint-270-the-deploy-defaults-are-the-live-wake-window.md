@@ -859,6 +859,35 @@ UNTRACKED_SECRETS_EXIT=0
 
 ---
 
+## Planner's review at the merge — 2026-10-12
+
+Re-measured by the planner in `../ta-s270` on the builder's commits `e8650614` and `92cc2165`.
+Nothing here is taken from the handback.
+
+- **The code is the measured prototype byte for byte.** The three production files have the
+  Appendix's blob ids (`cde71d80`, `32883a57`, `f26cca6c`). Against the spec's commit the branch
+  changes the twelve files the spec names and no other; one existing test is edited, the one named.
+- **Guards.** The planner's 15 breaks, one at a time against `surfaces/tests` and the invariants
+  file, each restored: **15 went red, none survived, none failed to apply**; the restored tree is
+  green.
+- **The planner's own tests** (29 cases, written for the prototype) were placed beside the
+  builder's and run on the built code with the builder's file and the invariants file: 70 passed.
+  They are not committed.
+- **The law cycle, read by hand where the gate does not look.** The two `PARAM` rows are the
+  given text, the law reads v1.7 and the Changelog has its entry; the surfaces' row reads v1.7 in
+  `docs/laws/INDEX.md` and in `docs/laws/ledger.md`; the counts stand at 31 / 38.
+- **`main` moved during the build:** the planner's own mend of work-queue 129 (`ff10da34`: the
+  remote gate's header folders, a new self-test table) and its records. Merged into this branch
+  (`d8889161`) with no conflict. The builder's scope check against the newer `main` named that
+  mend's new file and said so plainly; against the spec's commit the scope holds.
+- **PATCH bump to `0.125.08`**; the change to `uv.lock` is the one version line.
+
+**Written at the merge, before the gate — what was still owed then:** the planner's Windows
+`make ci`, all sixteen steps, the remote gate and the CodeQL set-diff for the commit that holds
+this block; then F1 at no cost, and the deploy the operator asked for.
+
+---
+
 ## Appendix — the code, measured on the planner's prototype
 
 ### `infra/deploy-agents.ps1` — lines 21 to 23 become these four

@@ -12,6 +12,35 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128
+
+**Why.** DRIFT-112 ([DL-290](design-log.md) amendment 2): S268's check turns every value into text before it looks, so a required parameter returned as `null` is the text `None` and counts as given. The operator asked for it to be specced (2026-10-11: *"yes"*).
+
+**Measured (2026-10-11, no vendor call; `main` at `3fb617ce`).** Each case is one typed message through the dashboard's chat handler on a fresh in-memory context with a canned reply, unconfirmed and then confirmed. *[measured]* A `null` under a required name is passed on for all six families with a requirement. A confirmed `approve` of `None` answers *"Command routed to supervisor.resolve_flag."*; a confirmed `run` whose stage is `null` is routed to `orchestration.execute_run`; `stage` and `resume` are refused by the supervisor (*"invalid stage target: None"*); `reject`, `modify` and `mode` stop at the build phase. *[read]* The supervisor reads the first name that is not empty (`subject or target`, `stage or target`), so a `null` under the first name hides a real value under the second. *[read]* `explain` falls back to the typed question only when the subject is empty, so a `null` subject asks the model to explain `None`. *[measured]* A list or an object is passed on as Python's rendering of it: `["flag:case-1"]` becomes the target `['flag:case-1']` and is routed after confirmation. *[measured]* A number and a boolean are carried as text (`8`, `0`, `False`), before and after. *[measured]* Both readers of a reply's parameters, the check and the intent that is built, call one function, `_params`. *[measured, paid, S268's check]* gpt-5.5 returned no `null` in eight calls; *[ASSUMED - not measured]* whether Anthropic's model does, and what `resolve_flag` does with a subject no flag has.
+
+**Decided.**
+
+- **D1 - a value is text, a number or a boolean.** A `null`, a list and an object are not values.
+- **D2 - the mend is in `_params`**, the one function both readers call, so the check, the built intent and the stored `Intent` agree.
+- **D3 - a parameter that holds no value is left out of the intent, required or not.** A required one is then missing and the intent is refused; an `explain` falls back to the typed question; a real value under a second accepted name is no longer hidden.
+- **D4 - a structure is dropped whole, never flattened.**
+- **D5 - no new sentence and no fault.** The sentence S268 added says the model's reply gave none.
+- **D6 - blank text does not move:** missing where required, carried as it is where not.
+- **D7 - a number and a boolean are carried as the text Python gives them, as today** (`false` is `False`).
+
+**Ruled out.**
+
+- *Mend the check alone* - the text `None` would still be stored, still replace the typed question in `explain`, and still hide a real value under the second name.
+- *Drop a `null` only* - a list is passed on as text and routed after confirmation; no reader takes a structure.
+- *Take the one item of a one-item list* - a guess at what the model meant.
+- *One name per parameter in the supervisor* - as in DL-290: a second agent's law cycle, and the other readers stay as they are.
+
+**Named, not built.** Leaving out a parameter that is not required writes no note anywhere: the typed intent the operator confirms shows what is left. A `run` with no stage is still passed on (DL-290). `OPR-FAIL-02` gains one sentence (operator law v1.10); no clause is added.
+
+**On the prototype.** One function, five more lines (`result.py` 149 to 154). The new tests: 19 of 26 fail on the unchanged code and all pass on the prototype; the seven that pass before are the guards that numbers, booleans and blank text do not move. No existing test breaks (4,735 passed, 8 skipped, the 26 new cases among them); 12 planted breaks, 12 red. The recipe hash does not move. The reach measurement on the prototype: every `null`, list and object under a required name is refused with the sentence, and the others are left out.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
+
 ## DL-291 - `make ci` checks the trackers' byte limits, reading them from the housekeeping charter; the last two over-limit files were trimmed first, so nothing is exempt - status: MEASURED and DECIDED (planner, 2026-10-11 16:55 AEDT); specced as [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md); work-queue 117
 
 **Why.** The housekeeping charter (OPS-TRIM, gate G-SIZE, 2026-10-09) limits the seven most-edited trackers in bytes and says the limits become a step of `make ci`. Until today they were measured by hand, and two files were never trimmed: the design log stood at 1,323,742 bytes against 512 KB and the functionality-check register at 285,316 against 160 KB. The operator asked for another sprint for Codex on 2026-10-11; the gate was the next small one that touches no file S268 does.

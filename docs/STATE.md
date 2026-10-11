@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-11 18:05 AEDT · **Version:** **0.125.06 on `main`, not deployed; the fleet is on `s262` = 0.125.00** (image-only retag from `d01b71b3`, rollback `s259a` with the master's eight-probe pack) · **[S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md) is merged and its free check passed (work-queue 126 closed: an intent that lacks what its family needs is refused); its paid check passed on OpenAI (not run on Anthropic). [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md) is with Codex. Every live tracker is within its byte limit; debates run three at once, as a live setting.**
+**Last updated:** 2026-10-11 18:20 AEDT · **Version:** **0.125.06 on `main`, not deployed; the fleet is on `s262` = 0.125.00** (image-only retag from `d01b71b3`, rollback `s259a` with the master's eight-probe pack) · **[S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md) is merged and its free check passed (work-queue 126 closed: an intent that lacks what its family needs is refused); its paid check passed on OpenAI (not run on Anthropic). [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md) is with Codex; [S269](sprints/sprint-269-a-null-parameter-is-no-value.md) is specced for Codex (work-queue 128: a `null` parameter counts as given). Every live tracker is within its byte limit; debates run three at once, as a live setting.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…18.md` + git). **LAW-02:** an item is "shipped" only when
@@ -102,12 +102,12 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 second ranking.
 
 1. **Small fixes off the fidelity
-   decision paths:** **an intent that lacks its required parameters** (work-queue 126), **specced
-   2026-10-11 as [S268](sprints/sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused.md)
-   for Codex, worktree `../ta-s268`, not yet handed over** ([DL-290](design-log.md)), and
+   decision paths:** **a parameter the model returns as `null` counts as given** (work-queue 128), **specced
+   2026-10-11 as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md)
+   for Codex, worktree `../ta-s269`, not yet handed over** ([DL-292](design-log.md)), and
    **the size limits as a step of `make ci`** (work-queue 117), **specced 2026-10-11 as
    [S261](sprints/sprint-261-a-tracker-over-its-byte-limit-fails-make-ci.md) for Codex, worktree
-   `../ta-s261`, not yet handed over** ([DL-291](design-log.md); nothing is frozen, both files
+   `../ta-s261`, with Codex since 2026-10-11** ([DL-291](design-log.md); nothing is frozen, both files
    that were over their limit were trimmed first). **The debaters' effort and model checks (work-queue 123) are widened
    by the operator, 2026-10-11, to a declared list of fallback models** ([DL-289](design-log.md)):
    proposed, not specced, a feature in two sprints.

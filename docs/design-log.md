@@ -12,6 +12,26 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-293 - the remote gate is one check short of `make ci`, and it is not the one that was named: the module header in `orchestration/` and `surfaces/` - status: MEASURED (planner, 2026-10-11 20:30 AEDT); mend proposed, not built; work-queue 129
+
+**Why.** S261's builder read that the workflow runs neither `check_param_law_sync.py` nor `check_untracked_secrets.py` on the normal tree. `CLAUDE.md` says the remote gate runs the steps `make ci` runs, and a handback is proven by the remote gate alone.
+
+**Measured (2026-10-11, a throwaway branch at `a09ab32f`, deleted after; no cost).** One commit with two plants: a PARAM row in the monitor's law that no settings field has, and `surfaces/wq129_probe_no_header.py`, a docstring with no `Agent:` or `Role:`.
+
+- Locally `check_param_law_sync.py` exits 1 on the row, and `check_module_header.py` exits 1 with the Makefile's folders and 0 with the workflow's.
+- The commit was accepted with the hooks on: the header hook's `files:` pattern names `kernel|contracts|agents|scripts`.
+- Remotely the `quality` job was green, the *Module header guard* step `success`. The `test` job failed on the parameter row alone (`tests/test_param_law_sync_repo.py`, two tests); nothing failed for the header.
+
+**So.** The parameter step's absence hides nothing: the tests read the real tree. The untracked-secrets step has nothing to read on a fresh checkout. The real gap is the one nobody named: a module in `orchestration/` or `surfaces/` with no header passes the hook and the remote gate, and is stopped only by a local `make ci`. No such module is on `main` (the local step is green).
+
+**Proposed, not built.** The workflow's header step and the hook's pattern name the five packages; the gate self-test gains an invariant for each, as S261 added for the tracker step; the parameter step joins the workflow so a wrong row reads as its own red line. `CLAUDE.md`'s sentence is then true.
+
+**Ruled out.** *Generate the workflow's steps from the Makefile* - one source would end the drift for good, but it is a rewrite of the gate for a three-line gap. *Leave the parameter step out* - the tests do catch it; adding it costs one line and makes the failure name its cause.
+
+**Not measured.** Whether any other argument list differs between the two (read: only the header step's does; the test step adds `-m "not llm_qualification and not live"`, whose effect on which tests run was not counted).
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq129-2026-10-11/`.
+
 ## DL-292 - a parameter the model returns as `null`, a list or an object is no value: it is left out of the intent, required or not - status: MEASURED and DECIDED (planner, 2026-10-11 18:20 AEDT); specced as [S269](sprints/sprint-269-a-null-parameter-is-no-value.md); work-queue 128; MERGED as S269, `0.125.07` (`4b536d7e`), F1 passed at no cost (amendment 1); work-queue 128 closed
 
 **Why.** DRIFT-112 ([DL-290](design-log.md) amendment 2): S268's check turns every value into text before it looks, so a required parameter returned as `null` is the text `None` and counts as given. The operator asked for it to be specced (2026-10-11: *"yes"*).

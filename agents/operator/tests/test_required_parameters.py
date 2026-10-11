@@ -149,8 +149,11 @@ def test_a6_missing_names_and_refusal_sentences_are_pinned() -> None:
         "The model's reply named no command this system has, so nothing was done."
     )
     assert replies.missing_parameters_reply("modify", ("name", "value")) == (
-        "A modify command needs its name and value, and the model's "
+        "The modify command needs its name and value, and the model's "
         "reply gave none, so nothing was done. Say it again and name it."
+    )
+    assert replies.missing_parameters_reply("approve", ("target",)).startswith(
+        "The approve command needs its target, "
     )
 
 

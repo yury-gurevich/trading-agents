@@ -226,6 +226,7 @@ Existing tests to edit, and no other:
 
 - [x] Every row of the Test plan is a passing test that cites `OPR-FAIL-02`.
 - [x] The production diff equals the Appendix (`git diff main -- agents/operator/agent.py agents/operator/domain`).
+      *(As handed back. The planner then changed one word of the refusal sentence: see the review.)*
 - [x] No test in `test_failed_request_*.py` or `test_cutoff_*.py` changed.
 - [x] Exactly the three existing tests named above changed.
 - [x] The operator recipe hash equals the Measured table's, or the difference is explained.
@@ -812,9 +813,10 @@ on `b8f112af`; the planner committed it as `e54759bd`. Nothing here is taken fro
   fixture, the operator's two law files, the drift register, `.secrets.baseline`, the two version
   files, this file and its README row. No file in `agents/supervisor`, `surfaces/` or `contracts/`,
   no design-log entry, no test in `test_failed_request_*.py` or `test_cutoff_*.py`. Every one is LF.
-- **The code is the measured prototype byte for byte.** The four production files and the fixture
-  have the prototype's blob ids (`f53f78f9`, `6a1c1227`, `fe9b066c`, `d4a9a83e`, `69d77d5a`), read
-  by applying the prototype's patch to `b8f112af` in a scratch index.
+- **As handed back, the code was the measured prototype byte for byte.** The four production
+  files and the fixture had the prototype's blob ids (`f53f78f9`, `6a1c1227`, `fe9b066c`,
+  `d4a9a83e`, `69d77d5a`), read by applying the prototype's patch to `b8f112af` in a scratch
+  index. One word of one of them was then changed by the planner (below).
 - **Guards.** The planner's 19 breaks, one at a time against the builder's tests alone, each
   restored: **19 went red, none survived, none failed to apply**; the restored tree is green.
 - **The planner's own tests** (35 cases, written for the prototype) were placed beside the
@@ -834,7 +836,14 @@ on `b8f112af`; the planner committed it as `e54759bd`. Nothing here is taken fro
   `.secrets.baseline`, and the spec named the fixture and not the baseline, so the builder's
   second `make ci` stopped at detect-secrets. One fingerprint changed and nothing else: it is the
   SHA-1 of the new hash (`80eaf1c8…`), as the old one was of the old hash (`4cb73d92…`).
-- **Four changes made by the planner on the branch, all in docs.**
+- **One change made by the planner in the code, a fault in the planner's own prototype.** Run
+  through the chat handler, the refusal for an approve read *"A approve command needs its
+  target"*. The sentence now begins *"The {family} command"* (`result.py`, one word), A6 pins the
+  new letters and the approve sentence's opening, and with the old word put back A6 goes red. So
+  `result.py` differs from the Appendix below in that word and the test file is 196 lines. The
+  recipe hash does not read `result.py` and is unchanged. The 19 breaks were run again on the
+  final code: 19 red.
+- **Four changes made by the planner in docs.**
   1. `docs/laws/INDEX.md` and `docs/laws/ledger.md` still read operator v1.8. A gap in the spec,
      which said the gate would recompute the rollups: the gate checks the counts, not the version
      label. Both rows now read v1.9 and say what this sprint did.

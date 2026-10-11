@@ -44,7 +44,7 @@ UNKNOWN_FAMILY_REPLY = (
 def missing_parameters_reply(family: str, missing: tuple[str, ...]) -> str:
     """Say which parameters a command of this family was given without."""
     return (
-        f"A {family} command needs its {' and '.join(missing)}, and the model's "
+        f"The {family} command needs its {' and '.join(missing)}, and the model's "
         "reply gave none, so nothing was done. Say it again and name it."
     )
 

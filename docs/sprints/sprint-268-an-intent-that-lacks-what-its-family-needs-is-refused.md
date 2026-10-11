@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused`
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — `0.125.06`, fast-forwarded to `e9f4f4a8`, tag `v0.125.06`, GATE PROVEN `e9f4f4a8` (CI, CodeQL, Security Findings); no deploy; F1a passed at no cost; F1b waits for the operator's word
 **Version:** `0.125.06` (PATCH)
 **Effort:** S
 **Decisions:** [DL-290](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-286](../design-log.md) (where the defect was met) · [work-queue 126](../work-queue.md) · DRIFT-109
@@ -372,7 +372,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s268`, branch `sprint-268-an-intent-that-lacks-what-its-family-needs-is-refused`, base HEAD `b8f112af6437eb87f725fc9019371b03f3d19292`. `.env` present: False. All proofs used this worktree; no main worktree edit. Changes remain uncommitted; version and lock are staged.
 
@@ -859,6 +859,24 @@ on `b8f112af`; the planner committed it as `e54759bd`. Nothing here is taken fro
   `docs/sprints/README.md`, on neighbouring rows, resolved row by row (every row but this
   sprint's is `main`'s, byte for byte).
 - **Version.** PATCH, `0.125.05` to `0.125.06`; `uv lock` changed the version line alone.
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `e9f4f4a8`: all 15 steps, 4,709
+passed, 8 skipped, 100.00 % coverage. `GATE PROVEN` for `e9f4f4a8`, run from `../ta-s268`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 127, the same alert numbers as on the last merged branch, none at error
+level. `main` fast-forwarded to that commit and tagged `v0.125.06`.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1a passed*, 180 of 180 checks over 33 cases, on the merged `main`, from the main checkout, at no
+cost: each case of A1 to A5 as one typed message through the dashboard's chat handler, a fresh
+in-memory context and one canned model reply a case. The eleven incomplete intents and the five of
+no known family are each answered with the fixed sentence, audited `refused`, with no `Intent`
+written and one model call; the fourteen complete ones are passed on with their parameters as
+given (a `resume` gains the selected run from the surface); the two replies that are not intents
+keep the model's outcome and reason; a typed `approve flag:case-1` is passed on although the
+model's reply names no target. The same script on `main` before the merge (`28d77906`) failed 68
+of 180: every incomplete intent came back *"confirmation required - resubmit with
+confirmed=true"*. *F1b is not done:* paid, on both vendors, on the operator's word.
 
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1a

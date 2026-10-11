@@ -193,7 +193,7 @@ HOW TO PROVE IT
 `docs/decisions/INDEX.md`, `docs/design-log.md`, `docs/STATE.md`, `pyproject.toml`, and `uv.lock`.
 
 **Design decisions:** recorded as
-[DL-108](../design-log.md#dl-108---s175-makes-the-veto-say-only-what-it-can-prove---status-decided-2026-08-13).
+[DL-108](../design-log-archive/DL-001-to-140.md#dl-108---s175-makes-the-veto-say-only-what-it-can-prove---status-decided-2026-08-13).
 
 1. Removed the invented ATR pass/fail fragment instead of relabelling it advisory. Rejected:
    retaining `stop_pct vs ATR% -> PASSED/FAILED`, because no PM gate performs that comparison;

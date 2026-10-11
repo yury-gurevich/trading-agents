@@ -28,6 +28,7 @@ if str(_ROOT) not in sys.path:
 from scripts.gate_selftest_cases import FAILURE_CASES  # noqa: E402
 from scripts.gate_selftest_docs_cases import DOCS_FAILURE_CASES  # noqa: E402
 from scripts.gate_selftest_invariants import INVARIANTS  # noqa: E402
+from scripts.gate_selftest_parity_invariants import PARITY_INVARIANTS  # noqa: E402
 from scripts.gate_selftest_types import (  # noqa: E402
     PROBE_PREFIX,
     FailureCase,
@@ -132,7 +133,7 @@ def main() -> int:
         print(f"{'PASS' if ok else 'FAIL'}  can-fail: {case.name} — {detail}")
         if not ok:
             print(f"      why it matters: {case.why}")
-    for inv in INVARIANTS:
+    for inv in (*INVARIANTS, *PARITY_INVARIANTS):
         ok, detail = check_invariant(inv, root)
         results.append((f"invariant: {inv.name}", ok, detail))
         print(f"{'PASS' if ok else 'FAIL'}  invariant: {inv.name} — {detail}")

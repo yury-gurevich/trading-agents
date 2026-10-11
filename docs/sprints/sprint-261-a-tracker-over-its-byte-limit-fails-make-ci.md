@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-261-a-tracker-over-its-byte-limit-fails-make-ci` (worktree `../ta-s261`, prepared)
-**Status:** BUILT
+**Status:** MERGED 2026-10-11 — no version bump, fast-forwarded to `be7594cb`, GATE PROVEN `be7594cb` (CI, CodeQL, Security Findings); no deploy; F1 passed at no cost
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-291](../design-log.md) the gate reads its limits from the charter · work-queue 117 · [housekeeping charter](../../ops/departments/housekeeping/charter.md) G-SIZE, OPS-TRIM
@@ -381,7 +381,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s261`, branch `sprint-261-a-tracker-over-its-byte-limit-fails-make-ci`; `.env` no. Initial HEAD `28d77906cc347cee0f8970cc4dbb67c2190c92d3`; all proof commands ran from this worktree's root.
 
@@ -784,6 +784,20 @@ on `28d77906`; the planner committed it as `6782ba22`. Nothing here is taken fro
   file under its probe root that the empty-folder sweep cannot remove. And the workflow runs
   neither `check_param_law_sync.py` nor `check_untracked_secrets.py` on the normal tree, although
   `make ci` does: the remote gate is two steps short of the local one. Both go to the work queue.
+
+**The gate and the merge.** Windows `make ci` exit 0 on the branch at `be7594cb`: all sixteen steps,
+4,722 passed, 8 skipped, 100.00 % coverage. `GATE PROVEN` for `be7594cb`, run from `../ta-s261`, the
+printed SHA equal to its `HEAD`: CI, CodeQL and Security Findings each `success`. Open CodeQL
+alerts on the branch: 128, one more than on the last merged branch, a note (`py/mixed-returns`) in
+`tests/tracker_size_fixtures.py` where a helper ends in `pytest.fail`; none at error level.
+`main` fast-forwarded to that commit. No tag: no bump.
+
+**After the merge, 2026-10-11 ([functionality checks](../laws/functionality-checks.md)).**
+*F1 passed*, at no cost: on the merged `main` the step exits 0 and warns for two trackers; on a
+scratch copy of the charter and the seven trackers it exits 0 untouched, passes with `STATE.md`
+padded to exactly 40,000 bytes, and exits 1 at 40,001 naming the file and the overshoot; the
+remote CI run of the commit shows the step *Tracker size limits* green. STATE was trimmed in the
+merge record's own commit, from 95 % of its limit.
 
 **Written at the merge, before the gate — what was still owed then:** the planner's Windows
 `make ci`, the remote gate and the CodeQL set-diff for the commit that holds this block; then F1

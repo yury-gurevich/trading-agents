@@ -12,6 +12,26 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-295 - the deploy script's defaults become the live wake window, and the dashboard learns the window's weekdays - status: MEASURED and DECIDED (planner, 2026-10-11 22:30 AEDT); specced as [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md); work-queue 131 part (e)
+
+**Why.** [DL-294](design-log.md) was applied to the live apps by hand. `infra/deploy-agents.ps1` still defaults to every day until 00:30 and passes its defaults at every app's create and update, so a full `up` reverts the window silently. The dashboard copies its window from those defaults and has no weekday: on a Saturday it names Saturday 20:25 UTC as the next fleet check.
+
+**Decided.**
+
+- **D1 - the script's defaults are the live window**, so a full `up` with no window parameter keeps it.
+- **D2 - the dashboard gains one setting, `window_days_utc`**, a cron weekday field, default `1-5`; `window_end_utc` defaults to `23:30`.
+- **D3 - one weekday field serves the three windows**; a test fails when the script's three differ, or differ from the dashboard's.
+- **D4 - the field is read as cron reads it** (`*`, a number, a range, a list; 0 and 7 are Sunday). One that cannot be read is an error, never "every day".
+- **D5 - the weekday belongs to the day a window starts on.**
+
+**Ruled out.** *Pass the parameters at every `up`* - the value lives in a document and the first `up` that forgets it reverts the fleet. *Hard-code Monday to Friday in the dashboard* - a second rule not read from the script drifts. *Read the live rules from Azure* - right in the end, a new read path for a one-field change. *Move the windows into the pack* - its own sprint.
+
+**Named, not built.** A failed fleet check is shown for one day (`LAST_CHECK_HORIZON_MINUTES`), written when the master woke daily; what the dashboard should show from Saturday to Monday is not measured. The held run's answer deadline, 23:20, against the 23:30 end (work-queue 131 b).
+
+**On the prototype.** One existing test breaks, the one that pins the old literal; 21 of the 41 cases in the two test files fail on the unchanged code and all pass on the prototype; full suite 4,777 passed, 8 skipped, 100.00 %; 15 planted breaks, 15 red; the script parses.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq131-2026-10-11/`.
+
 ## DL-294 - the fleet wakes on weekdays only and for one hour, 22:30 to 23:30 UTC - status: DECIDED (operator, 2026-10-11 21:00 AEDT) and APPLIED to the live fleet; the deploy script's defaults follow in a chore; work-queue 131
 
 **Why.** The operator asked why the window is two hours wide. *[measured 2026-10-11, the graph's records of two nights]* The run's last record was written at 22:44 UTC on 2026-10-08 and at 22:40 on 2026-10-09, from a 22:30 start; after that only the master's hourly readiness check ran (23:26, 00:26). Both nights had one debate; a night with several is not measured. *[measured, the live rules and the graph]* The wake rules fired every day while the dispatcher works on weekdays, so on Saturday and Sunday UTC the fleet woke with no run: the master's checks of 2026-10-10 are in the graph. Why the end was 00:30 is recorded nowhere; it predates DL-179.

@@ -155,7 +155,7 @@ pwsh infra/deploy-agents.ps1 up -Tag latest
 ```
 
 Service Bus SAS delivery can be flipped without changing images. Run outside the
-22:25-00:30 UTC fleet window:
+fleet window (20:25-23:30 UTC, weekdays):
 
 ```powershell
 pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip
@@ -268,7 +268,7 @@ foreach ($id in (az containerapp list -g trading-agents --query "[].id" -o tsv))
 ```
 
 To bring the pods down after a run **but keep the schedule**, do step 2 only, then start the apps
-again **after** the window closes (00:30 UTC). A stopped app ignores its wake window, so it sleeps
+again **after** the window closes (23:30 UTC). A stopped app ignores its wake window, so it sleeps
 through the next run until it is started. Starting it inside an open window wakes it straight back up.
 
 To resume, start every app, then put the dispatcher back on its schedule:

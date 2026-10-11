@@ -32,7 +32,7 @@ healthy-idle from broken.
 2. **Job cadence:** `az containerapp job execution list -g trading-agents -n dispatcher-cron -o table`
    — one `Succeeded` per trading day at 22:30 UTC.
 
-3. **Scale windows:** replicas must be 0 outside 22:25–00:30 UTC and 1 inside. Outside the
+3. **Scale windows:** replicas must be 0 outside the wake window and 1 inside: weekdays, 22:30–23:30 UTC, the master from 20:25 (DL-294). Outside the
    window, `az containerapp replica list` returning empty is **healthy**, not down.
 
 4. **Activation registry (graph):** `AgentInstance` + `CapabilityGrant` nodes exist per agent

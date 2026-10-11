@@ -40,6 +40,9 @@ def latest_window(
     day = (
         current.date() if current >= today_start else current.date() - timedelta(days=1)
     )
+    days = _days(settings.window_days_utc)
+    while _cron_day(day) not in days:
+        day -= timedelta(days=1)
     return run_window(day.isoformat(), settings)
 
 
@@ -97,6 +100,9 @@ def next_master_wake(settings: DashboardSettings, now: datetime) -> str | None:
     wake = datetime.combine(now.date(), _time(settings.master_window_start_utc), UTC)
     if wake <= now:
         wake += timedelta(days=1)
+    days = _days(settings.window_days_utc)
+    while _cron_day(wake.date()) not in days:
+        wake += timedelta(days=1)
     return wake.isoformat()
 
 
@@ -109,6 +115,31 @@ def window_label(
     start = datetime.combine(day, _time(start_utc), UTC).astimezone(zone)
     end = datetime.combine(day, _time(settings.window_end_utc), UTC).astimezone(zone)
     return f"{start:%H:%M}-{end:%H:%M} {settings.operator_timezone.rsplit('/', 1)[-1]}"
+
+
+def _cron_day(day: date) -> int:
+    """Return the day's number as cron counts it: Sunday is 0, Saturday 6."""
+    return day.isoweekday() % 7
+
+
+def _days(value: str) -> frozenset[int]:
+    """Read a cron weekday field (`*`, `1-5`, `1,3,5`) as the days a window opens on."""
+    if value == "*":
+        return frozenset(range(7))
+    days: set[int] = set()
+    try:
+        for part in value.split(","):
+            low, dash, high = part.partition("-")
+            first = int(low)
+            last = int(high) if dash else first
+            if not 0 <= first <= last <= 7:
+                raise ValueError(part)
+            days.update(day % 7 for day in range(first, last + 1))
+    except ValueError:
+        raise ValueError(
+            f"invalid weekday field {value!r}; expected cron days 0-7"
+        ) from None
+    return frozenset(days)
 
 
 def _time(value: str) -> time:

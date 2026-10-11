@@ -146,7 +146,11 @@ class DashboardSettings(ScorecardSettings):
         why="Matches $AgentScaleStart in infra/deploy-agents.ps1 (test-pinned).",
     )
     window_end_utc: str = tunable(
-        "00:30", why="Matches $ScaleEnd in infra/deploy-agents.ps1 (test-pinned)."
+        "23:30", why="Matches $ScaleEnd in infra/deploy-agents.ps1 (test-pinned)."
+    )
+    window_days_utc: str = tunable(
+        "1-5",
+        why="The scale windows' weekday field in deploy-agents.ps1 (test-pinned).",
     )
     operator_timezone: str = tunable(
         "Australia/Melbourne",

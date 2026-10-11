@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-270-the-deploy-defaults-are-the-live-wake-window`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.125.08` (PATCH)
 **Effort:** S
 **Decisions:** [DL-295](../design-log.md) (this sprint's five decisions, made and measured) · [DL-294](../design-log.md) (the operator's window, applied to the live fleet) · [work-queue 131](../work-queue.md) part (e)
 
@@ -214,13 +214,13 @@ If any other existing test fails, stop and report.
 
 ## Success factors
 
-- [ ] Every row of the Test plan is a passing test.
-- [ ] `git hash-object` prints, on LF bytes, `cde71d801d1ca08d168fcccc63c5ebf102e7dd8c` for `infra/deploy-agents.ps1`, `32883a5789410d44bd8baf265a4dfc9c5ee18d86` for `surfaces/dashboard/settings.py` and `f26cca6c76a853c53e2981c397d71fc4805fe637` for `surfaces/dashboard/time_windows.py`, or each difference is explained.
-- [ ] One existing test changed and no other (`git diff --stat main -- '*test_*.py'` shows the new file and the invariants file).
-- [ ] Law cycle done, every item: the two `PARAM` rows as given, v1.7, Changelog, the surfaces' row in `INDEX.md` and in `ledger.md`; `check_param_law_sync.py` exits 0.
-- [ ] Every guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, sixteen steps, 100.00 % coverage.
+- [x] Every row of the Test plan is a passing test.
+- [x] `git hash-object` prints, on LF bytes, `cde71d801d1ca08d168fcccc63c5ebf102e7dd8c` for `infra/deploy-agents.ps1`, `32883a5789410d44bd8baf265a4dfc9c5ee18d86` for `surfaces/dashboard/settings.py` and `f26cca6c76a853c53e2981c397d71fc4805fe637` for `surfaces/dashboard/time_windows.py`, or each difference is explained.
+- [x] One existing test changed and no other (`git diff --stat main -- '*test_*.py'` shows the new file and the invariants file).
+- [x] Law cycle done, every item: the two `PARAM` rows as given, v1.7, Changelog, the surfaces' row in `INDEX.md` and in `ledger.md`; `check_param_law_sync.py` exits 0.
+- [x] Every guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines.
+- [x] `make ci` exit 0, sixteen steps, 100.00 % coverage.
 
 ---
 
@@ -336,15 +336,27 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| Dashboard settings and window helpers | `surfaces/laws/laws.md` and `surfaces/laws/test-plan.md`, whole, before code (2026-10-11) | `PARAM` must follow settings; `SRF-DEP-01/02` and `SRF-NEV-01/02/03` preserve dependency, confirmation and product-language boundaries. No clause governs the wake window. | No: apply the Appendix exactly; window tests cite no unrelated clause and move no gray row. |
+| Deploy defaults | Same surfaces books; `docs/deployment.md` | `SRF-DEP` and `SRF-NEV` reviewed as boundaries; no clause specifies the scale-window calendar. | No: read and parse the script only; do not execute it or call Azure. |
+| PARAM amendment and law rollups | `docs/laws/INDEX.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | Conventions sections 2-4, 7-7a and 9; locked clause IDs/text and proof counts stay unchanged. | No: the spec authorizes PARAM only, v1.7 and its Changelog plus both rollup labels; the law test-plan stays read-only. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
+No. No contract file or clause changes. The cycle is the two specified PARAM rows, v1.7,
+its Changelog entry and the surfaces row in both law rollups; counts remain 31 / 38.
+
 **Contradictions found between a law and this spec:**
+
+None in the governing surfaces clauses. The spec explicitly settles the PARAM-only cycle.
 
 **Laws found silent where a decision was needed:**
 
+The wake-window weekdays, cron parsing and start-day attribution have no surfaces clause.
+DL-295 already settles those decisions; no new design-log entry or clause is owed by this build.
+
 **Clauses that were ⬜ and are now proven:**
+
+None; no clause-level proof status changes in this sprint.
 
 ---
 
@@ -352,41 +364,479 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| W1 | `test_next_wake_is_the_next_weekdays_start` | `surfaces/tests/test_dashboard_window_days.py` | PASS (7 cases) | None: no clause governs the wake window. |
+| W2 | `test_master_is_awake_only_inside_a_weekday_window` | `surfaces/tests/test_dashboard_window_days.py` | PASS (1 case, all three times) | None: no clause governs the wake window. |
+| W3 | `test_latest_window_is_the_latest_weekday_one` | `surfaces/tests/test_dashboard_window_days.py` | PASS (5 cases) | None: no clause governs the wake window. |
+| W4 | `test_star_opens_the_window_every_day` | `surfaces/tests/test_dashboard_window_days.py` | PASS (1 case) | None: no clause governs the wake window. |
+| W5 | `test_weekday_field_is_read_as_cron_reads_it` | `surfaces/tests/test_dashboard_window_days.py` | PASS (6 cases) | None: no clause governs the wake window. |
+| W6 | `test_unreadable_weekday_field_is_an_error` | `surfaces/tests/test_dashboard_window_days.py` | PASS (8 cases, both entry points) | None: no clause governs the wake window. |
+| W7 | `test_defaults_are_the_deployed_windows` | `surfaces/tests/test_dashboard_window_days.py` | PASS (1 case, real defaults) | None: no clause governs the wake window. |
+| Existing | `test_master_scale_window_starts_before_the_two_pre_dispatch_retries` | `tests/test_deploy_script_invariants.py` | PASS; only the specified assertion block changed, net +2 lines. | No new clause citation. |
 
 **Tests added beyond the plan:**
+
+None. W1-W7 are 29 new collected cases; the existing invariants file still collects 12 cases.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC
+**Status:** BUILT
 
 **Tree the proofs ran in (and `.env` present?):**
 
+`C:\Users\yury_\Downloads\project\ta-s270`, branch `sprint-270-the-deploy-defaults-are-the-live-wake-window`, based on `d80cb1c8ec1d3705205c030f580dc450fa41aaa2`. `.env` absent. No deploy script execution or Azure command.
+
 **Result:**
 
+BUILT. All seven test-plan rows pass. The three production blobs exactly match the Appendix. The PARAM-only law cycle is complete at v1.7, with 31 / 38 unchanged. All fifteen required breaks went red and were restored. `make ci` exited 0, all sixteen commands ran, and the full suite passed at 100.00% coverage. Version is 0.125.08; `uv lock` succeeded and its lockfile is staged. No source change followed this CI run.
+
 **Files changed:**
+
+- `infra/deploy-agents.ps1`
+- `surfaces/dashboard/settings.py`
+- `surfaces/dashboard/time_windows.py`
+- `surfaces/tests/test_dashboard_window_days.py`
+- `tests/test_deploy_script_invariants.py`
+- `surfaces/laws/laws.md`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md`
+- `docs/sprints/README.md`
+- `pyproject.toml`
+- `uv.lock`
 
 **Design decisions:** recorded as [DL-295](../design-log.md); none added by the build.
 
 **Proof — the red run first:**
 
+Production diff was empty before this run. Command: `uv run pytest surfaces/tests/test_dashboard_window_days.py tests/test_deploy_script_invariants.py --no-cov`; exit 1. Trailing spaces on pytest's empty diff rows are omitted.
+
+```text
+============================= test session starts =============================
+collected 41 items
+
+surfaces\tests\test_dashboard_window_days.py ..FFFF.F..FF...FFF.FFFFFFFF [ 65%]
+FF                                                                       [ 70%]
+tests\test_deploy_script_invariants.py ...........F                      [100%]
+
+================================== FAILURES ===================================
+_ test_next_wake_is_the_next_weekdays_start[2026-09-26T00:45:00+00:00-2026-09-28] _
+surfaces\tests\test_dashboard_window_days.py:36: in test_next_wake_is_the_next_weekdays_start
+    assert next_master_wake(settings, datetime.fromisoformat(now)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-28T20:25:00+00:00'
+E
+E     - 2026-09-28T20:25:00+00:00
+E     ?          ^
+E     + 2026-09-26T20:25:00+00:00
+E     ?          ^
+_ test_next_wake_is_the_next_weekdays_start[2026-09-26T12:00:00+00:00-2026-09-28] _
+surfaces\tests\test_dashboard_window_days.py:36: in test_next_wake_is_the_next_weekdays_start
+    assert next_master_wake(settings, datetime.fromisoformat(now)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-28T20:25:00+00:00'
+E
+E     - 2026-09-28T20:25:00+00:00
+E     ?          ^
+E     + 2026-09-26T20:25:00+00:00
+E     ?          ^
+_ test_next_wake_is_the_next_weekdays_start[2026-09-26T21:00:00+00:00-2026-09-28] _
+surfaces\tests\test_dashboard_window_days.py:36: in test_next_wake_is_the_next_weekdays_start
+    assert next_master_wake(settings, datetime.fromisoformat(now)) == (
+E   AssertionError: assert None == '2026-09-28T20:25:00+00:00'
+E    +  where None = next_master_wake(DashboardSettings(dispatcher_fire_utc='22:30', scorecard_window_days=30, scorecard_g1_target=0.95, scorecard_g3_target... operator_timezone='Australia/Melbourne', readiness_failure_max_age_minutes=1440, performance_behind_threshold_pts=1.0), datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc))
+E    +    where datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc) = <built-in method fromisoformat of type object at 0x00007FFDF1CD5760>('2026-09-26T21:00:00+00:00')
+E    +      where <built-in method fromisoformat of type object at 0x00007FFDF1CD5760> = datetime.fromisoformat
+_ test_next_wake_is_the_next_weekdays_start[2026-09-27T21:00:00+00:00-2026-09-28] _
+surfaces\tests\test_dashboard_window_days.py:36: in test_next_wake_is_the_next_weekdays_start
+    assert next_master_wake(settings, datetime.fromisoformat(now)) == (
+E   AssertionError: assert None == '2026-09-28T20:25:00+00:00'
+E    +  where None = next_master_wake(DashboardSettings(dispatcher_fire_utc='22:30', scorecard_window_days=30, scorecard_g1_target=0.95, scorecard_g3_target... operator_timezone='Australia/Melbourne', readiness_failure_max_age_minutes=1440, performance_behind_threshold_pts=1.0), datetime.datetime(2026, 9, 27, 21, 0, tzinfo=datetime.timezone.utc))
+E    +    where datetime.datetime(2026, 9, 27, 21, 0, tzinfo=datetime.timezone.utc) = <built-in method fromisoformat of type object at 0x00007FFDF1CD5760>('2026-09-27T21:00:00+00:00')
+E    +      where <built-in method fromisoformat of type object at 0x00007FFDF1CD5760> = datetime.fromisoformat
+______________ test_master_is_awake_only_inside_a_weekday_window ______________
+surfaces\tests\test_dashboard_window_days.py:46: in test_master_is_awake_only_inside_a_weekday_window
+    assert next_master_wake(settings, datetime(2026, 9, 26, 21, tzinfo=UTC)) is not None
+E   AssertionError: assert None is not None
+E    +  where None = next_master_wake(DashboardSettings(dispatcher_fire_utc='22:30', scorecard_window_days=30, scorecard_g1_target=0.95, scorecard_g3_target... operator_timezone='Australia/Melbourne', readiness_failure_max_age_minutes=1440, performance_behind_threshold_pts=1.0), datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc))
+E    +    where datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc) = datetime(2026, 9, 26, 21, tzinfo=datetime.timezone.utc)
+_ test_latest_window_is_the_latest_weekday_one[2026-09-27T23:00:00+00:00-2026-09-25] _
+surfaces\tests\test_dashboard_window_days.py:63: in test_latest_window_is_the_latest_weekday_one
+    assert start == datetime.fromisoformat(f"{expected_day}T20:25:00+00:00")
+E   AssertionError: assert datetime.datetime(2026, 9, 27, 20, 25, tzinfo=datetime.timezone.utc) == datetime.datetime(2026, 9, 25, 20, 25, tzinfo=datetime.timezone.utc)
+E    +  where datetime.datetime(2026, 9, 25, 20, 25, tzinfo=datetime.timezone.utc) = <built-in method fromisoformat of type object at 0x00007FFDF1CD5760>('2026-09-25T20:25:00+00:00')
+E    +    where <built-in method fromisoformat of type object at 0x00007FFDF1CD5760> = datetime.fromisoformat
+_ test_latest_window_is_the_latest_weekday_one[2026-09-28T10:00:00+00:00-2026-09-25] _
+surfaces\tests\test_dashboard_window_days.py:63: in test_latest_window_is_the_latest_weekday_one
+    assert start == datetime.fromisoformat(f"{expected_day}T20:25:00+00:00")
+E   AssertionError: assert datetime.datetime(2026, 9, 27, 20, 25, tzinfo=datetime.timezone.utc) == datetime.datetime(2026, 9, 25, 20, 25, tzinfo=datetime.timezone.utc)
+E    +  where datetime.datetime(2026, 9, 25, 20, 25, tzinfo=datetime.timezone.utc) = <built-in method fromisoformat of type object at 0x00007FFDF1CD5760>('2026-09-25T20:25:00+00:00')
+E    +    where <built-in method fromisoformat of type object at 0x00007FFDF1CD5760> = datetime.fromisoformat
+__________ test_weekday_field_is_read_as_cron_reads_it[0-2026-09-27] __________
+surfaces\tests\test_dashboard_window_days.py:90: in test_weekday_field_is_read_as_cron_reads_it
+    assert next_master_wake(settings, datetime(2026, 9, 26, 12, tzinfo=UTC)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-27T20:25:00+00:00'
+E
+E     - 2026-09-27T20:25:00+00:00
+E     ?          ^
+E     + 2026-09-26T20:25:00+00:00
+E     ?          ^
+__________ test_weekday_field_is_read_as_cron_reads_it[7-2026-09-27] __________
+surfaces\tests\test_dashboard_window_days.py:90: in test_weekday_field_is_read_as_cron_reads_it
+    assert next_master_wake(settings, datetime(2026, 9, 26, 12, tzinfo=UTC)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-27T20:25:00+00:00'
+E
+E     - 2026-09-27T20:25:00+00:00
+E     ?          ^
+E     + 2026-09-26T20:25:00+00:00
+E     ?          ^
+_________ test_weekday_field_is_read_as_cron_reads_it[1,3-2026-09-28] _________
+surfaces\tests\test_dashboard_window_days.py:90: in test_weekday_field_is_read_as_cron_reads_it
+    assert next_master_wake(settings, datetime(2026, 9, 26, 12, tzinfo=UTC)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-28T20:25:00+00:00'
+E
+E     - 2026-09-28T20:25:00+00:00
+E     ?          ^
+E     + 2026-09-26T20:25:00+00:00
+E     ?          ^
+__________ test_weekday_field_is_read_as_cron_reads_it[3-2026-09-30] __________
+surfaces\tests\test_dashboard_window_days.py:90: in test_weekday_field_is_read_as_cron_reads_it
+    assert next_master_wake(settings, datetime(2026, 9, 26, 12, tzinfo=UTC)) == (
+E   AssertionError: assert '2026-09-26T20:25:00+00:00' == '2026-09-30T20:25:00+00:00'
+E
+E     - 2026-09-30T20:25:00+00:00
+E     ?         ^^
+E     + 2026-09-26T20:25:00+00:00
+E     ?         ^^
+_________________ test_unreadable_weekday_field_is_an_error[] _________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+________________ test_unreadable_weekday_field_is_an_error[8] _________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+_______________ test_unreadable_weekday_field_is_an_error[5-1] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+_______________ test_unreadable_weekday_field_is_an_error[mon] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+_______________ test_unreadable_weekday_field_is_an_error[1-9] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+________________ test_unreadable_weekday_field_is_an_error[1,] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+________________ test_unreadable_weekday_field_is_an_error[-1] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+________________ test_unreadable_weekday_field_is_an_error[1-] ________________
+surfaces\tests\test_dashboard_window_days.py:100: in test_unreadable_weekday_field_is_an_error
+    with pytest.raises(ValueError, match="expected cron days 0-7"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+___________________ test_defaults_are_the_deployed_windows ____________________
+surfaces\tests\test_dashboard_window_days.py:117: in test_defaults_are_the_deployed_windows
+    assert weekdays == {defaults.window_days_utc} == {"1-5"}
+                        ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\pydantic\main.py:1042: in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E   AttributeError: 'DashboardSettings' object has no attribute 'window_days_utc'. Did you mean: 'window_end_utc'?
+_____ test_master_scale_window_starts_before_the_two_pre_dispatch_retries _____
+tests\test_deploy_script_invariants.py:191: in test_master_scale_window_starts_before_the_two_pre_dispatch_retries
+    assert "[string]$MasterScaleStart = '25 20 * * 1-5'" in text
+E   assert "[string]$MasterScaleStart = '25 20 * * 1-5'" in "# deploy-agents.ps1 — One-command fleet deploy/teardown for Azure Container Apps.\n#\n#   pwsh infra/deploy-agents.ps...' { Up }\n  'postgres-flip' { Flip-PostgresRoles }\n  'servicebus-flip' { Flip-ServiceBusSas }\n  'down' { Down }\n}\n"
+=========================== short test summary info ===========================
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T00:45:00+00:00-2026-09-28]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T12:00:00+00:00-2026-09-28]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T21:00:00+00:00-2026-09-28]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-27T21:00:00+00:00-2026-09-28]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_master_is_awake_only_inside_a_weekday_window
+FAILED surfaces/tests/test_dashboard_window_days.py::test_latest_window_is_the_latest_weekday_one[2026-09-27T23:00:00+00:00-2026-09-25]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_latest_window_is_the_latest_weekday_one[2026-09-28T10:00:00+00:00-2026-09-25]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_weekday_field_is_read_as_cron_reads_it[0-2026-09-27]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_weekday_field_is_read_as_cron_reads_it[7-2026-09-27]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_weekday_field_is_read_as_cron_reads_it[1,3-2026-09-28]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_weekday_field_is_read_as_cron_reads_it[3-2026-09-30]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[8]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[5-1]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[mon]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[1-9]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[1,]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[-1]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[1-]
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+FAILED tests/test_deploy_script_invariants.py::test_master_scale_window_starts_before_the_two_pre_dispatch_retries
+======================== 21 failed, 20 passed in 4.06s ========================
+```
+
 **Proof — the green run:**
+
+`uv run pytest surfaces/tests/test_dashboard_window_days.py tests/test_deploy_script_invariants.py --no-cov`; exit 0.
+
+```text
+============================= test session starts =============================
+collected 41 items
+
+surfaces\tests\test_dashboard_window_days.py ........................... [ 65%]
+..                                                                       [ 70%]
+tests\test_deploy_script_invariants.py ............                      [100%]
+
+============================= 41 passed in 3.58s ==============================
+```
+
+Same focused run after all guards were restored; exit 0:
+
+```text
+============================= test session starts =============================
+collected 41 items
+
+surfaces\tests\test_dashboard_window_days.py ........................... [ 65%]
+..                                                                       [ 70%]
+tests\test_deploy_script_invariants.py ............                      [100%]
+
+============================= 41 passed in 2.98s ==============================
+```
+
+`git hash-object infra/deploy-agents.ps1 surfaces/dashboard/settings.py surfaces/dashboard/time_windows.py` on LF files, in that order:
+
+```text
+cde71d801d1ca08d168fcccc63c5ebf102e7dd8c
+32883a5789410d44bd8baf265a4dfc9c5ee18d86
+f26cca6c76a853c53e2981c397d71fc4805fe637
+POWERSHELL_PARSE_ERRORS=0
+PARAM_EXIT=0
+LAW_EXIT=0
+```
+
+The two specified PARAM rows, v1.7 and its Changelog are present; both surfaces rollup labels read v1.7. The law coverage and PARAM gates each exited 0. The law test-plan and every clause remain unchanged.
+
+Version resolution and staging:
+
+```text
+UV_LOCK_EXIT=0
+Resolved 180 packages in 2.72s
+Updated trading-agents v0.125.7 -> v0.125.8
+LOCK_STAGE_EXIT=0
+```
+
+`uv.lock` changed only the local project package version, normalized from `0.125.7` to `0.125.8`; no dependency changed.
+
+Scope check output (source-segment comparison against the pre-build HEAD; protected files compared as bytes):
+
+```text
+UNCHANGED FUNCTION: run_window
+UNCHANGED FUNCTION: next_fire
+UNCHANGED FUNCTION: scheduled_execution
+UNCHANGED FUNCTION: window_label
+UNCHANGED FUNCTION: _time
+UNCHANGED: every surfaces clause and CAP declaration
+UNCHANGED FILE: surfaces/laws/test-plan.md
+UNCHANGED FILE: surfaces/queries/fleet_check.py
+UNCHANGED FILE: surfaces/tests/test_dashboard_costs.py
+UNCHANGED FILE: docs/STATE.md
+UNCHANGED FILE: docs/design-log.md
+SCOPE PASS; .env absent
+```
+
+`git diff --stat main -- '*test_*.py'` after the new file was staged:
+
+```text
+ surfaces/tests/test_dashboard_window_days.py | 122 +++++++++++++++++++++++++++
+ tests/test_deploy_script_invariants.py       |   4 +-
+ 2 files changed, 125 insertions(+), 1 deletion(-)
+```
 
 **Guards planted:**
 
+Each break was planted alone in one production file, the same 41 focused cases ran, exit 1 and a named failing assertion were required, and a `finally` restored the original bytes before the next break. G04 deliberately misread 7 as Saturday; G07 normalized a backward range so acceptance was falsified without an empty-set loop. The helper and per-guard logs are outside the repo in `%TEMP%/ta-s270-*`. Raw per-guard evidence follows:
+
+```text
+G01 latest window ignores weekdays: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T21:00:00+00:00-2026-09-28]
+======================== 5 failed, 36 passed in 3.65s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G02 next wake ignores weekdays: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T00:45:00+00:00-2026-09-28]
+======================== 7 failed, 34 passed in 4.11s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G03 Monday counted as day 0: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_next_wake_is_the_next_weekdays_start[2026-09-26T00:45:00+00:00-2026-09-28]
+======================== 15 failed, 26 passed in 3.56s ========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G04 7 treated as Saturday: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_weekday_field_is_read_as_cron_reads_it[7-2026-09-27]
+======================== 1 failed, 40 passed in 3.39s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G05 star not read: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_star_opens_the_window_every_day
+======================== 1 failed, 40 passed in 3.43s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G06 day above 7 accepted: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[8]
+======================== 2 failed, 39 passed in 3.61s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G07 backward range accepted: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[5-1]
+======================== 1 failed, 40 passed in 3.36s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G08 range with no end accepted: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_unreadable_weekday_field_is_an_error[1-]
+======================== 1 failed, 40 passed in 3.33s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G09 latest window steps forward: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_latest_window_is_the_latest_weekday_one[2026-09-27T23:00:00+00:00-2026-09-25]
+======================== 2 failed, 39 passed in 3.54s =========================
+RESTORED f26cca6c76a853c53e2981c397d71fc4805fe637
+
+G10 dashboard end still 00:30: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 1 failed, 40 passed in 4.50s =========================
+RESTORED 32883a5789410d44bd8baf265a4dfc9c5ee18d86
+
+G11 dashboard days daily: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 1 failed, 40 passed in 3.39s =========================
+RESTORED 32883a5789410d44bd8baf265a4dfc9c5ee18d86
+
+G12 script end old daily midnight: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 2 failed, 39 passed in 4.12s =========================
+RESTORED cde71d801d1ca08d168fcccc63c5ebf102e7dd8c
+
+G13 script agents daily: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 2 failed, 39 passed in 2.74s =========================
+RESTORED cde71d801d1ca08d168fcccc63c5ebf102e7dd8c
+
+G14 script master daily: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 2 failed, 39 passed in 3.82s =========================
+RESTORED cde71d801d1ca08d168fcccc63c5ebf102e7dd8c
+
+G15 script end on different days: exit 1
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 2 failed, 39 passed in 3.70s =========================
+RESTORED cde71d801d1ca08d168fcccc63c5ebf102e7dd8c
+
+FINAL RESTORED RUN: exit 0
+============================= test session starts =============================
+collected 41 items
+
+surfaces\tests\test_dashboard_window_days.py ........................... [ 65%]
+..                                                                       [ 70%]
+tests\test_deploy_script_invariants.py ............                      [100%]
+
+============================= 41 passed in 2.98s ==============================
+```
+
 **Module line counts:**
 
+Measured before CI; the module-size gate also passed.
+
+```text
+surfaces/dashboard/settings.py: 178 lines
+surfaces/dashboard/time_windows.py: 152 lines
+surfaces/tests/test_dashboard_window_days.py: 122 lines
+tests/test_deploy_script_invariants.py: 194 lines
+```
+
 **`make ci`:**
+
+Command: `make ci > "$env:TEMP\ta-s270-ci.txt" 2>&1`; `$LASTEXITCODE` was 0. The complete redirected file was read (2,168 lines). The `ci:` target was counted from the Makefile: sixteen commands. Raw excerpts below retain every command line, aggregate results, all skips and the security tail; unchanged module warnings, individual test progress and coverage rows are omitted. This run preceded handback status updates; the document gates are rechecked below.
+
+```text
+MAKE_CI_EXIT=0
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1676 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1197 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+docs_seen=275 SPEC=11 BUILT=0 MERGED=264 UNMAPPED=0 MISSING=0
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           20288      0   4306      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4777 passed, 8 skipped, 2470 warnings in 809.46s (0:13:29) ==========
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+```
 
 **`make gate-ran`:** not the builder's: the planner runs it for the exact commit that merges.
 
 **Not met / verified failing:**
 
+No builder success factor is missing and no existing test failed. Eight existing tests were skipped for the prerequisites printed above; those cases are not done. Push and remote gate, merge, planner F1/live measurements, image retag/deploy and post-deploy proof are not done; they belong to the planner/operator sequence. No live window change is claimed.
+
 ---
 
 ## Return notes
+
+- DL-295's five decisions were applied without amendment; no design-log entry was added.
+- The Appendix's three blobs match exactly, with no difference to explain. Only the specified existing assertion block changed; the shared `_settings()` still ends at 00:30.
+- Cron Sunday aliases, start-day attribution across midnight, malformed fields and all fifteen required guard breaks are proven locally. W7 uses `DashboardSettings(_env_file=None)`, not the shared helper.
+- Law cycle: both exact PARAM rows, v1.7, Changelog and both rollup labels are complete; counts stay 31 / 38. `surfaces/laws/test-plan.md` remains read-only as specified; no gray clause moved to green.
+- The full source/tests/laws/version tree passed `make ci` before this handback fill. Final document and secret checks are recorded below. The builder's final action is the requested branch commit; no push, merge, deploy, Azure command or live proof is part of this build.
+- `docs/STATE.md`, `docs/design-log.md`, fleet-check code, protected time-window functions, orchestration, contracts and agents were not changed.
+- Pre-existing process-document discrepancies, reported without edits: `AGENTS.md` requires merge permission while `CLAUDE.md` retires it; `docs/sprint-loop.md` still names a 76% floor and retired `trading_v2` paths. The binding spec/CLAUDE rules were followed: branch-only build, sixteen CI steps and a 100.00% floor.
+
+**Final handback checks:** the status, tracker-size and markdown-link gates, plus both secret checks, were rerun after filling the handback and changing the README status. All exited 0. Pasted output:
+
+```text
+docs/sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md: BUILT | **Status:** BUILT
+docs_seen=275 SPEC=10 BUILT=1 MERGED=264 UNMAPPED=0 MISSING=0
+SPRINT_STATUS_EXIT=0
+[WARN] docs/sprints/README.md: 90,689 of 96,000 bytes (94 %)
+TRACKER_SIZE_EXIT=0
+MARKDOWN_LINKS_EXIT=0
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
 
 ---
 

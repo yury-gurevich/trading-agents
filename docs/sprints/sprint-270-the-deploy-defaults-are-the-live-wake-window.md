@@ -216,7 +216,7 @@ If any other existing test fails, stop and report.
 
 - [x] Every row of the Test plan is a passing test.
 - [x] `git hash-object` prints, on LF bytes, `cde71d801d1ca08d168fcccc63c5ebf102e7dd8c` for `infra/deploy-agents.ps1`, `32883a5789410d44bd8baf265a4dfc9c5ee18d86` for `surfaces/dashboard/settings.py` and `f26cca6c76a853c53e2981c397d71fc4805fe637` for `surfaces/dashboard/time_windows.py`, or each difference is explained.
-- [x] One existing test changed and no other (`git diff --stat main -- '*test_*.py'` shows the new file and the invariants file).
+- [ ] One existing test changed and no other (`git diff --stat main -- '*test_*.py'` shows the new file and the invariants file).
 - [x] Law cycle done, every item: the two `PARAM` rows as given, v1.7, Changelog, the surfaces' row in `INDEX.md` and in `ledger.md`; `check_param_law_sync.py` exits 0.
 - [x] Every guard planted, watched to fail, restored, stated per guard.
 - [x] Every touched module under 200 lines.
@@ -809,7 +809,7 @@ detect-secrets (untracked): no untracked files to scan
 
 **Not met / verified failing:**
 
-No builder success factor is missing and no existing test failed. Eight existing tests were skipped for the prerequisites printed above; those cases are not done. Push and remote gate, merge, planner F1/live measurements, image retag/deploy and post-deploy proof are not done; they belong to the planner/operator sequence. No live window change is claimed.
+Verified failing: the final current-main comparison now shows a third path, `scripts/gate_selftest_parity_invariants.py`, because `main` advanced to `ff10da34213527888dc36ab67057051e9d0d9067` while this branch remained based on `d80cb1c8ec1d3705205c030f580dc450fa41aaa2`. That path was added by main's separate DL-293/work-queue 129 chore; the builder did not edit or remove it. The pinned-base comparison proves exactly the two planned test paths, and the builder delta contains exactly the twelve scoped files. Integration of the newer main is not done; the planner must integrate it and re-prove the resulting exact SHA before merge. No existing test failed. Eight existing tests were skipped for the prerequisites printed above; those cases are not done. Push and remote gate, merge, planner F1/live measurements, image retag/deploy and post-deploy proof are not done; they belong to the planner/operator sequence. No live window change is claimed.
 
 ---
 
@@ -822,6 +822,25 @@ No builder success factor is missing and no existing test failed. Eight existing
 - The full source/tests/laws/version tree passed `make ci` before this handback fill. Final document and secret checks are recorded below. The builder's final action is the requested branch commit; no push, merge, deploy, Azure command or live proof is part of this build.
 - `docs/STATE.md`, `docs/design-log.md`, fleet-check code, protected time-window functions, orchestration, contracts and agents were not changed.
 - Pre-existing process-document discrepancies, reported without edits: `AGENTS.md` requires merge permission while `CLAUDE.md` retires it; `docs/sprint-loop.md` still names a 76% floor and retired `trading_v2` paths. The binding spec/CLAUDE rules were followed: branch-only build, sixteen CI steps and a 100.00% floor.
+
+**Main advanced during the build:** observed after the builder commit `e8650614`. The earlier pasted main-relative scope output remains the actual output at that point; the final comparison below differs because the shared main ref moved. No main change was incorporated into this sprint branch. The success-factor checkbox for the current main-relative command is left unfulfilled explicitly; the pinned-base builder scope passes. Main remains at package version 0.125.07, so the branch's PATCH 0.125.08 is still available.
+
+Current-main comparison:
+
+```text
+ scripts/gate_selftest_parity_invariants.py   |  56 ------------
+ surfaces/tests/test_dashboard_window_days.py | 122 +++++++++++++++++++++++++++
+ tests/test_deploy_script_invariants.py       |   4 +-
+ 3 files changed, 125 insertions(+), 57 deletions(-)
+```
+
+Pinned-base comparison (`git diff --stat d80cb1c8ec1d3705205c030f580dc450fa41aaa2 HEAD -- '*test_*.py'`):
+
+```text
+ surfaces/tests/test_dashboard_window_days.py | 122 +++++++++++++++++++++++++++
+ tests/test_deploy_script_invariants.py       |   4 +-
+ 2 files changed, 125 insertions(+), 1 deletion(-)
+```
 
 **Final handback checks:** the status, tracker-size and markdown-link gates, plus both secret checks, were rerun after filling the handback and changing the README status. All exited 0. Pasted output:
 

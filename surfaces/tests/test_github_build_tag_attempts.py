@@ -133,3 +133,20 @@ def test_t8_off_main_run_is_rejected_before_any_archive_read() -> None:
     assert github.reader.image_builds_for_tag("s259", SHA) == ()
     assert github.archives == []
     assert github.urls[-1].endswith(f"/compare/main...{SHA}")
+
+
+@pytest.mark.parametrize(
+    "comparison",
+    [HTTPError("https://example.invalid", 404, "missing", Message(), None), None, True],
+)
+def test_t9_unreadable_comparison_is_an_error_and_no_archive_is_read(
+    comparison: object,
+) -> None:
+    """SRF-DEP-04 / SRF-SEC-02: an unreadable comparison is never an absent tag."""
+    github = AttemptGitHub(
+        {1: TAG_LOG, 2: OTHER_LOG}, count=2, branch="release", ahead_by=comparison
+    )
+    with pytest.raises(GitHubReadError) as caught:
+        github.reader.image_builds_for_tag("s259", SHA)
+    assert "example.invalid" not in str(caught.value)
+    assert github.archives == []

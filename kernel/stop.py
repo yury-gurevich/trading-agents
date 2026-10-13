@@ -150,14 +150,13 @@ def finish(
         parts.append("closed " + ", ".join(done))
     if failed:
         parts.append("NOT closed " + ", ".join(failed))
-    clean = not (unfinished or failed)
+    problems = len(unfinished) + len(failed)
     detail = "; ".join(parts) or "nothing to close"
-    code = 0 if clean else 1
     (write or _write_line)(
         f"[{agent}] stopped on {stop.reason} after "
-        f"{stop.seconds_since_request():.1f} s: {detail}; exit {code}\n"
+        f"{stop.seconds_since_request():.1f} s: {detail}; exit {min(problems, 1)}\n"
     )
-    return clean
+    return problems == 0
 
 
 def end_loop(stop: StopSignal, *, agent: str, steps: Sequence[Step]) -> None:

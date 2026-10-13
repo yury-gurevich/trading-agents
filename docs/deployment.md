@@ -155,7 +155,7 @@ pwsh infra/deploy-agents.ps1 up -Tag latest
 ```
 
 Service Bus SAS delivery can be flipped without changing images. Run outside the
-fleet window (20:25-23:30 UTC, weekdays):
+fleet window (22:00-23:30 UTC, weekdays):
 
 ```powershell
 pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip
@@ -284,7 +284,7 @@ az rest --method patch --url "https://management.azure.com$jobId`?api-version=20
 
 `pwsh infra/status.ps1` shows either state: *NEXT RUN none — paused* for the dispatcher, and
 *stopped* in the POWER column for an app. 🪤 The previous version of this section listed 13 apps (the
-fleet has 16) and a master start of 22:25 UTC (it is 20:25). Read the live values; never copy them
+fleet has 16) and a master start of 22:25 UTC (it was 20:25 then, and is 22:00 since 2026-10-12). Read the live values; never copy them
 from here.
 
 To fire the same dispatcher image manually:

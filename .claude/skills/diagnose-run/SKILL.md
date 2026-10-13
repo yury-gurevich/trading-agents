@@ -45,7 +45,7 @@ az containerapp job execution list -g trading-agents -n dispatcher-cron -o table
 The cascade is graph-pull: each agent polls for its predecessor's artifact. A missing stage-N+1
 artifact means the stage-N+1 agent never processed — in order of likelihood:
 
-1. **Never scaled up** — KEDA window is weekdays 22:30–23:30 UTC (master from 20:25; DL-294):
+1. **Never scaled up** — KEDA window is weekdays 22:30–23:30 UTC (master from 22:00; DL-294 amendment 1):
    `az containerapp revision list -g trading-agents -n <agent> -o table` (replicas in window?)
 2. **Never activated** — DL-36 tested activation refuses on a failed credential:
    query the graph for `Escalation` nodes (see snippet below) and check master logs.

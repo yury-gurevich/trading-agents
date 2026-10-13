@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-271-a-full-up-creates-the-master-with-its-probes`
-**Status:** BUILT
+**Status:** MERGED 2026-10-13 — no version bump, fast-forwarded to `9eb1325f`, GATE PROVEN `9eb1325f` (CI, CodeQL, Security Findings); F1 passed at no cost; F2 owed at the next full `up`; no deploy
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-296](../design-log.md) (this sprint's four decisions, made and measured) · [DL-282](../design-log.md) amendment 2 (where the hazard was first named) · [work-queue 122](../work-queue.md)
@@ -367,7 +367,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT — local build proof complete; remote and live proof not done.
+**Status:** MERGED — the build proof is the builder's, below; the remote gate and F1 are in the planner's review at the merge; F2 is owed at the next full `up`.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s271`, branch `sprint-271-a-full-up-creates-the-master-with-its-probes`; `.env` absent. Started clean at `60be51bb23dc06dcf9391f426b79306cffdb392d`, also the observed `origin/main`.
 
@@ -562,6 +562,47 @@ FINAL_DOC_CHECKS=6/6
 - Small tooling corrections: initial reads used two nonexistent paths, corrected to root `conftest.py` and `orchestration/packs/`; the temporary mutation runner stopped before guard 04 because its vocabulary pattern matched both app and job setters, then was scoped to `Set-AppVocabulary` and resumed; one log-excerpt reader hit Windows cp1252 and was re-run with UTF-8. These did not change the implementation or the CI result. Trailing spaces on otherwise blank red-output lines were trimmed for Markdown hygiene; the final Markdown check also caught two trailing spaces on evidence labels, now removed and re-checked.
 - CI's eight existing skips are pasted above. Its existing module-size and parameter-envelope warnings remain; `docs/sprints/README.md` is close to its 96,000-byte limit and was not trimmed outside this row.
 - No deploy script or `az` command was run. Push, `make gate-ran`, merge, deploy and the planner's F1/F2 are not done; keep those stages separate from BUILT.
+
+---
+
+## Planner's review at the merge — 2026-10-13
+
+Re-measured by the planner in `../ta-s271` on the builder's commit `9eb1325f`. Nothing here is taken
+from the handback.
+
+- **The script is the measured prototype byte for byte.** `infra/deploy-agents.ps1` has the
+  Appendix's blob id (`d9447b63`), LF line endings, and parses with 0 errors. Against the spec's
+  commit the branch changes the five files the spec names and no other; one existing test is
+  removed, the one named, and that removal equals the prototype's diff.
+- **The builder's test file is not the planner's text.** It is reworded, with the same six
+  functions and the same assertions. It builds the master with a fixed text for the key where the
+  planner's generates one, and it shuts the settings off from any `.env`.
+- **Guards.** The planner's 14 breaks, one at a time against the three deploy test files, each
+  restored: **14 went red, none survived, none failed to apply**; the tree was clean afterwards.
+- **The planner's own tests** (eight cases, written for the prototype) were placed beside the
+  builder's and run with the builder's file and the two retained deploy files: 29 passed. They are
+  not committed.
+- **Not re-run by the planner:** the local `make ci`. The builder's sixteen-step pass is the
+  builder's statement; the proof is the remote gate on the same commit.
+- **Gate.** `GATE PROVEN` for `9eb1325ff0259096006697943618930c70a25e5b`, run from `../ta-s271`,
+  whose `HEAD` it is: CI, CodeQL and Security Findings each `success` on the first attempt. `main`
+  had not moved since the spec's commit, so nothing was merged in and the proven commit is the
+  merged one.
+- **CodeQL.** 128 open alerts on the branch, 0 of them errors, the same 128 numbers as on the S270
+  branch: none new, none gone.
+- **F1, at no cost, on merged `main`.** `up_call_sequence.ps1` runs the script's own `Up` with
+  every `az` call and credential a stand-in. It printed what the prototype printed: two master
+  calls where the unchanged script made three; the create carries `MASTER_CREDENTIAL_TESTS_B64`
+  beside the secret map and the provider on a line of at most 17,279 characters; the update
+  carries the vocabulary alone; 30 calls for the 15 agents, 0 failures.
+- **Owed.** F2 at the next full `up`: no refusal line in the master's console log for the two new
+  revisions. Not proven until then: that Azure accepts the longer create call. No deploy follows
+  from this sprint.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq122-2026-10-13/`
+(`planner_tests_on_built.txt`, `planner_breaks_on_built.txt`, `s271-gate-wait.txt`,
+`s271-gate-ran.txt`, `codeql_s271_branch.tsv`, `codeql_s270_live.tsv`,
+`up_calls_built_9eb1325f.txt`, `f1_main_9eb1325f.txt`, `s271_merge_docs.py`).
 
 ---
 

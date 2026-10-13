@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-296 - a full `up` creates the master with its probe pack, so no revision of it refuses to start - status: MEASURED and DECIDED (planner, 2026-10-13 19:25 AEDT); specced as [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md); work-queue 122
+## DL-296 - a full `up` creates the master with its probe pack, so no revision of it refuses to start - status: MEASURED and DECIDED (planner, 2026-10-13 19:25 AEDT); specced as [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md); work-queue 122; MERGED with no version bump (`9eb1325f`), F1 passed (amendment 1)
 
 **Why.** The master refuses to start when it holds a secret map and no probes ([DL-282](design-log.md) decision 2, and an older check in `build_app`). `infra/deploy-agents.ps1` creates the master with the secret map, then sets the graph vocabulary, then sets the probe pack, each call a new revision; a create replaces the env set of an app that exists, so the first two revisions hold no probes. Work-queue 122 named the hazard on 2026-10-09 and said it had not bitten.
 
@@ -34,6 +34,8 @@ and is marked CLOSED here.
 **On the prototype.** One existing test is removed, the one that pins the old order; 2 of the 8 new cases fail on the unchanged script and all pass on the prototype; `make ci` exit 0 (4,784 passed, 8 skipped, 100.00 %); 14 planted breaks, 14 red; the script parses with 0 errors.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq122-2026-10-13/`.
+
+🔁 **Amendment 1, 2026-10-13 20:18 AEDT (planner) — built as decided and merged.** Built by Codex with no amendment to the decisions; the script is the prototype byte for byte (blob `d9447b63`). Merged with no version bump (`9eb1325f`, GATE PROVEN from the sprint's worktree; `main` had not moved, so the proven commit is the merged one); the planner's 14 breaks, 14 red; 128 open CodeQL alerts, none new. The planner did not re-run the local `make ci`: the remote gate on the same commit is the proof. *F1*, at no cost, on merged `main`: the script's own `Up`, every `az` call a stand-in, makes two master calls where it made three, and the create carries the probe pack on a line of at most 17,279 characters. Nothing found on the way. *Still not proven*, and owed at the next full `up` (F2): that Azure accepts the longer create call and that neither new revision logs a refusal.
 
 ## DL-295 - the deploy script's defaults become the live wake window, and the dashboard learns the window's weekdays - status: MEASURED and DECIDED (planner, 2026-10-11 22:30 AEDT); specced as [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md); work-queue 131 part (e); MERGED as `0.125.08` (`5d242a8e`), F1 passed (amendment 1)
 

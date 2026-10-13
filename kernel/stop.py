@@ -151,10 +151,11 @@ def finish(
     if failed:
         parts.append("NOT closed " + ", ".join(failed))
     clean = not (unfinished or failed)
+    detail = "; ".join(parts) or "nothing to close"
+    code = 0 if clean else 1
     (write or _write_line)(
         f"[{agent}] stopped on {stop.reason} after "
-        f"{stop.seconds_since_request():.1f} s: "
-        f"{'; '.join(parts) or 'nothing to close'}; exit {int(not clean)}\n"
+        f"{stop.seconds_since_request():.1f} s: {detail}; exit {code}\n"
     )
     return clean
 

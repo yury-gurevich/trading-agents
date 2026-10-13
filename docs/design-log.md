@@ -12,6 +12,55 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-297 - a container told to stop ends by itself: the kernel's two loops and the master's server handle the stop signal, finish the work in hand, close what they hold, say so and exit 0 - status: MEASURED and DECIDED (planner, 2026-10-13 21:25 AEDT); specced as [S272](sprints/sprint-272-a-container-ends-cleanly-on-the-stop-signal.md); work-queue 116; follows [DL-283](design-log.md) decision 5
+
+**Why.** No process in the fleet handles the platform's stop signal ([DL-283](design-log.md), work-queue 116). The operator, 2026-10-09: *"does master properly shutts down (closing onnections, logging shutdown)?"* It does not, and neither do the other fifteen containers.
+
+**Measured, 2026-10-13.**
+
+- *The platform's event log, 30 days, read-only.* The master was killed with exit code 137 **54 times**, the last on 2026-10-11 13:14 UTC (the `s270` retag); the platform logged `Stopping container` 1,597 times across the 16 apps and **no exit with code 0 for any of them**. An ordinary scale-down leaves no exit line at all, so how an agent ends at night is not in that log.
+- *Why a container's Python ignores the signal.* Each image starts Python as its command, so Python is process 1 of the container, and Linux does not deliver a signal to process 1 unless it has installed a handler. Measured on Linux 5.15 with Python 3.12 as process 1 of its own PID namespace (`pid1_probe.sh`): the idle sleep the loops use today ignored `SIGTERM` for the whole 6.1 seconds it was watched and had to be killed; the same idle loop on the prototype's `kernel/stop.py` wrote its two lines and exited 0 in 0.2 seconds.
+- *The five process shapes, before and after* (`wq116_stop_paths.py`, child processes, a real `SIGTERM` raised inside each, no network). On `main` at `b048d251` every child ended by the signal's default action, with no line, nothing closed, an item cut in the middle and the master's session not ended. On the prototype: an idle graph-pull agent and an idle served agent each flush, close and exit 0 half a second after the signal; an agent with three one-second items finishes the one in hand, leaves the third pending and exits 0; an agent whose graph refuses to close exits 1 and its line names the error's type and not its text; the master ends its session with `ended_at` and `shutdown_reason: SIGTERM` and exits 0.
+- *A constraint the work-queue row did not name.* The fidelity count ([DL-237](design-log.md)) reads `agents/scanner/`, `agents/analyst/` and `agents/portfolio_manager/` as decision paths, as whole folders (`scripts/replay_fidelity_git.py`). A new line in one of those three entrypoints, or in their Dockerfiles, makes every later session unclean. `kernel/` is not a decision path.
+- *The graph is append-only.* `write_session` writes `shutdown_reason: ""` at start, so no later write could ever give it a value. Read in the pack: the `Session` label has no property list and no owner, so `ended_at` needs no vocabulary change.
+- *Sixteen containers, fourteen entrypoint files.* Nine apps run the graph-pull loop (scanner, analyst, portfolio-manager, deliberator-manager, execution, monitor, reporter, forecaster, provider), six the serve loop (the two debaters, operator, supervisor, curator, researcher), and the master its own server. All nine graph-pull calls already hand the loop the graph and the agent's name; none of the serve calls does.
+
+**Decided.**
+
+- **D1 - the signal sets a flag; the loops ask it.** A graph-pull loop starts no further item, a serve loop takes no further request, and the item or request in hand is finished. A request already taken is always answered, because it was settled on the bus when taken ([DL-272](design-log.md)).
+- **D2 - the kernel's two loops own the stop.** A loop that runs as a container's main loop (no pass limit, no stop handed in) installs the handler itself. So no agent entrypoint needs a line for it, and the three frozen ones get the behaviour through `kernel/work_loop.py`. The four served entrypoints and the debaters' serve call gain two arguments, the graph and the name, so the loop can close the one and name the other.
+- **D3 - the idle sleep is taken in one-second slices.** The interpreter runs a handler only when the main thread is back in Python code, so the slices bound the wait to a second whichever thread the signal reaches. Measured on Windows: a signal raised on a second thread did not end the main thread's plain 60-second sleep (break K04). Not measured: the same for a single unsliced wait on Linux.
+- **D4 - exit 0 means everything held was closed.** The loop flushes its faults, closes its request consumer and its graph, each on its own; one that fails does not keep the next from running, and the process then exits 1.
+- **D5 - two lines on stderr.** One from the handler, written unbuffered to the descriptor, so a process killed later still shows that it was told to stop. One at the end, naming what was left, what was closed and what was not, and the exit code. A failed step is named by its error's type alone: the text can hold a connection string.
+- **D6 - the master stops in an order.** It closes its listening socket; it waits for the activations in hand and for a fleet check in hand until `stop_drain_seconds` (20, a new parameter) have passed since the signal; it writes `ended_at` and `shutdown_reason` on its `Session`; it closes its graph. Work left unfinished is exit 1, and the session end is still written: the master did stop when asked. Its server accepts in a loop with a half-second wait in place of `serve_forever`, and counts its requests in and out.
+- **D7 - the empty `shutdown_reason` at start is removed**, so the end can be written once.
+- **D8 - the law is in the master's book**, as `MST-FAIL-06` already is for an agent's activation budget: new `MST-TRG-03` (every container's loop), `MST-ORD-04` (the master's order) and `MST-OBS-05` (the two lines); `MST-OUT-03` amended. Three clauses named a recovery path at boot that no code holds (`MST-STA-01`, `MST-TRG-02`, `MST-IDM-02`): reworded, DRIFT-113. The three frozen agents' own law books cannot change during the count.
+- **D9 - a fix, so a PATCH bump.** Image-only: no pack, no env key, no vocabulary change.
+
+**Ruled out.**
+
+- *Raise an exception in the main thread on the signal, as Ctrl-C does.* It cuts the item in hand at an arbitrary instruction, after its request was settled on the bus, and `fault_boundary` swallows anything that derives from `Exception`.
+- *A first line in every entrypoint, or a launcher as the image's command.* Three entrypoints and their Dockerfiles are decision paths; the rest would then stop by a different mechanism from those three.
+- *Install at import, or inside `activate_agent`.* A handler installed in every test process; and a flag alone does not end the wait for the master's answer.
+- *An init process (`tini`) in the images.* It forwards the signal and the default action ends Python at once: nothing is closed, nothing is logged, the session is not ended, and all 16 image recipes change, three of them frozen.
+- *A longer stop grace on the apps instead.* A process that ignores the signal ignores it for any grace.
+- *`serve_forever` on a second thread, stopped from the main one.* A thread whose death the main thread does not see. *Non-daemon request threads joined at close*: an unbounded wait on a connection that never sends.
+- *A deadline after which the process exits by itself with work in hand.* The exit code would say 0 over cut work or need a third value; the platform's kill and the handler's line already tell it.
+- *Each agent records its own end in the graph.* The registry is the master's, an agent keeps no instance id after activation, and three entrypoints are frozen. The closing line is in the console log; the sensor (work-queue 119) decides what the graph holds.
+- *The `logging` module for the lines.* The agents configure none, and a buffered write inside a handler can raise.
+
+**Named, not built.**
+
+- **A stop that arrives before the loop starts is not handled**: while the container imports, and while an agent activates (a budget of up to 300 seconds). It is killed after the grace, as today. Met while measuring: two children died of the default action because their imports took longer than the 1.5 seconds before the signal. The master installs at the top of `main()`, so only its imports are outside.
+- **Work in hand that outlasts the grace is still killed.** A debate takes minutes and the manager waits up to 240 seconds for a reply; the apps have the platform's 30 seconds. The handler's line is then the last one in the log. Raising the grace is a change to `infra/deploy-agents.ps1` and its own decision.
+- A master halted on an unreachable graph is still killed at a stop. The debate manager's reply receivers, the model clients and the DSPy engine are not closed. The dispatcher job is not a loop and is not touched.
+
+**Not proven until it is deployed.** That Azure Container Apps stops a container with `SIGTERM` to process 1 (the 54 kills at 31 or 32 seconds and the Linux measurement agree with it); what the platform logs for an exit with code 0, which it has never had to log; and the sixteen closing lines at a nightly scale-down. The first stop after the retag is of the *old* image and will still be a kill: the proof is the next one.
+
+**On the prototype.** `make ci` exit 0, sixteen steps (4,822 passed, 8 skipped, 100.00 %); 51 planted breaks, 51 red; no file under a decision path differs from `main`; the two existing tests that pin the old call shapes are edited, each in the lines named in the spec.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq116-2026-10-13/`.
+
 ## DL-296 - a full `up` creates the master with its probe pack, so no revision of it refuses to start - status: MEASURED and DECIDED (planner, 2026-10-13 19:25 AEDT); specced as [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md); work-queue 122; MERGED with no version bump (`9eb1325f`), F1 passed (amendment 1)
 
 **Why.** The master refuses to start when it holds a secret map and no probes ([DL-282](design-log.md) decision 2, and an older check in `build_app`). `infra/deploy-agents.ps1` creates the master with the secret map, then sets the graph vocabulary, then sets the probe pack, each call a new revision; a create replaces the env set of an app that exists, so the first two revisions hold no probes. Work-queue 122 named the hazard on 2026-10-09 and said it had not bitten.

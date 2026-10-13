@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-12 00:20 AEDT · **Version:** **0.125.08 on `main` and on the fleet: `s270`, deployed 2026-10-12** (image-only retag from `5d242a8e`, 17 of 17 targets, rollback `s262`) · **[S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md) is merged and its free check passed: the deploy script's defaults are the live wake window, weekdays 22:30 to 23:30 UTC (operator, [DL-294](design-log.md)), and the dashboard knows the weekdays. **The master's start was then moved to 22:00 UTC on the live app (operator, DL-294 amendment 1): the script and the dashboard still say 20:25, so a full `up` must pass `-MasterScaleStart '0 22 * * 1-5'` (work-queue 131).** Work-queue 129 is closed: the remote gate and the commit hook check the module header in all five packages. Nothing is with a builder. Debates run three at once, as a live setting.**
+**Last updated:** 2026-10-13 19:25 AEDT · **Version:** **0.125.08 on `main` and on the fleet: `s270`, deployed 2026-10-12** (image-only retag from `5d242a8e`, 17 of 17 targets, rollback `s262`) · **[S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md) is specced for Codex and not yet handed over: a full `up` creates the master with its probe pack (work-queue 122, [DL-296](design-log.md)); the master refused to start in 22 revisions at 11 full deploys in the last 30 days. A full `up` must still pass `-MasterScaleStart '0 22 * * 1-5'` (work-queue 131). Debates run three at once, as a live setting.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…19.md` + git). **LAW-02:** an item is "shipped" only when
@@ -34,9 +34,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ### Standing conditions — live, each with what lifts it
 
-- **The fleet is on `s262`** = `0.125.00` (`d01b71b3`), since 2026-10-09 20:16 AEDT. Rollback: `s259a`,
-  with the hand-made eight-probe pack put back on the master in the same step (the older image
-  ignores the declared provider and would run Anthropic's probes).
+- **The fleet is on `s270`** = `0.125.08` (`5d242a8e`), since 2026-10-12. Rollback: `s262`. A
+  rollback below `s262` must also put the hand-made eight-probe pack back on the master in the
+  same step (an older image ignores the declared provider and would run Anthropic's probes).
 - **The debate runs on OpenAI (`gpt-5.5`)**, declared in `orchestration/packs/trading_llm.json` and
   kept by a full `up` since `s262` ([DL-282](design-log.md)); the master runs and counts OpenAI's
   probes alone. The Anthropic account is out of credit until 2026-10-11. **The operator's dashboard
@@ -59,6 +59,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   interrupted** at 31 of 52 calls; $2.80 is approved for the rest, on Opus, after 2026-10-11.
 
 ## Now
+
+📦 **SPECCED 2026-10-13 — [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md) (work-queue 122, [DL-296](design-log.md)), for Codex, no version bump; not yet handed over.** INTENT: a full `up` makes two calls for the master, the create carrying the probe pack with the secret map and the provider, so no revision of the master refuses to start. SUCCESS FACTORS: the script is the prototype's blob; the six planned tests pass and the planner's 14 breaks go red on the built tree; `make ci` exit 0; GATE PROVEN; F1 at no cost (the script's own `Up`, every call a stand-in, makes two master calls); F2 at the next full `up` (no refusal in the master's log). MEASURED before speccing: 22 master revisions refused to start at 11 full deploys in the last 30 days.
 
 🟩 **MERGED 2026-10-12 — [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md) (work-queue 131 part e, [DL-295](design-log.md)), `0.125.08`, fast-forwarded to `5d242a8e`, tag `v0.125.08`, GATE PROVEN; deployed as `s270` 2026-10-12.** INTENT: a full `up` with no window parameter applies the window the operator chose, and the dashboard's next check and latest window fall only on a day the fleet wakes. PROVEN: built by Codex, the three production files the planner's prototype byte for byte; one existing test edited, the one named; the planner broke it 15 ways and 15 went red; the planner's own 29 cases pass on the built code; Windows `make ci` exit 0, sixteen steps (4,777 passed, 8 skipped, 100.00 %); 128 open CodeQL alerts, none new; the surfaces' law v1.7, `PARAM` only, 31 / 38. F1 ([functionality checks](laws/functionality-checks.md)), at no cost and read-only: the script's three defaults equal the rule of each of the 16 live apps; from the main checkout the dashboard's window cards read 07:25-10:30 and 09:30-10:30 Melbourne, and from a Saturday noon to a Monday morning the next check is Monday 20:25 UTC. NOT MEASURED: a night with several debates against the one-hour window. DEPLOYED 2026-10-12 as `s270` (the operator: *"and yeah deploy"*): no injected pack, migration or image recipe moved since `s262`, so image only; 15 images built from `v0.125.08`; 16 apps and the job on `s270`, every scale rule, env count and the job's schedule equal to before; `DeployRecord` written.
 
@@ -104,6 +106,7 @@ second ranking.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. Codex-sized and off the fidelity decision paths: work-queue 122
+   (specced 2026-10-13 as [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md))
    and what execution still downloads in its first five minutes
    (work-queue 101).
    **Then the shutdown path and the container sensor** (work-queue 116, then 119;

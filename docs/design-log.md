@@ -12,6 +12,29 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-296 - a full `up` creates the master with its probe pack, so no revision of it refuses to start - status: MEASURED and DECIDED (planner, 2026-10-13 19:25 AEDT); specced as [S271](sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md); work-queue 122
+
+**Why.** The master refuses to start when it holds a secret map and no probes ([DL-282](design-log.md) decision 2, and an older check in `build_app`). `infra/deploy-agents.ps1` creates the master with the secret map, then sets the graph vocabulary, then sets the probe pack, each call a new revision; a create replaces the env set of an app that exists, so the first two revisions hold no probes. Work-queue 122 named the hazard on 2026-10-09 and said it had not bitten.
+
+**Measured, 2026-10-13.** It bites at every full `up`. The master's console log holds 63 refusals in 22 revisions over the 30 days it keeps: two revisions at each of 11 full deploys on 10 days, 2026-09-13 to 09-29, each crashing 2 or 3 times in about 25 seconds until the third call landed. None since: every later deploy was an image-only retag. Offline, on the committed packs: a secret map with no probes refuses under either vendor and with none; with the probes the master starts. The script's own `Up`, with every `az` call and credential replaced by a stand-in of the real length: three master calls today (create 8,412 characters, vocabulary 16,863, probes 9,070); on the prototype two (create 17,279 with the probes, vocabulary 16,863). The system accepts a line of 32,000 characters and refuses 33,950.
+
+**Decided.**
+
+- **D1 - the probe pack rides the master's create call**, beside the secret map and the provider.
+- **D2 - nothing delivers it later**: `Set-MasterCredentialTests` is deleted.
+- **D3 - the vocabulary keeps its own call**: with it the create line is 33,942 characters against a limit of 32,767.
+- **D4 - a test holds the line length**: the three packs that ride, plus 5,000 characters for the rest (3,847 measured), stay within 32,767, so a pack that grows goes red before a deploy is refused.
+
+**Ruled out.** *Set the probes before the create* - the create replaces the env set, so they are gone again. *Create with no provider and no secret map, add them last* - a first revision that can hand nothing over; the refusal is moved, not removed. *Everything in one call* - over the limit. *A settings file in place of the command line* - the master's private key and the registry token in a file on disk, and a new path for every app. *Soften the refusal to a warning* - credentials handed over untested ([DL-36](design-log-archive/INDEX.md)).
+
+**Named, not built.** The revision the create makes still runs without the graph vocabulary until the update lands, as it always has. The env-preservation check does not read the master. Where the Azure CLI's own interpreter is not found the script falls back to `az.cmd`, whose limit is 8,191 characters: today's create is already 8,412. Whether a crashing revision ever harmed a deploy is not measured.
+
+**Not proven until the next full `up`.** That Azure accepts the longer create call. No full `up` is made for this alone: it would put the pack's values back over the live-only settings.
+
+**On the prototype.** One existing test is removed, the one that pins the old order; 2 of the 8 new cases fail on the unchanged script and all pass on the prototype; `make ci` exit 0 (4,784 passed, 8 skipped, 100.00 %); 14 planted breaks, 14 red; the script parses with 0 errors.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq122-2026-10-13/`.
+
 ## DL-295 - the deploy script's defaults become the live wake window, and the dashboard learns the window's weekdays - status: MEASURED and DECIDED (planner, 2026-10-11 22:30 AEDT); specced as [S270](sprints/sprint-270-the-deploy-defaults-are-the-live-wake-window.md); work-queue 131 part (e); MERGED as `0.125.08` (`5d242a8e`), F1 passed (amendment 1)
 
 **Why.** [DL-294](design-log.md) was applied to the live apps by hand. `infra/deploy-agents.ps1` still defaults to every day until 00:30 and passes its defaults at every app's create and update, so a full `up` reverts the window silently. The dashboard copies its window from those defaults and has no weekday: on a Saturday it names Saturday 20:25 UTC as the next fleet check.

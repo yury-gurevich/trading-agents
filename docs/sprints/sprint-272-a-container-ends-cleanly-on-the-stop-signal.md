@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-272-a-container-ends-cleanly-on-the-stop-signal`
-**Status:** MERGED 2026-10-14 — `0.125.09`, fast-forwarded to `497293b8`, tag `v0.125.09`, GATE PROVEN `497293b8` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (an image-only retag, on the operator's word); F2 owed on the fleet
+**Status:** MERGED 2026-10-14 — `0.125.09`, fast-forwarded to `497293b8`, tag `v0.125.09`, GATE PROVEN `497293b8` (CI, CodeQL, Security Findings); F1 passed at no cost; deployed as `s272` 2026-10-14; F2 passed at the retag, one read owed after the first nightly window's end
 **Version:** `0.125.09` (PATCH; `uv lock` updated the project only)
 **Effort:** M
 **Decisions:** [DL-297](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-283](../design-log.md) decision 5 (the shutdown path, before the container sensor) · [work-queue 116](../work-queue.md) · DRIFT-113 (three master clauses name a recovery path no code holds)
@@ -1002,18 +1002,36 @@ Re-measured by the planner in `../ta-s272`. Nothing here is taken from the handb
   3.12 as process 1 of its own PID namespace: the control with no handler ignored `SIGTERM` for
   the 6.0 seconds it was watched and was killed; on the merged `kernel/stop.py` the process wrote
   its two lines and exited 0 in 0.2 seconds.
-- **Owed.** The deploy: an image-only retag, on the operator's word. Then F2 on the fleet, at no
-  cost: 16 closing lines in the console logs, no exit code 137 for a revision of the new tag, the
-  master's newest ended `Session` holding `ended_at`; and the same read after the first nightly
-  window's end. The first stop after the retag is of the old image and is still a kill. Not
-  proven until then: that the platform stops a container with `SIGTERM` to process 1, and what it
-  logs for an exit with code 0.
+- **Deployed as `s272`, 2026-10-14 03:15 to 03:22 AEDT (2026-10-13 16:15 to 16:22 UTC), on the
+  operator's word** (*"go for it"*). Image only: no injected pack, Dockerfile or migration moved
+  since the deployed commit. 15 images built from `v0.125.09` in one attempt (run `38428631244`);
+  17 of 17 targets `Succeeded`; 16 apps and the job on `s272`, each latest revision the ready one,
+  and nothing but the image differs from the snapshot taken before (containers, scale rules,
+  secrets, ingress, registries, identity; the job's schedule). `DeployRecord` written. Rollback:
+  `s270`.
+- **F2 at the retag: passed**, read from the platform's logs and the graph at no cost. Every app
+  was at 0 replicas, so the retag started one replica of the new image in each, and the scaler
+  stopped each some five minutes later: the first stops of the new code, with no stop of the old
+  image among them. 16 of 16 apps were stopped (17 stops, the master twice). Each left its signal
+  line and a closing line ending `exit 0`. The nine graph-pull agents closed in 0.0 seconds, the
+  master in 0.2 and 0.3, the four served agents in 0.4 to 1.0, and the two debaters in 4.1 and
+  5.1: the five-second receive they were waiting in. The event log holds **no exit code 137**. Both
+  of the master's sessions on the new image hold `ended_at` and `shutdown_reason` `SIGTERM`; the
+  three sessions before them have no `ended_at`. 15 of 15 agent types activated on the new images; 0
+  escalations, faults or flags; every app back at 0 replicas.
+- **What the platform logs for a clean exit: nothing.** `Stopping container` is the last line
+  about the container; there is no exit line for code 0. For the master, `readiness probe failed:
+  connection refused` follows for some 15 to 25 seconds after the stop. Both matter to the sensor
+  (work-queue 119): a clean stop is told by the console's closing line, and those probe failures
+  are not an alarm.
+- **Owed.** One read after the first nightly window's end (23:30 UTC on 2026-10-13): the same 16
+  closing lines at an ordinary scale-down, after a real run.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq116-2026-10-13/`
 (`planner_breaks_on_built.txt`, `break_s272_on_built.py`, `planner_tests/`, `s272-make-ci.txt`,
 `planner_breaks_closing_on_final.txt`, `s272-gate-wait.txt`, `s272-gate-ran.txt`,
 `codeql_s272_branch.tsv`, `f1_built_497293b8.txt`, `f1_pid1_built_497293b8.txt`,
-`s272_merge_docs.py`).
+`s272_merge_docs.py`); the deploy and F2 in `deploy-s272-2026-10-14/`.
 
 ---
 

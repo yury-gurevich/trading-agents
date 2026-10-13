@@ -678,8 +678,9 @@ function Get-VocabularyEnv {
 }
 
 function Get-MasterCredentialTestsEnv {
-  # This pack is large enough that adding it to the master create call would push
-  # the same cmd.exe line ceiling as GRAPH_VOCABULARY_B64. Set it narrowly.
+  # Rides the master's create call (DL-296): the master refuses to start with a
+  # secret map and no probes, so a create without this pack left a revision that
+  # crashed until a later update delivered it.
   $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_credential_tests.json"
   return "MASTER_CREDENTIAL_TESTS_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
 }
@@ -720,16 +721,6 @@ function Set-JobVocabulary {
   return (Get-JobState $DISPATCHER_JOB) -eq "Succeeded"
 }
 
-function Set-MasterCredentialTests {
-  $state = Invoke-Az @(
-    "containerapp", "update", "--name", "master", "--resource-group", $RG,
-    "--subscription", $SUB, "--set-env-vars", (Get-MasterCredentialTestsEnv),
-    "--query", "properties.provisioningState", "-o", "tsv"
-  )
-  if ($null -eq $state) { return $false }
-  return (Get-AppState "master") -eq "Succeeded"
-}
-
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   # Refuse before the first create, not after the ninth: a deploy that discards
@@ -749,14 +740,16 @@ function Up {
   $kv = Load-Json "key-vault.local.json"
   # Inject the trading pack policy + secret map as base64 env content (not baked
   # into the substrate image — keeps the master image pack-agnostic; S86 / DL-12).
-  # Credential tests are set by their own narrow call below to stay under cmd.exe.
+  # The probe pack rides this call, so the revision it creates can start (DL-296).
+  # The vocabulary pack cannot join it: together they pass CreateProcess's 32,767.
   $packs = Join-Path $PSScriptRoot "..\orchestration\packs"
   $grantB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_grants.json")))
   $secretB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_secrets.json")))
   $envv = @(
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
-    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
+    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64",
+    (Get-MasterCredentialTestsEnv)
   ) + (Get-AppLlmEnv "master")
   $masterGraph = Get-GraphConfig "master"
   $envv += @($masterGraph.envVars)
@@ -780,13 +773,12 @@ function Up {
   $mArgs += @("--env-vars") + $envv + (Get-CronScaleArgs "daily-master-window" $MasterScaleStart)
   $masterState = Invoke-Az $mArgs
   $vocabOk = Set-AppVocabulary "master"
-  $credentialTestsOk = Set-MasterCredentialTests
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   # The old check tested only [bool]$fqdn, which an already-existing app satisfies
   # whether or not this deploy did anything (DL-85). The state now comes from the
   # resource rather than from the deploying call's stream (row Q).
   $masterOk = ($null -ne $masterState) -and ((Get-AppState "master") -eq "Succeeded")
-  Check ($masterOk -and $vocabOk -and $credentialTestsOk -and [bool]$fqdn) "master @ https://$fqdn"
+  Check ($masterOk -and $vocabOk -and [bool]$fqdn) "master @ https://$fqdn"
   Bot
   $masterUrl = "https://$fqdn"
 

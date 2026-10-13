@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-271-a-full-up-creates-the-master-with-its-probes`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-296](../design-log.md) (this sprint's four decisions, made and measured) · [DL-282](../design-log.md) amendment 2 (where the hazard was first named) · [work-queue 122](../work-queue.md)
@@ -196,14 +196,14 @@ All six in `tests/test_deploy_master_revision.py`. The *create block* is the scr
 
 ## Success factors
 
-- [ ] On the built tree A1 to A6 pass (eight cases); on the unchanged script A1 and A2 fail.
-- [ ] `infra/deploy-agents.ps1` is the Appendix's text: its blob id is `d9447b634e68f1ea4e7deeec3e97d0d2220e1cfb`.
-- [ ] Exactly one existing test is removed, the one named; no other existing test is edited.
-- [ ] No file under `agents/`, `kernel/`, `contracts/`, `orchestration/`, `surfaces/` or `scripts/` changes; no version bump; `uv.lock` untouched.
-- [ ] Law-cycle question answered No, with the reason, in the Law reading record.
-- [ ] Every break under Traps planted, watched to fail, restored, stated per break.
-- [ ] Every touched Python module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] On the built tree A1 to A6 pass (eight cases); on the unchanged script A1 and A2 fail.
+- [x] `infra/deploy-agents.ps1` is the Appendix's text: its blob id is `d9447b634e68f1ea4e7deeec3e97d0d2220e1cfb`.
+- [x] Exactly one existing test is removed, the one named; no other existing test is edited.
+- [x] No file under `agents/`, `kernel/`, `contracts/`, `orchestration/`, `surfaces/` or `scripts/` changes; no version bump; `uv.lock` untouched.
+- [x] Law-cycle question answered No, with the reason, in the Law reading record.
+- [x] Every break under Traps planted, watched to fail, restored, stated per break.
+- [x] Every touched Python module under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -335,15 +335,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| `infra/deploy-agents.ps1` | `agents/master/laws/laws.md` and `test-plan.md`, whole, 2026-10-13 | `MST-NEV-07`; related declaration requirement `MST-DEP-04` | No. Supply the existing required probes at create; preserve the startup refusal and separate vocabulary update. |
+| `tests/test_deploy_master_revision.py` | Same master files; `docs/laws/conventions.md`, whole, 2026-10-13 | `MST-NEV-07` in A5/A6; conventions §3 and §7 require functional citations | No. Deployment-pack smoke tests supplement the existing local master tests; no law row or count changes. |
+| `tests/test_deploy_script_invariants.py` | No additional law governs the named removal; master files read above | None governs deploy-call order | No. Remove only the obsolete narrow-update test. |
+| Sprint handback | `docs/laws/drift-register.md`, whole, 2026-10-13; conventions above | `DRIFT-053` and corrected `DRIFT-105` explain the declaration and vendor-selection requirements | No contradiction or new drift found within this sprint. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. No contract or agent code changes; the deployment script supplies the probes the master's existing `MST-NEV-07` refusal already requires.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** None found in the four required files.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** No clause governs deploy-call order or command-line pack size. DL-296 already decides these; no new decision or design-log entry is needed.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Clauses that were ⬜ and are now proven:** None. `MST-NEV-07` is already 🟩; A5/A6 add deployment-pack evidence without changing its test-plan row or either rollup.
 
 ---
 
@@ -351,48 +354,214 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to be filled by the builder* | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_a1_create_carries_probes_secret_map_and_provider` | `tests/test_deploy_master_revision.py` | PASS; red first | None: deploy-call order |
+| A2 | `test_a2_no_later_call_delivers_the_probe_pack` | same | PASS; red first | None: deploy-call order |
+| A3 | `test_a3_vocabulary_keeps_its_separate_update` | same | PASS; both guards red/restored | None: deploy-call order |
+| A4 | `test_a4_committed_create_packs_fit_the_command_line` | same | PASS before/after patch; both guards red/restored | None: command-line size |
+| A5 | `test_a5_master_starts_with_the_create_packs` | same | PASS × 2 (`anthropic`, `openai`); each vendor deletion red/restored | `MST-NEV-07` |
+| A6 | `test_a6_missing_probes_refuse_vendor_grants` | same | PASS × 2 (`anthropic`, `openai`); refusal deletion red/restored | `MST-NEV-07` |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** None. Six test functions, eight cases from the current two vendors in `KEY_ENV`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to be filled by the builder*
+**Status:** BUILT — local build proof complete; remote and live proof not done.
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s271`, branch `sprint-271-a-full-up-creates-the-master-with-its-probes`; `.env` absent. Started clean at `60be51bb23dc06dcf9391f426b79306cffdb392d`, also the observed `origin/main`.
 
-**Result:** *to be filled by the builder*
+**Result:** The deploy script is the Appendix byte for byte, carries the probes on create, retains the separate vocabulary update, and has no later probe-delivery call. Eight planned cases pass; all 14 sequential guard runs fail as required and are restored; all 16 local CI steps pass. No deployment or remote gate is claimed.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:** `infra/deploy-agents.ps1`; `tests/test_deploy_master_revision.py` (new); `tests/test_deploy_script_invariants.py` (only the named removal); this spec; this sprint's row in `docs/sprints/README.md`.
 
-**Proof — the red run first:** *to be filled by the builder*
+**Proof — the red run first:** Unchanged script, before the Appendix; exit 1. Only A1 and A2 failed; A3–A6 passed (six cases).
 
-**Proof — the green run:** *to be filled by the builder*
+```text
+uv run pytest tests/test_deploy_master_revision.py --no-cov -q
+FF......                                                                 [100%]
+================================== FAILURES ===================================
+____________ test_a1_create_carries_probes_secret_map_and_provider ____________
+tests\test_deploy_master_revision.py:64: in test_a1_create_carries_probes_secret_map_and_provider
+    assert "(Get-MasterCredentialTestsEnv)" in env
+E   assert '(Get-MasterCredentialTestsEnv)' in '\n    "MASTER_GRAPH=auto",\n    "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",\n    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"\n  ) + (Get-AppLlmEnv "master")\n  '
+________________ test_a2_no_later_call_delivers_the_probe_pack ________________
+tests\test_deploy_master_revision.py:73: in test_a2_no_later_call_delivers_the_probe_pack
+    assert "Set-MasterCredentialTests" not in text
+E   assert 'Set-MasterCredentialTests' not in "# deploy-ag... Down }\n}\n"
+E
+E     'Set-MasterCredentialTests' is contained here:
+E
+E       function Set-MasterCredentialTests {
+E         $state = Invoke-Az @(
+E           "containerapp", "update", "--name", "master", "--resource-group", $RG,
+E           "--subscription", $SUB, "--set-env-vars", (Get-MasterCredentialTestsEnv),...
+E
+E     ...Full output truncated (220 lines hidden), use '-vv' to show
+=========================== short test summary info ===========================
+FAILED tests/test_deploy_master_revision.py::test_a1_create_carries_probes_secret_map_and_provider
+FAILED tests/test_deploy_master_revision.py::test_a2_no_later_call_delivers_the_probe_pack
+2 failed, 6 passed in 1.48s
+RED_EXIT=1
+```
 
-**Guards planted:** *to be filled by the builder, one line a break*
+**Proof — the green run:** After every planted break was restored; eight new cases plus eleven retained deploy invariants.
 
-**Blob id of `infra/deploy-agents.ps1`:** *to be filled by the builder*
+```text
+uv run pytest tests/test_deploy_master_revision.py tests/test_deploy_script_invariants.py --no-cov -q
+...................                                                      [100%]
+19 passed in 1.30s
+RESTORED_GREEN_EXIT=0
+```
 
-**Module line counts:** *to be filled by the builder*
+**Guards planted:** Each alone, restored before the next. The create-probe removal was independently planted for A1 and A2; the final refusal break failed both vendor cases. Logs are in `C:/Users/yury_/AppData/Local/Temp/ta-s271-20261013-60be51bb`.
 
-**`make ci`:** *to be filled by the builder: the file it was redirected to, the exit code, passed and skipped, coverage, dependency audit, detect-secrets*
+```text
+01-remove-create-probes-A1: exit=1; 1 failed in 1.38s; restored byte-for-byte
+02-remove-create-probes-A2: exit=1; 1 failed in 1.34s; restored byte-for-byte
+03-restore-late-setter-and-call: exit=1; 1 failed in 1.36s; restored byte-for-byte
+04-probes-in-vocabulary-update: exit=1; 1 failed in 1.35s; restored byte-for-byte
+05-remove-declared-provider: exit=1; 1 failed in 1.34s; restored byte-for-byte
+06-remove-secret-map: exit=1; 1 failed in 1.35s; restored byte-for-byte
+07-vocabulary-in-create: exit=1; 1 failed in 1.37s; restored byte-for-byte
+08-skip-master-vocabulary-update: exit=1; 1 failed in 1.36s; restored byte-for-byte
+09-drop-create-env-arguments: exit=1; 1 failed in 1.36s; restored byte-for-byte
+10-pad-probe-pack-16000-bytes: exit=1; 1 failed in 1.38s; restored byte-for-byte
+11-getter-reads-issuer-pack: exit=1; 1 failed in 1.34s; restored byte-for-byte
+12-delete-openai-probes: exit=1; 1 failed in 1.35s; restored byte-for-byte
+13-delete-anthropic-probes: exit=1; 1 failed in 1.35s; restored byte-for-byte
+14-remove-vendor-refusal: exit=1; 2 failed in 1.36s; restored byte-for-byte
+GUARDS_PROVEN=14/14; ALL_MUTATED_FILES_RESTORED
+```
 
-**`make gate-ran`:** owed by the planner if the sandbox has no network; say so.
+**Blob id of `infra/deploy-agents.ps1`:**
 
-**Not met / verified failing:** *to be filled by the builder*
+```text
+git hash-object infra/deploy-agents.ps1
+d9447b634e68f1ea4e7deeec3e97d0d2220e1cfb
+git ls-files --eol -- infra/deploy-agents.ps1
+i/lf    w/lf    attr/text=auto eol=lf 	infra/deploy-agents.ps1
+```
+
+**Module line counts:**
+
+```text
+infra/deploy-agents.ps1: 938 lines; CRLF=0
+tests/test_deploy_script_invariants.py: 178 lines; CRLF=0
+tests/test_deploy_master_revision.py: 123 lines; CRLF=0
+Existing test file: exactly the named test removed; no other byte changed.
+Unchanged: agents/master/credential_selection.py
+Unchanged: orchestration/packs/trading_credential_tests.json
+Unchanged: pyproject.toml
+Unchanged: uv.lock
+CI_STEPS=16
+PACK_BASE64_PLUS_RESERVE=18432
+```
+
+**`make ci`:** Redirected directly to `C:/Users/yury_/AppData/Local/Temp/ta-s271-20261013-60be51bb/ci.txt`, then read in full. Exit 0; 16 of 16 steps passed, no CI step skipped; pytest 4,784 passed / 8 skipped / 2,470 warnings; coverage 100.00 %. Dependency audit passed (one existing accepted advisory re-checked); detect-secrets passed; no untracked files to scan. The status step ran before the final SPEC → BUILT doc edits; their affected checks are re-run below.
+
+Verbatim excerpts from the redirected file: all 16 command lines are retained; repetitive module-size warnings, sprint rows, pytest progress, warnings and per-module coverage rows are omitted.
+
+```text
+make ci > C:/Users/yury_/AppData/Local/Temp/ta-s271-20261013-60be51bb/ci.txt 2>&1
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1678 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 1197 source files
+uv run lint-imports
+Agents may not import one another (talk only via messages) KEPT
+Substrate imports no pack module KEPT
+Agents may not reach into surfaces or orchestration KEPT
+Kernel is pure plumbing — no domain, no contracts, no agents KEPT
+Contracts declare schemas only — never import agents or runtime layers KEPT
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+[WARN] tests/test_deploy_script_invariants.py: 178 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+uv run python scripts/check_sprint_status.py
+docs/sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md: SPEC | **Status:** SPEC
+docs_seen=276 SPEC=11 BUILT=0 MERGED=265 UNMAPPED=0 MISSING=0
+uv run python scripts/check_tracker_size.py
+[OK] docs/STATE.md: 30,620 of 40,000 bytes (76 %)
+[OK] docs/work-queue.md: 46,946 of 64,000 bytes (73 %)
+[WARN] docs/sprints/README.md: 90,456 of 96,000 bytes (94 %)
+[OK] docs/sprints/INDEX.md: 23,863 of 48,000 bytes (49 %)
+[OK] docs/design-log.md: 357,959 of 512,000 bytes (69 %)
+[OK] docs/laws/functionality-checks.md: 103,464 of 160,000 bytes (64 %)
+[OK] docs/laws/drift-register.md: 131,646 of 160,000 bytes (82 %)
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           20288      0   4306      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4784 passed, 8 skipped, 2470 warnings in 378.13s (0:06:18) ==========
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+CI_EXIT=0
+```
+
+**Post-handback doc checks:** All six exited 0 after both statuses became BUILT; full log: `C:/Users/yury_/AppData/Local/Temp/ta-s271-20261013-60be51bb/final-doc-checks-green.txt`. Verbatim output below omits the other sprint rows.
+
+```text
+COMMAND: uv run python scripts/check_sprint_status.py
+docs/sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md: BUILT | **Status:** BUILT
+docs_seen=276 SPEC=10 BUILT=1 MERGED=265 UNMAPPED=0 MISSING=0
+EXIT=0
+COMMAND: uv run python scripts/check_tracker_size.py
+[OK] docs/STATE.md: 30,620 of 40,000 bytes (76 %)
+[OK] docs/work-queue.md: 46,946 of 64,000 bytes (73 %)
+[WARN] docs/sprints/README.md: 90,610 of 96,000 bytes (94 %)
+[OK] docs/sprints/INDEX.md: 23,863 of 48,000 bytes (49 %)
+[OK] docs/design-log.md: 357,959 of 512,000 bytes (69 %)
+[OK] docs/laws/functionality-checks.md: 103,464 of 160,000 bytes (64 %)
+[OK] docs/laws/drift-register.md: 131,646 of 160,000 bytes (82 %)
+EXIT=0
+COMMAND: uv run python scripts/check_markdown_links.py
+EXIT=0
+COMMAND: uv run pre-commit run markdownlint-cli2 --files docs/sprints/sprint-271-a-full-up-creates-the-master-with-its-probes.md docs/sprints/README.md
+markdownlint-cli2........................................................Passed
+EXIT=0
+COMMAND: uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+EXIT=0
+COMMAND: uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+EXIT=0
+FINAL_DOC_CHECKS=6/6
+```
+
+**`make gate-ran`:** not done. The branch is not pushed; the planner owes remote proof for the final branch SHA before merge.
+
+**Not met / verified failing:** No required local build check is verified failing. Push, remote gate, merge, deploy, post-merge F1 and next-full-`up` F2 are not done. Azure acceptance of the create call remains unproven, as the spec states.
 
 ---
 
 ## Return notes
 
-- *to be filled by the builder*
+- No clause governs deploy-call order; A1–A4 pin DL-296, while A5/A6 cite the existing `MST-NEV-07`. No law row, rollup, drift row or design-log entry changed.
+- Only the five scoped files change. The planted `agents/master/credential_selection.py` break and all probe-pack mutations were restored byte for byte. All excluded source directories, `scripts/`, the version and `uv.lock` are unchanged. The probe budget is 18,432 of 32,767 characters; padding the pack by exactly 16,000 bytes made A4 fail at 39,764.
+- Small tooling corrections: initial reads used two nonexistent paths, corrected to root `conftest.py` and `orchestration/packs/`; the temporary mutation runner stopped before guard 04 because its vocabulary pattern matched both app and job setters, then was scoped to `Set-AppVocabulary` and resumed; one log-excerpt reader hit Windows cp1252 and was re-run with UTF-8. These did not change the implementation or the CI result. Trailing spaces on otherwise blank red-output lines were trimmed for Markdown hygiene; the final Markdown check also caught two trailing spaces on evidence labels, now removed and re-checked.
+- CI's eight existing skips are pasted above. Its existing module-size and parameter-envelope warnings remain; `docs/sprints/README.md` is close to its 96,000-byte limit and was not trimmed outside this row.
+- No deploy script or `az` command was run. Push, `make gate-ran`, merge, deploy and the planner's F1/F2 are not done; keep those stages separate from BUILT.
 
 ---
 

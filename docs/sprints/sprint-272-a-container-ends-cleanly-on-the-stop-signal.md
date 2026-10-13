@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-272-a-container-ends-cleanly-on-the-stop-signal`
-**Status:** BUILT
+**Status:** MERGED 2026-10-14 — `0.125.09`, fast-forwarded to `497293b8`, tag `v0.125.09`, GATE PROVEN `497293b8` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (an image-only retag, on the operator's word); F2 owed on the fleet
 **Version:** `0.125.09` (PATCH; `uv lock` updated the project only)
 **Effort:** M
 **Decisions:** [DL-297](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-283](../design-log.md) decision 5 (the shutdown path, before the container sensor) · [work-queue 116](../work-queue.md) · DRIFT-113 (three master clauses name a recovery path no code holds)
@@ -944,6 +944,76 @@ CI_EXIT=0
 - Twelve new test files stay below 200 lines; E1/E2 are the only existing tests edited, and their previous assertions remain. The three extra proofs are identified above.
 - The checklist's pragma-comment discrepancy is recorded without changing the supplied code or adding a coverage exemption.
 - Planner owes merged-tree local/remote gates, CodeQL comparison and F1 before any deployment; deployment requires the operator's word, then F2 for all 16 apps and the first nightly stop. Work longer than the platform grace and stop during import/activation remain outside this sprint.
+
+---
+
+## Planner's review at the merge — 2026-10-14
+
+Re-measured by the planner in `../ta-s272`. Nothing here is taken from the handback.
+
+- **The production change is the appendix's, but for three lines the planner changed.** On the
+  builder's commit `c819f74e` all 17 production files and the master's `laws.md` had the
+  prototype's blob ids, and the scope command printed nothing. Against the spec's commit the
+  branch changes the files the spec names and no other. Two existing tests are edited, the two
+  named, and every assertion they held is kept.
+- **Two commits by the planner, for a fault in the planner's own prototype** (`b3852856`, then
+  `497293b8`). CodeQL raised `py/uninitialized-local-variable` at error level on the branch for
+  `clean` in the closing line (alert 290), a variable assigned on the line above its use. All
+  three remote workflows were green with it: the gate reads `main`'s alerts, and it was the
+  comparison with the last merged branch that showed it. The first rewrite took the expression out
+  of the f-string, and the scanner raised the same error one line up (alert 292). It loses track
+  of a local assigned from `not (a or b)` when an `if` has just tested both names. The second
+  rewrite derives the exit code from a count of what was left or failed, and the error is gone.
+  The line written and the value returned are the same; the builder's tests and the planner's pin
+  both. `kernel/stop.py` therefore differs from the appendix in those lines: 165 lines, blob
+  `1d0290b8`.
+- **The builder's tests are its own**: twelve files, 38 tests, none of them the planner's text.
+  The planner's own 38 were placed beside them and run with them: 76 passed. They are not
+  committed.
+- **Guards.** The planner's 51 breaks, one at a time against the builder's test files alone, each
+  restored: **51 went red, none survived, none failed to apply**. The tree was clean afterwards
+  and no process was left running. They ran on the builder's commit; the three that touch the
+  rewritten lines were planted again on the final ones, and three went red.
+- **Cited tests.** Each of the 38 citations in the rows of `MST-TRG-03`, `MST-ORD-04`,
+  `MST-OBS-05` and `MST-OUT-03` was resolved by hand: the file, the test, and the clause named in
+  its docstring. The master's row reads v1.10 and 30 / 55 in `docs/laws/INDEX.md` and
+  `ledger.md`. DRIFT-113 is filed as corrected.
+- **A fault in this spec, found by the builder.** The handback checklist says the search for
+  `pragma: no cover` prints nothing. It prints two lines of `kernel/serve_loop.py`, the protocol
+  declarations that were there before the sprint. No exemption was added.
+- **`make ci`**, run by the planner on the final tree, because the last two commits are the
+  planner's own: exit 0, sixteen steps, 4,822 passed, 8 skipped, 100.00 %. The second rewrite was
+  pushed while that run was still going, to have the scanner's answer sooner; both were green
+  before the merge.
+- **Gate.** `GATE PROVEN` for `497293b8c546a6409bed876f9f1db7e2b150a8e7`, run from `../ta-s272`, whose `HEAD` it is: CI, CodeQL and
+  Security Findings each `success`. `main` had not moved since the spec's last commit, so nothing
+  was merged in and the proven commit is the merged one.
+- **CodeQL.** 129 open alerts on the branch, 0 of them errors. Against the S271 branch one is
+  added, a note (`py/unused-import` in the builder's `test_stop_deadline.py`, for a name used
+  inside a `cast` under `TYPE_CHECKING`), and none is gone.
+- **F1, at no cost, on the merged commit.** Run from the sprint's worktree, whose `HEAD` is the
+  merged commit and which holds no `.env` (in the main checkout the master's child would read
+  one). (a) `wq116_stop_paths.py`, five child processes, a real `SIGTERM` raised inside each: the
+  lines printed are the prototype's, the session id and the seconds apart. An idle graph-pull
+  agent and an idle served agent flush, close and exit 0; an agent with three one-second items
+  finishes the one in hand, leaves the third pending and exits 0; an agent whose graph refuses to
+  close exits 1 and its line names the error's type alone; the master ends its `Session` with
+  `ended_at` and `shutdown_reason` `SIGTERM` and exits 0. (b) `pid1_probe.sh`, Linux 5.15, Python
+  3.12 as process 1 of its own PID namespace: the control with no handler ignored `SIGTERM` for
+  the 6.0 seconds it was watched and was killed; on the merged `kernel/stop.py` the process wrote
+  its two lines and exited 0 in 0.2 seconds.
+- **Owed.** The deploy: an image-only retag, on the operator's word. Then F2 on the fleet, at no
+  cost: 16 closing lines in the console logs, no exit code 137 for a revision of the new tag, the
+  master's newest ended `Session` holding `ended_at`; and the same read after the first nightly
+  window's end. The first stop after the retag is of the old image and is still a kill. Not
+  proven until then: that the platform stops a container with `SIGTERM` to process 1, and what it
+  logs for an exit with code 0.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq116-2026-10-13/`
+(`planner_breaks_on_built.txt`, `break_s272_on_built.py`, `planner_tests/`, `s272-make-ci.txt`,
+`planner_breaks_closing_on_final.txt`, `s272-gate-wait.txt`, `s272-gate-ran.txt`,
+`codeql_s272_branch.tsv`, `f1_built_497293b8.txt`, `f1_pid1_built_497293b8.txt`,
+`s272_merge_docs.py`).
 
 ---
 

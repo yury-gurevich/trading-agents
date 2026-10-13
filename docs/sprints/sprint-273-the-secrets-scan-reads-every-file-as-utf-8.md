@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-273-the-secrets-scan-reads-every-file-as-utf-8`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-299](../design-log.md) (this sprint's six decisions, made and measured) · [DL-298](../design-log.md) (where the defect was found) · [work-queue 132 and 130](../work-queue.md)
@@ -213,14 +213,14 @@ a test failure and not a collection error.
 
 ## Success factors
 
-- [ ] On the built tree T1 to T8 pass (ten cases); on the unchanged tree T2 and T3 pass and the rest fail.
-- [ ] The four files of the Appendix have its blob ids.
-- [ ] The self-test's new case and new invariant read `PASS`, and a run leaves no probe path.
-- [ ] No file other than those named in *Blast radius* changes; no version bump; `uv.lock` and `.secrets.baseline` untouched.
-- [ ] Law-cycle question answered No, with the reason, in the Law reading record.
-- [ ] Every break under Traps planted, watched to fail, restored, stated per break.
-- [ ] Every touched Python module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] On the built tree T1 to T8 pass (ten cases); on the unchanged tree T2 and T3 pass and the rest fail.
+- [x] The four files of the Appendix have its blob ids.
+- [x] The self-test's new case and new invariant read `PASS`, and a run leaves no probe path.
+- [x] No file other than those named in *Blast radius* changes; no version bump; `uv.lock` and `.secrets.baseline` untouched.
+- [x] Law-cycle question answered No, with the reason, in the Law reading record.
+- [x] Every break under Traps planted, watched to fail, restored, stated per break.
+- [x] Every touched Python module under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -389,11 +389,13 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Rule file(s) read | What binds it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <what binds it> | <Yes/No + what changed> |
+| `.pre-commit-config.yaml` | `CLAUDE.md`, whole, including CI gate and Secrets | Run all 16 CI steps; redirect to a file; leave no credential-shaped source line or baseline change. | No; the Appendix fixes the hook's own interpreter without changing its pinned scanner. |
+| New encoding case module and new runner tests | `scripts/module_size_baseline.py`; `CLAUDE.md`, Module size | The original case table is frozen at 346 lines; new Python modules must stay below 200 lines. | No; use the separate module and temporary-root tests specified here. |
+| Runner and shared types | `scripts/gate_selftest.py`, `scripts/gate_selftest_types.py`, and `scripts/gate_selftest_docs_cases.py`, whole | Preserve existing cases and invariants; require the named finding; restore each probe and each planted break. | No; apply the exact Appendix with LF and verify all four blob ids. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + why>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. It changes commit-hook configuration and gate tooling/tests only; no contract or agent guarantee changes and no agent law book governs these tests.
 
-**Contradictions found between a rule and this spec:** <none | what, and what you did>
+**Contradictions found between a rule and this spec:** none. This reading record was the first worktree edit, before tests or implementation.
 
 ---
 
@@ -401,64 +403,319 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status |
 | --- | --- | --- | --- |
-| T1 | <name> | <file> | PASS/FAIL |
+| T1 | `test_case_env_outranks_caller` | `tests/test_gate_selftest_runner.py` | PASS |
+| T2 | `test_case_without_env_preserves_caller` | `tests/test_gate_selftest_runner.py` | PASS |
+| T3 | `test_failure_without_finding_is_not_a_pass` | `tests/test_gate_selftest_runner.py` | PASS |
+| T4 | `test_case_removes_probe_folder_with_gate_leftovers` | `tests/test_gate_selftest_runner.py` | PASS |
+| T5 | `test_sweep_removes_stale_probes_and_preserves_neighbours` | `tests/test_gate_selftest_runner.py` | PASS |
+| T6 | `test_encoding_plant_is_undecodable_and_requires_its_finding` | `tests/test_gate_selftest_runner.py` | PASS |
+| T7 | `test_invariant_requires_full_hook_entry` | `tests/test_gate_selftest_runner.py` | PASS (three cases) |
+| T8 | `test_runner_includes_encoding_case_and_invariant_once` | `tests/test_gate_selftest_runner.py` | PASS |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none. T7 is parametrized into the three specified configurations, so the eight tests produce ten cases.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s273`, branch `sprint-273-the-secrets-scan-reads-every-file-as-utf-8`; `.env`: no.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** The hook forces its own interpreter into UTF-8 mode. The encoding case reported its named credential finding with UTF-8 mode disabled in its environment, and the entry invariant passed. Case environment overrides and recursive probe cleanup pass all ten regression cases; all nineteen deliberate breaks were rejected and restored. The full sixteen-step local CI run exited 0.
 
-**Files changed:** <list>
+**Files changed:** `.pre-commit-config.yaml`, `scripts/gate_selftest.py`, `scripts/gate_selftest_types.py`, `scripts/gate_selftest_encoding_cases.py`, `tests/test_gate_selftest_runner.py`, this sprint spec, and this sprint's row in `docs/sprints/README.md`.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, on the unchanged tree>
+============================= test session starts =============================
+collecting ... collected 10 items
+
+tests/test_gate_selftest_runner.py::test_case_env_outranks_caller FAILED [ 10%]
+tests/test_gate_selftest_runner.py::test_case_without_env_preserves_caller PASSED [ 20%]
+tests/test_gate_selftest_runner.py::test_failure_without_finding_is_not_a_pass PASSED [ 30%]
+tests/test_gate_selftest_runner.py::test_case_removes_probe_folder_with_gate_leftovers FAILED [ 40%]
+tests/test_gate_selftest_runner.py::test_sweep_removes_stale_probes_and_preserves_neighbours FAILED [ 50%]
+tests/test_gate_selftest_runner.py::test_encoding_plant_is_undecodable_and_requires_its_finding FAILED [ 60%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[original] FAILED [ 70%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[weakened] FAILED [ 80%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[removed] FAILED [ 90%]
+tests/test_gate_selftest_runner.py::test_runner_includes_encoding_case_and_invariant_once FAILED [100%]
+
+================================== FAILURES ===================================
+________________________ test_case_env_outranks_caller ________________________
+tests\test_gate_selftest_runner.py:37: in test_case_env_outranks_caller
+    case = FailureCase(
+E   TypeError: FailureCase.__init__() got an unexpected keyword argument 'env'
+_____________ test_case_removes_probe_folder_with_gate_leftovers ______________
+tests\test_gate_selftest_runner.py:95: in test_case_removes_probe_folder_with_gate_leftovers
+    assert not (tmp_path / probe).exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = (WindowsPath('C:/Users/yury_/AppData/Local/Temp/pytest-of-yury_/pytest-1643/test_case_removes_probe_folder0') / 'scripts/_gate_selftest_probe_left').exists
+__________ test_sweep_removes_stale_probes_and_preserves_neighbours ___________
+tests\test_gate_selftest_runner.py:113: in test_sweep_removes_stale_probes_and_preserves_neighbours
+    assert not stale_dir.exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = WindowsPath('C:/Users/yury_/AppData/Local/Temp/pytest-of-yury_/pytest-1643/test_sweep_removes_stale_probe0/scripts/_gate_selftest_probe_stale').exists
+_________ test_encoding_plant_is_undecodable_and_requires_its_finding _________
+tests\test_gate_selftest_runner.py:23: in _encoding_module
+    return importlib.import_module("scripts.gate_selftest_encoding_cases")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'scripts.gate_selftest_encoding_cases'
+
+During handling of the above exception, another exception occurred:
+tests\test_gate_selftest_runner.py:120: in test_encoding_plant_is_undecodable_and_requires_its_finding
+    module = _encoding_module()
+             ^^^^^^^^^^^^^^^^^^
+tests\test_gate_selftest_runner.py:25: in _encoding_module
+    pytest.fail("missing module: scripts.gate_selftest_encoding_cases")
+E   Failed: missing module: scripts.gate_selftest_encoding_cases
+______________ test_invariant_requires_full_hook_entry[original] ______________
+tests\test_gate_selftest_runner.py:23: in _encoding_module
+    return importlib.import_module("scripts.gate_selftest_encoding_cases")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'scripts.gate_selftest_encoding_cases'
+
+During handling of the above exception, another exception occurred:
+tests\test_gate_selftest_runner.py:148: in test_invariant_requires_full_hook_entry
+    module = _encoding_module()
+             ^^^^^^^^^^^^^^^^^^
+tests\test_gate_selftest_runner.py:25: in _encoding_module
+    pytest.fail("missing module: scripts.gate_selftest_encoding_cases")
+E   Failed: missing module: scripts.gate_selftest_encoding_cases
+______________ test_invariant_requires_full_hook_entry[weakened] ______________
+tests\test_gate_selftest_runner.py:23: in _encoding_module
+    return importlib.import_module("scripts.gate_selftest_encoding_cases")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'scripts.gate_selftest_encoding_cases'
+
+During handling of the above exception, another exception occurred:
+tests\test_gate_selftest_runner.py:148: in test_invariant_requires_full_hook_entry
+    module = _encoding_module()
+             ^^^^^^^^^^^^^^^^^^
+tests\test_gate_selftest_runner.py:25: in _encoding_module
+    pytest.fail("missing module: scripts.gate_selftest_encoding_cases")
+E   Failed: missing module: scripts.gate_selftest_encoding_cases
+______________ test_invariant_requires_full_hook_entry[removed] _______________
+tests\test_gate_selftest_runner.py:23: in _encoding_module
+    return importlib.import_module("scripts.gate_selftest_encoding_cases")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'scripts.gate_selftest_encoding_cases'
+
+During handling of the above exception, another exception occurred:
+tests\test_gate_selftest_runner.py:148: in test_invariant_requires_full_hook_entry
+    module = _encoding_module()
+             ^^^^^^^^^^^^^^^^^^
+tests\test_gate_selftest_runner.py:25: in _encoding_module
+    pytest.fail("missing module: scripts.gate_selftest_encoding_cases")
+E   Failed: missing module: scripts.gate_selftest_encoding_cases
+____________ test_runner_includes_encoding_case_and_invariant_once ____________
+tests\test_gate_selftest_runner.py:23: in _encoding_module
+    return importlib.import_module("scripts.gate_selftest_encoding_cases")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'scripts.gate_selftest_encoding_cases'
+
+During handling of the above exception, another exception occurred:
+tests\test_gate_selftest_runner.py:165: in test_runner_includes_encoding_case_and_invariant_once
+    _encoding_module()
+tests\test_gate_selftest_runner.py:25: in _encoding_module
+    pytest.fail("missing module: scripts.gate_selftest_encoding_cases")
+E   Failed: missing module: scripts.gate_selftest_encoding_cases
+=========================== short test summary info ===========================
+FAILED tests/test_gate_selftest_runner.py::test_case_env_outranks_caller - Ty...
+FAILED tests/test_gate_selftest_runner.py::test_case_removes_probe_folder_with_gate_leftovers
+FAILED tests/test_gate_selftest_runner.py::test_sweep_removes_stale_probes_and_preserves_neighbours
+FAILED tests/test_gate_selftest_runner.py::test_encoding_plant_is_undecodable_and_requires_its_finding
+FAILED tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[original]
+FAILED tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[weakened]
+FAILED tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[removed]
+FAILED tests/test_gate_selftest_runner.py::test_runner_includes_encoding_case_and_invariant_once
+========================= 8 failed, 2 passed in 1.73s =========================
 ```
 
 **Proof — the green run:**
 
 ```text
-<the passing output>
+============================= test session starts =============================
+collecting ... collected 10 items
+
+tests/test_gate_selftest_runner.py::test_case_env_outranks_caller PASSED [ 10%]
+tests/test_gate_selftest_runner.py::test_case_without_env_preserves_caller PASSED [ 20%]
+tests/test_gate_selftest_runner.py::test_failure_without_finding_is_not_a_pass PASSED [ 30%]
+tests/test_gate_selftest_runner.py::test_case_removes_probe_folder_with_gate_leftovers PASSED [ 40%]
+tests/test_gate_selftest_runner.py::test_sweep_removes_stale_probes_and_preserves_neighbours PASSED [ 50%]
+tests/test_gate_selftest_runner.py::test_encoding_plant_is_undecodable_and_requires_its_finding PASSED [ 60%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[original] PASSED [ 70%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[weakened] PASSED [ 80%]
+tests/test_gate_selftest_runner.py::test_invariant_requires_full_hook_entry[removed] PASSED [ 90%]
+tests/test_gate_selftest_runner.py::test_runner_includes_encoding_case_and_invariant_once PASSED [100%]
+
+============================= 10 passed in 2.15s ==============================
 ```
 
 **Blob ids and line endings:**
 
 ```text
-<git hash-object and git ls-files --eol for the four files>
+bd1d6c2a5333feb0dc1f0da06b87fb44f8104939  .pre-commit-config.yaml
+9b7d573d96f089721ac2d3cfd1af1d851e714f2a  scripts/gate_selftest_types.py
+7d24202607bbfced79d44730014a2d5dc6c58dff  scripts/gate_selftest_encoding_cases.py
+3c01505c59f9fbd67fe81d2b1c7a516d11083e9a  scripts/gate_selftest.py
+i/      w/lf    attr/text=auto eol=lf 	scripts/gate_selftest_encoding_cases.py
+i/lf    w/lf    attr/text=auto eol=lf 	.pre-commit-config.yaml
+i/lf    w/lf    attr/text=auto eol=lf 	scripts/gate_selftest.py
+i/lf    w/lf    attr/text=auto eol=lf 	scripts/gate_selftest_types.py
 ```
 
 **The self-test:**
 
 ```text
-<the two lines, the total, and the output of the find>
+PASS  can-fail: secrets-scan-reads-utf-8 — rejected (exit 1)
+PASS  invariant: secrets-hook-runs-in-utf-8-mode — present
+gate self-test: 40/40 passed
+
+find . -name '_gate_selftest_probe*' -not -path './.git/*' -not -path './.venv/*'
+find_exit=0
+probe_find_bytes=0
 ```
 
-**Guards planted:** <per break: what was planted, that it failed, that it was restored>
+**Guards planted:** all nineteen, each alone, restored before the next.
 
-**Module line counts:** <file **n**, file **n**>
+| Break | Planted | Red observed | Restored |
+| --- | --- | --- | --- |
+| 01 | cut ` -X utf8` from the entry in `.pre-commit-config.yaml` | T7: 3 failed case(s), pytest exit 1; encoding self-test case FAIL; encoding invariant FAIL | Yes; all four blob ids rechecked |
+| 02 | remove the entry line | T7: 3 failed case(s), pytest exit 1; encoding self-test case FAIL; encoding invariant FAIL | Yes; all four blob ids rechecked |
+| 03 | the runner passes no `env` to the command | T1: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 04 | the runner passes `env=dict(case.env)` | T2: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 05 | the runner merges the other way: `{**case.env, **os.environ}` | T1: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 06 | `_remove_probe_dirs` calls `path.rmdir()` inside `try` in place of `shutil.rmtree` | T4, T5: 2 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 07 | `_remove_probe_dirs` loses its `.git` guard | T5: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 08 | `run_failure_case` no longer calls `_remove_probe_dirs` | T4: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 09 | `sweep_stale_probes` no longer calls `_remove_probe_dirs` | T5: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 10 | the case's `env` loses `PYTHONUTF8` | T6: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 11 | the planted character becomes `"\u00e9"`, which cp1252 decodes | T6: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 12 | the planted character becomes the empty text | T6: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 13 | the case's `must_output` line is removed | T6: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 14 | `CASES` loses `*ENCODING_FAILURE_CASES` | T8: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 15 | `ALL_INVARIANTS` loses `*ENCODING_INVARIANTS` | T8: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 16 | the invariant's `must_contain` becomes `("detect_secrets.pre_commit_hook",)` | T7: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 17 | in `run_failure_case`, `missing = []` | T3: 1 failed case(s), pytest exit 1 | Yes; all four blob ids rechecked |
+| 18 | the credential loses its `":", "notarealpassword",` parts | T6: 1 failed case(s), pytest exit 1; encoding self-test case FAIL | Yes; all four blob ids rechecked |
+| 19 | the case's command scans `README.md` | T6: 1 failed case(s), pytest exit 1; encoding self-test case FAIL | Yes; all four blob ids rechecked |
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+The four required self-test mutation runs used caller `PYTHONUTF8=1`; their pasted lines:
 
-**`make gate-ran`:** <not done by the builder; the planner's>
+```text
+Break 01, self-test exit 1:
+FAIL  can-fail: secrets-scan-reads-utf-8 — gate exited 0 on a planted violation — it does not catch this
+FAIL  invariant: secrets-hook-runs-in-utf-8-mode — .pre-commit-config.yaml no longer contains: entry: python -X utf8 -m detect_secrets.pre_commit_hook
+Break 02, self-test exit 1:
+FAIL  can-fail: secrets-scan-reads-utf-8 — gate exited 0 on a planted violation — it does not catch this
+FAIL  invariant: secrets-hook-runs-in-utf-8-mode — .pre-commit-config.yaml no longer contains: entry: python -X utf8 -m detect_secrets.pre_commit_hook
+Break 18, self-test exit 1:
+FAIL  can-fail: secrets-scan-reads-utf-8 — gate exited 0 on a planted violation — it does not catch this
+Break 19, self-test exit 1:
+FAIL  can-fail: secrets-scan-reads-utf-8 — gate exited 0 on a planted violation — it does not catch this
+```
 
-**Not met / verified failing:** <plainly, or "none">
+**Scope proof — `git status --short`, before commit:**
+
+```text
+ M .pre-commit-config.yaml
+ M docs/sprints/README.md
+ M docs/sprints/sprint-273-the-secrets-scan-reads-every-file-as-utf-8.md
+ M scripts/gate_selftest.py
+ M scripts/gate_selftest_types.py
+?? scripts/gate_selftest_encoding_cases.py
+?? tests/test_gate_selftest_runner.py
+```
+
+**Module line counts:** `scripts/gate_selftest.py` **153**; `scripts/gate_selftest_types.py` **41**; `scripts/gate_selftest_encoding_cases.py` **54**; `tests/test_gate_selftest_runner.py` **173**.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\ta-s273-build-20261014\ci.txt`. Exit code **0**. **4832 passed, 8 skipped**, coverage **100.00 %**. Dependency audit PASS; tracked detect-secrets PASS; untracked secrets PASS. All sixteen command lines below are pasted from that file, followed by its pytest and coverage totals.
+
+```text
+make_ci_exit=0
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+uv run pre-commit run detect-secrets --all-files
+uv run python scripts/check_untracked_secrets.py
+========= 4832 passed, 8 skipped, 2470 warnings in 521.75s (0:08:41) ==========
+TOTAL                                                           20473      0   4358      0  100.00%
+```
+
+**`make gate-ran`:** not done by the builder; the planner's. Branch push, remote gate, merge, first Linux self-test run and F1: not done.
+
+**Not met / verified failing:** None within the builder's requested proof sequence. The planner's remote/merge/F1 steps are not done, as stated above. The `pip-audit-cve` self-test passed; no network exception was needed.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the rules.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held to the seven named files. No version bump; `pyproject.toml`, `uv.lock`, `.secrets.baseline`, the frozen case table, existing tests, production folders and excluded trackers are unchanged.
+- The rules agreed with the spec; no design change or design-log entry was needed. The Law reading record was the first edit, before tests or implementation.
+- Command corrections: the first class-replacement command consumed a pre-existing blank line outside `FailureCase`; applying the two exact edits to the original file preserved the rest and matched the Appendix blob. The initial direct Windows `find.exe` call expanded wildcard arguments, and a shell-tool attempt could not resolve the `/c` output path; passing the quoted find command to Git Bash through Python subprocess completed with exit 0 and empty output. The equivalent pruned Python search also printed nothing. The new test's imports were adjusted for Ruff before the final green run; no test behavior changed. The first CI-summary extraction matched a historical sprint-status row; it was corrected to select pytest's equals-delimited summary, 4,832 passed and 8 skipped.
+- PowerShell's first self-test redirect replaced cp1252 dash bytes with replacement characters. The exact self-test command was run again with byte-preserving CMD redirection (`selftest-confirm.txt`): exit 0, 40/40 passed; decoding its bytes as cp1252 preserved the two pasted lines' em dashes. The source files remain LF and match all four blobs. `make ci` exports `PYTHONUTF8=1`; the independent case and its four self-test mutations are the encoding proof.
+- Evidence logs are outside the worktree in `C:/Users/yury_/AppData/Local/Temp/ta-s273-build-20261014`. `pip-audit-cve` and the dependency audit both ran successfully. The planner still owes remote proof, the first Linux case run and F1; no merge or deploy was performed.
 
 ---
 

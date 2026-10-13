@@ -54,10 +54,15 @@ repos:
       - id: markdownlint-cli2
 
   # ── Security: detect secrets ──
+  # The entry is spelled out to put the hook's interpreter in UTF-8 mode
+  # (DL-299). detect-secrets opens a file with the platform's default encoding
+  # and passes over one it cannot decode: on Windows that was every file with
+  # a character outside cp1252. `-X utf8` outranks the environment.
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        entry: python -X utf8 -m detect_secrets.pre_commit_hook
         args: [--baseline, .secrets.baseline]
 
   # ── Module size guard + agent boundary enforcement ──

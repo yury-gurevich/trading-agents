@@ -17,13 +17,17 @@ PROBE_PREFIX = "_gate_selftest_probe"
 
 @dataclass(frozen=True)
 class FailureCase:
-    """A planted violation that a named gate step must reject."""
+    """A planted violation that a named gate step must reject.
+
+    `env` is laid over the caller's environment for the command alone.
+    """
 
     name: str
     why: str
     files: dict[str, str]
     command: list[str]
     must_output: tuple[str, ...] = ()
+    env: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

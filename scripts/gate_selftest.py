@@ -12,11 +12,14 @@ turns "can this check fail?" from a question someone happens to ask into one the
 lane answers on every push.
 
 Probe files are named `_gate_selftest_probe*` and are removed in a finally block;
-a stale-probe sweep runs first in case a previous run was killed.
+a stale-probe sweep runs first in case a previous run was killed. A probe folder
+goes with whatever a gate wrote into it (a compiled file, a cache).
 """
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -27,6 +30,10 @@ if str(_ROOT) not in sys.path:
 
 from scripts.gate_selftest_cases import FAILURE_CASES  # noqa: E402
 from scripts.gate_selftest_docs_cases import DOCS_FAILURE_CASES  # noqa: E402
+from scripts.gate_selftest_encoding_cases import (  # noqa: E402
+    ENCODING_FAILURE_CASES,
+    ENCODING_INVARIANTS,
+)
 from scripts.gate_selftest_invariants import INVARIANTS  # noqa: E402
 from scripts.gate_selftest_parity_invariants import PARITY_INVARIANTS  # noqa: E402
 from scripts.gate_selftest_types import (  # noqa: E402
@@ -36,6 +43,8 @@ from scripts.gate_selftest_types import (  # noqa: E402
 )
 
 CASE_TIMEOUT_SECONDS = 300
+CASES = (*FAILURE_CASES, *DOCS_FAILURE_CASES, *ENCODING_FAILURE_CASES)
+ALL_INVARIANTS = (*INVARIANTS, *PARITY_INVARIANTS, *ENCODING_INVARIANTS)
 
 
 def sweep_stale_probes(root: Path) -> list[str]:
@@ -46,7 +55,7 @@ def sweep_stale_probes(root: Path) -> list[str]:
             continue
         path.unlink()
         removed.append(str(path.relative_to(root)))
-    _remove_empty_probe_dirs(root)
+    _remove_probe_dirs(root)
     return removed
 
 
@@ -66,13 +75,14 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
             text=True,
             timeout=CASE_TIMEOUT_SECONDS,
             check=False,
+            env={**os.environ, **case.env},
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return False, f"could not run: {type(exc).__name__}"
     finally:
         for target in written:
             target.unlink(missing_ok=True)
-        _remove_empty_probe_dirs(root)
+        _remove_probe_dirs(root)
     if completed.returncode == 0:
         return False, "gate exited 0 on a planted violation — it does not catch this"
     output = f"{completed.stdout}\n{completed.stderr}"
@@ -82,26 +92,12 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
     return True, f"rejected (exit {completed.returncode})"
 
 
-def _remove_empty_probe_dirs(root: Path) -> None:
-    """Remove empty probe directories left by nested self-test fixtures."""
-    for path in sorted(
-        root.rglob(f"{PROBE_PREFIX}*"), key=lambda item: len(item.parts), reverse=True
-    ):
+def _remove_probe_dirs(root: Path) -> None:
+    """Remove each probe folder with whatever a gate left inside it."""
+    for path in sorted(root.rglob(f"{PROBE_PREFIX}*")):
         if ".git" in path.parts or not path.is_dir():
             continue
-        for child in sorted(
-            path.rglob("*"), key=lambda item: len(item.parts), reverse=True
-        ):
-            if child.is_dir():
-                _rmdir_if_empty(child)
-        _rmdir_if_empty(path)
-
-
-def _rmdir_if_empty(path: Path) -> None:
-    try:
-        path.rmdir()
-    except OSError:
-        return
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def check_invariant(inv: Invariant, root: Path) -> tuple[bool, str]:
@@ -127,13 +123,13 @@ def main() -> int:
         print(f"swept {len(stale)} stale probe file(s): {', '.join(stale)}")
 
     results: list[tuple[str, bool, str]] = []
-    for case in (*FAILURE_CASES, *DOCS_FAILURE_CASES):
+    for case in CASES:
         ok, detail = run_failure_case(case, root)
         results.append((f"can-fail: {case.name}", ok, detail))
         print(f"{'PASS' if ok else 'FAIL'}  can-fail: {case.name} — {detail}")
         if not ok:
             print(f"      why it matters: {case.why}")
-    for inv in (*INVARIANTS, *PARITY_INVARIANTS):
+    for inv in ALL_INVARIANTS:
         ok, detail = check_invariant(inv, root)
         results.append((f"invariant: {inv.name}", ok, detail))
         print(f"{'PASS' if ok else 'FAIL'}  invariant: {inv.name} — {detail}")

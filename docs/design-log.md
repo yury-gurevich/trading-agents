@@ -12,6 +12,31 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-299 - the secrets scan reads every text file whatever the machine's default encoding, and the gate's self-test leaves nothing behind - status: MEASURED and DECIDED (planner, 2026-10-14 04:10 AEDT); specced as [S273](sprints/sprint-273-the-secrets-scan-reads-every-file-as-utf-8.md); work-queue 132 and 130
+
+**Why.** [DL-298](design-log.md) found that the commit hook's secrets scan passes over a file the platform's default encoding cannot decode. The operator asked for another sprint for the builder; this is the top fix in the queue that can be built now. Work-queue 130 (the self-test leaves a folder behind) is in the same runner and is mended with it.
+
+**Measured, 2026-10-14.** The library opens a file with no encoding named and returns no lines on a decode error (`detect_secrets/core/scan.py`, release 1.5.0, read). 184 of 2,408 tracked files are UTF-8 text that cp1252 cannot decode, 169 of them under `docs/`. On a page holding a made-up credential and one such character the hook passes on Windows with no variable set and with `PYTHONUTF8=0`, and reports the credential with `PYTHONUTF8=1`. **It is not Windows alone:** in WSL, on a clone of `38b35852`, the hook passes the same page when UTF-8 mode is off and the locale is C, where the default is ASCII. With the hook's entry written as `python -X utf8 -m detect_secrets.pre_commit_hook` the credential is reported in all four environments tried on each machine; the interpreter that entry starts is the hook environment's own, in UTF-8 mode even with `PYTHONUTF8=0` set. With that entry and no variable set the whole tree passes and the baseline is untouched, so no commit is newly refused on today's tree. Our own Python opens a file without naming an encoding in 4 places (ruff's `PLW1514`), none a gate step. For work-queue 130: a self-test run that reads 38 of 38 passed leaves `scripts/_gate_selftest_probe_param_law_sync/` with a compiled file in it; the main checkout holds one dated 2026-08-30.
+
+**Decided.**
+
+- **D1 - the hook's own entry puts its interpreter in UTF-8 mode.** Every caller passes through it: a commit, both secrets steps of `make ci`, the remote job, a hand run.
+- **D2 - `scripts/check_untracked_secrets.py` does not change.** It runs the hook, so it takes the entry with it: by hand with no variable set, on an untracked page with the plant, it exits 0 today and 1 with the entry. The work-queue row named the script as a second place to mend; it is not one.
+- **D3 - the self-test runs the hook in the environment that would skip the file**: `PYTHONUTF8=0`, `PYTHONCOERCECLOCALE=0`, `LC_ALL=C`. The case must show the finding by name, so a tool that merely fails there does not read as a pass.
+- **D4 - a self-test case may declare an environment**, laid over the caller's for its one command. `make gate-selftest` exports `PYTHONUTF8=1`; the case's value must outrank it.
+- **D5 - an invariant pins the entry's text.**
+- **D6 - the runner removes a probe folder with whatever is in it** (work-queue 130), in place of removing only empty ones.
+
+**Ruled out.** *A local hook running the `uv`-locked package* - it changes which build of the scanner judges a commit, more than the defect needs; not measured. *`PYTHONUTF8=1` inside the untracked-files script* - a commit goes from git to pre-commit to the hook with no script of ours between. *A machine-wide variable* - it mends one machine; a new one, a cloud session and a sandbox skip again, silently. *Only `PYTHONUTF8=0` in the case* - on Linux the case could never fail, and the remote job is the one place the self-test runs unasked. *`PYTHONDONTWRITEBYTECODE=1` for every case* - it prevents one kind of leftover; removing the folder removes every kind and clears the stale one. *Failing the self-test when a probe path is left* - a file held open by another program on Windows would fail it for a reason no gate is about.
+
+**Not measured.** The self-test's new case on Linux: WSL has no `uv`, so the hook was run there by hand with the case's environment; the remote `quality` job on the branch's first push is the case's first Linux run. The builder's sandbox. Whether a later release of the library names an encoding.
+
+**On the prototype.** No existing test changes; 8 of the 10 new cases fail on the unchanged tree and all pass on the prototype; the self-test reads 40 of 40 and leaves no probe path; `make ci`: thirteen steps passed in one run (pytest 4,832 passed, 8 skipped, 100.00 %), which then stopped at the dependency audit on a time-out reaching pypi.org, and the audit and the two secrets steps passed when run alone straight after; 19 planted breaks, 19 red, the four that weaken the hook or the plant also turning the real case red.
+
+**Trap met.** A file written through the editor's write tool stored the planted character itself where the source said an escape of six ASCII characters: the module became one more file cp1252 cannot decode, and two breaks did not apply until it was put right. Check the bytes of an escape after writing it.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq132-2026-10-14/`.
+
 ## DL-298 - on Windows the commit hook's secrets scan passes over every file the default encoding cannot decode: found when the remote scan failed on S272's spec - status: MEASURED (planner, 2026-10-13 21:40 AEDT); the page is corrected; the hook's repair is work-queue 132, not built
 
 **What happened.** The docs commit `2ecb8428` passed the commit hook and failed the remote `security` job: the secrets scan read a line of [S272](sprints/sprint-272-a-container-ends-cleanly-on-the-stop-signal.md)'s spec as basic-auth credentials. The line was the spec's own warning against that shape, with the shape quoted as its example. The page now describes the shape in words.

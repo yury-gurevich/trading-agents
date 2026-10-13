@@ -103,6 +103,19 @@ class MasterSettings(AgentSettings):
         unit="minutes",
     )
 
+    stop_drain_seconds: float = tunable(
+        20.0,
+        why=(
+            "Seconds after the stop signal that master waits for the activations "
+            "in hand and a running fleet check before it ends its session; keep it "
+            "under the platform's stop grace (30 s unless the app sets one) so the "
+            "session end is written before the kill."
+        ),
+        ge=0.0,
+        le=600.0,
+        unit="seconds",
+    )
+
     remediation_mode: str = tunable(
         "manual",
         why=(

@@ -3,7 +3,8 @@
 Agent: master
 Role: expose /ehlo (ACTIVATE handshake, a resent boot id replayed) and /health over
       HTTP on a threading server whose listen backlog holds an activation wave;
-      run as the container's main blocking loop.
+      run as the container's main loop until the stop signal, then let the
+      activations in hand finish.
 External I/O: TCP port 8000 (inbound HTTP).
 """
 
@@ -11,12 +12,15 @@ from __future__ import annotations
 
 import http.server
 import json
-import socketserver
 from typing import TYPE_CHECKING
 
 from agents.master.activation_replay import ActivationReplay, replay_lifetime_seconds
+from agents.master.draining_server import DrainingTCPServer
 from kernel.crypto import sign_pss
 from kernel.handshake import EHLOMessage
+from kernel.stop import StopSignal, install
+
+_ACCEPT_WAIT_SECONDS = 0.5
 
 if TYPE_CHECKING:
     from agents.master.agent import MasterAgent
@@ -58,7 +62,7 @@ def handle_ehlo(
         return 422, {"error": str(exc)}
 
 
-class EhloServer(socketserver.ThreadingTCPServer):
+class EhloServer(DrainingTCPServer):
     """A daemon thread per request: one slow activation holds no other (MST-ORD-03)."""
 
     daemon_threads = True
@@ -133,11 +137,27 @@ def serve(
     key_pem: str,
     settings: MasterSettings,
     host: str = "",
-) -> None:
-    """Serve EHLO on *host*:*port* until the process ends (the container's loop)."""
+    *,
+    stop: StopSignal | None = None,
+) -> int:
+    """Serve EHLO on *host*:*port* until told to stop (the container's loop).
+
+    Listens for the stop signal itself unless a *stop* is handed in. On a stop it
+    closes the listening socket, waits for the activations in hand until
+    ``stop_drain_seconds`` have passed since the signal, and returns how many it
+    left unfinished.
+    """
+    stopping = stop if stop is not None else StopSignal()
+    if stop is None:
+        install(stopping, agent="master")
     replay = ActivationReplay(replay_lifetime_seconds(settings))
     server = build_server(
         host, port, agent, key_pem, replay=replay, backlog=settings.ehlo_listen_backlog
     )
-    with server:
-        server.serve_forever()
+    server.timeout = _ACCEPT_WAIT_SECONDS
+    try:
+        while not stopping.requested:
+            server.handle_request()
+    finally:
+        server.server_close()
+    return server.drain(stopping.seconds_left(settings.stop_drain_seconds))

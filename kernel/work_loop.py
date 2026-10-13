@@ -12,6 +12,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
+from kernel.stop import UNNAMED, StopSignal, closing_steps, end_loop, install
 from kernel.work_loop_policy import DEFAULT_WORK_LOOP_POLICY, WorkLoopPolicy
 from kernel.work_loop_quarantine import GraphQuarantineSink
 from kernel.work_loop_state import (
@@ -26,6 +27,10 @@ if TYPE_CHECKING:
     from kernel.graph import GraphStore
 
 
+def _never() -> bool:
+    return False
+
+
 def run_once[T](
     find_pending: Callable[[], list[T]],
     process_one: Callable[[T], None],
@@ -34,17 +39,26 @@ def run_once[T](
     policy: WorkLoopPolicy = DEFAULT_WORK_LOOP_POLICY,
     clock: Callable[[], float] = time.monotonic,
     item_key: Callable[[T], str] = default_work_item_key,
+    should_stop: Callable[[], bool] = _never,
 ) -> RunOnceResult:
-    """Process eligible pending items once and report progress, not activity."""
+    """Process eligible pending items once and report progress, not activity.
+
+    Once *should_stop* answers yes no further item is started: the item in hand
+    finishes and the rest stay pending for the next process.
+    """
     loop_state = state if state is not None else WorkLoopState()
     now = clock()
     items = list(find_pending())
     ready, skipped = loop_state.eligible_items(items, now=now, item_key=item_key)
     completed: list[T] = []
+    attempted = 0
     failed = 0
     quarantined = 0
     retry_delays: list[float] = []
     for item in ready:
+        if should_stop():
+            break
+        attempted += 1
         key = item_key(item)
         try:
             process_one(item)
@@ -87,7 +101,7 @@ def run_once[T](
     )
     return RunOnceResult(
         found=len(items),
-        attempted=len(ready),
+        attempted=attempted,
         advanced=advanced,
         failed=failed,
         no_progress=no_progress,
@@ -106,29 +120,48 @@ def work_loop[T](
     state: WorkLoopState | None = None,
     graph: GraphStore | None = None,
     agent: str | None = None,
-    sleep: Callable[[float], None] = time.sleep,
+    sleep: Callable[[float], None] | None = None,
     clock: Callable[[], float] = time.monotonic,
     flush_faults: Callable[[], None] | None = None,
     max_iterations: int | None = None,
+    stop: StopSignal | None = None,
 ) -> tuple[RunOnceResult, ...]:
-    """Poll the graph forever: process all pending work, then sleep when idle."""
+    """Poll the graph until told to stop: process pending work, sleep when idle.
+
+    With no *max_iterations* this is a container's main loop, and it listens for
+    the stop signal itself unless a *stop* is handed in. On a stop it starts no
+    new item, ends the idle sleep at once, then flushes faults, closes the graph
+    and writes the closing line (``kernel.stop``).
+    """
     resolved = _resolve_policy(policy, poll_interval)
     loop_state = state if state is not None else _state_for(graph, agent)
+    name = agent or UNNAMED
+    stopping = stop if stop is not None else StopSignal()
+    if stop is None and max_iterations is None:
+        install(stopping, agent=name)
+    pause = sleep if sleep is not None else stopping.wait
     results: list[RunOnceResult] = []
-    while max_iterations is None or len(results) < max_iterations:
+    while not stopping.requested and (
+        max_iterations is None or len(results) < max_iterations
+    ):
         result = run_once(
             find_pending,
             process_one,
             state=loop_state,
             policy=resolved,
             clock=clock,
+            should_stop=lambda: stopping.requested,
         )
         results.append(result)
         if result.quarantined and flush_faults is not None:
             flush_faults()
         if not result.made_progress:
-            sleep(_sleep_duration(resolved.poll_interval_seconds, result))
-    if flush_faults is not None:
+            pause(_sleep_duration(resolved.poll_interval_seconds, result))
+    if stopping.requested:
+        end_loop(
+            stopping, agent=name, steps=closing_steps(faults=flush_faults, graph=graph)
+        )
+    elif flush_faults is not None:
         flush_faults()
     return tuple(results)
 

@@ -37,7 +37,9 @@ def main() -> None:  # pragma: no cover
     activate_agent(master_url, "researcher", public_key_pem=pubkey)
     graph = build_graph_from_env()
     bus = build_served_bus(graph)
-    serve_loop(consumer_from_env("researcher", graph), bus)
+    serve_loop(
+        consumer_from_env("researcher", graph), bus, graph=graph, agent="researcher"
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

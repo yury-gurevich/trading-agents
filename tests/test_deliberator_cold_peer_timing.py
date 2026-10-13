@@ -24,12 +24,20 @@ def test_served_peer_uses_receive_wait_without_extra_idle_sleep(monkeypatch) -> 
     monkeypatch.setattr(entrypoint, "consumer_from_env", lambda _id, _graph: object())
 
     def fake_serve_loop(
-        consumer: object, bus: object, *, poll_interval: int, sink: object
+        consumer: object,
+        bus: object,
+        *,
+        poll_interval: int,
+        sink: object,
+        graph: object,
+        agent: str,
     ) -> None:
         seen["consumer"] = consumer
         seen["bus"] = bus
         seen["poll_interval"] = poll_interval
         seen["sink"] = sink
+        seen["graph"] = graph
+        seen["agent"] = agent
 
     monkeypatch.setattr(entrypoint, "serve_loop", fake_serve_loop)
 
@@ -47,3 +55,5 @@ def test_served_peer_uses_receive_wait_without_extra_idle_sleep(monkeypatch) -> 
     assert isinstance(sink, GraphFaultSink)
     assert sink.graph is graph
     assert isinstance(sink.inner, CollectingFaultSink)
+    assert seen["graph"] is graph
+    assert seen["agent"] == "deliberator-proponent"

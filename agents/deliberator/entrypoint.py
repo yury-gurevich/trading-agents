@@ -71,6 +71,8 @@ def serve_peer(
         bus,
         poll_interval=PEER_SERVE_IDLE_SLEEP_SECONDS,
         sink=GraphFaultSink(graph, CollectingFaultSink()),
+        graph=graph,
+        agent=settings.identity,
     )
 
 

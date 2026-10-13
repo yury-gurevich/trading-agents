@@ -46,15 +46,31 @@ def test_serve_builds_its_server_from_master_settings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """MST-ORD-03 / MST-IDM-03: serve() uses the backlog tunable and replay lifetime."""
+    from typing import Any
+
+    from kernel.stop import StopSignal
+
     served: list[EhloServer] = []
+    real_build = http_server.build_server
 
-    def record(self: EhloServer) -> None:
-        served.append(self)
+    def record(*args: Any, **kwargs: Any) -> EhloServer:
+        server = real_build(*args, **kwargs)
+        served.append(server)
+        return server
 
-    monkeypatch.setattr(http_server.EhloServer, "serve_forever", record)
+    monkeypatch.setattr(http_server, "build_server", record)
     settings = MasterSettings(ehlo_listen_backlog=32, handshake_timeout_2_seconds=120)
+    stop = StopSignal()
+    stop.request("SIGTERM")
 
-    serve(0, slow_master(0.0), generate_keypair()[0], settings, host="127.0.0.1")
+    serve(
+        0,
+        slow_master(0.0),
+        generate_keypair()[0],
+        settings,
+        host="127.0.0.1",
+        stop=stop,
+    )
 
     (server,) = served
     assert server.request_queue_size == 32

@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -38,8 +38,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `ephemeral_boot_id`, within the kernel's bounded EHLO budget (an attempt cap, a per-attempt
   timeout, a total time, and exponential backoff with full jitter between attempts). A 4xx answer or
   an ACTIVATE whose signature fails verification is final and is never resent.
-- **MST-TRG-02** — `drain` is triggered by the operator (via supervisor) or by master's own
-  crash-recovery logic on startup.
+- **MST-TRG-02** — `drain` is triggered by the operator (via supervisor). Nothing in master
+  triggers it at start: no recovery path exists.
+- **MST-TRG-03** — The platform's stop signal (`SIGTERM`) ends every container's main loop:
+  master's EHLO server, an agent's graph-pull loop and an agent's serve loop. From the signal a
+  graph-pull loop starts no further item and a serve loop takes no further request; the item or
+  request in hand is finished (a taken request was settled when taken, so it is answered); an idle
+  loop wakes within a second. The loop then flushes its faults and closes its request consumer and
+  its graph connection, each on its own, and the process exits `0` only if every one of them
+  closed; otherwise `1`. A loop listens from the moment it starts: a signal that arrives earlier,
+  while the container is still importing or activating, is not handled.
 
 ## Outputs (`OUT`)
 
@@ -48,8 +56,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   run (format: `<type>:<timestamp>:<counter>`). `signature` is stub `""` until RSA wired (S74).
 - **MST-OUT-02** — `drain` returns `DRAINMessage` and writes `drain_reason` + `drain_at` to the
   `AgentInstance` node.
-- **MST-OUT-03** — On `start()`, writes a `Session` node with `started_at`. Used for
-  crash-recovery detection (no `ended_at` → prior session crashed).
+- **MST-OUT-03** — On `start()`, writes a `Session` node with `started_at` and nothing else. On
+  the stop signal master adds `ended_at` and `shutdown_reason` (the signal's name) to it, once. A
+  `Session` with no `ended_at` belongs to a master that is still running or did not stop when
+  asked: it was killed or it crashed.
 - **MST-OUT-04** — `run_fleet_preflight` tests every pack-declared probe that applies under the
   declared LLM provider for every agent type in the grant policy and writes one `FleetPreflight`
   node per check. An empty provider leaves every probe applicable. The check passes only if every
@@ -77,8 +87,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## State & storage (`STA`)
 
-- **MST-STA-01** — `start()` writes one `Session` node with `started_at`. On next boot, if the
-  latest `Session` has no `ended_at`, master infers a crash and enters recovery mode.
+- **MST-STA-01** — `start()` writes one `Session` node with `started_at`. Nothing reads it at
+  the next boot; whether an earlier master stopped when asked is read from its `Session`
+  (`MST-OUT-03`).
 - **MST-STA-02** — Master writes one `AgentInstance` node per activated boot id:
   `{ agent_type, boot_id, state="active", started_at }`. A resent EHLO answered by replay
   (`MST-IDM-03`) writes none.
@@ -92,8 +103,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-IDM-01** — Two EHLO messages from the same `agent_type` with different
   `ephemeral_boot_id`s produce two distinct `instance_id` values (counter suffix). Multiple instances
   of the same type are supported. (A repeated boot id is `MST-IDM-03`.)
-- **MST-IDM-02** — If master restarts, it reads the existing `Session` nodes to determine recovery
-  context before writing a new `Session`.
+- **MST-IDM-02** — A restarted master opens a new `Session` and reads none of the earlier ones;
+  an earlier `Session` is never changed by a later master.
 - **MST-IDM-03** — A repeated EHLO with the same `ephemeral_boot_id` **and** the same `agent_type`
   within the replay lifetime returns the same ACTIVATE (same `instance_id`, grants and config, validly
   signed), writes nothing and runs no credential test; concurrent duplicates produce one activation.
@@ -114,6 +125,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-ORD-03** — Master serves EHLOs concurrently, so one slow activation does not hold the others
   behind it, and its listen backlog (`ehlo_listen_backlog`) holds at least one whole activation wave
   (every agent type in the grant policy waking at once).
+- **MST-ORD-04** — On the stop signal master stops in this order: it closes its listening socket;
+  it waits for the activations in hand and for a fleet check in hand, until `stop_drain_seconds`
+  have passed since the signal; it ends its session (`MST-OUT-03`); it closes its graph connection.
+  It exits `0` only if nothing was left unfinished and every step succeeded. An activation or a
+  fleet check left unfinished, or a failed step, is exit `1`, and the session end is still written.
 
 ## Failure modes (`FAIL`)
 
@@ -196,6 +212,11 @@ guarantees.
 - **MST-OBS-04** — Successful activation records applicable credential-test evidence on the
   `AgentInstance`: live-tested names, live-passed names, cached-pass names, optional failures, and
   transport failures.
+- **MST-OBS-05** — A stop leaves two lines on the container's stderr. When the signal arrives:
+  `[<agent>] stop signal <NAME>: taking no new work`, written unbuffered from the handler, so a
+  process killed later still shows that it was told to stop. When the process has closed what it
+  held: `[<agent>] stopped on <NAME> after <seconds> s: <left ...; closed ...; NOT closed ...>;
+  exit <code>`. A step that failed is named with its error's type alone, never the error's text.
 
 ## Performance (`PERF`)
 
@@ -233,6 +254,7 @@ guarantees.
 | `credential_tests_b64` | `""` | `str` | YES | Base64 environment delivery for the master credential-test declaration pack |
 | `credential_pass_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a costly credential-test pass remains fresh during an activation wave |
 | `fleet_preflight_interval_minutes` | `60` | `int ≥ 5 ≤ 240` | YES | Minutes between master-owned whole-fleet readiness checks; bounds detection delay and repeated probe cost |
+| `stop_drain_seconds` | `20.0` | `float ≥ 0.0 ≤ 600.0` | YES | Seconds after the stop signal that master waits for the activations in hand and a fleet check in hand before it ends its session (`MST-ORD-04`); keep it under the platform's stop grace, 30 seconds unless the app sets one |
 | `grant_policy_path` | `""` | `str` | YES | Filesystem path to the pack's grant-policy JSON; empty = the substrate ships no grants, so every agent type is unknown until a pack supplies one |
 | `grant_policy_b64` | `""` | `str` | YES | Base64 grant-policy JSON injected at deploy time; wins over `grant_policy_path` and keeps the master image pack-agnostic |
 | `secret_map_path` | `""` | `str` | YES | Filesystem path to the pack's secret-map JSON; empty = no agent type is entitled to any secret until a pack supplies the table |
@@ -250,6 +272,15 @@ guarantees.
 | DRIFT-002 | MST-DEP-02: Key Vault resolves credentials in ACTIVATE | `config={}` in S73 | **RESOLVED S75** — `resolve_config()` in `agents/master/secret_map.py`; `SecretStore` protocol; KV + env-var impls |
 
 ## Changelog
+
+- v1.10 — S272 / DL-297 (2026-10-13): every container ends on the stop signal. New `MST-TRG-03`
+  (the kernel's graph-pull and serve loops and master's server end on `SIGTERM`, close what they
+  hold, exit `0` only when all of it closed), `MST-ORD-04` (master's order: listening socket,
+  activations and fleet check in hand within `stop_drain_seconds`, session end, graph) and
+  `MST-OBS-05` (the two lines a stop leaves). `MST-OUT-03` amended and proven: the `Session` gets
+  `ended_at` and `shutdown_reason` on a stop, and no empty `shutdown_reason` at start. `MST-STA-01`,
+  `MST-TRG-02` and `MST-IDM-02` reworded: they named a recovery path at boot that no code holds
+  (DRIFT-113). PARAM gains `stop_drain_seconds`.
 
 - v1.9 — S262 / DL-282 (2026-10-09): `MST-OUT-04` applies the declared-provider selection;
   new `MST-NEV-07` withholds other-vendor keys and refuses unknown providers/tags or unprobed

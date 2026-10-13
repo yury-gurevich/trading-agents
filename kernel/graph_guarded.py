@@ -33,6 +33,12 @@ class GuardedGraphStore:
         self._vocabulary = vocabulary
         self._writer = writer
 
+    def close(self) -> None:
+        """Close the wrapped store when it holds something to close."""
+        close = getattr(self._inner, "close", None)
+        if callable(close):
+            close()
+
     def merge_node(
         self, label: str, key: str, props: Props, *, schema_version: int = 1
     ) -> Node:

@@ -1,7 +1,8 @@
 """Master bootstrap agent entrypoint.
 
 Agent: master
-Role: load RSA private key and secret store from env, start HTTP server on :8000.
+Role: load RSA private key and secret store from env, serve HTTP on :8000 until
+      the stop signal, then end the session and close the graph.
 External I/O: PostgreSQL via GraphStore, Azure Key Vault (optional), TCP port 8000.
 """
 
@@ -22,7 +23,9 @@ from agents.master.http_server import serve
 from agents.master.pack_loading import load_master_packs
 from agents.master.remediation_posture import refuse_unwired_automatic_remediation
 from agents.master.settings import MasterSettings
+from agents.master.stopping import shut_down
 from kernel.crypto import generate_keypair
+from kernel.stop import StopSignal, install
 
 if TYPE_CHECKING:
     from agents.master.key_vault import SecretStore
@@ -87,9 +90,10 @@ def build_app(
 
 
 def main() -> None:  # pragma: no cover
-    """Load config from env and start the master HTTP server."""
+    """Load config from env, serve until the stop signal, then shut down."""
     import logging
     import os
+    import sys
 
     from agents.master.key_vault import (
         AzureKeyVaultSecretStore,
@@ -100,6 +104,8 @@ def main() -> None:  # pragma: no cover
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     log = logging.getLogger("master")
+    stop = StopSignal()
+    install(stop, agent="master")
 
     pem = master_private_key_from_env() or ""
     if not pem:
@@ -143,13 +149,24 @@ def main() -> None:  # pragma: no cover
             now=datetime.now(UTC),
         )
 
-    start_fleet_preflight_daemon(
+    preflight = start_fleet_preflight_daemon(
         run_once,
         sink=agent.sink,
         interval_minutes=settings.fleet_preflight_interval_minutes,
+        stop=stop,
     )
     log.info("[master] session=%s — serving on :8000", agent.session_id)
-    serve(8000, agent, key_pem, settings)
+    left = serve(8000, agent, key_pem, settings, stop=stop)
+    sys.exit(
+        shut_down(
+            agent,
+            graph,
+            stop,
+            activations_left=left,
+            preflight=preflight,
+            settings=settings,
+        )
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

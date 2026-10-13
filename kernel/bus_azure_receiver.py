@@ -90,6 +90,16 @@ class AzureServiceBusRequestConsumer:
         """Publish a claim-checked response; its request was settled when taken."""
         self._publish_response(response)
 
+    def close(self) -> None:
+        """Close the receiver and the client behind it; a later poll opens anew."""
+        held = (self._receiver, self._client)
+        self._receiver = None
+        self._client = None
+        for item in held:
+            close = getattr(item, "close", None)
+            if callable(close):
+                close()
+
     def _receive_messages(self) -> list[object]:
         """Pull a batch from the injected receiver or the live SDK receiver."""
         if self._receiver is None:

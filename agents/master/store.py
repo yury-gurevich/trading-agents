@@ -24,7 +24,7 @@ def write_session(graph: GraphStore, session_id: str) -> Node:
     return graph.merge_node(
         "Session",
         session_id,
-        {"started_at": datetime.now(UTC).isoformat(), "shutdown_reason": ""},
+        {"started_at": datetime.now(UTC).isoformat()},
     )
 
 

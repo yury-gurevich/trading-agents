@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-272-a-container-ends-cleanly-on-the-stop-signal`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.125.09` (PATCH; `uv lock` updated the project only)
 **Effort:** M
 **Decisions:** [DL-297](../design-log.md) (this sprint's nine decisions, made and measured) · [DL-283](../design-log.md) decision 5 (the shutdown path, before the container sensor) · [work-queue 116](../work-queue.md) · DRIFT-113 (three master clauses name a recovery path no code holds)
 
@@ -280,16 +280,16 @@ back when it ends. A real signal is raised with `signal.raise_signal(signal.SIGT
 
 ## Success factors
 
-- [ ] The appendix's diff is applied as given: `git hash-object` of each of the 17 production
+- [x] The appendix's diff is applied as given: `git hash-object` of each of the 17 production
       files equals the planner's (the planner compares at review; you paste yours).
-- [ ] A1 and A2 failed on the unchanged tree and pass on the built one.
-- [ ] Exactly two existing tests are edited, E1 and E2, in the lines named.
-- [ ] **No decision path changes**: the scope command prints nothing.
-- [ ] Law cycle done: master v1.10 in four files, DRIFT-113 filed as corrected, every cited test
+- [x] A1 and A2 failed on the unchanged tree and pass on the built one.
+- [x] Exactly two existing tests are edited, E1 and E2, in the lines named.
+- [x] **No decision path changes**: the scope command prints nothing.
+- [x] Law cycle done: master v1.10 in four files, DRIFT-113 filed as corrected, every cited test
       exists under the name the row gives.
-- [ ] Every new guard planted, watched to fail, restored, stated per guard.
-- [ ] Every touched module under 200 lines; every new test file under 200 lines.
-- [ ] `make ci` exit 0, sixteen steps, 100.00 % coverage, with no `# pragma: no cover` added
+- [x] Every new guard planted, watched to fail, restored, stated per guard.
+- [x] Every touched module under 200 lines; every new test file under 200 lines.
+- [x] `make ci` exit 0, sixteen steps, 100.00 % coverage, with no `# pragma: no cover` added
       anywhere but on a line that already carried one.
 
 ---
@@ -477,15 +477,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| Kernel stop, graph-pull/serve loops and resource closure | `agents/master/laws/laws.md` and `test-plan.md`, whole | New `MST-TRG-03`, `MST-OBS-05`; `MST-OUT-03` | Yes: prove real SIGTERM in isolated children first; restore any handler installed in pytest; keep bounded-pass behavior unchanged. |
+| Master HTTP drain, schedule, entrypoint and session end | Same master books, whole | `MST-ORD-03`, new `MST-ORD-04`, `MST-OUT-03/04`, `MST-STA-01`, `MST-TRG-02`, `MST-IDM-02`, `PARAM` | Yes: one deadline measured from the signal; session end remains attempted when work or a closing step fails; only the appendix changes production. |
+| Curator, operator, researcher and supervisor serve entrypoints | Each named agent's `laws.md`, `TRG` section | `CUR-TRG-01..03`, `OPR-TRG-01..03`, `RES-TRG-01..03`, `SUP-TRG-01..06` | No new capability trigger: only pass the existing graph and identity to the serving loop. Their locked books remain unchanged. |
+| Deliberator serve entrypoint and E1 | `agents/deliberator/laws/laws.md`, `TRG`, `IDM`, `DEP`, `PERF` sections | `DLIB-TRG-01..03`, `DLIB-IDM-04`, `DLIB-DEP-02`, `DLIB-PERF-02` | Preserve poll interval 0, graph fault sink and all existing assertions; add only the two keyword arguments and assertions specified by E1. |
+| Law cycle and drift evidence | `docs/laws/INDEX.md`, `conventions.md` and `drift-register.md`, whole | Conventions sections 2-4, 7, 7a, 9-10; authorized DRIFT-113 | Keep stable clause IDs, put rows inside the table, cite tests by their final names, and derive rollups with the gate. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by the builder*
+Read and recorded on 2026-10-13 before any code change, in `C:/Users/yury_/Downloads/project/ta-s272`, branch `sprint-272-a-container-ends-cleanly-on-the-stop-signal`. Initial tree clean; `HEAD` and `origin/main` both `fcb52ba9a8125f5b6880b36d8149aac89375b420`; no `.env` in this worktree. The excluded decision paths, trackers, packs, images and infrastructure remain outside the build. No push or merge is authorized.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, a new container shutdown guarantee; no contract change. The master amendment is explicitly authorized in the appendix. Test-plan, both rollups and DRIFT-113 are owed in this unit of work.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** The existing master recovery claims (`MST-STA-01`, `MST-IDM-02`, `MST-TRG-02`) are the already-decided DRIFT-113 named by this spec and amended by its appendix. No additional contradiction found in the required reading.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** v1.9 has no stop-signal, bounded master drain or closing-line guarantee. The spec settles those questions with new `MST-TRG-03`, `MST-ORD-04`, `MST-OBS-05` and the amended `MST-OUT-03`; no design decision is reopened.
+
+**Clauses that were ⬜ and are now proven:** At closeout, `MST-OUT-03` and the new `MST-TRG-03`, `MST-ORD-04`, `MST-OBS-05` are proven; gate-derived master rollup 30 / 55. The three recovery-path clauses receive exactly the authorized wording; `MST-TRG-02` and `MST-IDM-02` stay ⬜.
 
 ---
 
@@ -493,71 +499,451 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to be filled by the builder* | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| A7 | | | | |
-| A8 | | | | |
-| A9 | | | | |
-| A10 | | | | |
-| A11 | | | | |
-| A12 | | | | |
-| A13 | | | | |
-| A14 | | | | |
-| A15 | | | | |
-| A16 | | | | |
-| A17 | | | | |
-| A18 | | | | |
-| A19 | | | | |
-| A20 | | | | |
-| A21 | | | | |
-| A22 | | | | |
-| A23 | | | | |
-| A24 | | | | |
-| A25 | | | | |
-| A26 | | | | |
-| A27 | | | | |
-| E1 | | | | |
-| E2 | | | | |
+| A1 | `test_a1_master_process_ends_cleanly_on_sigterm` | `agents/master/tests/test_stop_process.py` | PASS | MST-ORD-04, MST-OUT-03, MST-OBS-05 |
+| A2 | `test_a2_graph_pull_process_listens_for_sigterm`; `test_a2_unbounded_loop_installs_in_the_main_process` | `tests/test_work_stop_signal.py` | PASS | MST-TRG-03 |
+| A3 | `test_a3_idle_serve_loop_listens_for_sigterm` | `tests/test_serve_stop.py` | PASS | MST-TRG-03 |
+| A4 | `test_a4_a_pass_starts_no_item_after_stop` | `tests/test_work_stop.py` | PASS | MST-TRG-03 |
+| A5 | `test_a5_stopped_loop_flushes_closes_without_sleep` | `tests/test_work_stop.py` | PASS | MST-TRG-03, MST-OBS-05 |
+| A6 | `test_a6_pass_limit_installs_nothing_and_closes_nothing` | `tests/test_work_stop.py` | PASS | MST-TRG-03 |
+| A7 | `test_a7_graph_close_failure_exits_one_without_error_text` | `tests/test_work_stop.py` | PASS | MST-TRG-03, MST-OBS-05 |
+| A8 | `test_a8_taken_request_is_answered_before_closure` | `tests/test_serve_stop.py` | PASS | MST-TRG-03 |
+| A9 | `test_a9_idle_loop_polls_again_until_the_stop` | `tests/test_serve_stop.py` | PASS | MST-TRG-03 |
+| A10 | `test_a10_first_stop_keeps_its_reason_and_time`; `test_a10_wait_uses_real_time_and_wakes_on_stop` | `tests/test_stop_signal.py` | PASS | MST-TRG-03, MST-ORD-04 |
+| A11 | `test_a11_handler_sets_the_flag_and_writes_exactly`; `test_a11_default_writer_uses_descriptor_two`; `test_a11_second_thread_installs_nothing` | `tests/test_stop_signal.py` | PASS | MST-TRG-03, MST-OBS-05 |
+| A12 | `test_a12_each_closing_step_runs_and_the_line_is_exact`; `test_a12_no_steps_and_end_loop_exit_codes`; `test_a12_steps_name_only_held_closable_resources` | `tests/test_stop_closing.py` | PASS | MST-TRG-03, MST-OBS-05 |
+| A13 | `test_a13_guarded_graph_closes_its_wrapped_store` | `tests/test_stop_resources.py` | PASS | MST-TRG-03 |
+| A14 | `test_a14_consumer_closes_receiver_then_client_and_can_poll_again` | `tests/test_stop_resources.py` | PASS | MST-TRG-03 |
+| A15 | `test_a15_every_entrypoint_passes_graph_and_agent` | `tests/test_stop_entrypoints.py` | PASS | MST-TRG-03 |
+| A16 | `test_a16_server_answers_health_then_stops` | `agents/master/tests/test_stop_server.py` | PASS | MST-ORD-04 |
+| A17 | `test_a17_activation_in_hand_is_answered` | `agents/master/tests/test_stop_server.py` | PASS | MST-ORD-04 |
+| A18 | `test_a18_activation_outlasting_the_drain_is_reported` | `agents/master/tests/test_stop_server.py` | PASS | MST-ORD-04 |
+| A19 | `test_a19_server_installs_its_own_sigterm_handler` | `agents/master/tests/test_stop_server.py` | PASS | MST-TRG-03, MST-ORD-04 |
+| A20 | `test_a20_failed_request_thread_is_counted_out` | `agents/master/tests/test_stop_server.py` | PASS | MST-ORD-04 |
+| A21 | `test_a21_session_starts_with_start_time_alone` | `agents/master/tests/test_stop_session.py` | PASS | MST-OUT-03 |
+| A22 | `test_a22_stopped_master_ends_session_then_closes_graph` | `agents/master/tests/test_stop_session.py` | PASS | MST-OUT-03, MST-ORD-04, MST-OBS-05 |
+| A23 | `test_a23_work_left_is_named_and_session_still_ends` | `agents/master/tests/test_stop_session.py` | PASS | MST-ORD-04, MST-OUT-03 |
+| A24 | `test_a24_failed_session_write_still_closes_graph` | `agents/master/tests/test_stop_session.py` | PASS | MST-ORD-04, MST-OBS-05 |
+| A25 | `test_a25_master_without_start_ends_no_session` | `agents/master/tests/test_stop_session.py` | PASS | MST-OUT-03 |
+| A26 | `test_a26_session_end_cannot_be_overwritten` | `agents/master/tests/test_stop_session.py` | PASS | MST-OUT-03 |
+| A27 | `test_a27_schedule_runs_no_check_after_stop`; `test_a27_daemon_wakes_from_schedule_wait_on_stop` | `agents/master/tests/test_stop_preflight.py` | PASS | MST-ORD-04 |
+| E1 | `test_served_peer_uses_receive_wait_without_extra_idle_sleep` | `tests/test_deliberator_cold_peer_timing.py` | PASS | DLIB-IDM-04, DLIB-DEP-02, DLIB-PERF-02 |
+| E2 | `test_serve_builds_its_server_from_master_settings` | `agents/master/tests/test_ehlo_server_routes.py` | PASS | MST-ORD-03, MST-IDM-03 |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** The in-process companion to A2 exercises the same handler path inside coverage; A1/A2's original red proofs remain child-process tests. Two additional `MST-ORD-04` tests prove that the server drain and the fleet-check join receive only the signal budget's 13 remaining seconds: `agents/master/tests/test_stop_deadline.py::test_server_drain_budget_counts_from_the_signal`; `agents/master/tests/test_stop_deadline.py::test_fleet_check_uses_the_same_remaining_budget`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to be filled by the builder*
+**Status:** BUILT — local proof complete; prepared for branch commit, no push or merge.
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s272`, branch `sprint-272-a-container-ends-cleanly-on-the-stop-signal`; no `.env`. A1/A2 children use stripped environments and temporary working directories; the master child has its own 60 s watchdog.
 
-**Result:** *to be filled by the builder*
+**Result:** The prescribed production diff is built unchanged: real SIGTERM ends the master and graph-pull processes with exit 0, taken work completes, shutdown evidence and resource closure are tested, and failures/unfinished work are exit 1. A1/A2 red first, 41 focused cases green, 74 planted breaks red/restored, full sixteen-step CI exit 0 at 100.00% coverage. Local container-loop proof only; remote, Linux PID-1 and fleet proof remain owed.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:** 17 production files; master laws/test-plan and three umbrella law files; twelve new test files and exactly E1/E2 among existing tests; this spec and its README row; `pyproject.toml` and `uv.lock`. Exact files and counts are in the diff stat below.
 
-**Proof — the red run first:** *to be filled by the builder*
+**Proof — the red run first:** A1 and A2 ran in child processes on unchanged production. Each child exited 3 under Windows default SIGTERM; pytest survived and exited 1. Command: `uv run pytest --no-cov agents/master/tests/test_stop_process.py tests/test_work_stop_signal.py`.
 
-**Proof — the green run:** *to be filled by the builder*
+```text
+============================= test session starts =============================
+collected 2 items
 
-**Guards planted:** *to be filled by the builder, one line a break*
+agents\master\tests\test_stop_process.py F                               [ 50%]
+tests\test_work_stop_signal.py F                                         [100%]
 
-**The handback checklist's four outputs:** *to be filled by the builder: the scope command, the diff stat, the 17 blob ids, the pragma search*
+================================== FAILURES ===================================
+_______________ test_a1_master_process_ends_cleanly_on_sigterm ________________
+agents\master\tests\test_stop_process.py:72: in test_a1_master_process_ends_cleanly_on_sigterm
+    assert child.returncode == 0, (child.returncode, child.stdout, child.stderr)
+E   AssertionError: (3, '', '[master] no MASTER_PRIVATE_KEY_PEM — generated dev keypair
+E     [master] MASTER_PUBLIC_KEY_PEM=-----BEGIN PUBLIC ...graph store: memory
+E     [master] graph reachable
+E     [master] session=session:20261013T104649:09cb8449 — serving on :8000
+E     ')
+E   assert 3 == 0
+E    +  where 3 = CompletedProcess(args=['C:\\Users\\yury_\\Downloads\\project\\ta-s272\\.venv\\Scripts\\python.exe', '-c', "\nimport js...graph store: memory\n[master] graph reachable\n[master] session=session:20261013T104649:09cb8449 — serving on :8000\n').returncode
+_______________ test_a2_graph_pull_process_listens_for_sigterm ________________
+tests\test_work_stop_signal.py:57: in test_a2_graph_pull_process_listens_for_sigterm
+    assert child.returncode == 0, (child.returncode, child.stdout, child.stderr)
+E   AssertionError: (3, '', '')
+E   assert 3 == 0
+E    +  where 3 = CompletedProcess(args=['C:\\Users\\yury_\\Downloads\\project\\ta-s272\\.venv\\Scripts\\python.exe', '-c', "\nimport os...aph=graph, poll_interval=60)\nprint('closes=' + str(graph.closes), flush=True)\n"], returncode=3, stdout='', stderr='').returncode
+=========================== short test summary info ===========================
+FAILED agents/master/tests/test_stop_process.py::test_a1_master_process_ends_cleanly_on_sigterm
+FAILED tests/test_work_stop_signal.py::test_a2_graph_pull_process_listens_for_sigterm
+============================== 2 failed in 5.41s ==============================
+```
 
-**Module line counts:** *to be filled by the builder*
+**Proof — the green run:** `uv run pytest --no-cov <the twelve new test files> tests/test_deliberator_cold_peer_timing.py agents/master/tests/test_ehlo_server_routes.py`, restored production:
 
-**`make ci`:** *to be filled by the builder: the file it was redirected to, the exit code, passed and skipped, coverage, dependency audit, detect-secrets*
+```text
+============================= test session starts =============================
+collected 41 items
 
-**`make gate-ran`:** owed by the planner if the sandbox has no network; say so.
+agents\master\tests\test_stop_process.py .                               [  2%]
+agents\master\tests\test_stop_server.py .....                            [ 14%]
+agents\master\tests\test_stop_session.py ......                          [ 29%]
+agents\master\tests\test_stop_preflight.py ..                            [ 34%]
+agents\master\tests\test_stop_deadline.py ..                             [ 39%]
+tests\test_work_stop_signal.py ..                                        [ 43%]
+tests\test_work_stop.py ....                                             [ 53%]
+tests\test_stop_signal.py .....                                          [ 65%]
+tests\test_stop_closing.py .....                                         [ 78%]
+tests\test_stop_resources.py ..                                          [ 82%]
+tests\test_stop_entrypoints.py .                                         [ 85%]
+tests\test_serve_stop.py ...                                             [ 92%]
+tests\test_deliberator_cold_peer_timing.py .                             [ 95%]
+agents\master\tests\test_ehlo_server_routes.py ..                        [100%]
 
-**Not met / verified failing:** *to be filled by the builder*
+============================= 41 passed in 15.49s =============================
+```
+
+**Guards planted:** Each plant ran its named pytest target in a separate child, then restored the original bytes and invalidated only that module's bytecode. All 74 were red; no survivor. M29/M50 terminated the child pytest process via Windows default SIGTERM (exit 3); other plants were pytest failures (exit 1). M71's master self-watchdog ended it at 60 s; no orphan was left. Each break and target:
+
+| Plant | Built file | Break | Test target | Result |
+| --- | --- | --- | --- | --- |
+| M01 | `kernel/stop.py` | overwrite first stop reason/time | `tests/test_stop_signal.py::test_a10_first_stop_keeps_its_reason_and_time` | RED, exit 1; restored |
+| M02 | `kernel/stop.py` | lose signal timestamp | `tests/test_stop_signal.py::test_a10_first_stop_keeps_its_reason_and_time` | RED, exit 1; restored |
+| M03 | `kernel/stop.py` | lose requested flag | `tests/test_stop_signal.py::test_a10_first_stop_keeps_its_reason_and_time` | RED, exit 1; restored |
+| M04 | `kernel/stop.py` | count elapsed time before a request | `tests/test_stop_signal.py::test_a10_first_stop_keeps_its_reason_and_time` | RED, exit 1; restored |
+| M05 | `kernel/stop.py` | allow negative remaining drain | `tests/test_stop_signal.py::test_a10_first_stop_keeps_its_reason_and_time` | RED, exit 1; restored |
+| M06 | `kernel/stop.py` | return from every idle wait immediately | `tests/test_stop_signal.py::test_a10_wait_uses_real_time_and_wakes_on_stop` | RED, exit 1; restored |
+| M07 | `kernel/stop.py` | remove one-second signal wake slices | `tests/test_stop_signal.py::test_a11_handler_sets_the_flag_and_writes_exactly` | RED, exit 1; restored |
+| M08 | `kernel/stop.py` | try installing from a worker thread | `tests/test_stop_signal.py::test_a11_second_thread_installs_nothing` | RED, exit 1; restored |
+| M09 | `kernel/stop.py` | handler keeps the wrong signal reason | `tests/test_stop_signal.py::test_a11_handler_sets_the_flag_and_writes_exactly` | RED, exit 1; restored |
+| M10 | `kernel/stop.py` | signal line goes to stdout | `tests/test_stop_signal.py::test_a11_default_writer_uses_descriptor_two` | RED, exit 1; restored |
+| M11 | `kernel/stop.py` | signal line loses the promised words | `tests/test_stop_signal.py::test_a11_handler_sets_the_flag_and_writes_exactly` | RED, exit 1; restored |
+| M12 | `kernel/stop.py` | skip later cleanup after a failed step | `tests/test_stop_closing.py::test_a12_each_closing_step_runs_and_the_line_is_exact` | RED, exit 1; restored |
+| M13 | `kernel/stop.py` | leak error text in closing line | `tests/test_stop_closing.py::test_a12_each_closing_step_runs_and_the_line_is_exact` | RED, exit 1; restored |
+| M14 | `kernel/stop.py` | ignore unfinished work in exit status | `tests/test_stop_closing.py::test_a12_each_closing_step_runs_and_the_line_is_exact` | RED, exit 1; restored |
+| M15 | `kernel/stop.py` | ignore failed cleanup in exit status | `tests/test_stop_closing.py::test_a12_each_closing_step_runs_and_the_line_is_exact` | RED, exit 1; restored |
+| M16 | `kernel/stop.py` | omit fault flushing from closing steps | `tests/test_stop_closing.py::test_a12_steps_name_only_held_closable_resources` | RED, exit 1; restored |
+| M17 | `kernel/stop.py` | omit graph from closing steps | `tests/test_stop_closing.py::test_a12_steps_name_only_held_closable_resources` | RED, exit 1; restored |
+| M18 | `kernel/stop.py` | reverse end_loop success/failure guard | `tests/test_stop_closing.py::test_a12_no_steps_and_end_loop_exit_codes` | RED, exit 1; restored |
+| M19 | `kernel/stop.py` | print exit 0 for failed cleanup | `tests/test_stop_closing.py::test_a12_each_closing_step_runs_and_the_line_is_exact` | RED, exit 1; restored |
+| M20 | `kernel/work_loop.py` | start items after stop | `tests/test_work_stop.py::test_a4_a_pass_starts_no_item_after_stop` | RED, exit 1; restored |
+| M21 | `kernel/work_loop.py` | report unattempted items as attempted | `tests/test_work_stop.py::test_a4_a_pass_starts_no_item_after_stop` | RED, exit 1; restored |
+| M22 | `kernel/work_loop.py` | unbounded work loop installs no handler | `tests/test_work_stop_signal.py::test_a2_graph_pull_process_listens_for_sigterm` | RED, exit 1; restored |
+| M23 | `kernel/work_loop.py` | bounded work loop changes the process handler | `tests/test_work_stop.py::test_a6_pass_limit_installs_nothing_and_closes_nothing` | RED, exit 1; restored |
+| M24 | `kernel/work_loop.py` | work loop disregards stop between passes | `tests/test_work_stop.py::test_a5_stopped_loop_flushes_closes_without_sleep` | RED, exit 1; restored |
+| M25 | `kernel/work_loop.py` | ignore injected work-loop sleep | `tests/test_work_loop.py::test_work_loop_sleeps_after_empty_pass` | RED, exit 1; restored |
+| M26 | `kernel/work_loop.py` | stopped work loop skips closure | `tests/test_work_stop.py::test_a5_stopped_loop_flushes_closes_without_sleep` | RED, exit 1; restored |
+| M27 | `kernel/work_loop.py` | stopped work loop omits faults | `tests/test_work_stop.py::test_a5_stopped_loop_flushes_closes_without_sleep` | RED, exit 1; restored |
+| M28 | `kernel/work_loop.py` | bounded loop skips its existing final flush | `tests/test_work_stop.py::test_a6_pass_limit_installs_nothing_and_closes_nothing` | RED, exit 1; restored |
+| M29 | `kernel/serve_loop.py` | serve loop installs no handler | `tests/test_serve_stop.py::test_a3_idle_serve_loop_listens_for_sigterm` | RED, exit 3; restored |
+| M30 | `kernel/serve_loop.py` | reverse serve-loop stop guard | `tests/test_serve_stop.py::test_a8_taken_request_is_answered_before_closure` | RED, exit 1; restored |
+| M31 | `kernel/serve_loop.py` | lose the count of a taken/answered request | `tests/test_serve_stop.py::test_a8_taken_request_is_answered_before_closure` | RED, exit 1; restored |
+| M32 | `kernel/serve_loop.py` | discard served agent identity | `tests/test_serve_stop.py::test_a3_idle_serve_loop_listens_for_sigterm` | RED, exit 1; restored |
+| M33 | `kernel/serve_loop.py` | serve loop omits fault flushing | `tests/test_serve_stop.py::test_a8_taken_request_is_answered_before_closure` | RED, exit 1; restored |
+| M34 | `kernel/serve_loop.py` | serve loop omits consumer close | `tests/test_serve_stop.py::test_a8_taken_request_is_answered_before_closure` | RED, exit 1; restored |
+| M35 | `kernel/serve_loop.py` | serve loop omits graph close | `tests/test_serve_stop.py::test_a8_taken_request_is_answered_before_closure` | RED, exit 1; restored |
+| M36 | `kernel/graph_guarded.py` | guarded graph does not delegate close | `tests/test_stop_resources.py::test_a13_guarded_graph_closes_its_wrapped_store` | RED, exit 1; restored |
+| M37 | `kernel/bus_azure_receiver.py` | consumer skips client close | `tests/test_stop_resources.py::test_a14_consumer_closes_receiver_then_client_and_can_poll_again` | RED, exit 1; restored |
+| M38 | `kernel/bus_azure_receiver.py` | consumer retains closed receiver | `tests/test_stop_resources.py::test_a14_consumer_closes_receiver_then_client_and_can_poll_again` | RED, exit 1; restored |
+| M39 | `kernel/bus_azure_receiver.py` | consumer retains closed client | `tests/test_stop_resources.py::test_a14_consumer_closes_receiver_then_client_and_can_poll_again` | RED, exit 1; restored |
+| M40 | `agents/curator/entrypoint.py` | curator omits graph keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M41 | `agents/curator/entrypoint.py` | curator omits agent keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M42 | `agents/operator/entrypoint.py` | operator omits graph keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M43 | `agents/operator/entrypoint.py` | operator omits agent keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M44 | `agents/researcher/entrypoint.py` | researcher omits graph keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M45 | `agents/researcher/entrypoint.py` | researcher omits agent keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M46 | `agents/supervisor/entrypoint.py` | supervisor omits graph keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M47 | `agents/supervisor/entrypoint.py` | supervisor omits agent keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M48 | `agents/deliberator/entrypoint.py` | deliberator omits graph keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M49 | `agents/deliberator/entrypoint.py` | deliberator omits agent keyword | `tests/test_stop_entrypoints.py::test_a15_every_entrypoint_passes_graph_and_agent` | RED, exit 1; restored |
+| M50 | `agents/master/http_server.py` | master server installs no handler | `agents/master/tests/test_stop_server.py::test_a19_server_installs_its_own_sigterm_handler` | RED, exit 3; restored |
+| M51 | `agents/master/http_server.py` | reverse master server stop guard | `agents/master/tests/test_stop_server.py::test_a16_server_answers_health_then_stops` | RED, exit 1; restored |
+| M52 | `agents/master/http_server.py` | master does not close listening socket | `agents/master/tests/test_stop_server.py::test_a16_server_answers_health_then_stops` | RED, exit 1; restored |
+| M53 | `agents/master/http_server.py` | server drain starts a fresh budget | `agents/master/tests/test_stop_deadline.py::test_server_drain_budget_counts_from_the_signal` | RED, exit 1; restored |
+| M54 | `agents/master/draining_server.py` | do not count a request in before thread start | `agents/master/tests/test_stop_server.py::test_a18_activation_outlasting_the_drain_is_reported` | RED, exit 1; restored |
+| M55 | `agents/master/draining_server.py` | failed request thread is never counted out | `agents/master/tests/test_stop_server.py::test_a20_failed_request_thread_is_counted_out` | RED, exit 1; restored |
+| M56 | `agents/master/draining_server.py` | completed requests are never counted out | `agents/master/tests/test_stop_server.py::test_a16_server_answers_health_then_stops` | RED, exit 1; restored |
+| M57 | `agents/master/store.py` | restore empty shutdown_reason at session start | `agents/master/tests/test_stop_session.py::test_a21_session_starts_with_start_time_alone` | RED, exit 1; restored |
+| M58 | `agents/master/stopping.py` | session end omits shutdown reason | `agents/master/tests/test_stop_session.py::test_a22_stopped_master_ends_session_then_closes_graph` | RED, exit 1; restored |
+| M59 | `agents/master/stopping.py` | session end keeps wrong reason | `agents/master/tests/test_stop_session.py::test_a22_stopped_master_ends_session_then_closes_graph` | RED, exit 1; restored |
+| M60 | `agents/master/stopping.py` | unfinished activations are ignored | `agents/master/tests/test_stop_session.py::test_a23_work_left_is_named_and_session_still_ends` | RED, exit 1; restored |
+| M61 | `agents/master/stopping.py` | fleet-check join starts a fresh budget | `agents/master/tests/test_stop_deadline.py::test_fleet_check_uses_the_same_remaining_budget` | RED, exit 1; restored |
+| M62 | `agents/master/stopping.py` | unfinished fleet check is ignored | `agents/master/tests/test_stop_session.py::test_a23_work_left_is_named_and_session_still_ends` | RED, exit 1; restored |
+| M63 | `agents/master/stopping.py` | skip ending an opened session | `agents/master/tests/test_stop_session.py::test_a22_stopped_master_ends_session_then_closes_graph` | RED, exit 1; restored |
+| M64 | `agents/master/stopping.py` | master omits graph close | `agents/master/tests/test_stop_session.py::test_a22_stopped_master_ends_session_then_closes_graph` | RED, exit 1; restored |
+| M65 | `agents/master/stopping.py` | master exits zero despite unfinished work | `agents/master/tests/test_stop_session.py::test_a23_work_left_is_named_and_session_still_ends` | RED, exit 1; restored |
+| M66 | `agents/master/settings.py` | change master drain default | `agents/master/tests/test_stop_deadline.py::test_fleet_check_uses_the_same_remaining_budget` | RED, exit 1; restored |
+| M67 | `agents/master/fleet_preflight_loop.py` | start a scheduled check after stop | `agents/master/tests/test_stop_preflight.py::test_a27_schedule_runs_no_check_after_stop` | RED, exit 1; restored |
+| M68 | `agents/master/fleet_preflight_loop.py` | daemon idle wait uses a different stop flag | `agents/master/tests/test_stop_preflight.py::test_a27_daemon_wakes_from_schedule_wait_on_stop` | RED, exit 1; restored |
+| M69 | `agents/master/fleet_preflight_loop.py` | daemon check guard never sees stop | `agents/master/tests/test_stop_preflight.py::test_a27_daemon_wakes_from_schedule_wait_on_stop` | RED, exit 1; restored |
+| M70 | `agents/master/entrypoint.py` | main does not install the early handler | `agents/master/tests/test_stop_process.py::test_a1_master_process_ends_cleanly_on_sigterm` | RED, exit 1; restored |
+| M71 | `agents/master/entrypoint.py` | main hands server a different stop flag | `agents/master/tests/test_stop_process.py::test_a1_master_process_ends_cleanly_on_sigterm` | RED, exit 1; restored |
+| M72 | `agents/master/entrypoint.py` | main omits shared stop from fleet daemon | `agents/master/tests/test_stop_process.py::test_a1_master_process_ends_cleanly_on_sigterm` | RED, exit 1; restored |
+| M73 | `agents/master/entrypoint.py` | main never invokes shutdown | `agents/master/tests/test_stop_process.py::test_a1_master_process_ends_cleanly_on_sigterm` | RED, exit 1; restored |
+| M74 | `agents/master/stopping.py` | silently accept a second session end | `agents/master/tests/test_stop_session.py::test_a26_session_end_cannot_be_overwritten` | RED, exit 1; restored |
+
+Actual scratch harness output (`C:/Users/yury_/AppData/Local/Temp/s272-guards.txt`):
+
+```text
+Appendix blob identities verified: 17 production files
+M01 RED exit=1; restored; overwrite first stop reason/time
+M02 RED exit=1; restored; lose signal timestamp
+M03 RED exit=1; restored; lose requested flag
+M04 RED exit=1; restored; count elapsed time before a request
+M05 RED exit=1; restored; allow negative remaining drain
+M06 RED exit=1; restored; return from every idle wait immediately
+M07 RED exit=1; restored; remove one-second signal wake slices
+M08 RED exit=1; restored; try installing from a worker thread
+M09 RED exit=1; restored; handler keeps the wrong signal reason
+M10 RED exit=1; restored; signal line goes to stdout
+M11 RED exit=1; restored; signal line loses the promised words
+M12 RED exit=1; restored; skip later cleanup after a failed step
+M13 RED exit=1; restored; leak error text in closing line
+M14 RED exit=1; restored; ignore unfinished work in exit status
+M15 RED exit=1; restored; ignore failed cleanup in exit status
+M16 RED exit=1; restored; omit fault flushing from closing steps
+M17 RED exit=1; restored; omit graph from closing steps
+M18 RED exit=1; restored; reverse end_loop success/failure guard
+M19 RED exit=1; restored; print exit 0 for failed cleanup
+M20 RED exit=1; restored; start items after stop
+M21 RED exit=1; restored; report unattempted items as attempted
+M22 RED exit=1; restored; unbounded work loop installs no handler
+M23 RED exit=1; restored; bounded work loop changes the process handler
+M24 RED exit=1; restored; work loop disregards stop between passes
+M25 RED exit=1; restored; ignore injected work-loop sleep
+M26 RED exit=1; restored; stopped work loop skips closure
+M27 RED exit=1; restored; stopped work loop omits faults
+M28 RED exit=1; restored; bounded loop skips its existing final flush
+M29 RED exit=3; restored; serve loop installs no handler
+M30 RED exit=1; restored; reverse serve-loop stop guard
+M31 RED exit=1; restored; lose the count of a taken/answered request
+M32 RED exit=1; restored; discard served agent identity
+M33 RED exit=1; restored; serve loop omits fault flushing
+M34 RED exit=1; restored; serve loop omits consumer close
+M35 RED exit=1; restored; serve loop omits graph close
+M36 RED exit=1; restored; guarded graph does not delegate close
+M37 RED exit=1; restored; consumer skips client close
+M38 RED exit=1; restored; consumer retains closed receiver
+M39 RED exit=1; restored; consumer retains closed client
+M40 RED exit=1; restored; curator omits graph keyword
+M41 RED exit=1; restored; curator omits agent keyword
+M42 RED exit=1; restored; operator omits graph keyword
+M43 RED exit=1; restored; operator omits agent keyword
+M44 RED exit=1; restored; researcher omits graph keyword
+M45 RED exit=1; restored; researcher omits agent keyword
+M46 RED exit=1; restored; supervisor omits graph keyword
+M47 RED exit=1; restored; supervisor omits agent keyword
+M48 RED exit=1; restored; deliberator omits graph keyword
+M49 RED exit=1; restored; deliberator omits agent keyword
+M50 RED exit=3; restored; master server installs no handler
+M51 RED exit=1; restored; reverse master server stop guard
+M52 RED exit=1; restored; master does not close listening socket
+M53 RED exit=1; restored; server drain starts a fresh budget
+M54 RED exit=1; restored; do not count a request in before thread start
+M55 RED exit=1; restored; failed request thread is never counted out
+M56 RED exit=1; restored; completed requests are never counted out
+M57 RED exit=1; restored; restore empty shutdown_reason at session start
+M58 RED exit=1; restored; session end omits shutdown reason
+M59 RED exit=1; restored; session end keeps wrong reason
+M60 RED exit=1; restored; unfinished activations are ignored
+M61 RED exit=1; restored; fleet-check join starts a fresh budget
+M62 RED exit=1; restored; unfinished fleet check is ignored
+M63 RED exit=1; restored; skip ending an opened session
+M64 RED exit=1; restored; master omits graph close
+M65 RED exit=1; restored; master exits zero despite unfinished work
+M66 RED exit=1; restored; change master drain default
+M67 RED exit=1; restored; start a scheduled check after stop
+M68 RED exit=1; restored; daemon idle wait uses a different stop flag
+M69 RED exit=1; restored; daemon check guard never sees stop
+M70 RED exit=1; restored; main does not install the early handler
+M71 RED exit=1; restored; main hands server a different stop flag
+M72 RED exit=1; restored; main omits shared stop from fleet daemon
+M73 RED exit=1; restored; main never invokes shutdown
+73 planted breaks, 73 RED, all restored; 17 production blobs unchanged
+Appendix blob identities verified: 17 production files
+M74 RED exit=1; restored; silently accept a second session end
+74 planted breaks, 74 RED, all restored; 17 production blobs unchanged
+```
+
+**The handback checklist's four outputs:** Each prescribed command ran in the worktree. Scope command exit 0 with no output; blob command exit 0. The pragma command exits 0 and prints two pre-existing protocol declarations, so the checklist's `prints nothing` comment is verified inaccurate. No coverage exemption was added; the loop exemption was removed by the supplied diff.
+
+Scope:
+
+```text
+$ git diff --name-only main -- agents/scanner agents/analyst agents/portfolio_manager agents/provider/domain agents/execution/order_tolerance.py contracts orchestration/packs/trading_tunables.json orchestration/packs/trading_issuer_map.json orchestration/history_window.py
+(no output)
+exit 0
+```
+
+Diff stat:
+
+```text
+$ git diff --stat main
+agents/curator/entrypoint.py                       |   2 +-
+ agents/deliberator/entrypoint.py                   |   2 +
+ agents/master/draining_server.py                   |  51 +++
+ agents/master/entrypoint.py                        |  25 +-
+ agents/master/fleet_preflight_loop.py              |  35 +-
+ agents/master/http_server.py                       |  34 +-
+ agents/master/laws/laws.md                         |  49 +-
+ agents/master/laws/test-plan.md                    |  11 +-
+ agents/master/settings.py                          |  13 +
+ agents/master/stopping.py                          |  68 +++
+ agents/master/store.py                             |   2 +-
+ agents/master/tests/test_ehlo_server_routes.py     |  24 +-
+ agents/master/tests/test_stop_deadline.py          |  87 ++++
+ agents/master/tests/test_stop_preflight.py         |  68 +++
+ agents/master/tests/test_stop_process.py           |  82 ++++
+ agents/master/tests/test_stop_server.py            | 183 ++++++++
+ agents/master/tests/test_stop_session.py           | 192 ++++++++
+ agents/operator/entrypoint.py                      |   2 +-
+ agents/researcher/entrypoint.py                    |   4 +-
+ agents/supervisor/entrypoint.py                    |   4 +-
+ docs/laws/INDEX.md                                 |   2 +-
+ docs/laws/drift-register.md                        |   1 +
+ docs/laws/ledger.md                                |   2 +-
+ docs/sprints/README.md                             |   2 +-
+ ...-a-container-ends-cleanly-on-the-stop-signal.md | 504 ++++++++++++++++++---
+ kernel/bus_azure_receiver.py                       |  10 +
+ kernel/graph_guarded.py                            |   6 +
+ kernel/serve_loop.py                               |  43 +-
+ kernel/stop.py                                     | 165 +++++++
+ kernel/work_loop.py                                |  47 +-
+ pyproject.toml                                     |   2 +-
+ tests/test_deliberator_cold_peer_timing.py         |  12 +-
+ tests/test_serve_stop.py                           | 121 +++++
+ tests/test_stop_closing.py                         |  93 ++++
+ tests/test_stop_entrypoints.py                     |  36 ++
+ tests/test_stop_resources.py                       |  79 ++++
+ tests/test_stop_signal.py                          | 118 +++++
+ tests/test_work_stop.py                            | 118 +++++
+ tests/test_work_stop_signal.py                     |  95 ++++
+ uv.lock                                            |   2 +-
+ 40 files changed, 2273 insertions(+), 123 deletions(-)
+```
+
+17 blobs, in the exact order of the checklist's `git hash-object` command:
+
+```text
+$ git hash-object kernel/stop.py kernel/work_loop.py kernel/serve_loop.py kernel/graph_guarded.py kernel/bus_azure_receiver.py agents/curator/entrypoint.py agents/operator/entrypoint.py agents/researcher/entrypoint.py agents/supervisor/entrypoint.py agents/deliberator/entrypoint.py agents/master/draining_server.py agents/master/http_server.py agents/master/fleet_preflight_loop.py agents/master/stopping.py agents/master/store.py agents/master/settings.py agents/master/entrypoint.py
+f9f17cb8bd9933d40867e54f3f2a3b40b6f0a866
+441ee58984025b0ffee0abd2586827f53588decd
+ad0734a71cb9928348c24f466a8f487e430dbe72
+cc6661162f1c43f39bd194937a987eceb6a04aff
+e3f229af194ec355ffa0e3fb0f6b61242ae36c50
+d32821e88bc7122cb785ea7f50c4f7796fffb9ec
+e9065e318ea8cd7bc24ef9aa0669b32d057456d5
+dfccda1ada8e8aa0a98830d701ebd27c100a83b3
+b2087b67475565bb06fd8707f679869e9a862f62
+05d24d9f19aadbae3613496a8a05a4b0b28e914f
+4b14c090ba19f0681a6abf3d722a6fb6d1f999e8
+0d249a604c4edcbb462ba8ee80949dfd12457ecf
+2234ab21c5fa1764f108e1927ed5ee73e791775e
+29a2374dd8b26782e5df6d5ac007bd65eb956c3a
+8ffe83da3a1884639023beee04e6c5b30a6ff35e
+79a6d31937be8d0203d56f83409606d7482a1760
+5bc320aa4d1ce3df81aa52d3b28363c10a896022
+```
+
+Pragma search:
+
+```text
+$ git grep -n "pragma: no cover" -- kernel/stop.py kernel/serve_loop.py kernel/work_loop.py agents/master/stopping.py agents/master/draining_server.py agents/master/http_server.py
+kernel/serve_loop.py:35:        ...  # pragma: no cover - protocol declaration only.
+kernel/serve_loop.py:39:        ...  # pragma: no cover - protocol declaration only.
+```
+
+**Module line counts:** Every touched Python module and new test file is under 200 lines:
+
+```text
+agents/curator/entrypoint.py: 44
+agents/deliberator/entrypoint.py: 123
+agents/master/draining_server.py: 51
+agents/master/entrypoint.py: 173
+agents/master/fleet_preflight_loop.py: 81
+agents/master/http_server.py: 163
+agents/master/settings.py: 157
+agents/master/stopping.py: 68
+agents/master/store.py: 194
+agents/master/tests/test_ehlo_server_routes.py: 78
+agents/master/tests/test_stop_deadline.py: 87
+agents/master/tests/test_stop_preflight.py: 68
+agents/master/tests/test_stop_process.py: 82
+agents/master/tests/test_stop_server.py: 183
+agents/master/tests/test_stop_session.py: 192
+agents/operator/entrypoint.py: 54
+agents/researcher/entrypoint.py: 46
+agents/supervisor/entrypoint.py: 54
+kernel/bus_azure_receiver.py: 170
+kernel/graph_guarded.py: 87
+kernel/serve_loop.py: 129
+kernel/stop.py: 165
+kernel/work_loop.py: 186
+tests/test_deliberator_cold_peer_timing.py: 59
+tests/test_serve_stop.py: 121
+tests/test_stop_closing.py: 93
+tests/test_stop_entrypoints.py: 36
+tests/test_stop_resources.py: 79
+tests/test_stop_signal.py: 118
+tests/test_work_stop.py: 118
+tests/test_work_stop_signal.py: 95
+```
+
+**`make ci`:** `make ci > C:/Users/yury_/AppData/Local/Temp/s272-ci.txt 2>&1`, exit **0**. Sixteen steps ran; none skipped. 4822 passed, 8 skipped, 2470 warnings in 397.73s (0:06:37). Coverage **100.00%**. The eight environment-dependent or optional test skips are pytest cases, not skipped CI steps; their exact reasons are pasted below. Dependency audit, detect-secrets and untracked-secret checks passed. Actual command lines and closing output:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+uv run pre-commit run detect-secrets --all-files
+uv run python scripts/check_untracked_secrets.py
+
+1693 files already formatted
+Success: no issues found in 1205 source files
+Contracts: 5 kept, 0 broken.
+collected 4830 items
+TOTAL                                                           20472      0   4358      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 4822 passed, 8 skipped, 2470 warnings in 397.73s (0:06:37) ==========
+
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+CI_EXIT=0
+```
+
+**`make gate-ran`:** NOT RUN — the user explicitly forbids push and merge. Network was available for `uv lock` and the dependency audit; remote proof is owed by the planner after the branch is pushed, from this worktree's exact HEAD.
+
+**Not met / verified failing:** No build/CI requirement left unmet. The pragma checklist's expected empty output is verified false: two existing protocol declarations print, exactly as pasted; no new pragma was added. Push, remote gates, merge, Linux PID-1 replay F1, deployment and fleet F2 are NOT DONE and remain with the planner/operator as specified.
 
 ---
 
 ## Return notes
 
-- *to be filled by the builder*
+- Built only in the requested worktree and branch; main and every excluded path untouched. PATCH `0.125.09`; `uv lock` changed only the project's normalized version, to `0.125.9`.
+- All production blobs still match the appendix after 74 restored breaks; master v1.10 appears in all four required files, rollups 30 / 55, DRIFT-113 corrected.
+- Twelve new test files stay below 200 lines; E1/E2 are the only existing tests edited, and their previous assertions remain. The three extra proofs are identified above.
+- The checklist's pragma-comment discrepancy is recorded without changing the supplied code or adding a coverage exemption.
+- Planner owes merged-tree local/remote gates, CodeQL comparison and F1 before any deployment; deployment requires the operator's word, then F2 for all 16 apps and the first nightly stop. Work longer than the platform grace and stop during import/activation remain outside this sprint.
 
 ---
 

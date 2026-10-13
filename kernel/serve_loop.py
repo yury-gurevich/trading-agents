@@ -5,23 +5,24 @@ Role: shared "receive a request -> dispatch to the bound handler -> reply" loop 
       every RPC-served agent entrypoint stays thin (DL-30 / DL-35). Dispatch is
       delegated to the bus's own ``request`` — reusing its capability lookup, the
       caller-authorization gate, and the fault boundary — so serving and calling
-      share one code path and the loop can never die on a bad request. ``serve_once``
-      carries the coverage; ``serve_loop`` is the infinite wrapper (twin of
+      share one code path and the loop can never die on a bad request.
+      ``serve_loop`` wraps ``serve_once`` until the stop signal (twin of
       ``work_loop`` on the graph-pull side).
 External I/O: none (the injected RequestConsumer owns any transport I/O).
 """
 
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING, Protocol
 
 from kernel.errors import CollectingFaultSink, fault_boundary
+from kernel.stop import UNNAMED, StopSignal, closing_steps, end_loop, install
 
 if TYPE_CHECKING:
     from kernel.bus import MessageBus
     from kernel.envelope import AgentMessage
     from kernel.errors import FaultSink
+    from kernel.graph import GraphStore
 
 _DEFAULT_POLL_INTERVAL = 60
 
@@ -91,14 +92,38 @@ def serve_once(
     return len(requests)
 
 
-def serve_loop(  # pragma: no cover - blocks forever; serve_once carries the coverage
+def serve_loop(
     consumer: RequestConsumer,
     bus: MessageBus,
     *,
     poll_interval: int = _DEFAULT_POLL_INTERVAL,
     sink: FaultSink | None = None,
-) -> None:
-    """Serve forever: dispatch all pending requests, then sleep when idle."""
-    while True:
-        if serve_once(consumer, bus, sink=sink) == 0:
-            time.sleep(poll_interval)
+    graph: GraphStore | None = None,
+    agent: str | None = None,
+    stop: StopSignal | None = None,
+) -> int:
+    """Serve until told to stop: dispatch pending requests, sleep when idle.
+
+    A container's main loop: it listens for the stop signal itself unless a *stop*
+    is handed in. A request already taken is answered (it was settled when taken);
+    then the loop flushes the sink, closes the consumer and the graph and writes
+    the closing line (``kernel.stop``). Returns the number of requests served.
+    """
+    name = agent or UNNAMED
+    stopping = stop if stop is not None else StopSignal()
+    if stop is None:
+        install(stopping, agent=name)
+    served = 0
+    while not stopping.requested:
+        count = serve_once(consumer, bus, sink=sink)
+        served += count
+        if count == 0:
+            stopping.wait(poll_interval)
+    end_loop(
+        stopping,
+        agent=name,
+        steps=closing_steps(
+            faults=getattr(sink, "flush", None), requests=consumer, graph=graph
+        ),
+    )
+    return served

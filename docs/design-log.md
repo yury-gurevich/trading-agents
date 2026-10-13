@@ -12,6 +12,18 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-298 - on Windows the commit hook's secrets scan passes over every file the default encoding cannot decode: found when the remote scan failed on S272's spec - status: MEASURED (planner, 2026-10-13 21:40 AEDT); the page is corrected; the hook's repair is work-queue 132, not built
+
+**What happened.** The docs commit `2ecb8428` passed the commit hook and failed the remote `security` job: the secrets scan read a line of [S272](sprints/sprint-272-a-container-ends-cleanly-on-the-stop-signal.md)'s spec as basic-auth credentials. The line was the spec's own warning against that shape, with the shape quoted as its example. The page now describes the shape in words.
+
+**Measured.** Same library (`detect-secrets` 1.5.0), same baseline, same file: the hook passes on this machine and fails with `PYTHONUTF8=1`. Read in the library (`core/scan.py`): a file is opened with the platform's default encoding, and one that raises a decode error is passed over as binary. Here the default is cp1252, and 184 of the 2,393 tracked files are UTF-8 text it cannot decode: 169 under `docs/`, 6 under `agents/`, and `CLAUDE.md`, `AGENTS.md` and `.env.example` among the rest. `make ci` exports `PYTHONUTF8=1` and the remote job runs on Linux, so both read every file. The commit hook does not, nor does `scripts/check_untracked_secrets.py` when it is run by hand.
+
+**What it means.** A docs commit takes the light path, with no `make ci`. Its only local scan is the one that skips, so a secret pasted into such a file is first seen by the remote scan, after the push, on a public repository. The remote job was green on every earlier commit, so nothing is in the tree now.
+
+**Decided.** The scan runs in UTF-8 mode on every platform, in the hook and in the script, and the gate's self-test plants a secret in a file that holds a character outside cp1252 and watches the scan fail (work-queue 132). It changes the commit hook, so it takes a branch and the gate, and is not done in this session. **Until then**, before a docs push from Windows: `PYTHONUTF8=1 uv run --no-sync pre-commit run detect-secrets --all-files`.
+
+**Ruled out.** *Strip those characters from the docs*: 184 files, and the next page written puts them back. *Rely on the remote scan*: it speaks after the push.
+
 ## DL-297 - a container told to stop ends by itself: the kernel's two loops and the master's server handle the stop signal, finish the work in hand, close what they hold, say so and exit 0 - status: MEASURED and DECIDED (planner, 2026-10-13 21:25 AEDT); specced as [S272](sprints/sprint-272-a-container-ends-cleanly-on-the-stop-signal.md); work-queue 116; follows [DL-283](design-log.md) decision 5
 
 **Why.** No process in the fleet handles the platform's stop signal ([DL-283](design-log.md), work-queue 116). The operator, 2026-10-09: *"does master properly shutts down (closing onnections, logging shutdown)?"* It does not, and neither do the other fifteen containers.

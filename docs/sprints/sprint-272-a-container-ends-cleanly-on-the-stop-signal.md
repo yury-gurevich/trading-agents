@@ -323,9 +323,10 @@ Windows-encoded bytes as UTF-8 and got no text at all. Give the child `PYTHONUTF
 thread hands it a stop already asked for, or raises the signal from a timer; a test that needs the
 server's port captures the server through `build_server` and runs `serve()` on a second thread.
 
-🪤 **Do not write a URL with a password into a test to stand for a secret.** The last step of
-`make ci` scans untracked files and reads `scheme://user:word@host` as a credential: the planner's
-first full run failed there, on its own test. Use a marker word in the error's text and assert the
+🪤 **Do not write a URL that carries a user name and a password to stand for a secret, in a test
+or in a document.** The secrets scan reads that shape as a credential. The planner's first full run
+failed on its own test, and the remote scan then failed on this page, where the shape was quoted
+as the example ([DL-298](../design-log.md)). Use a marker word in the error's text and assert the
 line does not hold it.
 
 🪤 **The two existing fakes have exact signatures.** `fake_serve_loop` in E1 names its keyword

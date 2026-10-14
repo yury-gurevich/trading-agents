@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-14 22:41 AEDT · **Version:** **0.126.00 on `main` and on the fleet as `s275`, deployed 2026-10-14** (image-only retag from `82909a54`, then the sensor step; rollback `s272`) · **[S275](sprints/sprint-275-the-operator-hears-when-a-container-fails.md), the container sensor, is deployed: from the next weekday fire the dispatcher job reads the platform's container events and tells the operator of each alarm once, with its why. F2 is read after the first fire.**
+**Last updated:** 2026-10-15 09:00 AEDT · **Version:** **0.126.00 on `main` and on the fleet as `s275`, deployed 2026-10-14** (image-only retag from `82909a54`, then the sensor step; rollback `s272`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is specced for Codex: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2), prototyped green; S275's F2 is still owed from the first weekday fire.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -93,10 +93,11 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 **Ranked queue of record: [work-queue.md](work-queue.md).** This section is the narrative around it, not a
 second ranking.
 
-1. **Small fixes off the fidelity
-   decision paths:** **The debaters' effort and model checks (work-queue 123) are widened
-   by the operator, 2026-10-11, to a declared list of fallback models** ([DL-289](design-log.md)):
-   proposed, not specced, a feature in two sprints.
+1. **With Codex: [S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md)** (work-queue 123,
+   [DL-289](design-log.md) amendment 1): a debater runs on the first declared LLM that works, chosen by
+   the master at activation; specced and prototyped 2026-10-15 (`make ci` exit 0, 32 breaks, 32 red),
+   off the fidelity decision paths. Its deploy is the new `llm-candidates` step, then the retag; P3
+   (the switch during the night) is the sprint after.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. Codex-sized and off the fidelity decision paths: what execution still downloads in its first five minutes

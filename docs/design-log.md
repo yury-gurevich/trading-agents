@@ -366,7 +366,7 @@ Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
 
 ---
 
-## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT), design PROPOSED by the planner, not specced; work-queue 123 widened to it
+## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT); P1 and P2 SPECCED as S276 (amendment 1, 2026-10-15), P3 not specced; work-queue 123 widened to it
 
 **Why.** Work-queue 123 asked the operator what a debater does when its vendor refuses its configured effort or model: refuse to start (no debate record, so under the binding posture every buy of the night is dropped) or fail each order open (the buys go undebated). The operator took neither: *"Refuse to start when another LLM can do the job and miss a day's run is not a best Idea. Let's create a list of LLM that can replace currently not working one ... we can switch Andropic with OpenAI or make a list of LLM+Effort combinations."* Before that, the operator asked whether the error can be recognised at run time: *"Does a return code tell you it is a 'effort mismatch'?"*
 
@@ -398,6 +398,23 @@ Each body's `type` is `invalid_request_error`, and the effort message lists the 
 **Open, for the spec.** Whether a time-out moves to the next candidate: the manager waits 240 seconds for a turn and execution 1,800 for the record, so a second attempt costs debate time (work-queue 113). Whether the change restarts the fidelity count (DL-237): the list lives outside the tunables pack, the deliberator's code changes. Whether the operator's chat follows the same list. Anthropic's two refusals, measured the way OpenAI's were.
 
 **Size.** A feature, in two sprints: the list and the choice at activation (P1, P2), then the switch during the night (P3). Work-queue 123's two fixes are inside the first.
+
+**Amendment 1 (planner, 2026-10-15) - P1 and P2 SPECCED as [S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md), decided and prototyped; the operator asked for "a sizable sprint for Codex".** The open questions above are answered, and ten decisions made and measured on a prototype (`b3f85ee6`, local only: `make ci` exit 0, 5,031 passed, 100.00 %; 32 planted breaks, 32 red; evidence `OneDrive/trading-agents-data/wq123-2026-10-15/`).
+
+- *Measured, no cost:* Anthropic refuses before generation too, and by status: HTTP 400 `invalid_request_error` for an effort it does not take (the message lists `low` to `max`), HTTP 404 `not_found_error` for a model it does not have. Both are probe credential failures; 404 joins the deliberators' `credential_failure_statuses`.
+- **D1** `trading_llm.json` holds `candidates` (ordered vendor, model, effort; non-empty, no repeat, no model of another known vendor's family), `apps` (unchanged) and `roles` (the three deliberators, each with the keys it is handed its candidate in). `provider` is gone: the first candidate's vendor is the declared provider, which the deploy and the switch still write.
+- **D2** The master reads the list (`MASTER_LLM_PACK_B64`) and puts its declared provider's candidates first, so a reorder stays one switch command; a model or effort change is a deploy.
+- **D3** The choice lives in `resolve_and_test_report`, so activation, the fleet check and a remediation re-test choose alike.
+- **D4** A candidate passes when no required probe was refused and none went unanswered; the first that passes is handed over and no later one is probed. One before it is *passed over*: recorded (`AgentInstance.llm_passed_over`, `FleetPreflight.llm_passed_over`), never a credential or fleet-check failure. None passing: the first only unanswered is handed over unproven (`MST-FAIL-04`); every one refused: refused, as today.
+- **D5** The role is handed its candidate's vendor, model and effort and that vendor's key alone: S262's one-key rule stands until P3.
+- **D6** A probe declares `candidate_paths` (where the model and effort go in its body), so the probe is the role's request; a role probe without them refuses the start.
+- **D7** The deliberator re-reads its settings after activation, sends an empty effort as none (`effort` defaults to empty), and `build_llm` refuses another vendor's model (work-queue 123's two fixes).
+- **D8** `role_models` names the models that answered, from the run's `LLMCall` rows.
+- **D9** The brief carries one `LLM:` line only when an activation of the last 24 hours passed a candidate over.
+- **D10** Deploy: a new narrow step, `deploy-agents.ps1 -Action llm-candidates`, sets the master's vocabulary, then its list, before the image-only retag; never the retag first, because the new master writes `llm_passed_over` on every fleet check.
+- *Answered:* a time-out moves to the next candidate at activation, where it costs no debate time; the operator's chat does not follow the list (not now); the change restarts nothing in the fidelity count: no decision path changes (`DECISION_PATHS` against the prototype's diff prints none), and the first candidate is tonight's `openai` / `gpt-5.5` / `high`.
+- *Ruled out:* templating the probe body as text (the body is serialised once on purpose); each deliberator probing for itself (the master tests every credential before handing it over, DL-36); a second order value written by the switch (`MASTER_LLM_PROVIDER` already is one); handing over every passing key now (nothing switches in the night yet); a full `up` as the deploy (it reverts three live-only settings); a line in every brief.
+- *Assumed, not measured:* that Anthropic answers 200 to `max_tokens: 1` with effort `max`, and OpenAI to `reasoning_effort: high` with `max_completion_tokens: 256`. F1b measures both after the merge, about $0.01, on the operator's word.
 
 ---
 

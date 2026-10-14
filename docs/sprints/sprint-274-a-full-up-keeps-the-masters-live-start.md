@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-274-a-full-up-keeps-the-masters-live-start`
-**Status:** BUILT
-**Version:** PATCH (the next free one at merge; do not pin the digits here)
+**Status:** MERGED 2026-10-14 — `0.125.10`, fast-forwarded to `17655eea`, tag `v0.125.10`, GATE PROVEN `17655eea` (CI, CodeQL, Security Findings); F1 passed at no cost; no deploy
+**Version:** PATCH: `0.125.10`
 **Effort:** S
 **Decisions:** [DL-300](../design-log.md) (this sprint's five decisions, made and measured) · [DL-294](../design-log.md) amendment 1 (the operator's 22:00 wake, applied to the live master) · [work-queue 131](../work-queue.md) part (f)
 
@@ -397,7 +397,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED — the build proof is the builder's, below; the remote gate, the breaks and F1 are in the planner's review at the merge.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s274`, branch `sprint-274-a-full-up-keeps-the-masters-live-start`, `.env` absent. Red, green and guard proofs ran on base `c5e54c360ba21cf2274686347945512acab22a41` plus this work. Before full CI, this branch fast-forwarded to the already-merged S273 at `25a0129dd600464d2dfb964cf623eea12acd6faa`; no work was performed on `main`. Both Appendix blobs stayed exact.
 
@@ -690,3 +690,55 @@ The field becomes this; only the first argument changes.
 | How long after it starts a check counts as readable | 2 minutes | the same eight nights: 29 to 50 seconds; a repeat follows 60 minutes and 9 to 24 seconds later |
 | The spacing of the placing ticks | 10 minutes | the dispatcher's cron in `orchestration/packs/trading_tunables.json` (`*/10 22-23 * * 1-5`) |
 | The number of placing ticks | 6 | 22:30 to 23:20, both included |
+
+## Planner's review at the merge — 2026-10-14
+
+Re-measured by the planner in `../ta-s274` on the builder's commit `ae57a478` and on the merge
+commit `17655eea`. Nothing here is taken from the handback.
+
+- **The two production files are the measured prototype byte for byte.**
+  `infra/deploy-agents.ps1` is `c6ce8528` and `surfaces/dashboard/settings.py` is `0b26950d`, the
+  Appendix's blob ids. Against the spec's commit the branch changes the files the spec names, the
+  version pair and the one test the planner authorized during the build, and no other.
+- **The builder's new test file is its own** (`tests/test_master_wake_window.py`, 68 lines): the
+  three functions under the names the spec fixed, M2 and M3 citing `DSP-IN-03` / `DSP-TRG-01`.
+  The two existing-test edits the spec names are the prototype's blobs (`aeaa6fba`, `95360dd9`).
+- **One stop during the build, the planner's miss.** The PATCH bump to `0.125.10` failed
+  `tests/test_check_version_scheme.py::test_real_pyproject_passes_despite_normalized_lockfile`,
+  which asserted that `uv.lock` spells the version differently from `pyproject.toml`. That held
+  only while the last group began with 0 (`0.125.09` is locked as `0.125.9`); no tag since the
+  test was written (S221, `39c28c72`) had a patch of 10 or more. The prototype's `make ci` ran at
+  the old version, never with the bump applied. The builder stopped as the spec told it to; the
+  planner authorized a third existing-test edit, the two versions compared as numbers, which
+  passes on `main` and on this branch and fails on a stale lock (measured before the
+  authorization). The builder applied it exactly ([DL-300](../design-log.md) amendment 1).
+- **The planner's own tests** (written for the prototype) were placed beside the builder's and run
+  with the focused suite: 58 passed. They are not committed.
+- **Guards.** The planner's 17 breaks, one at a time, each restored: **17 went red, each on the
+  test named**, five of them planted in `orchestration/` and `agents/master/`; the tree was clean
+  afterwards.
+- **Law rows.** The surfaces' row reads v1.8 and 31 / 38 in `docs/laws/INDEX.md` and in
+  `docs/laws/ledger.md`; the law gate checks the counts, not the label.
+- **`main` was merged into the branch** (S273's follow-up and its record had landed): one
+  conflict, the sprint list's rows 273 and 274, resolved with 273 from `main` and 274 from the
+  branch.
+- **Not re-run by the planner:** the local `make ci` on the builder's commit. The builder's
+  sixteen-step pass (4,834 passed, 8 skipped, 100.00 %) is the builder's statement; the proof is
+  the remote gate on the merge commit.
+- **Gate.** `GATE PROVEN` for `17655eea`, run from `../ta-s274`, whose `HEAD` it is; `main` was
+  fast-forwarded to that commit, so the proven commit is the merged one.
+- **CodeQL.** 130 open alerts on the branch, 0 of them errors (116 notes, 14 warnings): the same 130, by number, as on the `chore-a-read-only-probe-folder-is-removed` branch, none new and none gone.
+- **F1, at no cost, on the merged commit: passed.** The script's own `Up`, every `az` call and
+  credential a stand-in (`up_scale_rules.ps1`), gives 16 scale rules, each equal to the live
+  app's rule read with `az containerapp list` at 04:46 UTC the same day: 16 of 16, where `main`
+  before gave 15 of 16 (the master's `25 20 * * 1-5`). The dashboard's default
+  `master_window_start_utc` is 22:00, its label 09:00-10:30 Melbourne, and from 20:00 to 21:30
+  UTC it names 22:00 as the master's next wake where it read the master as awake.
+- **No deploy.** Neither file ships in an image: the deploy script runs from the operator's
+  machine and the dashboard runs locally (a running dashboard keeps the old default until it is
+  restarted). The fleet stays on `s272`.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq131f-2026-10-14/`
+(`breaks_on_built_17655eea.txt`, `s274-branch-runs.txt`, `s274-gate-ran.txt`,
+`f1_up_rules_17655eea.txt`, `f1_rules_compare_17655eea.txt`, `f1_dashboard_17655eea.txt`,
+`s274_merge_docs.py`).

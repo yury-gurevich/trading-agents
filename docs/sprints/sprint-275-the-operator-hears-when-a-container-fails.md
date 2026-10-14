@@ -435,15 +435,22 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| Nine `container_*.py` modules | Dispatcher `laws.md` and `test-plan.md` whole (v1.2); proposed v1.3 Appendix § 9; `docs/laws/conventions.md` and `drift-register.md` whole | Proposed `DSP-IDN-05`, `DSP-IN-05`, `DSP-TRG-04`, `DSP-OUT-07/08`, `DSP-NEV-03`, `DSP-IDM-04`, `DSP-FAIL-04`, `DSP-SEC-03`, `DSP-OBS-03`; existing `DSP-SEC-01/02` | Yes: stopped before code because proposed `DSP-OUT-07` contradicts Appendix § 7 and DL-301 D5; DRIFT-114. |
+| Scheduled entrypoint | Same dispatcher book and test plan; conventions; `CLAUDE.md` whole | `DSP-TRG-02`, `DSP-OUT-02`; proposed `DSP-TRG-04`, `DSP-IDN-05`, `DSP-FAIL-04` | The dispatch output and status must remain unchanged; implementation not done. |
+| Daily brief text and facts | Same dispatcher book and test plan; conventions | `DSP-IDN-04`, `DSP-TRG-03`, `DSP-OUT-06`, `DSP-SEC-02`; proposed `DSP-OUT-08` | Preserve the existing lines and insert only the approved container line; implementation not done. |
+| Telegram port and the two existing test edits | Same dispatcher book and test plan, including `CAP`; conventions | `DSP-SEC-01/02`; proposed `DSP-IDM-04`, `DSP-FAIL-04`, `CAP.telegram.send_alarm` | The capability equality assertion must remain intact; edits not done. |
+| Settings | Same dispatcher book and test plan, including `PARAM`; conventions | Five proposed `container_sensor_*` PARAM rows | Exact defaults, bounds and rationales only; edits not done. |
+| Graph vocabulary | `kernel/graph_vocabulary.py` module docstring; ADR-0012 whole; dispatcher book and test plan | ADR-0012 substrate/pack wall; proposed `DSP-OUT-07`, `DSP-OBS-03` | Vocabulary remains pack data; append lists exactly as the Appendix directs; edits not done. |
+| Dockerfile | Sprint Appendix § 8; dispatcher book and test plan | Proposed `DSP-FAIL-04` | The image must copy every named sensor module; edits not done. |
+| Deploy script | `CLAUDE.md` whole; dispatcher book and test plan; conventions | Proposed `DSP-SEC-03`, `DSP-TRG-04` | Read-only inspection only; no deploy or Azure command run. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: a new dispatcher sensor guarantee, with no contracts change. The full cycle is owed. It stopped at this reading gate; no law amendment or test was written.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** DRIFT-114, proposed `DSP-OUT-07` in Appendix § 9. It requires an alarm-event total, one line per app/kind/exit code, and overflow counted with apps. Appendix § 7 instead groups on `(kind, exit_code)` across apps, heads the message with app and kind counts, and counts only remaining kinds in the overflow. DL-301 D5 expressly chooses grouping across apps and rules out one line per app. A21 requires that exact Appendix message. These requirements cannot all hold. Stopped before writing code, as required; neither the clause nor the production Appendix was repaired.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** The current v1.2 book does not declare the sensor; the spec explicitly supplies that new guarantee in § 9. No additional undecided silence found. The proposed-text conflict is recorded in DRIFT-114.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** None; tests not done. The v1.2 test plan's `DSP-IDN-03`, `DSP-NEV-02`, `DSP-TYP-01` and `DSP-DEP-01` remain ⬜. The scope and dependency rows relied on for reading (`DSP-IDN-03`, `DSP-DEP-01`) are unproven; no claim that the sensor changes that.
 
 ---
 
@@ -451,52 +458,102 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to fill* | | | |
+| A1 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A2 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A3 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A4 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A5 | not done | — | not done: law-gate stop | DSP-OUT-07 |
+| A6 | not done | — | not done: law-gate stop | DSP-IDM-04 |
+| A7 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A8 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A9 | not done | — | not done: law-gate stop | DSP-IN-05 |
+| A10 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-SEC-02 |
+| A11 | not done | — | not done: law-gate stop | DSP-SEC-03 |
+| A12 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-FAIL-04 |
+| A13 | not done | — | not done: law-gate stop | DSP-SEC-03 |
+| A14 | not done | — | not done: law-gate stop | DSP-TRG-04 |
+| A15 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-OUT-07 |
+| A16 | not done | — | not done: law-gate stop | DSP-OUT-07, DSP-OBS-03 |
+| A17 | not done | — | not done: law-gate stop | DSP-IDM-04 |
+| A18 | not done | — | not done: law-gate stop | DSP-IDM-04, DSP-FAIL-04 |
+| A19 | not done | — | not done: law-gate stop | DSP-OUT-07 |
+| A20 | not done | — | not done: law-gate stop | DSP-IN-05, DSP-OUT-07 |
+| A21 | not done | — | not done: law-gate stop | DSP-OUT-07 |
+| A22 | not done | — | not done: law-gate stop | DSP-OUT-08 |
+| A23 | not done | — | not done: law-gate stop | DSP-OUT-08 |
+| A24 | not done | — | not done: law-gate stop | DSP-FAIL-04, DSP-SEC-03 |
+| A25 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-OBS-03 |
+| A26 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-IDN-05, DSP-FAIL-04 |
+| A27 | not done | — | not done: law-gate stop | DSP-OUT-07, DSP-OBS-03 |
+| A28 | not done | — | not done: law-gate stop | DSP-SEC-01 |
+| A29 | not done | — | not done: law-gate stop | DSP-NEV-03 |
+| A30 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-TRG-04 |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** None. All tests not done because implementation stopped at the law-reading gate.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** SPEC — stopped at the law-reading gate on DRIFT-114; not BUILT.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** Reading and scope checks only in `C:/Users/yury_/Downloads/project/ta-s275`, branch `sprint-275-the-operator-hears-when-a-container-fails`, starting HEAD `51838f53cbd5bcabde50d6713b6ca7ee79af7dc2`; initially clean; `.env` absent. No red, green, mutation or CI proof run.
 
-**Result:** *to fill*
+**Result:** not done — the build stopped before code on the proposed-law contradiction above.
 
-**Files changed:** *to fill*
+**Files changed:** This sprint's Law reading record, Test plan results and stopped handback; `docs/laws/drift-register.md` (DRIFT-114). Production, tests, laws, rollups, version and lock changes not done.
 
 **Design decisions:** recorded as [DL-301](../design-log.md) by the planner before the build.
+
+**Stopped-handback checks — real output:**
+
+```text
+APPENDIX_BYTES_UNCHANGED=True
+CHANGED_FILES=2 scoped documentation files
+BRANCH=sprint-275-the-operator-hears-when-a-container-fails
+ENV_FILE_PRESENT=False
+WRITTEN_FILES_LINE_ENDINGS=LF
+DIFF_CHECK_EXIT=0
+MARKDOWN_LINKS_EXIT=0
+docs_seen=280 SPEC=11 BUILT=0 MERGED=269 UNMAPPED=0 MISSING=0
+SPRINT_STATUS_EXIT=0
+```
+
+The Appendix comparison used the exact bytes after its heading in `git show HEAD:<spec>`
+and the edited spec. The other checks were `git diff --check`,
+`python scripts/check_markdown_links.py` and `python scripts/check_sprint_status.py`.
+Documentation checks are not a test, mutation or CI proof. The two documentation edits
+are uncommitted: the required stop occurred before the build and its commit step.
 
 **Proof — the red run first:**
 
 ```text
-to fill
+not done — no tests written or run; stopped at the law-reading gate.
 ```
 
 **Proof — the green run:**
 
 ```text
-to fill
+not done — no tests written or run; stopped at the law-reading gate.
 ```
 
-**Guards planted:** *to fill, per break*
+**Guards planted:** not done — none of Traps breaks 1 through 34 planted; stopped before tests or production changes.
 
-**Module line counts:** *to fill*
+**Module line counts:** not done — no module written or changed.
 
-**`make ci`:** *to fill: the file, the exit code, passed and skipped, coverage, the audit, the
-secrets scans.*
+**`make ci`:** not done — stopped before implementation. No CI log, exit code, test count, coverage, audit or secrets-scan result claimed.
 
 **`make gate-ran`:** owed to the planner if you cannot push.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:** The proposed `DSP-OUT-07` contradicts the exact Appendix and DL-301 D5, verified by reading. A1–A30, initial red run, Appendix application, law cycle, two existing-test edits, mutation proof, version bump, offline lock, full CI, BUILT status and commit: not done. Push, remote gate, merge, deployment and F1/F2: not done. The stop is required by the sprint, not a sandbox or git-write failure.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- Stopped at the pre-code law-reading gate, as the handover requires. The current locked book remains v1.2 and the sprint and README remain SPEC.
+- Recommended planner correction: reconcile § 9's `DSP-OUT-07` with DL-301 D5 and the exact § 7 header, grouping and overflow before restarting. No clause or production code was silently changed, and no test-plan summary was narrowed to claim a green clause.
+- Resume only from a corrected specification: write A1–A30, prove import failures on the unchanged production tree, then follow the remaining numbered steps. No network, deploy or Azure command was used.
 
 ---
 

@@ -923,6 +923,8 @@ UNTRACKED_SECRETS_EXIT=0
 
 **Not met / verified failing:** Full CI is verified failing (exit 2); dependency advisory lookup is NOT RUN offline. F0's planner CI/guard evidence was not re-run; only its 29 production blob identities were independently compared. Push, `make gate-ran`, review, merge, F1a (PowerShell stand-in), F1b (paid real probes), deployment and F2 are not done. Vendor request-cap assumptions remain unmeasured here.
 
+**Planner review (2026-10-15, `87aa3ee0`):** the 29 production files are the prototype `b3f85ee6` byte for byte (`git diff proto-s276 HEAD` names only the three law test plans); `uv.lock` changes the package version alone. Windows `make ci` with network, redirected to a file: **exit 0**, 5,031 passed, 8 skipped, 100.00 %, dependency audit clean (no unaccepted vulnerabilities, 1 accepted advisory re-checked); this discharges the offline exit 2 above. The planner's 67 tests pass on the built code. The planner's 32 breaks, run against the builder's 14 new and edited test files only, **32 of 32 red**, tree restored clean. Evidence: OneDrive `trading-agents-data/wq123-2026-10-15/` (`s276-make-ci.txt`, `planner_tests_on_built.txt`, `breaks_on_builder_tests.txt`). Push, CodeQL set-diff and `make gate-ran` follow on this commit.
+
 ---
 
 ## Return notes

@@ -67,6 +67,13 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    check would have passed. That is the DL-46 currency failure with the currency check looking one
    pack to the left.
 
+   🪤 **One exception, decided per sprint, never assumed** (S275, DL-301 D8): a vocabulary that
+   moved **only by addition**, for labels and edges that **only the dispatcher job writes**,
+   may ride an image-only retag when the job's own step sets its pack
+   (`deploy-agents.ps1 sensor` calls `Set-JobVocabulary`). Prove both halves from the diff: no
+   existing label's property list changed, and no app writes the new labels. The 16 apps then
+   hold the earlier pack until the next full `up`; say so in the deploy record.
+
 2. **Build all 15 images at the tag, from the gated merge commit.** If `main` still equals that commit,
    dispatch on `main`. If anything has landed above it, dispatch on its release tag instead, so the
    build is not of an ungated commit (the S186 hazard). Since S215, `record_deploy.py` accepts a build

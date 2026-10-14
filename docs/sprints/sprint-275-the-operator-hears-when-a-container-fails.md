@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-275-the-operator-hears-when-a-container-fails`
-**Status:** MERGED 2026-10-14 — `0.126.00`, fast-forwarded to `82909a54`, tag `v0.126.00`, GATE PROVEN `82909a54` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (the operator's call); F2 owed
+**Status:** MERGED 2026-10-14 — `0.126.00`, fast-forwarded to `82909a54`, tag `v0.126.00`, GATE PROVEN `82909a54` (CI, CodeQL, Security Findings); F1 passed at no cost; **deployed as `s275` 2026-10-14** (image-only retag, 16 of 16 apps and the job; then `deploy-agents.ps1 sensor`; rollback `s272`); F2 owed at the first weekday fire
 **Version:** `0.126.00`
 **Effort:** L
 **Decisions:** [DL-301](../design-log.md) (this sprint's ten decisions, made and measured) · [DL-283](../design-log.md) (the sensor's direction, 2026-10-09) · [DL-297](../design-log.md) amendments 2 and 3 (a clean stop logs nothing; the readiness probe fails after a stop) · [work-queue 119](../work-queue.md)
@@ -2764,9 +2764,18 @@ Nothing here is taken from the handback.
   message of four kind lines naming 16 apps (723 characters: the 701 of DL-301's replay plus
   `(provider)` in its two why lines). At 2026-09-29 00:00 UTC: the four lines DL-301 recorded,
   byte for byte, the master's refusal as the why.
-- **Not deployed.** The sensor ships in the dispatcher job's image and needs the job's identity
-  and role: the retag (`/deploy-fleet`) and then `pwsh infra/deploy-agents.ps1 sensor` are the
-  operator's call. Either order is safe. F2 is owed at the first weekday fire after both.
+- **Deployed as `s275`, 2026-10-14 22:41 AEDT, on the operator's word** (*"go for it"*). Image-only retag
+  of the 16 apps and the job to images built from `v0.126.00` (build `38552890700`, 15 of 15);
+  17 of 17 `Succeeded`, every app identical to its snapshot but for the tag, `DeployRecord`
+  written; rollback `s272`. Only the vocabulary pack moved since `s272`, and only by addition
+  (two labels and an edge only the job writes), so the retag path held (DL-301 D8): the sensor
+  step gives the job the new pack and the 16 apps keep the earlier one until the next full `up`.
+  Then `pwsh infra/deploy-agents.ps1 sensor`: the identity, the role on the one workspace, the
+  env key and the job's vocabulary were all applied, and read back by hand, but the step itself
+  reported the role missing and exited 1, twice: its read-back passed `length(@)` to `az.cmd`
+  unquoted and cmd.exe refused the line. Fixed the same evening on
+  `chore-the-sensor-step-reads-its-role-back` (`7d9e7584`, GATE PROVEN, no version bump), whose
+  step, run live, reads all five `[OK]` and exits 0. F2 is owed at the first weekday fire.
 
 Evidence outside the repo: OneDrive `trading-agents-data/wq119-2026-10-14/`
 (`breaks_on_built_2ded9672.txt`, `planner_tests_on_built_2ded9672.txt`, `codeql_s275_branch.tsv`,

@@ -740,13 +740,15 @@ function Enable-ContainerSensor {
     --subscription $SUB --system-assigned --query principalId -o tsv 2>$null
   Check ([bool]$principal) "$DISPATCHER_JOB system-assigned identity"
   if (-not $principal) { Bot; return $false }
-  $held = az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
-    --subscription $SUB --query "length(@)" -o tsv 2>$null
+  # One id a line, counted here: `length(@)` reaches az.cmd unquoted and its parentheses
+  # break cmd.exe, so the read-back came back empty (2026-10-14, the s275 deploy).
+  $held = @(az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
+    --subscription $SUB --query "[].id" -o tsv 2>$null).Count
   if ($held -ne "1") {
     az role assignment create --assignee-object-id $principal --assignee-principal-type ServicePrincipal `
       --role $SENSOR_ROLE --scope $ws.id --subscription $SUB -o none 2>$null | Out-Null
-    $held = az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
-      --subscription $SUB --query "length(@)" -o tsv 2>$null
+    $held = @(az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
+      --subscription $SUB --query "[].id" -o tsv 2>$null).Count
   }
   Check ($held -eq "1") "$SENSOR_ROLE on $LOG_WORKSPACE only"
   $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-273-the-secrets-scan-reads-every-file-as-utf-8`
-**Status:** BUILT
+**Status:** MERGED 2026-10-14 — no version bump, fast-forwarded to `25a0129d`, GATE PROVEN `25a0129d` (CI, CodeQL, Security Findings); the new case's first Linux run read PASS; F1 passed in its first part and failed in its second, which the planner's follow-up (`ccc2bf94`, GATE PROVEN) put right the same day; no deploy
 **Version:** *no bump*
 **Effort:** S
 **Decisions:** [DL-299](../design-log.md) (this sprint's six decisions, made and measured) · [DL-298](../design-log.md) (where the defect was found) · [work-queue 132 and 130](../work-queue.md)
@@ -418,7 +418,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED — the build proof is the builder's, below; the remote gate, the first Linux run, F1 and the follow-up are in the planner's review at the merge.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s273`, branch `sprint-273-the-secrets-scan-reads-every-file-as-utf-8`; `.env`: no.
 
@@ -716,6 +716,89 @@ TOTAL                                                           20473      0   4
 - Command corrections: the first class-replacement command consumed a pre-existing blank line outside `FailureCase`; applying the two exact edits to the original file preserved the rest and matched the Appendix blob. The initial direct Windows `find.exe` call expanded wildcard arguments, and a shell-tool attempt could not resolve the `/c` output path; passing the quoted find command to Git Bash through Python subprocess completed with exit 0 and empty output. The equivalent pruned Python search also printed nothing. The new test's imports were adjusted for Ruff before the final green run; no test behavior changed. The first CI-summary extraction matched a historical sprint-status row; it was corrected to select pytest's equals-delimited summary, 4,832 passed and 8 skipped.
 - PowerShell's first self-test redirect replaced cp1252 dash bytes with replacement characters. The exact self-test command was run again with byte-preserving CMD redirection (`selftest-confirm.txt`): exit 0, 40/40 passed; decoding its bytes as cp1252 preserved the two pasted lines' em dashes. The source files remain LF and match all four blobs. `make ci` exports `PYTHONUTF8=1`; the independent case and its four self-test mutations are the encoding proof.
 - Evidence logs are outside the worktree in `C:/Users/yury_/AppData/Local/Temp/ta-s273-build-20261014`. `pip-audit-cve` and the dependency audit both ran successfully. The planner still owes remote proof, the first Linux case run and F1; no merge or deploy was performed.
+
+---
+
+## Planner's review at the merge — 2026-10-14
+
+Re-measured by the planner in `../ta-s273` on the builder's commit `83de6a24` and on the merge
+commit `25a0129d`. Nothing here is taken from the handback.
+
+- **The four files are the measured prototype byte for byte.** `.pre-commit-config.yaml`,
+  `scripts/gate_selftest.py`, `scripts/gate_selftest_types.py` and
+  `scripts/gate_selftest_encoding_cases.py` have the Appendix's blob ids and LF line endings.
+  Against the spec's commit the branch changes the seven files the spec names and no other; no
+  existing test changes.
+- **The builder's test file is its own**: eight functions, ten cases, 173 lines, under names of
+  its choosing (the spec left them free).
+- **The planner's own tests** (ten cases, written for the prototype) were placed beside the
+  builder's and run with them: 20 passed. They are not committed.
+- **Guards.** The planner's 19 breaks, one at a time against the builder's test file alone, each
+  restored: **19 went red, each on the test meant for it and on no other**; the four the real
+  case must also catch (01, 02, 18, 19) failed the real self-test too; the tree was clean
+  afterwards and the five blobs unchanged. 🔴 **The first run read 8 of 19, and the fault was the
+  planner's script:** it names the tests that must fail by a part of the prototype's test names,
+  so eleven breaks that failed the right test under the builder's name read as survived. The
+  re-run states each expectation in the builder's names and prints every test that failed
+  (`break_s273_builder_names.py`).
+- **`main` was merged into the branch** (the S274 spec had landed): one conflict, this sprint's
+  row of the sprint list. That merge commit was the first commit through the new entry.
+- **Not re-run by the planner:** the local `make ci` on the builder's commit. The builder's
+  sixteen-step pass in one run (4,832 passed, 8 skipped, 100.00 %, the dependency audit among
+  them) is the builder's statement; the proof is the remote gate on the merge commit.
+- **Gate.** `GATE PROVEN` for `25a0129dd600464d2dfb964cf623eea12acd6faa`, run from `../ta-s273`,
+  whose `HEAD` it is: CI, CodeQL and Security Findings each `success` on the first attempt.
+  `main` was fast-forwarded to that commit, so the proven commit is the merged one.
+- **The case's first Linux run.** The remote `quality` job's self-test step reads
+  `PASS  can-fail: secrets-scan-reads-utf-8 — rejected (exit 1)`,
+  `PASS  invariant: secrets-hook-runs-in-utf-8-mode — present` and
+  `gate self-test: 40/40 passed`.
+- **CodeQL.** 130 open alerts on the branch, 0 of them errors: the 129 of the S272 branch and one
+  new, alert 293, a note (`py/mixed-returns`) in the builder's test file.
+- **F1 (a), at no cost, on merged `main`: passed.** In a scratch worktree of `25a0129d`, with no
+  encoding variable set (a bare Python there reads UTF-8 mode off and cp1252), a page holding the
+  plant was staged and `git commit` run: the hook refused it, exit 1, naming
+  `Basic Auth Credentials` at line 4 of the page, and `HEAD` did not move. Control: in a scratch
+  worktree of the commit before the merge (`c5e54c36`) the same hook, run as a commit runs it
+  and committing nothing, passed the same page. Both worktrees are removed; the page was
+  unstaged and deleted in each, and no commit holds its path.
+- 🔴 **F1 (b): NOT met on the merged commit, verified failing.** In the main checkout the
+  self-test read 40 of 40 and the probe folder dated 2026-08-30 was still there: its compiled
+  file was gone and its four folders were not. Cause, measured: 437 of the 444 folders of the
+  main checkout carry Windows' read-only attribute (every folder created up to 2026-09-25; a
+  worktree has none), `shutil.rmtree` cannot remove such a folder, and with `ignore_errors` it
+  says nothing. On Linux a folder without its owner's write bit is left the same way. The gap is
+  the prototype's, so the planner's: the prototype's self-test was run in a worktree, never in
+  the main checkout the success factor names.
+
+### The follow-up, built by the planner the same day
+
+Branch `chore-a-read-only-probe-folder-is-removed`, no version bump (`scripts/` and tests),
+merged as `ccc2bf94`.
+
+- **What changed.** The removal moves to a new module, `scripts/gate_selftest_cleanup.py`: before
+  a probe folder is removed its owner is given back the right to change it and everything under
+  it, and a link is left a link (what it points at is not touched). The runner counts one more
+  check at the end of every run, `cleanup: no-probe-path-left`, and fails the run when a probe
+  path is still in the tree, naming it. `scripts/gate_selftest.py` is 154 lines.
+- **Tests, red first.** Five new tests in `tests/test_gate_selftest_leaves_nothing.py`. On the
+  unchanged code four failed, the first on the defect itself (the locked folder stays); the
+  fifth is Linux's, a link needing a privilege on Windows.
+- **Guards.** Nine breaks on Windows, each alone: 9 red, each on exactly the tests named for it.
+  The link guard, on Linux in WSL: as built the link's targets keep their modes 555 and 444;
+  with the guard cut out both read 700.
+- **`make ci`**, Windows, sixteen steps in one run: exit 0, 4,836 passed, 9 skipped, 100.00 %.
+- **Gate.** `GATE PROVEN` for `ccc2bf945ca5f3f438dddfb3c1681bb9f4a25670`, run from the chore's worktree, whose `HEAD` it is;
+  the remote self-test reads `PASS  cleanup: no-probe-path-left` and 41 of 41.
+- **F1 (b), re-run on `ccc2bf94` in the main checkout: passed.** The self-test read 41 of 41,
+  the folder dated 2026-08-30 was gone afterwards and no probe path was left.
+- **CodeQL.** 130 open alerts on the follow-up's branch, 0 of them errors. None new and none gone against the sprint's branch; on the Linux runner all five new tests ran and passed (4,837 passed, 8 skipped).
+
+**Two rules this leaves for the next spec.** A success factor that names a tree is measured in
+that tree before the spec is written. A break script judges by test names only when the spec
+fixes the names (S274's does), and it prints every test that failed.
+
+**Owed.** Nothing. No deploy: nothing here ships in an image.
 
 ---
 

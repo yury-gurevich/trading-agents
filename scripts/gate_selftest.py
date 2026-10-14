@@ -13,13 +13,13 @@ lane answers on every push.
 
 Probe files are named `_gate_selftest_probe*` and are removed in a finally block;
 a stale-probe sweep runs first in case a previous run was killed. A probe folder
-goes with whatever a gate wrote into it (a compiled file, a cache).
+goes with whatever a gate wrote into it (a compiled file, a cache), and a run that
+still leaves a probe path in the tree fails (`gate_selftest_cleanup`).
 """
 
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +29,10 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.gate_selftest_cases import FAILURE_CASES  # noqa: E402
+from scripts.gate_selftest_cleanup import (  # noqa: E402
+    probes_left,
+    remove_probe_dirs,
+)
 from scripts.gate_selftest_docs_cases import DOCS_FAILURE_CASES  # noqa: E402
 from scripts.gate_selftest_encoding_cases import (  # noqa: E402
     ENCODING_FAILURE_CASES,
@@ -55,7 +59,7 @@ def sweep_stale_probes(root: Path) -> list[str]:
             continue
         path.unlink()
         removed.append(str(path.relative_to(root)))
-    _remove_probe_dirs(root)
+    remove_probe_dirs(root)
     return removed
 
 
@@ -82,7 +86,7 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
     finally:
         for target in written:
             target.unlink(missing_ok=True)
-        _remove_probe_dirs(root)
+        remove_probe_dirs(root)
     if completed.returncode == 0:
         return False, "gate exited 0 on a planted violation — it does not catch this"
     output = f"{completed.stdout}\n{completed.stderr}"
@@ -90,14 +94,6 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
     if missing:
         return False, f"gate failed without proving: {', '.join(missing)}"
     return True, f"rejected (exit {completed.returncode})"
-
-
-def _remove_probe_dirs(root: Path) -> None:
-    """Remove each probe folder with whatever a gate left inside it."""
-    for path in sorted(root.rglob(f"{PROBE_PREFIX}*")):
-        if ".git" in path.parts or not path.is_dir():
-            continue
-        shutil.rmtree(path, ignore_errors=True)
 
 
 def check_invariant(inv: Invariant, root: Path) -> tuple[bool, str]:
@@ -116,7 +112,7 @@ def check_invariant(inv: Invariant, root: Path) -> tuple[bool, str]:
 
 
 def main() -> int:
-    """Run every case and return non-zero if any gate failed to fail."""
+    """Run every case; non-zero if a gate failed to fail or a probe was left."""
     root = _ROOT
     stale = sweep_stale_probes(root)
     if stale:
@@ -135,15 +131,20 @@ def main() -> int:
         print(f"{'PASS' if ok else 'FAIL'}  invariant: {inv.name} — {detail}")
         if not ok:
             print(f"      why it matters: {inv.why}")
+    left = probes_left(root)
+    detail = f"left behind: {', '.join(left)}" if left else "the tree holds none"
+    results.append(("cleanup: no-probe-path-left", not left, detail))
+    print(f"{'FAIL' if left else 'PASS'}  cleanup: no-probe-path-left — {detail}")
 
     failed = [name for name, ok, _ in results if not ok]
     print(f"\ngate self-test: {len(results) - len(failed)}/{len(results)} passed")
     if failed:
         listed = "\n".join(f"  {name}" for name in failed)
         sys.stderr.write(
-            "\nA gate did not reject its planted violation, or a gate-enabling "
-            "config was lost.\nUntil this is fixed, a green lane is not evidence "
-            f"that gate examined anything:\n{listed}\n"
+            "\nA gate did not reject its planted violation, a gate-enabling config "
+            "was lost, or the run left a probe path in the tree.\nUntil this is "
+            "fixed, a green lane is not evidence that gate examined anything:\n"
+            f"{listed}\n"
         )
         return 1
     return 0

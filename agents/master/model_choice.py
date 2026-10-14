@@ -21,7 +21,7 @@ from kernel.llm_factory import KEY_ENV
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from agents.master.credential_test import CredentialTest, PassCache
+    from agents.master.credential_check import CredentialTest, PassCache
     from agents.master.model_candidates import LlmCandidate, LlmRole
 
 

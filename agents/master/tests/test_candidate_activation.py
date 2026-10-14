@@ -5,6 +5,8 @@ Role: prove ordered activation and key containment on real pack data.
 External I/O: none; injected transports and in-memory graph.
 """
 
+from urllib.parse import urlsplit
+
 import pytest
 
 from agents.master.tests.candidate_testkit import FIRST, SECOND, world
@@ -75,7 +77,7 @@ def test_a7_nonchoosing_type_keeps_its_single_vendor() -> None:
     reply = fixture.activate("operator")
     assert fixture.labels() == []
     assert len(fixture.requests) == 1
-    assert "api.openai.com" in fixture.requests[0].url
+    assert urlsplit(fixture.requests[0].url).hostname == "api.openai.com"
     assert "OPENAI_API_KEY" in reply.config
     assert "ANTHROPIC_API_KEY" not in reply.config
     assert not any(key.startswith("DELIBERATOR_") for key in reply.config)

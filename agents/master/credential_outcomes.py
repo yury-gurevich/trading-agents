@@ -20,7 +20,7 @@ from agents.master.credential_result import coerce_result
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from agents.master.credential_test import CredentialTest, PassCache
+    from agents.master.credential_check import CredentialTest, PassCache
 
 
 @dataclass

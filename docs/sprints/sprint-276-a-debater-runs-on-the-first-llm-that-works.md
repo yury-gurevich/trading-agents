@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-276-a-debater-runs-on-the-first-llm-that-works`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.127.00` (MINOR; lock package `0.127.0`)
 **Effort:** L
 **Decisions:** [DL-289](../design-log.md) (the direction, operator 2026-10-11; amendment 1 holds this sprint's ten decisions, made and measured) · [DL-282](../design-log.md) (one declared vendor, S262) · [DL-284](../design-log.md) (the two holes, found 2026-10-09) · [work-queue 123](../work-queue.md)
 
@@ -309,13 +309,13 @@ Name the tests as you like; cite the clause in each docstring. Every row must be
 
 - [ ] **F0 (planner, done before handover):** the prototype passes `make ci` (exit 0, 5,031 passed,
       100.00 %) and its 32 planted breaks each turn the planner's tests red (`breaks_on_prototype.txt`).
-- [ ] The Appendix applied exactly: the 29 production files equal the prototype's blobs
+- [x] The Appendix applied exactly: the 29 production files equal the prototype's blobs
       (`prototype_blobs.txt`), the three `laws.md` equal § 10.
-- [ ] A1–A28 pass; each docstring cites its clause.
-- [ ] Every break under *Traps* planted one at a time turns one of your tests red, then restored.
-- [ ] No decision-path file changed (`DECISION_PATHS` against `git diff origin/main` prints none).
-- [ ] Law cycle: three books, three test plans, both roll-ups at the derived counts.
-- [ ] Every touched module < 200 lines.
+- [x] A1–A28 pass; each docstring cites its clause.
+- [x] Every break under *Traps* planted one at a time turns one of your tests red, then restored.
+- [x] No decision-path file changed (`DECISION_PATHS` against `git diff origin/main` prints none).
+- [x] Law cycle: three books, three test plans, both roll-ups at the derived counts.
+- [x] Every touched module < 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage, redirected to a file.
 - [ ] **F1a (planner, after merge, no cost):** the deploy script's own `llm-candidates` step and `Up`
       on a stand-in `az` (`llm_step_standin.ps1`): vocabulary then pack, the pack decoding to
@@ -504,15 +504,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(the builder fills this)* | | | |
+| Master declaration, expansion, probes, choice, activation and fleet check | `agents/master/laws/laws.md` LOCKED v1.10 and its whole `test-plan.md` | `MST-OUT-04`, planned `MST-OUT-05`; `MST-NEV-06`/`07`, planned `MST-NEV-08`; `MST-FAIL-04`/`05`, planned `MST-FAIL-08`; `MST-OBS-04`; `MST-SEC-02`/`04`; `MST-DEP-04`/`05`; PARAM | Yes: exercise real pack data with injected transports and secret-store stand-ins; prove the chosen key alone and distinguish activation's unanswered allowance from fleet readiness. `MST-SEC-02` remains gray as a whole, as do `MST-SEC-03`, `MST-DEP-02` and `MST-OBS-03`; no live dependency proof is claimed. |
+| Deliberator activation, clients and model records | `agents/deliberator/laws/laws.md` LOCKED v1.16 and its whole `test-plan.md` | `DLIB-OUT-02`; planned `DLIB-DEP-05`/`DLIB-NEV-11`; `DLIB-DEP-04`; `DLIB-SEC-02`; PARAM | Yes: test settings after ACTIVATE, empty effort, foreign-family refusal, and run-owned `LLMCall` identities through a real review. `DLIB-DEP-03` and `DLIB-SEC-01` remain gray; local stand-ins prove no vendor availability. |
+| Shared factory's operator compatibility | `agents/operator/laws/laws.md` LOCKED v1.10 and its whole `test-plan.md` | `OPR-DEP-01`, `OPR-SEC-01` | Keep the operator's selected-provider and foreign-family refusal behavior unchanged; its probes carry no candidate paths. |
+| Brief line, facts, composition and image | `orchestration/laws/dispatcher/laws.md` LOCKED v1.3 and its whole `test-plan.md` | `DSP-OUT-06`/`08`, planned `DSP-OUT-09`; `DSP-DEP-01`; CAP | Yes: assert tuple-backed graph lists, the 24-hour window, deduplication, exact wording and placement, and a real fire with an injected Telegram port. `DSP-DEP-01` remains gray: these reads do not prove its clock/calendar/universe dependency envelope. |
+| Packs, deploy and switch tooling | Master and deliberator books above; `docs/decisions/0012-platform-domain-separation.md` | `MST-OUT-04`, planned `MST-OUT-05`; `MST-NEV-05`/`07`; `MST-DEP-05`; `DLIB-DEP-04`; PARAM | Preserve injected pack data, vocabulary list order, and exact Appendix bytes. Deploy tests inspect text only; no deploy, PowerShell Core, Azure, network or vendor invocation. |
+| Law amendment and evidence discipline | Whole `docs/laws/conventions.md` and whole `docs/laws/drift-register.md`; `docs/laws/INDEX.md` | Conventions §§2–4, 7, 7a, 9–10; DRIFT-058/059/075/091/105/113/114/115 | Apply only §10's authorized law text; faithful amended summaries, cited tests and gate-derived counts. Keep supporting gray rows gray. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(the builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No contract changes; yes, the six new guarantees require the three §10 amendments, new test-plan rows and synchronized derived roll-ups in this unit of work. D1–D10 and the rejected alternatives are already fixed by DL-289 amendment 1; no new design decision or DL number is needed.
 
-**Contradictions found between a law and this spec:** *(the builder)*
+**Contradictions found between a law and this spec:** None found outside the explicit §10 amendment. The current single-provider selection is deliberately widened for declared roles only; the operator and in-flight debate behavior retain their existing selection. Read completed on 2026-10-15 before any code change, in `C:/Users/yury_/Downloads/project/ta-s276`, clean branch `sprint-276-a-debater-runs-on-the-first-llm-that-works`, initial HEAD `f1598b45fe924c0baaa9a9f6eff64a6733ff4bd2`; local `origin/main` `38a1c0b79af6505160c15c4587f10c39e577afa4`, not fetched. No `.env` present. Sprint evidence stays here; the three prohibited trackers are untouched.
 
-**Laws found silent where a decision was needed:** *(the builder)*
+**Laws found silent where a decision was needed:** The pre-amendment books do not declare the candidate choice, unrunnable-declaration refusals, passed-over outcomes, post-activation settings, foreign-family guard or brief line. §10 supplies their decided text; no additional unresolved silence was found.
 
-**Clauses that were ⬜ and are now proven:** *(the builder)*
+**Clauses that were ⬜ and are now proven:** At the pre-code checkpoint proof was not done. Now the six newly declared clauses are proven: `MST-OUT-05`, `MST-NEV-08`, `MST-FAIL-08`, `DLIB-DEP-05`, `DLIB-NEV-11`, `DSP-OUT-09`. The five amended rows are widened and re-proven where previously green; `DSP-DEP-01` and all other supporting gray rows remain gray. Derived counts: master 33 / 58, deliberator 34 / 65, dispatcher 43 / 47.
 
 ---
 
@@ -520,43 +525,422 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(the builder fills A1 to A28)* | | | | |
+| A1 | `test_a1_first_passing_candidate_is_handed_over_alone` | `agents/master/tests/test_candidate_activation.py` | PASS | `MST-OBS-04`, `MST-OUT-05` |
+| A2 | `test_a2_refused_or_unanswered_candidate_is_passed_over` | `agents/master/tests/test_candidate_activation.py` | PASS | `MST-FAIL-08`, `MST-OBS-04`, `MST-OUT-05` |
+| A3 | `test_a3_declared_providers_candidates_go_first` | `agents/master/tests/test_candidate_activation.py` | PASS | `MST-OUT-05` |
+| A4 | `test_a4_first_only_unanswered_candidate_is_handed_over_unproven` | `agents/master/tests/test_candidate_fleet.py` | PASS | `MST-FAIL-04`, `MST-FAIL-08` |
+| A5 | `test_a5_every_candidate_refused_refuses_activation` | `agents/master/tests/test_candidate_fleet.py` | PASS | `MST-FAIL-08`, `MST-NEV-06` |
+| A6 | `test_a6_passed_over_candidate_does_not_fail_fleet` | `agents/master/tests/test_candidate_fleet.py` | PASS | `MST-FAIL-08`, `MST-OUT-04` |
+| A7 | `test_a7_nonchoosing_type_keeps_its_single_vendor` | `agents/master/tests/test_candidate_activation.py` | PASS | `MST-NEV-07` |
+| A8 | `test_a8_real_declaration_parses_and_orders` | `agents/master/tests/test_candidate_declaration.py` | PASS | `MST-OUT-05` |
+| A9 | `test_a9_unrunnable_declaration_is_refused`; `test_a9_unknown_model_family_is_the_vendors_to_judge` | `agents/master/tests/test_candidate_declaration.py` | PASS | `MST-NEV-08` |
+| A10 | `test_a10_expansion_refuses_unrunnable_roles` | `agents/master/tests/test_candidate_expansion.py` | PASS | `MST-NEV-08` |
+| A11 | `test_a11_expansion_preserves_roles_keys_and_nonchoosing_probe` | `agents/master/tests/test_candidate_expansion.py` | PASS | `MST-NEV-07`, `MST-OUT-05` |
+| A12 | `test_a12_candidate_probe_carries_own_model_and_effort` | `agents/master/tests/test_candidate_probe.py` | PASS | `MST-OUT-05` |
+| A13 | `test_a13_malformed_candidate_paths_are_refused`; `test_a13_missing_body_and_scalar_paths_are_refused` | `agents/master/tests/test_candidate_probe.py` | PASS | `MST-NEV-08` |
+| A14 | `test_a14_base64_packs_start_master_as_deploy_delivers_them` | `agents/master/tests/test_candidate_expansion.py` | PASS | `MST-NEV-08` |
+| A15 | `test_a15_settings_are_read_after_activation` | `agents/deliberator/tests/test_activated_candidate.py` | PASS | `DLIB-DEP-05` |
+| A16 | `test_a16_role_client_uses_handed_over_candidate` | `agents/deliberator/tests/test_activated_candidate.py` | PASS | `DLIB-DEP-05` |
+| A17 | `test_a17_empty_effort_sends_none` | `agents/deliberator/tests/test_activated_candidate.py` | PASS | `DLIB-DEP-05` |
+| A18 | `test_a18_foreign_vendor_model_is_refused` | `agents/deliberator/tests/test_activated_candidate.py` | PASS | `DLIB-NEV-11` |
+| A19 | `test_a19_review_names_the_models_that_answered` | `agents/deliberator/tests/test_answered_models.py` | PASS | `DLIB-OUT-02` |
+| A20 | `test_a20_multiple_models_on_one_role_are_sorted_and_deduplicated` | `agents/deliberator/tests/test_answered_models.py` | PASS | `DLIB-OUT-02` |
+| A21 | `test_a21_quiet_night_has_no_llm_line` | `orchestration/tests/test_llm_brief_candidates.py` | PASS | `DSP-OUT-09` |
+| A22 | `test_a22_llm_line_groups_replicas_and_filters_old_or_undated` | `orchestration/tests/test_llm_brief_candidates.py` | PASS | `DSP-DEP-01`, `DSP-OUT-09` |
+| A23 | `test_a23_llm_line_follows_container_before_needs_you` | `orchestration/tests/test_llm_brief_candidates.py` | PASS | `DSP-OUT-09` |
+| A24 | `test_a24_real_fire_carries_the_candidate_line` | `orchestration/tests/test_llm_brief_candidates.py` | PASS | `DSP-DEP-01`, `DSP-OUT-09` |
+| A25 | `test_a25_master_create_ships_candidate_declaration`; `test_a25_image_and_vocabulary_deliver_the_choice` | `tests/test_candidate_delivery.py` | PASS | `DSP-OUT-09`, `MST-OUT-05` |
+| A26 | `test_a26_narrow_step_sets_vocabulary_before_pack` | `tests/test_candidate_delivery.py` | PASS | `MST-OUT-05` |
+| A27 | `test_a27_declared_provider_is_first_candidates_vendor`; `test_a27_switch_refuses_a_missing_or_malformed_first_candidate` | `tests/test_candidate_delivery.py` | PASS | `MST-OUT-05` |
+| A28 | `test_a28_switch_proves_a_choosing_app_by_its_candidate` | `tests/test_candidate_delivery.py` | PASS | `MST-OUT-05` |
 
-**Tests added beyond the plan:** *(the builder)*
+**Tests added beyond the plan:** A25's image/vocabulary packaging guard also supplies builder-owned red proof for B31/B32; A27's three malformed-first-candidate cases guard the switch loader's refusals. The nine new test modules contain 67 passing cases, plus one shared fixture module. No other existing test was edited.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT, by the builder)*
+**Status:** BUILT — local build proof only; see the CI and not-met records below.
 
-**Tree the proofs ran in (and `.env` present?):** *(the builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s276`, branch `sprint-276-a-debater-runs-on-the-first-llm-that-works`; no `.env`. CI used a stripped child environment, `UV_OFFLINE=1`, `PIP_NO_INDEX=1` and an external socket guard refusing non-local connections. No vendor, Azure, deploy or external network call was made.
 
-**Result:** *(the builder; never for work not done)*
+**Result:** All 29 production blobs match both the Appendix and local prototype `b3f85ee6`; all three law blobs and five existing-test blobs match the supplied diff IDs. A1–A28 pass (67 cases); all B1–B32 turn a builder test red and are restored byte for byte; the post-guard run passes 69 cases including the two existing packaging guards. The three law test plans and both roll-ups pass the law gate at its derived counts. MINOR `0.126.00` → `0.127.00`; `uv lock --offline` succeeds and its staged diff changes only the package version. Full-suite and CI results are recorded below, with no remote or live claim.
 
-**Files changed:** *(the builder)*
+**Files changed:** 56 scoped files: 29 production files (six new), three exact law amendments, three law test plans, two roll-ups, five exact existing-test edits, nine new test modules and their helper, `pyproject.toml`, `uv.lock`, this handback and the sprint README row. No decision-path file, prohibited tracker, other existing test, secret baseline or `trading_tunables.json` changed.
 
 **Design decisions:** recorded as [DL-289](../design-log.md) amendment 1 by the planner; nothing new.
 
-**Proof — the red run first:** *(the builder pastes it)*
+**Proof — the red run first:** Production files unchanged (`git diff --name-only` named only this spec); nine new test files. Command: `uv run --offline pytest --no-cov --continue-on-collection-errors <the nine new test files>`; exit 1. Full output:
 
-**Proof — the green run:** *(the builder pastes it)*
+```text
+============================= test session starts =============================
+collected 2 items / 8 errors
 
-**Guards planted:** *(B1 to B32, each: planted, the red test, restored)*
+agents\deliberator\tests\test_answered_models.py FF                      [100%]
 
-**Module line counts:** *(the builder)*
+=================================== ERRORS ====================================
+____ ERROR collecting agents/deliberator/tests/test_activated_candidate.py ____
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\deliberator\tests\test_activated_candidate.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\tests\test_activated_candidate.py:14: in <module>
+    from agents.deliberator.entrypoint import activated_settings, build_role_llm
+E   ImportError: cannot import name 'activated_settings' from 'agents.deliberator.entrypoint' (C:\Users\yury_\Downloads\project\ta-s276\agents\deliberator\entrypoint.py)
+______ ERROR collecting agents/master/tests/test_candidate_activation.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\master\tests\test_candidate_activation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\master\tests\test_candidate_activation.py:10: in <module>
+    from agents.master.tests.candidate_testkit import FIRST, SECOND, world
+agents\master\tests\candidate_testkit.py:20: in <module>
+    from agents.master.model_candidates import load_llm_plan
+E   ModuleNotFoundError: No module named 'agents.master.model_candidates'
+_____ ERROR collecting agents/master/tests/test_candidate_declaration.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\master\tests\test_candidate_declaration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\master\tests\test_candidate_declaration.py:12: in <module>
+    from agents.master.model_candidates import load_llm_plan, parse_llm_plan
+E   ModuleNotFoundError: No module named 'agents.master.model_candidates'
+______ ERROR collecting agents/master/tests/test_candidate_expansion.py _______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\master\tests\test_candidate_expansion.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\master\tests\test_candidate_expansion.py:15: in <module>
+    from agents.master.model_candidates import load_llm_plan
+E   ModuleNotFoundError: No module named 'agents.master.model_candidates'
+________ ERROR collecting agents/master/tests/test_candidate_fleet.py _________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\master\tests\test_candidate_fleet.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\master\tests\test_candidate_fleet.py:11: in <module>
+    from agents.master.tests.candidate_testkit import FIRST, SECOND, world
+agents\master\tests\candidate_testkit.py:20: in <module>
+    from agents.master.model_candidates import load_llm_plan
+E   ModuleNotFoundError: No module named 'agents.master.model_candidates'
+________ ERROR collecting agents/master/tests/test_candidate_probe.py _________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\agents\master\tests\test_candidate_probe.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\master\tests\test_candidate_probe.py:12: in <module>
+    from agents.master.credential_probe_candidate import (
+E   ModuleNotFoundError: No module named 'agents.master.credential_probe_candidate'
+______ ERROR collecting orchestration/tests/test_llm_brief_candidates.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\orchestration\tests\test_llm_brief_candidates.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_llm_brief_candidates.py:14: in <module>
+    from orchestration.llm_brief import llm_line
+E   ModuleNotFoundError: No module named 'orchestration.llm_brief'
+______________ ERROR collecting tests/test_candidate_delivery.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s276\tests\test_candidate_delivery.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_candidate_delivery.py:14: in <module>
+    from scripts.switch_llm_config import declared_provider, load_pack
+E   ImportError: cannot import name 'declared_provider' from 'scripts.switch_llm_config' (C:\Users\yury_\Downloads\project\ta-s276\scripts\switch_llm_config.py)
+================================== FAILURES ===================================
+_______________ test_a19_review_names_the_models_that_answered ________________
+agents\deliberator\tests\test_answered_models.py:51: in test_a19_review_names_the_models_that_answered
+    assert run.props["role_models"] == {
+E   AssertionError: assert mappingproxy(...': 'gpt-5.5'}) == {'defender': ...e': 'gpt-5.5'}
+E
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'defender': 'gpt-5.5'} != {'defender': 'claude-opus-5'}
+E     Use -v to get more diff
+______ test_a20_multiple_models_on_one_role_are_sorted_and_deduplicated _______
+agents\deliberator\tests\test_answered_models.py:82: in test_a20_multiple_models_on_one_role_are_sorted_and_deduplicated
+    assert role_models(settings, graph, keys) == expected
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: role_models() takes 1 positional argument but 3 were given
+=========================== short test summary info ===========================
+ERROR agents/deliberator/tests/test_activated_candidate.py
+ERROR agents/master/tests/test_candidate_activation.py
+ERROR agents/master/tests/test_candidate_declaration.py
+ERROR agents/master/tests/test_candidate_expansion.py
+ERROR agents/master/tests/test_candidate_fleet.py
+ERROR agents/master/tests/test_candidate_probe.py
+ERROR orchestration/tests/test_llm_brief_candidates.py
+ERROR tests/test_candidate_delivery.py
+FAILED agents/deliberator/tests/test_answered_models.py::test_a19_review_names_the_models_that_answered
+FAILED agents/deliberator/tests/test_answered_models.py::test_a20_multiple_models_on_one_role_are_sorted_and_deduplicated
+======================== 2 failed, 8 errors in 12.71s =========================
+```
 
-**`make ci`:** *(redirected to a file; exit code; passed, skipped; coverage; audit; detect-secrets)*
+**Proof — the green run:** `uv run --offline pytest --no-cov <nine new files> <two existing packaging guards>`, exit 0:
 
-**`make gate-ran`:** *(the planner runs it at review)*
+```text
+============================= test session starts =============================
+collected 69 items
 
-**Not met / verified failing:** *(the builder)*
+agents\deliberator\tests\test_activated_candidate.py ......              [  8%]
+agents\deliberator\tests\test_answered_models.py ..                      [ 11%]
+agents\master\tests\test_candidate_activation.py .........               [ 24%]
+agents\master\tests\test_candidate_declaration.py ..................     [ 50%]
+agents\master\tests\test_candidate_expansion.py ......                   [ 59%]
+agents\master\tests\test_candidate_fleet.py ...                          [ 63%]
+agents\master\tests\test_candidate_probe.py .........                    [ 76%]
+orchestration\tests\test_llm_brief_candidates.py .....                   [ 84%]
+tests\test_candidate_delivery.py .........                               [ 97%]
+tests\test_dispatch_scheduled_run.py .                                   [ 98%]
+tests\test_graph_vocabulary_properties.py .                              [100%]
+
+============================= 69 passed in 8.44s ==============================
+```
+
+Full-suite proof from the redirected CI log:
+
+```text
+TOTAL                                                           21231      0   4536      0  100.00%
+========= 5031 passed, 8 skipped, 2470 warnings in 432.53s (0:07:12) ==========
+```
+
+**Guards planted:** Each specified break was planted alone, the named test run exited 1, and the original file's SHA256 was restored before the next plant. B31/B32 also turn their existing guards red; those guards pass on the restored tree. Actual runner output:
+
+```text
+B01: exit 1; RED; restored SHA256 d16c4f05396c95ba16a846cd883eff348ccd7b8f99d45e2295ae63bdcd4f4ae2; FAILED agents/master/tests/test_candidate_activation.py::test_a1_first_passing_candidate_is_handed_over_alone
+B02: exit 1; RED; restored SHA256 d16c4f05396c95ba16a846cd883eff348ccd7b8f99d45e2295ae63bdcd4f4ae2; FAILED agents/master/tests/test_candidate_fleet.py::test_a4_first_only_unanswered_candidate_is_handed_over_unproven
+B03: exit 1; RED; restored SHA256 d16c4f05396c95ba16a846cd883eff348ccd7b8f99d45e2295ae63bdcd4f4ae2; FAILED agents/master/tests/test_candidate_activation.py::test_a1_first_passing_candidate_is_handed_over_alone
+B04: exit 1; RED; restored SHA256 d16c4f05396c95ba16a846cd883eff348ccd7b8f99d45e2295ae63bdcd4f4ae2; FAILED agents/master/tests/test_candidate_activation.py::test_a1_first_passing_candidate_is_handed_over_alone
+B05: exit 1; RED; restored SHA256 d16c4f05396c95ba16a846cd883eff348ccd7b8f99d45e2295ae63bdcd4f4ae2; FAILED agents/master/tests/test_candidate_activation.py::test_a1_first_passing_candidate_is_handed_over_alone
+B06: exit 1; RED; restored SHA256 b9cc7de3d1917aaecfcab9afef3fbc3eac50b4cfc6105c62b97bd1d784e8f9fb; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[503-http_503]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[answer5-TimeoutError]
+B07: exit 1; RED; restored SHA256 3a83cb4a1bc2383d3aec9ca58bf9d6f62e96435962561ca7461bb4013b98cf63; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[429-unrecoverable:http_429]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[400-unrecoverable:http_400]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[404-unrecoverable:http_404]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[418-unexpected:http_418]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[503-http_503]; FAILED agents/master/tests/test_candidate_activation.py::test_a2_refused_or_unanswered_candidate_is_passed_over[answer5-TimeoutError]
+B08: exit 1; RED; restored SHA256 ee6eb424cd536c86634bff8426fff24abc260a73f62df79693c9c7de746cc425; FAILED agents/master/tests/test_candidate_activation.py::test_a1_first_passing_candidate_is_handed_over_alone
+B09: exit 1; RED; restored SHA256 f0b9977175005b9815d45dfbbb3e2de3314235e9f7edff436f09a01fd3872042; FAILED agents/master/tests/test_candidate_fleet.py::test_a6_passed_over_candidate_does_not_fail_fleet
+B10: exit 1; RED; restored SHA256 cba332246b83b74a77c9fe902f36866786dad56f927ddcb7260f41caa60c96ac; FAILED agents/master/tests/test_candidate_activation.py::test_a3_declared_providers_candidates_go_first
+B11: exit 1; RED; restored SHA256 cba332246b83b74a77c9fe902f36866786dad56f927ddcb7260f41caa60c96ac; FAILED agents/master/tests/test_candidate_declaration.py::test_a9_unrunnable_declaration_is_refused[raw6-belongs to anthropic]; FAILED agents/master/tests/test_candidate_declaration.py::test_a9_unrunnable_declaration_is_refused[raw7-belongs to openai]
+B12: exit 1; RED; restored SHA256 cba332246b83b74a77c9fe902f36866786dad56f927ddcb7260f41caa60c96ac; FAILED agents/master/tests/test_candidate_declaration.py::test_a9_unrunnable_declaration_is_refused[raw12-must not repeat]
+B13: exit 1; RED; restored SHA256 4da50cd5a3c64d1b84aabb467eac14bcea5ae16d65741bed0472722ef0a97b0c; FAILED agents/master/tests/test_candidate_expansion.py::test_a10_expansion_refuses_unrunnable_roles[key]; FAILED agents/master/tests/test_candidate_expansion.py::test_a10_expansion_refuses_unrunnable_roles[map]
+B14: exit 1; RED; restored SHA256 4da50cd5a3c64d1b84aabb467eac14bcea5ae16d65741bed0472722ef0a97b0c; FAILED agents/master/tests/test_candidate_expansion.py::test_a10_expansion_refuses_unrunnable_roles[paths]
+B15: exit 1; RED; restored SHA256 afce24d7dc7753ee8c29cbf83f41b58cd7a1c4daabc85ba55a259cebff1c70bf; FAILED agents/master/tests/test_candidate_probe.py::test_a12_candidate_probe_carries_own_model_and_effort
+B16: exit 1; RED; restored SHA256 c38f565f8e76b8dfb5c01e6ae02b59347c500aa58e50a2ec10edd631b7059975; FAILED agents/master/tests/test_candidate_probe.py::test_a12_candidate_probe_carries_own_model_and_effort
+B17: exit 1; RED; restored SHA256 521c1a8aef13b586e0a2051b4b09cf2c476dd083f56df6a2345cdf22a31c4b45; FAILED agents/master/tests/test_candidate_expansion.py::test_a11_expansion_preserves_roles_keys_and_nonchoosing_probe
+B18: exit 1; RED; restored SHA256 22299ae7adfbac1cea6b0b14a01363983d65c52088d8c9a667c16f52ca44584d; FAILED agents/deliberator/tests/test_activated_candidate.py::test_a18_foreign_vendor_model_is_refused[openai-claude-opus-5]; FAILED agents/deliberator/tests/test_activated_candidate.py::test_a18_foreign_vendor_model_is_refused[anthropic-gpt-5.5]
+B19: exit 1; RED; restored SHA256 d0ec55aff1763a2c444a8d8c7d14e6800b2698f997862ff548e82ce0bec705af; FAILED agents/deliberator/tests/test_activated_candidate.py::test_a15_settings_are_read_after_activation
+B20: exit 1; RED; restored SHA256 d0ec55aff1763a2c444a8d8c7d14e6800b2698f997862ff548e82ce0bec705af; FAILED agents/deliberator/tests/test_activated_candidate.py::test_a17_empty_effort_sends_none[openai]
+B21: exit 1; RED; restored SHA256 f9f40f4be179e8a8abdecae7b380acaf16aa0f2f77bc780d9ccb0d324747eead; FAILED agents/deliberator/tests/test_answered_models.py::test_a19_review_names_the_models_that_answered
+B22: exit 1; RED; restored SHA256 497e20187fd668e9074de09eeefc2647f0617ab002311ed0df72f67dc2106633; FAILED orchestration/tests/test_llm_brief_candidates.py::test_a22_llm_line_groups_replicas_and_filters_old_or_undated
+B23: exit 1; RED; restored SHA256 497e20187fd668e9074de09eeefc2647f0617ab002311ed0df72f67dc2106633; FAILED orchestration/tests/test_llm_brief_candidates.py::test_a22_llm_line_groups_replicas_and_filters_old_or_undated
+B24: exit 1; RED; restored SHA256 259aceba3b4dea80fbc4971bdbff88a7037996d2c03113d33b5f435167dca067; FAILED orchestration/tests/test_llm_brief_candidates.py::test_a23_llm_line_follows_container_before_needs_you[PASS]; FAILED orchestration/tests/test_llm_brief_candidates.py::test_a23_llm_line_follows_container_before_needs_you[NOT_FINISHED]
+B25: exit 1; RED; restored SHA256 74f09e003b2ea2f190c498435bfd12876a13c037b5a501fb6eed8b8158c6901d; FAILED agents/master/tests/test_candidate_declaration.py::test_a8_real_declaration_parses_and_orders
+B26: exit 1; RED; restored SHA256 219793161b6f7863d3e0e1d79ae18a60ed5d25408ba2f9da06afd577ee09e3dc; FAILED agents/master/tests/test_candidate_expansion.py::test_a14_base64_packs_start_master_as_deploy_delivers_them
+B27: exit 1; RED; restored SHA256 a4095f9eb3e78ab83b15d00b47ed898dcccbbf27ea698b3fb2aafd1de2e4eca7; FAILED tests/test_candidate_delivery.py::test_a25_master_create_ships_candidate_declaration
+B28: exit 1; RED; restored SHA256 a4095f9eb3e78ab83b15d00b47ed898dcccbbf27ea698b3fb2aafd1de2e4eca7; FAILED tests/test_candidate_delivery.py::test_a26_narrow_step_sets_vocabulary_before_pack
+B29: exit 1; RED; restored SHA256 3722f4b28607757caacb5ab0e89870be6b90e35b1668c04977b195db414b0d91; FAILED tests/test_candidate_delivery.py::test_a28_switch_proves_a_choosing_app_by_its_candidate[openai/gpt-5.5/high]
+B30: exit 1; RED; restored SHA256 4e9f034b3abd3cc28486d701309600ce3a739e9c0e8e6d0e362c49f5e15e20bb; FAILED tests/test_candidate_delivery.py::test_a27_declared_provider_is_first_candidates_vendor
+B31: exit 1; RED; restored SHA256 83a0fed1f750150304daa684363384b1f3ba7ea1fe5099832b61fd31f802ed27; FAILED tests/test_candidate_delivery.py::test_a25_image_and_vocabulary_deliver_the_choice; FAILED tests/test_dispatch_scheduled_run.py::test_dispatcher_image_copies_everything_its_entrypoint_imports
+B32: exit 1; RED; restored SHA256 92d839ce46674cf55427dc91375143dc70faa6e26c92b3329c408bdadd16a39d; FAILED tests/test_candidate_delivery.py::test_a25_image_and_vocabulary_deliver_the_choice; FAILED tests/test_graph_vocabulary_properties.py::test_every_property_the_code_can_write_is_declared
+GUARDS_PROVEN=32/32; ALL_MUTATED_FILES_RESTORED
+```
+
+**Module line counts:** Measured after ruff formatting; every touched Python module is under 200 lines (maximum 188).
+
+```text
+APPENDIX_PRODUCTION_BLOBS_MATCH=29/29
+APPENDIX_LAWS_BLOBS_MATCH=3/3
+APPENDIX_EXISTING-TESTS_BLOBS_MATCH=5/5
+LOCAL_PROTOTYPE_b3f85ee6_PRODUCTION_BLOBS_MATCH=29/29
+DECISION_PATH_CHANGES_AGAINST_ORIGIN_MAIN=0
+PROHIBITED_TRACKER_CHANGES=0; NO_UNAPPROVED_EXISTING_TEST_CHANGED
+CHANGED_FILES=56
+149 agents/deliberator/entrypoint.py
+188 agents/deliberator/poll.py
+145 agents/deliberator/review_record.py
+169 agents/deliberator/settings.py
+ 99 agents/deliberator/tests/test_activated_candidate.py
+ 93 agents/deliberator/tests/test_answered_models.py
+107 agents/master/credential_outcomes.py
+ 69 agents/master/credential_probe_candidate.py
+187 agents/master/credential_probes.py
+ 96 agents/master/credential_report.py
+ 69 agents/master/credential_selection.py
+141 agents/master/credential_test.py
+179 agents/master/entrypoint.py
+147 agents/master/fleet_preflight.py
+104 agents/master/model_candidates.py
+ 75 agents/master/model_choice.py
+ 89 agents/master/model_expansion.py
+ 71 agents/master/pack_loading.py
+171 agents/master/settings.py
+127 agents/master/tests/candidate_testkit.py
+ 84 agents/master/tests/test_candidate_activation.py
+ 91 agents/master/tests/test_candidate_declaration.py
+107 agents/master/tests/test_candidate_expansion.py
+ 77 agents/master/tests/test_candidate_fleet.py
+114 agents/master/tests/test_candidate_probe.py
+ 43 agents/master/tests/test_fleet_preflight_packs.py
+111 agents/master/tests/test_provider_selection_refusals.py
+138 kernel/llm_factory.py
+170 orchestration/daily_brief_facts.py
+183 orchestration/daily_brief_text.py
+ 47 orchestration/llm_brief.py
+111 orchestration/tests/test_llm_brief_candidates.py
+174 scripts/guided_turn_replay.py
+ 98 scripts/switch_llm_config.py
+108 scripts/switch_llm_proof.py
+136 tests/test_candidate_delivery.py
+ 57 tests/test_deploy_llm_pack.py
+123 tests/test_switch_llm_config.py
+117 tests/test_switch_llm_refusals.py
+GUARDS_PROVEN=32/32; ALL_MUTATED_FILES_RESTORED
+```
+
+**`make ci`:** Actual unmodified target, redirected by `python ../ta-s276-evidence/run_offline_ci.py` to `../ta-s276-evidence/make-ci.txt` (stdout and stderr to one file, no pipe); exit 2. The file was read. First thirteen steps pass, including the full test suite at 100.00% coverage. Overall gate **verified failing** at dependency audit; online audit **NOT RUN** under the user's network prohibition. The last two security steps were run separately offline; they do not turn the overall CI gate green.
+
+```text
+MAKE_CI_EXIT=2
+TOTAL                                                           21231      0   4536      0  100.00%
+========= 5031 passed, 8 skipped, 2470 warnings in 432.53s (0:07:12) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\util\connection.py", line 60, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276-evidence\offline\sitecustomize.py", line 27, in _offline_getaddrinfo
+    _permit(host)
+    ~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276-evidence\offline\sitecustomize.py", line 23, in _permit
+    raise OSError("Sprint 276: external network access disabled by user instruction")
+OSError: Sprint 276: external network access disabled by user instruction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connectionpool.py", line 494, in _make_request
+    raise new_e
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connectionpool.py", line 470, in _make_request
+    self._validate_conn(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1125, in _validate_conn
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connection.py", line 254, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 276: external network access disabled by user instruction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\urllib3\util\retry.py", line 555, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 276: external network access disabled by user instruction"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Scripts\pip-audit.exe\__main__.py", line 10, in <module>
+    sys.exit(audit())
+             ~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\pip_audit\_cli.py", line 554, in audit
+    for spec, vulns in auditor.audit(source):
+                       ~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\pip_audit\_audit.py", line 68, in audit
+    for dep, vulns in self._service.query_all(specs):
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\pip_audit\_service\interface.py", line 180, in query_all
+    yield self.query(spec)
+          ~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\pip_audit\_service\pypi.py", line 64, in query
+    response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\cachecontrol\adapter.py", line 76, in send
+    resp = super().send(request, stream, timeout, verify, cert, proxies)
+  File "C:\Users\yury_\Downloads\project\ta-s276\.venv\Lib\site-packages\requests\adapters.py", line 729, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 276: external network access disabled by user instruction"))
+make: *** [Makefile:60: ci] Error 1
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** not done; the planner runs it at review from the exact commit's worktree. Push, remote gates and merge are not done.
+
+**Not met / verified failing:** Full CI is verified failing (exit 2); dependency advisory lookup is NOT RUN offline. F0's planner CI/guard evidence was not re-run; only its 29 production blob identities were independently compared. Push, `make gate-ran`, review, merge, F1a (PowerShell stand-in), F1b (paid real probes), deployment and F2 are not done. Vendor request-cap assumptions remain unmeasured here.
 
 ---
 
 ## Return notes
 
-- *(the builder)*
+- All work and proof stayed in `../ta-s276` on the named sprint branch. The 29 production files, three law files and five existing-test edits retain their exact Appendix/prototype identities after every plant. Scope proof finds zero `DECISION_PATHS` against local `origin/main`; no network fetch was used.
+- The deploy still needs the master's vocabulary before the new image because even a quiet fleet check writes `llm_passed_over`. F1a, F1b, the operator's deploy and F2 remain the planner/operator sequence; no command in that sequence was invoked here.
+- The declaration is activation-time fallback only. Mid-debate refusal still fails open as before; P3 is not done. The Anthropic `max_tokens: 1` and OpenAI `max_completion_tokens: 256` success assumptions still require F1b.
+- Evidence logs and the byte-restoring guard runner are outside the repository in `../ta-s276-evidence`; required output is pasted above. Final local bookkeeping checks after filling this handback:
+
+```text
+FINAL_LAW_COVERAGE_EXIT=0
+docs_seen=281 SPEC=10 BUILT=1 MERGED=270 UNMAPPED=0 MISSING=0
+FINAL_SPRINT_STATUS_EXIT=0
+FINAL_MARKDOWN_LINKS_EXIT=0
+FINAL_SCOPE_EXIT=0
+LOCAL_PROTOTYPE_LAWS_BLOBS_MATCH=3/3
+LOCAL_PROTOTYPE_EXISTING-TESTS_BLOBS_MATCH=5/5
+```
 
 ---
 

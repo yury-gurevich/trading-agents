@@ -40,7 +40,7 @@ def load_pack(root: Path) -> LlmPack:
     """Validate provider and target keys, reading vendor probe names as data."""
     packs = root / "orchestration/packs"
     raw = json.loads((packs / "trading_llm.json").read_text(encoding="utf-8"))
-    provider = raw["provider"]
+    provider = declared_provider(raw)
     apps = raw["apps"]
     if provider not in KEY_ENV:
         raise ValueError(f"unknown declared provider {provider!r}")
@@ -67,6 +67,17 @@ def load_pack(root: Path) -> LlmPack:
         if app != "master" and not probes.get(app, {}).get(provider):
             raise ValueError(f"{app} has no declared {provider} probe")
     return LlmPack(provider, apps, probes)
+
+
+def declared_provider(raw: dict[str, object]) -> str:
+    """The first candidate's vendor is the declared provider (DL-289)."""
+    candidates = raw["candidates"]
+    if not isinstance(candidates, list) or not candidates:
+        raise ValueError("the LLM pack declares no candidates")
+    first = candidates[0]
+    if not isinstance(first, dict):
+        raise ValueError("an LLM candidate must be an object")
+    return str(first["vendor"])
 
 
 def evidence_directory(value: str, root: Path) -> Path:

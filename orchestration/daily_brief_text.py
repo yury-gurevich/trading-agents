@@ -70,11 +70,12 @@ class BriefFacts:
     critical_flags: int = 0
     last_stage: str | None = None
     containers: str | None = None
+    llm: str | None = None
 
 
 def compose_brief(facts: BriefFacts) -> str:
     """Return the plain-text message; a run with no report gets the RED brief."""
-    sensed = (facts.containers,) if facts.containers else ()
+    sensed = tuple(line for line in (facts.containers, facts.llm) if line)
     if facts.verdict == NOT_FINISHED:
         stage = (
             f"Last stage finished: {facts.last_stage}"

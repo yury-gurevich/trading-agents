@@ -1,11 +1,31 @@
 {
-  "_comment": "One declared LLM provider for the fleet. infra/deploy-agents.ps1 and scripts/switch_llm_provider.py read this file; its provider wins over trading_tunables.json for every app environment key named here. App order is apply order, with the master first.",
-  "provider": "openai",
+  "_comment": "The fleet's LLM declaration (DL-282, DL-289). candidates: the ordered ways an LLM role may run, each a vendor, a model and an effort, the preferred first. The master probes an agent type in roles with each candidate in order at every activation and hands it the first that works; the vendor of the first candidate is the declared provider, written by infra/deploy-agents.ps1 and scripts/switch_llm_config.py into each app key under apps (master first), and the master puts that vendor's candidates first. roles: the configuration keys each choosing agent type is handed its candidate in.",
+  "candidates": [
+    { "vendor": "openai", "model": "gpt-5.5", "effort": "high" },
+    { "vendor": "anthropic", "model": "claude-opus-5", "effort": "max" }
+  ],
   "apps": {
     "master": "MASTER_LLM_PROVIDER",
     "operator": "OPERATOR_LLM_PROVIDER",
     "deliberator-manager": "DELIBERATOR_LLM_PROVIDER",
     "deliberator-proponent": "DELIBERATOR_LLM_PROVIDER",
     "deliberator-opponent": "DELIBERATOR_LLM_PROVIDER"
+  },
+  "roles": {
+    "deliberator-manager": {
+      "vendor": "DELIBERATOR_LLM_PROVIDER",
+      "model": "DELIBERATOR_JUDGE_MODEL",
+      "effort": "DELIBERATOR_EFFORT"
+    },
+    "deliberator-proponent": {
+      "vendor": "DELIBERATOR_LLM_PROVIDER",
+      "model": "DELIBERATOR_DEFENDER_MODEL",
+      "effort": "DELIBERATOR_EFFORT"
+    },
+    "deliberator-opponent": {
+      "vendor": "DELIBERATOR_LLM_PROVIDER",
+      "model": "DELIBERATOR_CHALLENGER_MODEL",
+      "effort": "DELIBERATOR_EFFORT"
+    }
   }
 }

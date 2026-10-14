@@ -8,11 +8,12 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from agents.deliberator.settings import DeliberatorSettings
     from contracts.deliberator import DebateProposition, DebateTurnRecord
+    from kernel import GraphStore
 
 _FAILED_OPEN_REASON_LIMIT = 500
 _UNKNOWN_FAIL_OPEN_REASON = "UnknownError: reason unavailable"
@@ -113,15 +114,32 @@ def narrative(debates: dict[str, object]) -> str:
     )
 
 
-def role_models(settings: DeliberatorSettings) -> dict[str, str]:
-    """Return the three *resolved* models stamped on a DeliberationRun.
+def role_models(
+    settings: DeliberatorSettings,
+    graph: GraphStore | None = None,
+    llm_call_keys: tuple[str, ...] | list[str] = (),
+) -> dict[str, str]:
+    """Return the three models stamped on a DeliberationRun: the ones that answered.
 
-    Reads through `model_for_role` rather than the tunables, so the audit record
-    names the model that actually answered — never the empty sentinel, and never
-    the other vendor's name after a provider switch (DL-100).
+    Each role's entry is read from the run's own `LLMCall` rows by the identity
+    that served it, because every replica chooses its LLM at activation (DL-289)
+    and two replicas of one role may run on different models; several models
+    are joined, sorted. A role with no row falls back to `model_for_role`: never
+    the empty sentinel, never the other vendor's name (DL-100).
     """
+    answered: dict[str, set[str]] = {}
+    for key in llm_call_keys:
+        node = graph.get_node("LLMCall", key) if graph is not None else None
+        if node is not None and isinstance(node.props.get("model"), str):
+            agent = str(node.props.get("calling_agent", ""))
+            answered.setdefault(agent, set()).add(str(node.props["model"]))
+    served: tuple[tuple[Literal["defender", "challenger", "judge"], str], ...] = (
+        ("defender", settings.proponent_identity),
+        ("challenger", settings.opponent_identity),
+        ("judge", settings.identity),
+    )
     return {
-        "defender": settings.model_for_role("defender"),
-        "challenger": settings.model_for_role("challenger"),
-        "judge": settings.model_for_role("judge"),
+        role: ", ".join(sorted(answered.get(identity, ())))
+        or settings.model_for_role(role)
+        for role, identity in served
     }

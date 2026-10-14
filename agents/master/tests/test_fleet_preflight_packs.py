@@ -39,4 +39,5 @@ def test_vocabulary_declares_fleet_preflight_and_its_properties() -> None:
         "failure_count",
         "failures",
         "agent_types_checked",
+        "llm_passed_over",
     }

@@ -52,7 +52,11 @@ def build_llm(
     max_tokens: int,
     effort: str | None,
 ) -> LLMClient:
-    """Build exactly the selected provider; never silently switch vendors."""
+    """Build exactly the selected provider; never silently switch vendors.
+
+    A model of another known vendor's family is refused, never sent (DL-289).
+    """
+    _refuse_foreign_model(provider, model)
     if provider == "anthropic":
         return AnthropicLLMClient(
             api_key=api_key, model=model, max_tokens=max_tokens, effort=effort or "max"
@@ -99,12 +103,7 @@ def build_operator_llm(
     effort: str,
 ) -> LLMClient:
     """Construct exactly the selected vendor's operator adapter."""
-    owner = model_provider(model)
-    if provider in KEY_ENV and owner not in (None, provider):
-        raise ModelProviderMismatchError(
-            f"model {model!r} belongs to {owner}; the declared llm_provider is "
-            f"{provider}. Unset the model to use the provider's default."
-        )
+    _refuse_foreign_model(provider, model)
     if provider == "anthropic":
         return OperatorAnthropicLLMClient(
             api_key=api_key,
@@ -120,6 +119,15 @@ def build_operator_llm(
             effort=effort,
         )
     raise UnknownProviderError(f"unknown llm_provider {provider!r}")
+
+
+def _refuse_foreign_model(provider: str, model: str) -> None:
+    owner = model_provider(model)
+    if provider in KEY_ENV and owner not in (None, provider):
+        raise ModelProviderMismatchError(
+            f"model {model!r} belongs to {owner}; the declared llm_provider is "
+            f"{provider}. Unset the model to use the provider's default."
+        )
 
 
 def key_env_var(provider: str) -> str:

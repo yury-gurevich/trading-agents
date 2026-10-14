@@ -17,18 +17,17 @@ from datetime import UTC, datetime, timedelta
 from threading import Lock
 from typing import TYPE_CHECKING, Literal
 
-from agents.master.credential_report import (
-    CredentialFailure,
-    CredentialTestReport,
-    CredentialTransportFailure,
-)
-from agents.master.credential_result import CheckResult, coerce_result
+from agents.master.credential_outcomes import Outcomes
+from agents.master.model_choice import choose_llm
 from agents.master.secret_map import resolve_config
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
+    from agents.master.credential_report import CredentialTestReport
+    from agents.master.credential_result import CheckResult
     from agents.master.key_vault import SecretStore
+    from agents.master.model_candidates import LlmCandidate, LlmRole
     from agents.master.secret_map import SecretMap
 
 Cost = Literal["cheap", "costly"]
@@ -48,7 +47,9 @@ class CredentialTest:
 
     ``run(config)`` returns True or ``CredentialCheckResult(status="passed")`` when
     the credential works. A ``required`` credential failure blocks activation; a
-    transport failure is faulted by the caller but does not block.
+    transport failure is faulted by the caller but does not block. A test with a
+    ``candidate`` probes that LLM candidate for an agent type that chooses one
+    (DL-289); ``takes_candidate`` marks a declared probe able to carry one.
     """
 
     name: str
@@ -57,6 +58,9 @@ class CredentialTest:
     cost: Cost = "cheap"
     agent_types: tuple[str, ...] = ()
     llm_provider: str = ""
+    takes_candidate: bool = False
+    candidate: LlmCandidate | None = None
+    role: LlmRole | None = None
 
 
 class PassCache:
@@ -111,48 +115,27 @@ def resolve_and_test_report(
     *,
     cache: PassCache | None = None,
 ) -> CredentialTestReport:
-    """Resolve secrets, run applicable tests, and return activation evidence."""
+    """Resolve secrets, run applicable tests, and return activation evidence.
+
+    An agent type with LLM candidates runs its other tests first, then is handed
+    the first candidate that passes (`model_choice`).
+    """
     config = resolve_config(agent_type, store, secret_map)
     str_config = {k: v for k, v in config.items() if isinstance(v, str)}
-    applicable: list[str] = []
-    tested: list[str] = []
-    passed: list[str] = []
-    cached: list[str] = []
-    failed_required: list[str] = []
-    failed_optional: list[str] = []
-    transport_failures: list[CredentialTransportFailure] = []
-    credential_failures: list[CredentialFailure] = []
-    for test in tests:
-        if test.agent_types and agent_type not in test.agent_types:
-            continue
-        applicable.append(test.name)
-        if test.cost == "costly" and cache is not None and cache.fresh(test.name):
-            cached.append(test.name)
-            continue
-        tested.append(test.name)
-        result = coerce_result(test.run(str_config))
-        if result.status == "passed":
-            passed.append(test.name)
-            if test.cost == "costly" and cache is not None:
-                cache.record(test.name)
-        elif result.status == "transport_failure":
-            transport_failures.append(
-                CredentialTransportFailure(test.name, result.reason)
-            )
-        else:
-            credential_failures.append(CredentialFailure(test.name, result.reason))
-            if test.required:
-                failed_required.append(test.name)
-            else:
-                failed_optional.append(test.name)
-    return CredentialTestReport(
-        config,
-        tuple(applicable),
-        tuple(tested),
-        tuple(passed),
-        tuple(cached),
-        tuple(failed_required),
-        tuple(failed_optional),
-        tuple(transport_failures),
-        tuple(credential_failures),
-    )
+    applicable = [
+        test for test in tests if not test.agent_types or agent_type in test.agent_types
+    ]
+    outcomes = Outcomes()
+    for test in applicable:
+        if test.candidate is None:
+            outcomes.run(test, str_config, cache)
+    candidates = [
+        (test, test.candidate, test.role)
+        for test in applicable
+        if test.candidate is not None and test.role is not None
+    ]
+    if not candidates:
+        return outcomes.report(config)
+    chosen, label, passed_over = choose_llm(candidates, config, str_config, cache)
+    outcomes.extend(chosen)
+    return outcomes.report(config, llm_candidate=label, llm_passed_over=passed_over)

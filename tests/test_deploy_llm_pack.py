@@ -20,7 +20,7 @@ def test_c1_llm_pack_names_real_apps_and_settings() -> None:
     pack = json.loads(
         (ROOT / "orchestration/packs/trading_llm.json").read_text("utf-8")
     )
-    assert pack["provider"] in KEY_ENV
+    assert pack["candidates"][0]["vendor"] in KEY_ENV
     script = (ROOT / "infra/deploy-agents.ps1").read_text("utf-8")
     block = script.split("$AGENTS = [ordered]@{", 1)[1].split("}", 1)[0]
     names = set(re.findall(r'["\']?([a-z][a-z-]+)["\']?\s*=\s*"', block)) | {"master"}

@@ -82,6 +82,20 @@ class MasterSettings(AgentSettings):
             "takes precedence over credential_tests_path."
         ),
     )
+    llm_pack_path: str = tunable(
+        "",
+        why=(
+            "Filesystem path to the pack's ordered LLM candidates; empty = no "
+            "agent type chooses a candidate unless base64 pack data is supplied."
+        ),
+    )
+    llm_pack_b64: str = tunable(
+        "",
+        why=(
+            "Base64-encoded LLM candidate JSON injected at deploy time (cloud); "
+            "takes precedence over llm_pack_path."
+        ),
+    )
     credential_pass_cache_ttl_minutes: int = tunable(
         5,
         why=(

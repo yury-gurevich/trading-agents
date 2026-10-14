@@ -159,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI wiring
             api_key=os.environ.get(key_env_var(settings.llm_provider)),
             model=settings.model_for_role(role),
             max_tokens=settings.max_tokens,
-            effort=settings.effort,
+            effort=settings.effort or None,
         )
         for role in roles
     }

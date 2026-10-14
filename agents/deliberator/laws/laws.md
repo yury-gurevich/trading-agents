@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.16 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.17 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -48,7 +48,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   `DeliberationRun` linked by `PMRun -DELIBERATED_BY-> DeliberationRun`.
 + **DLIB-OUT-02** -- Each `DeliberationRun` records verdicts, vetoed tickers
   containing only `overturn` verdicts, per-ticker debate turns, role models,
-  narrative, and creation time.
+  narrative, and creation time. A role's model is the one its `LLMCall` rows in
+  the run name for the identity that served it, several joined in sorted order;
+  a role with no row names its resolved setting.
 + **DLIB-OUT-03** -- Each LLM call writes a shared `LLMCall` with
   `calling_agent`, model, hashes, token counts, latency, and timestamp.
 + **DLIB-OUT-04** -- `overturn` verdicts may only subtract existing
@@ -88,6 +90,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 + **DLIB-NEV-10** -- Never lets a library that builds or parses a role's prompt
   reach a model vendor except through the agent's own LLM client.
++ **DLIB-NEV-11** -- Never sends a vendor a model of another known vendor's
+  family: building the role's client refuses it.
 
 ## State & Effects (`STA`)
 
@@ -163,6 +167,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-DEP-02** -- `DEP-BUS` for manager-to-peer request/reply.
 + **DLIB-DEP-03** -- `DEP-LLM` for external model calls and fail-open behaviour.
 + **DLIB-DEP-04** -- `DEP-CONFIG` for role, round, model, and credential settings.
++ **DLIB-DEP-05** -- Each role runs on the vendor, model and effort its settings
+  hold after activation, so the ones the master handed it (DL-289) and never the
+  values read before. An empty effort sends the vendor none.
 
 ## Observability & Audit (`OBS`)
 
@@ -226,7 +233,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `defender_model` | empty | string | YES | Proponent role model; empty resolves the provider default |
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
-| `effort` | `max` | enum | YES | Anthropic reasoning effort |
+| `effort` | `""` | enum or empty | YES | Reasoning effort for deliberation calls; empty sends none (Anthropic's client uses max, OpenAI the vendor default), because a fixed default is refused by some vendor (gpt-5.5 answers HTTP 400 to max); the master hands each role its candidate's effort at activation (DL-289) |
 | `max_tokens` | `16384` | int >= 64 <= 16384 | YES | Per-call response cap; S246 raised it for the guided readings written before each debater's argument (challenger max 3,026 output tokens before them, DL-252 D8); on gpt-5.5 reasoning counts against the cap, a defender reached 7,738 tokens in production and 11,556 in the typed turn, and the unused cap costs nothing (DL-274 D1) |
 | `request_timeout_seconds` | `30.0` | float >= 1 <= 300 | YES | Bounds peer RPC wait; a turn at the cap can take about 190 seconds at the slowest measured output rate on gpt-5.5 (DL-274 D3) |
 | `debate_concurrency` | `4` | int >= 1 <= 25 | YES | Manager fan-out over independent PM-approved orders, bounded by the vendor rate limit because each concurrent order holds one in-flight completion per peer role |
@@ -335,3 +342,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   16,384 with the same ceiling, below Anthropic's 21,333 non-streaming limit;
   `request_timeout_seconds` may reach 300, still defaulting to 30. Measured
   gpt-5.5 reasoning needs the cap and can take about 190 seconds at it. No clause changes.
++ v1.17 -- S276 / DL-289 (2026-10-15). Adds and proves `DLIB-DEP-05` (a role
+  runs on what the master handed it at activation) and `DLIB-NEV-11` (no model
+  of another vendor's family is sent); amends and proves `DLIB-OUT-02` (role
+  models are the ones that answered). PARAM: `effort` defaults to empty.

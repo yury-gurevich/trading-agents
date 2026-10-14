@@ -45,11 +45,17 @@ class CredentialTestReport:
     failed_optional: tuple[str, ...]
     transport_failures: tuple[CredentialTransportFailure, ...]
     credential_failures: tuple[CredentialFailure, ...] = ()
+    llm_candidate: str = ""
+    llm_passed_over: tuple[str, ...] = ()
 
 
 def credential_test_props(report: CredentialTestReport) -> dict[str, object]:
-    """Return graph-safe activation props for credential-test evidence."""
-    return {
+    """Return graph-safe activation props for credential-test evidence.
+
+    An agent type that chose an LLM candidate also records which one, and each
+    candidate passed over before it with the reason (DL-289).
+    """
+    props: dict[str, object] = {
         "credential_tests_declared": list(report.applicable),
         "credential_tests_tested": list(report.tested),
         "credential_tests_passed": list(report.passed),
@@ -59,6 +65,10 @@ def credential_test_props(report: CredentialTestReport) -> dict[str, object]:
             failure.name for failure in report.transport_failures
         ],
     }
+    if report.llm_candidate:
+        props["llm_candidate"] = report.llm_candidate
+        props["llm_passed_over"] = list(report.llm_passed_over)
+    return props
 
 
 def submit_transport_faults(

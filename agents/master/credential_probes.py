@@ -12,6 +12,11 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from agents.master.credential_probe_candidate import (
+    MODEL_KEY,
+    candidate_body,
+    candidate_paths,
+)
 from agents.master.credential_probe_support import (
     HttpProbeRequest,
     bool_field,
@@ -108,6 +113,7 @@ def _test_from_entry(
         cost=test_cost,
         agent_types=(agent_type,),
         llm_provider=str(entry.get("llm_provider", "")),
+        takes_candidate=entry.get("candidate_paths") is not None,
     )
 
 
@@ -119,6 +125,9 @@ def _http_runner(
     headers = str_dict(entry.get("headers", {}), "headers")
     query = str_dict(entry.get("query", {}), "query")
     body = json_body(entry.get("json_body"))
+    paths = candidate_paths(entry.get("candidate_paths"))
+    if paths is not None and body is None:
+        raise ValueError("candidate_paths need a json_body")
     expected = status_set(entry.get("expected_statuses", [200]))
     credential_failure_statuses = status_set(
         entry.get("credential_failure_statuses", [401, 403])
@@ -133,11 +142,16 @@ def _http_runner(
             }
         except KeyError as exc:
             return credential_failed(f"missing_config:{exc.args[0]}")
-        if body is not None:
+        payload = body
+        if paths is not None and MODEL_KEY in config:
+            payload = candidate_body(entry["json_body"], paths, config)
+        if payload is not None:
             rendered_headers = with_json_content_type(rendered_headers)
         try:
             status = transport(
-                HttpProbeRequest(method, url, rendered_headers, timeout_seconds, body)
+                HttpProbeRequest(
+                    method, url, rendered_headers, timeout_seconds, payload
+                )
             )
         except (TimeoutError, OSError) as exc:
             return credential_transport_failed(type(exc).__name__)

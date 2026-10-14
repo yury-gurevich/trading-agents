@@ -395,6 +395,8 @@
       "credential_tests_transport_failed",
       "drain_at",
       "drain_reason",
+      "llm_candidate",
+      "llm_passed_over",
       "started_at",
       "state"
     ],
@@ -493,6 +495,7 @@
       "checked_at",
       "failure_count",
       "failures",
+      "llm_passed_over",
       "passed"
     ],
     "RunHold": [

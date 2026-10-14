@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
 > brief the operator once on each run it placed, and tell the operator when a container of the
@@ -113,6 +113,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Prohibitions (`NEV`)
 
+- **DSP-OUT-09** — A brief whose last 24 hours hold an `AgentInstance` activated on an LLM candidate
+  after passing over another carries one line after the container line and before needs-you:
+  `LLM: ` then, for each distinct choice and passed-over list, the agent types sorted, ` on ` the
+  chosen `vendor/model/effort`, and in brackets `passed over ` each passed-over line, the parts
+  joined by ` · `. With no such activation there is no line.
 - **DSP-NEV-01** — The scheduled dispatcher never writes master-owned `FleetPreflight` evidence.
 - **DSP-NEV-02** — The scheduled dispatcher never talks to the broker, never chooses tickers beyond
   the configured universe membership, and never decides what to buy, sell, size, or veto.
@@ -191,8 +196,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **DSP-DEP-01** — The scheduled dispatcher depends on the graph store (`DEP-POSTGRES`), UTC clock
   (`DEP-CLOCK`), provider-owned market calendar, configured universe source, and Telegram port for
   optional operator notices, answers, and the daily brief. For the brief its graph reads include the
-  run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, and the
-  pack's acceptance verdict. The sensor depends on the job's managed-identity endpoint and the log
+  run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, the
+  master's `AgentInstance` records of the last 24 hours, and the pack's acceptance verdict. The sensor depends on the job's managed-identity endpoint and the log
   workspace's query API.
 
 ## Observability & audit (`OBS`)
@@ -224,7 +229,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
       "FleetPreflight", "RunRequest", "RunHold", "RunHoldAnswer", "MarketData", "ScanRun",
       "AnalystRun", "PMRun", "DeliberationRun", "OrderIntent", "ExecutionRun", "MonitorRun",
       "Snapshot", "Fill", "Fault", "FaultResolution", "Flag", "FlagResolution",
-      "BrokerPositionSnapshot", "ContainerEvent", "ContainerSensorRead"
+      "BrokerPositionSnapshot", "ContainerEvent", "ContainerSensorRead", "AgentInstance"
     ],
     "access": "bounded dispatcher placement; the brief marks only its own RunRequest"
   },
@@ -285,3 +290,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `DSP-TRG-04`, `DSP-OUT-07`, `DSP-OUT-08`, `DSP-NEV-03`, `DSP-IDM-04`, `DSP-FAIL-04`, `DSP-SEC-03` and
   `DSP-OBS-03`; the purpose line, `DSP-IDN-03`'s scope sentence, `DSP-DEP-01`, `CAP` and `PARAM`
   amended for it.
+- v1.4 — S276 (DL-289, work-queue 123): the brief's LLM line. New `DSP-OUT-09`; `DSP-DEP-01` and
+  `CAP` amended for the `AgentInstance` read.

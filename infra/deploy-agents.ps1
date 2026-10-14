@@ -15,7 +15,7 @@
 # POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
 param(
-  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'down')]
+  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'llm-candidates', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
   # DL-294 amendment 1: one readiness check, at the wake, before the 22:30 UTC dispatch.
@@ -450,7 +450,8 @@ function Load-LlmPack {
 function Get-AppLlmEnv($name) {
   $pack = Load-LlmPack
   if (@($pack.apps.PSObject.Properties.Name) -notcontains $name) { return @() }
-  return @("$($pack.apps.$name)=$($pack.provider)")
+  # The first candidate's vendor is the declared provider (DL-289).
+  return @("$($pack.apps.$name)=$(@($pack.candidates)[0].vendor)")
 }
 
 function Resolve-DispatcherCron {
@@ -690,6 +691,13 @@ function Get-MasterCredentialTestsEnv {
   return "MASTER_CREDENTIAL_TESTS_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
 }
 
+function Get-MasterLlmPackEnv {
+  # The ordered LLM candidates ride the master's create call too (DL-289): the
+  # master expands them into the probes an LLM role is activated through.
+  $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_llm.json"
+  return "MASTER_LLM_PACK_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+}
+
 function Get-IssuerMapEnv {
   # The issuer map is trading-pack data (ADR-0012), not a PM tunable. Inject it
   # as base64 so the portfolio-manager image stays pack-agnostic like master.
@@ -761,6 +769,28 @@ function Enable-ContainerSensor {
   return ($held -eq "1") -and $vocabOk
 }
 
+function Enable-LlmCandidates {
+  # DL-289: run BEFORE the retag that brings the master's S276 image. That image writes
+  # llm_passed_over on every fleet check and llm_candidate on a chosen activation, which
+  # the earlier vocabulary refuses; so the vocabulary goes first, then the candidate pack.
+  # An older image ignores both. Each step is read back, so a re-run is safe.
+  Top "LLM CANDIDATES"
+  $vocabOk = Set-AppVocabulary "master"
+  Check $vocabOk "graph vocabulary on master"
+  $state = $null
+  if ($vocabOk) {
+    $state = Invoke-Az @(
+      "containerapp", "update", "--name", "master", "--resource-group", $RG,
+      "--subscription", $SUB, "--set-env-vars", (Get-MasterLlmPackEnv),
+      "--query", "properties.provisioningState", "-o", "tsv"
+    )
+  }
+  $packOk = ($null -ne $state) -and ((Get-AppState "master") -eq "Succeeded")
+  Check $packOk "MASTER_LLM_PACK_B64 on master"
+  Bot
+  return $vocabOk -and $packOk
+}
+
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   # Refuse before the first create, not after the ninth: a deploy that discards
@@ -789,7 +819,7 @@ function Up {
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64",
-    (Get-MasterCredentialTestsEnv)
+    (Get-MasterCredentialTestsEnv), (Get-MasterLlmPackEnv)
   ) + (Get-AppLlmEnv "master")
   $masterGraph = Get-GraphConfig "master"
   $envv += @($masterGraph.envVars)
@@ -977,5 +1007,6 @@ switch ($Action) {
   'postgres-flip' { Flip-PostgresRoles }
   'servicebus-flip' { Flip-ServiceBusSas }
   'sensor' { if (-not (Enable-ContainerSensor)) { throw "container sensor not enabled" } }
+  'llm-candidates' { if (-not (Enable-LlmCandidates)) { throw "LLM candidates not enabled" } }
   'down' { Down }
 }

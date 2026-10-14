@@ -20,7 +20,8 @@ from agents.master.fleet_preflight import (
 )
 from agents.master.fleet_preflight_loop import start_fleet_preflight_daemon
 from agents.master.http_server import serve
-from agents.master.pack_loading import load_master_packs
+from agents.master.model_expansion import expand_llm_candidates
+from agents.master.pack_loading import load_llm_pack, load_master_packs
 from agents.master.remediation_posture import refuse_unwired_automatic_remediation
 from agents.master.settings import MasterSettings
 from agents.master.stopping import shut_down
@@ -64,10 +65,15 @@ def build_app(
     """
     settings = settings or MasterSettings()
     grant_policy, secret_map, credential_tests = load_master_packs(settings)
+    plan = load_llm_pack(settings)
     credential_tests, secret_map = select_llm_provider(
         settings.llm_provider,
         credential_tests,
         secret_map,
+        roles=plan.roles if plan else (),
+    )
+    credential_tests = expand_llm_candidates(
+        plan, settings.llm_provider, credential_tests, secret_map
     )
     if secret_map and not credential_tests:
         raise ValueError(

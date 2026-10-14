@@ -1,7 +1,7 @@
 """Load master's injected declarations without importing a trading pack.
 
 Agent: master
-Role: resolve base64 or file declarations for grants, secrets and probes.
+Role: resolve base64 or file declarations for grants, secrets, probes and LLMs.
 External I/O: configured declaration files only.
 """
 
@@ -15,6 +15,7 @@ from agents.master.credential_probes import (
     parse_credential_tests,
 )
 from agents.master.grants import load_grant_policy, parse_grant_policy
+from agents.master.model_candidates import load_llm_plan, parse_llm_plan
 from agents.master.secret_map import load_secret_map, parse_secret_map
 
 if TYPE_CHECKING:
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
 
     from agents.master.credential_test import CredentialTest
     from agents.master.grants import GrantPolicy
+    from agents.master.model_candidates import LlmPlan
     from agents.master.secret_map import SecretMap
     from agents.master.settings import MasterSettings
 
@@ -60,3 +62,10 @@ def load_master_packs(
         load_credential_tests,
     )
     return grants, secrets, tests or ()
+
+
+def load_llm_pack(settings: MasterSettings) -> LlmPlan | None:
+    """Read the ordered LLM candidates; absent means no agent type chooses one."""
+    return _resolve_pack(
+        settings.llm_pack_b64, settings.llm_pack_path, parse_llm_plan, load_llm_plan
+    )

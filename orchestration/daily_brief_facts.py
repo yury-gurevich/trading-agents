@@ -28,6 +28,7 @@ from orchestration.daily_brief_text import (
     BriefFacts,
     local_stamp,
 )
+from orchestration.llm_brief import llm_line
 from orchestration.packs.trading_acceptance import accept_run
 from orchestration.packs.trading_observatory_views import SPEC
 
@@ -73,6 +74,7 @@ def brief_facts(
         critical_flags=health["pending_human_flags"],
         last_stage=_last_stage(nodes),
         containers=container_line(graph, now=now, timezone=timezone),
+        llm=llm_line(graph, now=now),
     )
     snapshot = nodes.get("Snapshot")
     if snapshot is None or pm_run is None:

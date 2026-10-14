@@ -63,6 +63,10 @@ def missing_terms(
 
 
 def _valid_activation(props: Mapping[str, object], pack: LlmPack, app: str) -> bool:
+    chosen = props.get("llm_candidate")
+    if isinstance(chosen, str):
+        # An app that chooses among candidates proves the switch by its choice.
+        return chosen.startswith(f"{pack.provider}/")
     passed = props.get("credential_tests_passed")
     declared = props.get("credential_tests_declared")
     if not isinstance(passed, (tuple, list)) or not isinstance(declared, (tuple, list)):

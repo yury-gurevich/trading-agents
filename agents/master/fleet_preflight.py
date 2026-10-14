@@ -52,8 +52,12 @@ def run_fleet_preflight(
     pass_cache: PassCache | None,
     now: datetime,
 ) -> FleetPreflightResult:
-    """Test every grant-policy agent type and record fleet readiness."""
+    """Test every grant-policy agent type and record fleet readiness.
+
+    An LLM candidate passed over for a later one is recorded, not a failure.
+    """
     failures: list[PreflightFailure] = []
+    passed_over: list[str] = []
     agent_types_checked = tuple(sorted(grant_policy))
     for agent_type in agent_types_checked:
         try:
@@ -70,6 +74,7 @@ def run_fleet_preflight(
             )
             continue
         failures.extend(_report_failures(agent_type, report))
+        passed_over.extend(f"{agent_type}: {line}" for line in report.llm_passed_over)
     checked_at = now.astimezone(UTC).isoformat(timespec="seconds")
     failure_values = [
         f"{failure.klass}:{failure.agent_type}:{failure.probe}:{failure.reason}"
@@ -84,6 +89,7 @@ def run_fleet_preflight(
             "failure_count": len(failures),
             "failures": failure_values,
             "agent_types_checked": list(agent_types_checked),
+            "llm_passed_over": passed_over,
         },
     )
     if failures:

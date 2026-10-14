@@ -76,7 +76,7 @@ def review_pm_node(
         debates=batch.debates,
         narrative=narrative(batch.debates),
         transcript=batch.transcript,
-        role_models=role_models(settings),
+        role_models=role_models(settings, graph, batch.llm_call_keys),
         max_rounds=settings.max_rounds,
         real_debate_count=batch.real_debate_count,
         failed_open_count=len(batch.failed_open_tickers),

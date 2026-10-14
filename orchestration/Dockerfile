@@ -68,6 +68,7 @@ COPY orchestration/batch_chain.py orchestration/batch_chain.py
 COPY orchestration/batch_trace.py orchestration/batch_trace.py
 COPY orchestration/container_alarm_text.py orchestration/container_alarm_text.py
 COPY orchestration/container_brief.py orchestration/container_brief.py
+COPY orchestration/llm_brief.py orchestration/llm_brief.py
 COPY orchestration/container_events.py orchestration/container_events.py
 COPY orchestration/container_lines.py orchestration/container_lines.py
 COPY orchestration/container_logs.py orchestration/container_logs.py

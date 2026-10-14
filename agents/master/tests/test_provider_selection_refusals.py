@@ -76,10 +76,13 @@ def test_selection_runs_once_when_building_master(
     real_selection = select_llm_provider
 
     def selection(
-        provider: str, tests: tuple[CredentialTest, ...], secrets: SecretMap | None
+        provider: str,
+        tests: tuple[CredentialTest, ...],
+        secrets: SecretMap | None,
+        roles: tuple[str, ...] = (),
     ) -> tuple[tuple[CredentialTest, ...], SecretMap | None]:
         calls.append(provider)
-        return real_selection(provider, tests, secrets)
+        return real_selection(provider, tests, secrets, roles)
 
     monkeypatch.setattr(entrypoint, "select_llm_provider", selection)
     monkeypatch.setattr(

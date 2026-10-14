@@ -21,7 +21,15 @@ def test_invalid_target_map_refuses_before_azure(tmp_path: Path, apps: object) -
     packs = tmp_path / "root/orchestration/packs"
     packs.mkdir(parents=True)
     (packs / "trading_llm.json").write_text(
-        json.dumps({"provider": "openai", "apps": apps}), encoding="utf-8"
+        json.dumps(
+            {
+                "candidates": [
+                    {"vendor": "openai", "model": "gpt-5.5", "effort": "high"}
+                ],
+                "apps": apps,
+            }
+        ),
+        encoding="utf-8",
     )
     (packs / "trading_credential_tests.json").write_text(
         (ROOT / "orchestration/packs/trading_credential_tests.json").read_text(
@@ -41,7 +49,15 @@ def test_missing_selected_probe_refuses_before_azure(tmp_path: Path) -> None:
     packs = tmp_path / "root/orchestration/packs"
     packs.mkdir(parents=True)
     (packs / "trading_llm.json").write_text(
-        json.dumps({"provider": "openai", "apps": APPS}), encoding="utf-8"
+        json.dumps(
+            {
+                "candidates": [
+                    {"vendor": "openai", "model": "gpt-5.5", "effort": "high"}
+                ],
+                "apps": APPS,
+            }
+        ),
+        encoding="utf-8",
     )
     (packs / "trading_credential_tests.json").write_text("{}", encoding="utf-8")
     azure = FakeAzure()

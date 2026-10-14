@@ -69,7 +69,14 @@ def test_d3_unknown_provider_refuses_before_azure(tmp_path: Path) -> None:
     packs = tmp_path / "root/orchestration/packs"
     packs.mkdir(parents=True)
     (packs / "trading_llm.json").write_text(
-        json.dumps({"provider": "opnai", "apps": {"master": "MASTER_LLM_PROVIDER"}})
+        json.dumps(
+            {
+                "candidates": [
+                    {"vendor": "opnai", "model": "gpt-5.5", "effort": "high"}
+                ],
+                "apps": {"master": "MASTER_LLM_PROVIDER"},
+            }
+        )
     )
     (packs / "trading_credential_tests.json").write_text("{}", encoding="utf-8")
     azure = FakeAzure()

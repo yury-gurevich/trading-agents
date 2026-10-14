@@ -84,9 +84,14 @@ class DeliberatorSettings(AgentSettings):
             "provider's own default, so switching provider is one switch."
         ),
     )
-    effort: Effort = tunable(
-        "max",
-        why="Anthropic output_config effort for deliberation calls.",
+    effort: Effort | Literal[""] = tunable(
+        "",
+        why=(
+            "Reasoning effort for deliberation calls. Empty sends none: Anthropic's "
+            "client uses max, OpenAI's the vendor default. A fixed default would be "
+            "refused by some vendor (gpt-5.5 answers HTTP 400 to max); the master "
+            "hands each role its chosen candidate's effort at activation (DL-289)."
+        ),
     )
     max_tokens: int = tunable(
         16384,

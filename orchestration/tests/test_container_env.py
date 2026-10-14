@@ -61,15 +61,13 @@ def test_a25_unconfigured_sensor_builds_nothing(
 def test_a25_configured_without_dsn_is_a_safe_line() -> None:
     """DSP-TRG-04 / DSP-FAIL-04: no DSN is reported before any graph or port builds."""
     built: list[str] = []
-    assert (
-        sense_from_env(
-            now=NOW,
-            graph_factory=lambda: built.append("graph"),
-            port_factory=lambda: built.append("port"),
-            environ={"LOG_ANALYTICS_WORKSPACE_ID": "workspace"},
-        )
-        == "error container-sensor not run: POSTGRES_DSN is required"
+    line = sense_from_env(
+        now=NOW,
+        graph_factory=lambda: built.append("graph"),
+        port_factory=lambda: built.append("port"),
+        environ={"LOG_ANALYTICS_WORKSPACE_ID": "workspace"},
     )
+    assert line == "error container-sensor not run: POSTGRES_DSN is required"
     assert built == []
 
 
@@ -103,15 +101,13 @@ def test_pre_graph_construction_failures_are_safe(
     else:
         monkeypatch.setattr(container_logs, "LogAnalyticsReader", refuse)
     built: list[str] = []
-    assert (
-        sense_from_env(
-            now=NOW,
-            graph_factory=lambda: built.append("graph"),
-            port_factory=FakeAlarm,
-            environ=ENV,
-        )
-        == "error container-sensor not run: RuntimeError"
+    line = sense_from_env(
+        now=NOW,
+        graph_factory=lambda: built.append("graph"),
+        port_factory=FakeAlarm,
+        environ=ENV,
     )
+    assert line == "error container-sensor not run: RuntimeError"
     assert built == []
 
 

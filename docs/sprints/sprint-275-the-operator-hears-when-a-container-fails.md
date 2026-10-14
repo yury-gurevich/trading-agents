@@ -11,6 +11,8 @@
 > **Why this bump kind.** A new capability: the dispatcher job gains a sensor it did not have, two
 > graph labels, an operator message and a brief line. MINOR.
 
+> 🔁 **Corrected after the first build's stop, 2026-10-14 18:00 AEDT (planner; DRIFT-114, DL-301 amendment 1).** The builder stopped before any code: § 9's `DSP-OUT-07` asked for one message line per app, kind and exit code, an alarm-event total and an overflow counted with apps, where § 7 and DL-301 D5 group by kind and exit code across apps. **The clause was wrong, not the code.** § 9 now says what § 1 to § 8 do in five clauses: `DSP-OUT-07` (D5's grouping, header and overflow, and the read record's message id, send error and row-limit cut), `DSP-OUT-08` (the brief counts repeats and names kinds with their apps), `DSP-FAIL-04` (a failure before the graph is open prints one line and records nothing), `DSP-IN-05` (an exit whose code cannot be read alarms; a row with no names is `unknown`) and `DSP-IDM-04` (an untold alarm's age is from its recording). § 8's `settings.py` diff words the alarm-groups tunable's `why` as kinds of failure. No other line of the Appendix changed: 18 of the 20 blobs are as before. The stopped handback is commit `1dc6b7ee` on the branch.
+
 ---
 
 ## 🔴 MUST RULE — read the laws for every element you touch, BEFORE you write any code
@@ -118,6 +120,7 @@ read-only, as the planner's own Azure login.
 | The workspace | `trading-agents-logs`, customer id `a281f88c-…`, retention 30 days | *[measured]* `az monitor log-analytics workspace show` |
 | The prototype against the live workspace | four reads of a day or a week: **1.3 to 3.6 s**. At 2026-09-25 01:00 UTC: 491 rows, 488 alarms and 3 reports kept, a why for 193, one message of four lines (701 characters). At 2026-09-29 00:00: four lines, the first naming the master's refusal. At 2026-10-11 14:00: the master's two kills of the retag day | *[measured]* `f0_live_replay.py` (the prototype with the planner's CLI token in place of the job's identity, an in-memory graph, a port that prints) → `f0_replay_*.txt` |
 | The prototype passes the gate | `make ci` exit 0 in one run, all 16 steps: 4,930 passed, 9 skipped, 100.00 %, on `main` at `be0aec51` merged into the prototype, at `0.126.00` | *[measured]* `ci_prototype_merged.txt` |
+| The corrected prototype passes the gate (DRIFT-114) | `make ci` exit 0 in one run, all 16 steps: 4,930 passed, 9 skipped, 100.00 %, on `proto-s275` at `3fb32ada`, at `0.126.00` | *[measured]* `ci_prototype_drift114.txt` |
 | The planner's tests catch the breaks | 37 planted breaks, 37 red (one re-aimed: its first form changed nothing observable) | *[measured]* `break_s275.py` → `breaks_on_prototype.txt` |
 | The job's identity endpoint answers as documented | `IDENTITY_ENDPOINT` and `IDENTITY_HEADER` in the job's env; `GET {endpoint}?resource=https://api.loganalytics.io&api-version=2019-08-01` with header `X-IDENTITY-HEADER` returns `access_token` | *[ASSUMED — read in Microsoft's Container Apps managed-identity documentation, not measured]* the job has no identity to measure with; settled by F2 after the deploy |
 | How fast the role takes effect for a new identity | — | *[ASSUMED — not measured]* F2 reads the first fire after it |
@@ -452,108 +455,60 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Clauses that were ⬜ and are now proven:** None; tests not done. The v1.2 test plan's `DSP-IDN-03`, `DSP-NEV-02`, `DSP-TYP-01` and `DSP-DEP-01` remain ⬜. The scope and dependency rows relied on for reading (`DSP-IDN-03`, `DSP-DEP-01`) are unproven; no claim that the sensor changes that.
 
+**Planner, after the stop (2026-10-14 18:00 AEDT):** DRIFT-114 is corrected in § 9 and § 8 (the note under the title; DL-301 amendment 1). The record above is the first build's, kept as written. On resuming, re-read § 9's five corrected clauses (`DSP-IN-05`, `DSP-OUT-07`, `DSP-OUT-08`, `DSP-IDM-04`, `DSP-FAIL-04`) against § 1 to § 8, then restate each paragraph above for the build you hand back.
+
 ---
 
 ## Test plan results — fill at handback
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A2 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A3 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A4 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A5 | not done | — | not done: law-gate stop | DSP-OUT-07 |
-| A6 | not done | — | not done: law-gate stop | DSP-IDM-04 |
-| A7 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A8 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A9 | not done | — | not done: law-gate stop | DSP-IN-05 |
-| A10 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-SEC-02 |
-| A11 | not done | — | not done: law-gate stop | DSP-SEC-03 |
-| A12 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-FAIL-04 |
-| A13 | not done | — | not done: law-gate stop | DSP-SEC-03 |
-| A14 | not done | — | not done: law-gate stop | DSP-TRG-04 |
-| A15 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-OUT-07 |
-| A16 | not done | — | not done: law-gate stop | DSP-OUT-07, DSP-OBS-03 |
-| A17 | not done | — | not done: law-gate stop | DSP-IDM-04 |
-| A18 | not done | — | not done: law-gate stop | DSP-IDM-04, DSP-FAIL-04 |
-| A19 | not done | — | not done: law-gate stop | DSP-OUT-07 |
-| A20 | not done | — | not done: law-gate stop | DSP-IN-05, DSP-OUT-07 |
-| A21 | not done | — | not done: law-gate stop | DSP-OUT-07 |
-| A22 | not done | — | not done: law-gate stop | DSP-OUT-08 |
-| A23 | not done | — | not done: law-gate stop | DSP-OUT-08 |
-| A24 | not done | — | not done: law-gate stop | DSP-FAIL-04, DSP-SEC-03 |
-| A25 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-OBS-03 |
-| A26 | not done | — | not done: law-gate stop | DSP-TRG-04, DSP-IDN-05, DSP-FAIL-04 |
-| A27 | not done | — | not done: law-gate stop | DSP-OUT-07, DSP-OBS-03 |
-| A28 | not done | — | not done: law-gate stop | DSP-SEC-01 |
-| A29 | not done | — | not done: law-gate stop | DSP-NEV-03 |
-| A30 | not done | — | not done: law-gate stop | DSP-SEC-03, DSP-TRG-04 |
+| A1 | *to fill* | | | |
 
-**Tests added beyond the plan:** None. All tests not done because implementation stopped at the law-reading gate.
+**Tests added beyond the plan:** *to fill*
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC — stopped at the law-reading gate on DRIFT-114; not BUILT.
+**Status:** *to fill*
 
-**Tree the proofs ran in (and `.env` present?):** Reading and scope checks only in `C:/Users/yury_/Downloads/project/ta-s275`, branch `sprint-275-the-operator-hears-when-a-container-fails`, starting HEAD `51838f53cbd5bcabde50d6713b6ca7ee79af7dc2`; initially clean; `.env` absent. No red, green, mutation or CI proof run.
+**Tree the proofs ran in (and `.env` present?):** *to fill*
 
-**Result:** not done — the build stopped before code on the proposed-law contradiction above.
+**Result:** *to fill*
 
-**Files changed:** This sprint's Law reading record, Test plan results and stopped handback; `docs/laws/drift-register.md` (DRIFT-114). Production, tests, laws, rollups, version and lock changes not done.
+**Files changed:** *to fill*
 
 **Design decisions:** recorded as [DL-301](../design-log.md) by the planner before the build.
-
-**Stopped-handback checks — real output:**
-
-```text
-APPENDIX_BYTES_UNCHANGED=True
-CHANGED_FILES=2 scoped documentation files
-BRANCH=sprint-275-the-operator-hears-when-a-container-fails
-ENV_FILE_PRESENT=False
-WRITTEN_FILES_LINE_ENDINGS=LF
-DIFF_CHECK_EXIT=0
-MARKDOWN_LINKS_EXIT=0
-docs_seen=280 SPEC=11 BUILT=0 MERGED=269 UNMAPPED=0 MISSING=0
-SPRINT_STATUS_EXIT=0
-```
-
-The Appendix comparison used the exact bytes after its heading in `git show HEAD:<spec>`
-and the edited spec. The other checks were `git diff --check`,
-`python scripts/check_markdown_links.py` and `python scripts/check_sprint_status.py`.
-Documentation checks are not a test, mutation or CI proof. The two documentation edits
-are uncommitted: the required stop occurred before the build and its commit step.
 
 **Proof — the red run first:**
 
 ```text
-not done — no tests written or run; stopped at the law-reading gate.
+to fill
 ```
 
 **Proof — the green run:**
 
 ```text
-not done — no tests written or run; stopped at the law-reading gate.
+to fill
 ```
 
-**Guards planted:** not done — none of Traps breaks 1 through 34 planted; stopped before tests or production changes.
+**Guards planted:** *to fill, per break*
 
-**Module line counts:** not done — no module written or changed.
+**Module line counts:** *to fill*
 
-**`make ci`:** not done — stopped before implementation. No CI log, exit code, test count, coverage, audit or secrets-scan result claimed.
+**`make ci`:** *to fill: the file, the exit code, passed and skipped, coverage, the audit, the
+secrets scans.*
 
 **`make gate-ran`:** owed to the planner if you cannot push.
 
-**Not met / verified failing:** The proposed `DSP-OUT-07` contradicts the exact Appendix and DL-301 D5, verified by reading. A1–A30, initial red run, Appendix application, law cycle, two existing-test edits, mutation proof, version bump, offline lock, full CI, BUILT status and commit: not done. Push, remote gate, merge, deployment and F1/F2: not done. The stop is required by the sprint, not a sandbox or git-write failure.
+**Not met / verified failing:** *to fill*
 
 ---
 
 ## Return notes
 
-- Stopped at the pre-code law-reading gate, as the handover requires. The current locked book remains v1.2 and the sprint and README remain SPEC.
-- Recommended planner correction: reconcile § 9's `DSP-OUT-07` with DL-301 D5 and the exact § 7 header, grouping and overflow before restarting. No clause or production code was silently changed, and no test-plan summary was narrowed to claim a green clause.
-- Resume only from a corrected specification: write A1–A30, prove import failures on the unchanged production tree, then follow the remaining numbered steps. No network, deploy or Azure command was used.
+- *to fill*
 
 ---
 
@@ -1725,7 +1680,7 @@ def container_line(graph: GraphStore, *, now: datetime, timezone: str) -> str | 
 
 ```diff
 diff --git a/orchestration/settings.py b/orchestration/settings.py
-index d31c354e..fa1b6abf 100644
+index d31c354e..2c85da0e 100644
 --- a/orchestration/settings.py
 +++ b/orchestration/settings.py
 @@ -52,6 +52,56 @@ class OrchestratorSettings(AgentSettings):
@@ -1766,7 +1721,7 @@ index d31c354e..fa1b6abf 100644
 +    container_sensor_alarm_groups_max: int = tunable(
 +        8,
 +        why=(
-+            "One alarm message names at most this many app-and-kind groups and "
++            "One alarm message names at most this many kinds of failure and "
 +            "counts the rest, so it stays readable and inside Telegram's limit."
 +        ),
 +        ge=1,
@@ -2146,7 +2101,7 @@ index c6ce8528..9c9e3abd 100644
 
 ```diff
 diff --git a/orchestration/laws/dispatcher/laws.md b/orchestration/laws/dispatcher/laws.md
-index f13b552e..576721ac 100644
+index f13b552e..81e697e4 100644
 --- a/orchestration/laws/dispatcher/laws.md
 +++ b/orchestration/laws/dispatcher/laws.md
 @@ -1,9 +1,10 @@
@@ -2182,7 +2137,7 @@ index f13b552e..576721ac 100644
 
  ## Inputs (`IN`)
 
-@@ -39,6 +45,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -39,6 +45,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    run. A failed check degrades only when every failure belongs to a pack-declared degradable agent.
  - **DSP-IN-04** — Human answers are only `run_now` or `skip_today`, scoped to the matching scheduled
    `run_id`. Free text, stale run ids, and malformed answer payloads cannot decide today's placement.
@@ -2190,13 +2145,14 @@ index f13b552e..576721ac 100644
 +  reached it inside the read window, read by their ingestion time, and for an alarm's why the stderr
 +  lines of `ContainerAppConsoleLogs_CL` of the same replica. A row is an alarm (a failed start or a
 +  failed scale-up, a revision that failed to provision, a scale rule the scaler refused, a memory kill,
-+  an exit with code 137, any other non-zero exit, any other row the platform marks `error`), a report
-+  (a preemption, or a node scale-down that moved a replica), or nothing; an exit with code 0 is nothing.
-+  The app is the row's app or job name, else its revision's name less the revision suffix.
++  an exit with code 137, any other exit whose code is not 0 or cannot be read, any other row the
++  platform marks `error`), a report (a preemption, or a node scale-down that moved a replica), or
++  nothing; an exit with code 0 is nothing. The app is the row's app or job name, else its revision's
++  name less the revision suffix, else `unknown`.
 
  ## Triggers (`TRG`)
 
-@@ -52,6 +65,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -52,6 +66,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    for a past session briefs nothing. It sends once the run's `Snapshot` exists. On the day's last fire
    (`LAST_FIRE=23:50 UTC`, the cron's last tick) a placed run with no `Snapshot` gets one RED brief
    instead. A skipped run, or a held run with no `RunRequest`, gets no brief.
@@ -2209,23 +2165,27 @@ index f13b552e..576721ac 100644
 
  ## Outputs (`OUT`)
 
-@@ -73,12 +92,27 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -73,12 +93,31 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    out; and the open incidents and critical flags the supervisor's health derives. Every figure is read
    as stored, never recomputed. A RED brief says the run did not finish, names the last stage that
    finished, and carries the run's orders and the same needs-you counts.
 +- **DSP-OUT-07** — A sensor read writes one `ContainerEvent` for each new row it keeps (app, revision,
 +  replica, kind, whether it is an alarm, the platform's reason and message, the exit code when there is
 +  one, the repeat count, when it happened, the why line for an alarm, the read that found it) and one
-+  `ContainerSensorRead` (its window, what it read, recorded and told, and whether the look-back cap cut
-+  it). When alarms are untold it sends one plain-text message: how many alarm events on how many apps;
-+  one line per app, kind and exit code, newest first, with the repeat count, the latest time in the
-+  operator's zone with UTC beside it, and the why line under it when there is one; at most
-+  `container_sensor_alarm_groups_max` lines, the rest counted with their apps; and a note when the cap
-+  cut the read.
++  `ContainerSensorRead` (its window; the rows it read; what it recorded, its alarms and reports; how
++  many it told, and its message id or why the message was not sent; whether the look-back cap or the
++  row limit cut it). When alarms are untold it sends one plain-text message for all of them, one line
++  per kind of failure (a kind and an exit code) across apps (DL-301 D5): first how many apps and how
++  many kinds; then each kind, newest first, with its apps (four named, the rest counted), its repeat
++  count when above one (each replica's highest count, summed), its latest time in the operator's zone
++  with UTC beside it (UTC alone when the zone cannot be read), and under it the why line of its latest
++  alarm that has one, naming that alarm's app; at most `container_sensor_alarm_groups_max` kinds, the
++  remaining kinds counted; and a note when the cap cut the read.
 +- **DSP-OUT-08** — From the sensor's first read on, every brief carries one container line before
 +  needs-you: that the sensor's latest read failed and why; or that it has not read in 24 hours; or that
-+  it recorded no alarm in 24 hours; or how many alarm events it recorded in 24 hours, naming at most
-+  three app-and-kind groups. Before the first read the brief carries no such line.
++  it recorded no alarm in 24 hours; or how many alarms it recorded in 24 hours, repeats counted as in
++  `DSP-OUT-07`, naming at most three kinds of failure with their apps and counting the rest. Before the
++  first read the brief carries no such line.
 
  ## Prohibitions (`NEV`)
 
@@ -2237,29 +2197,34 @@ index f13b552e..576721ac 100644
 
  ## State & effects (`STA`)
 
-@@ -97,6 +131,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -97,6 +136,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    carries no `brief_sent_at`; a successful send writes `brief_sent_at`, `brief_message_id`, and
    `brief_verdict` (the verdict the brief carried, `NOT_FINISHED` for a RED brief) on that
    `RunRequest`. A failed send writes nothing, so a later fire retries.
 +- **DSP-IDM-04** — A row read twice is recorded once: a `ContainerEvent`'s key is a digest of the row's
 +  own fields. Each alarm is told by one message: a sent message adds a `TOLD` edge from its
 +  `ContainerSensorRead` to every alarm it told. An alarm whose message was not sent stays untold and
-+  is told by a later fire's message, while it is younger than `container_sensor_max_lookback_hours`.
++  is told by a later fire's message, while it was recorded less than
++  `container_sensor_max_lookback_hours` before that fire.
 
  ## Ordering & concurrency (`ORD`)
 
-@@ -114,6 +152,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -114,6 +158,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
  - **DSP-FAIL-03** — Composing or sending a brief can fail only into a fault: an exception, a send the
    port reports failed, or a brief module the image lacks becomes one `Fault`, and the fire goes on. A
    brief never changes the placement outcome and never crashes the fire.
-+- **DSP-FAIL-04** — The sensor can fail only into a `Fault` and a failed `ContainerSensorRead`: a
-+  workspace read that fails, a missing managed identity, a sensor module the image lacks, or a graph
-+  write that fails. A message the port reports unsent is a `Fault` too. The fire's placement and its
-+  exit code are never changed by the sensor, and a failed read does not move the next read's start.
++- **DSP-FAIL-04** — The sensor can fail only into its own records and its own line. Once the graph is
++  open, a workspace read that fails, a missing managed identity, a sensor module the image lacks (the
++  script imports only `container_sensor_guard`), or a graph write that fails becomes one `Fault` and a
++  failed `ContainerSensorRead`; a graph that refuses even those gets an error line on stderr. A
++  message the port reports unsent is a `Fault` too. Before the graph is open (no `POSTGRES_DSN`, or
++  settings, a reader or a graph that cannot be built) the sensor prints one error line and records
++  nothing. The fire's placement and its exit code are never changed by the sensor, and a failed read
++  does not move the next read's start.
 
  ## Type alignment (`TYP`)
 
-@@ -127,6 +169,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -127,6 +179,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
  - **DSP-SEC-02** — P&L amounts leave the dispatcher only in the daily brief, only to the configured
    operator chat, and only through the injected Telegram port (DL-230). The job's printed output and
    every fault carry no amount: a brief's fault names its step and an error type, never a value.
@@ -2272,7 +2237,7 @@ index f13b552e..576721ac 100644
 
  ## Dependencies (`DEP`)
 
-@@ -134,7 +182,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -134,7 +192,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    (`DEP-CLOCK`), provider-owned market calendar, configured universe source, and Telegram port for
    optional operator notices, answers, and the daily brief. For the brief its graph reads include the
    run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, and the
@@ -2282,7 +2247,7 @@ index f13b552e..576721ac 100644
 
  ## Observability & audit (`OBS`)
 
-@@ -142,6 +191,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -142,6 +201,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
    reconstructable from graph facts and returned dispatcher results.
  - **DSP-OBS-02** — Human notice deadlines name the operator's Melbourne time first and include the
    UTC deadline as a fallback.
@@ -2292,7 +2257,7 @@ index f13b552e..576721ac 100644
 
  ## Performance envelope (`PERF`)
 
-@@ -154,22 +206,30 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -154,22 +216,30 @@ green only when a functional test cites its ID (conventions §3). Tests + status
  {
    "graph": {
      "operations": ["read", "append_write"],
@@ -2327,7 +2292,7 @@ index f13b552e..576721ac 100644
      "access": "injected port"
    }
  }
-@@ -184,6 +244,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -184,6 +254,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
  | `provider_max_staleness_days` | `7` | `int >= 0 <= 30` | YES | Daily dispatcher accepts a one-week fixture window across weekends. |
  | `pm_starting_cash` | `Decimal("100000.00")` | `Decimal >= 0 <= 1000000000` | YES | Seed paper PM sizing with a deterministic portfolio value. |
  | `preflight_max_age_minutes` | `70` | `int >= 10 <= 240` | YES | Require the latest hourly fleet preflight with ten minutes of scheduling slack before placing a trading run. |
@@ -2339,7 +2304,7 @@ index f13b552e..576721ac 100644
 
  ## Divergence register
 
-@@ -206,3 +271,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
+@@ -206,3 +281,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
  - v1.2 — S251 (DL-259, DL-260; DRIFT-077): the purpose line and `DSP-IDN-03`'s scope sentence name the
    daily brief, which `DSP-IDN-04` added in v1.1 without touching either. `DSP-IDN-03` stays ⬜. No
    behaviour change; 32 / 36 unchanged.

@@ -1,9 +1,10 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
-> and brief the operator once on each run it placed.
+> brief the operator once on each run it placed, and tell the operator when a container of the
+> fleet fails to start, crashes or is killed, and why.
 
 Each clause below has a stable ID (`DSP-CAT-NN`). IDs are append-only (conventions §2). A clause is
 green only when a functional test cites its ID (conventions §3). Tests + status live in
@@ -20,12 +21,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   owns or rewrites them.
 - **DSP-IDN-03** — `orchestration.dispatcher.Dispatcher` is outside this book: it is the older
   event-driven wrapper that publishes `run.trigger` once invoked and records the final snapshot. This
-  book governs `scheduled_dispatch*.py`, readiness gating, hold answers, notices, and the daily brief
-  (`orchestration/daily_brief*.py`, `DSP-IDN-04`). *(DRIFT-077.)*
+  book governs `scheduled_dispatch*.py`, readiness gating, hold answers, notices, the daily brief
+  (`orchestration/daily_brief*.py`, `DSP-IDN-04`) and the container sensor
+  (`orchestration/container_*.py`, `DSP-IDN-05`). *(DRIFT-077.)*
 - **DSP-IDN-04** — The scheduled dispatcher sends one daily brief per scheduled run it placed
   (`orchestration/daily_brief*.py`): a plain-text report to the operator of what the run did. It
   reports and never decides: no brief changes a placement, a hold, a notice, or any fact another
   component owns.
+- **DSP-IDN-05** — The scheduled dispatcher runs the container sensor (`orchestration/container_*.py`,
+  DL-301): on each fire it reads the platform's container events from the log workspace, records the
+  ones it keeps and tells the operator of each alarm once. It reports and never decides: no sensor read
+  changes a placement, a hold, a notice, the brief's other lines, or any container.
 
 ## Inputs (`IN`)
 
@@ -39,6 +45,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   run. A failed check degrades only when every failure belongs to a pack-declared degradable agent.
 - **DSP-IN-04** — Human answers are only `run_now` or `skip_today`, scoped to the matching scheduled
   `run_id`. Free text, stale run ids, and malformed answer payloads cannot decide today's placement.
+- **DSP-IN-05** — The sensor's input is the rows of the workspace's `ContainerAppSystemLogs_CL` that
+  reached it inside the read window, read by their ingestion time, and for an alarm's why the stderr
+  lines of `ContainerAppConsoleLogs_CL` of the same replica. A row is an alarm (a failed start or a
+  failed scale-up, a revision that failed to provision, a scale rule the scaler refused, a memory kill,
+  an exit with code 137, any other exit whose code is not 0 or cannot be read, any other row the
+  platform marks `error`), a report (a preemption, or a node scale-down that moved a replica), or
+  nothing; an exit with code 0 is nothing. The app is the row's app or job name, else its revision's
+  name less the revision suffix, else `unknown`.
 
 ## Triggers (`TRG`)
 
@@ -52,6 +66,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   for a past session briefs nothing. It sends once the run's `Snapshot` exists. On the day's last fire
   (`LAST_FIRE=23:50 UTC`, the cron's last tick) a placed run with no `Snapshot` gets one RED brief
   instead. A skipped run, or a held run with no `RunRequest`, gets no brief.
+- **DSP-TRG-04** — Every fire runs the sensor once, after its dispatch, whatever the dispatch's
+  outcome: placed, skipped, held, or failed. With no `LOG_ANALYTICS_WORKSPACE_ID` in the job's
+  environment the sensor does nothing and the fire's output is unchanged. A read ends at the fire's
+  time and starts `container_sensor_overlap_minutes` before the previous successful read ended; the
+  first read starts `container_sensor_first_read_hours` back, and no read starts further back than
+  `container_sensor_max_lookback_hours`.
 
 ## Outputs (`OUT`)
 
@@ -73,12 +93,31 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   out; and the open incidents and critical flags the supervisor's health derives. Every figure is read
   as stored, never recomputed. A RED brief says the run did not finish, names the last stage that
   finished, and carries the run's orders and the same needs-you counts.
+- **DSP-OUT-07** — A sensor read writes one `ContainerEvent` for each new row it keeps (app, revision,
+  replica, kind, whether it is an alarm, the platform's reason and message, the exit code when there is
+  one, the repeat count, when it happened, the why line for an alarm, the read that found it) and one
+  `ContainerSensorRead` (its window; the rows it read; what it recorded, its alarms and reports; how
+  many it told, and its message id or why the message was not sent; whether the look-back cap or the
+  row limit cut it). When alarms are untold it sends one plain-text message for all of them, one line
+  per kind of failure (a kind and an exit code) across apps (DL-301 D5): first how many apps and how
+  many kinds; then each kind, newest first, with its apps (four named, the rest counted), its repeat
+  count when above one (each replica's highest count, summed), its latest time in the operator's zone
+  with UTC beside it (UTC alone when the zone cannot be read), and under it the why line of its latest
+  alarm that has one, naming that alarm's app; at most `container_sensor_alarm_groups_max` kinds, the
+  remaining kinds counted; and a note when the cap cut the read.
+- **DSP-OUT-08** — From the sensor's first read on, every brief carries one container line before
+  needs-you: that the sensor's latest read failed and why; or that it has not read in 24 hours; or that
+  it recorded no alarm in 24 hours; or how many alarms it recorded in 24 hours, repeats counted as in
+  `DSP-OUT-07`, naming at most three kinds of failure with their apps and counting the rest. Before the
+  first read the brief carries no such line.
 
 ## Prohibitions (`NEV`)
 
 - **DSP-NEV-01** — The scheduled dispatcher never writes master-owned `FleetPreflight` evidence.
 - **DSP-NEV-02** — The scheduled dispatcher never talks to the broker, never chooses tickers beyond
   the configured universe membership, and never decides what to buy, sell, size, or veto.
+- **DSP-NEV-03** — The sensor never acts on a container: it starts, stops, scales, restarts and
+  reconfigures nothing, and calls no management API. It reads the log workspace and tells.
 
 ## State & effects (`STA`)
 
@@ -97,6 +136,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   carries no `brief_sent_at`; a successful send writes `brief_sent_at`, `brief_message_id`, and
   `brief_verdict` (the verdict the brief carried, `NOT_FINISHED` for a RED brief) on that
   `RunRequest`. A failed send writes nothing, so a later fire retries.
+- **DSP-IDM-04** — A row read twice is recorded once: a `ContainerEvent`'s key is a digest of the row's
+  own fields. Each alarm is told by one message: a sent message adds a `TOLD` edge from its
+  `ContainerSensorRead` to every alarm it told. An alarm whose message was not sent stays untold and
+  is told by a later fire's message, while it was recorded less than
+  `container_sensor_max_lookback_hours` before that fire.
 
 ## Ordering & concurrency (`ORD`)
 
@@ -114,6 +158,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **DSP-FAIL-03** — Composing or sending a brief can fail only into a fault: an exception, a send the
   port reports failed, or a brief module the image lacks becomes one `Fault`, and the fire goes on. A
   brief never changes the placement outcome and never crashes the fire.
+- **DSP-FAIL-04** — The sensor can fail only into its own records and its own line. Once the graph is
+  open, a workspace read that fails, a missing managed identity, a sensor module the image lacks (the
+  script imports only `container_sensor_guard`), or a graph write that fails becomes one `Fault` and a
+  failed `ContainerSensorRead`; a graph that refuses even those gets an error line on stderr. A
+  message the port reports unsent is a `Fault` too. Before the graph is open (no `POSTGRES_DSN`, or
+  settings, a reader or a graph that cannot be built) the sensor prints one error line and records
+  nothing. The fire's placement and its exit code are never changed by the sensor, and a failed read
+  does not move the next read's start.
 
 ## Type alignment (`TYP`)
 
@@ -127,6 +179,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **DSP-SEC-02** — P&L amounts leave the dispatcher only in the daily brief, only to the configured
   operator chat, and only through the injected Telegram port (DL-230). The job's printed output and
   every fault carry no amount: a brief's fault names its step and an error type, never a value.
+- **DSP-SEC-03** — The sensor reads as the job's system-assigned managed identity, which holds the role
+  Log Analytics Reader on the one log workspace and nothing else; no credential for it is stored
+  anywhere. A console line leaves only with credentials in a URL, named secrets, bearer tokens, runs of
+  32 or more token characters and amounts masked, and cut to 160 characters. A printed line, a fault
+  and a read record name a failure by its error type and a status word, never a reply body, a query or
+  a token. Only a replica name that matches the platform's naming rule is put into a query.
 
 ## Dependencies (`DEP`)
 
@@ -134,7 +192,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (`DEP-CLOCK`), provider-owned market calendar, configured universe source, and Telegram port for
   optional operator notices, answers, and the daily brief. For the brief its graph reads include the
   run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, and the
-  pack's acceptance verdict.
+  pack's acceptance verdict. The sensor depends on the job's managed-identity endpoint and the log
+  workspace's query API.
 
 ## Observability & audit (`OBS`)
 
@@ -142,6 +201,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   reconstructable from graph facts and returned dispatcher results.
 - **DSP-OBS-02** — Human notice deadlines name the operator's Melbourne time first and include the
   UTC deadline as a fallback.
+- **DSP-OBS-03** — Each sensor run prints one line: the rows read, the new events, the alarms and how
+  many were told, or the failure. Every alarm and report the sensor kept, and every read, is
+  reconstructable from `ContainerEvent` and `ContainerSensorRead` facts and their `TOLD` edges.
 
 ## Performance envelope (`PERF`)
 
@@ -154,22 +216,30 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 {
   "graph": {
     "operations": ["read", "append_write"],
-    "labels_owned": ["RunHold"],
-    "labels_written": ["RunRequest", "RunHold", "RunHoldAnswer", "Fault"],
+    "labels_owned": ["RunHold", "ContainerEvent", "ContainerSensorRead"],
+    "labels_written": [
+      "RunRequest", "RunHold", "RunHoldAnswer", "Fault", "ContainerEvent", "ContainerSensorRead"
+    ],
     "labels_read": [
       "FleetPreflight", "RunRequest", "RunHold", "RunHoldAnswer", "MarketData", "ScanRun",
       "AnalystRun", "PMRun", "DeliberationRun", "OrderIntent", "ExecutionRun", "MonitorRun",
       "Snapshot", "Fill", "Fault", "FaultResolution", "Flag", "FlagResolution",
-      "BrokerPositionSnapshot"
+      "BrokerPositionSnapshot", "ContainerEvent", "ContainerSensorRead"
     ],
     "access": "bounded dispatcher placement; the brief marks only its own RunRequest"
+  },
+  "log_workspace": {
+    "operations": ["query"],
+    "access": "managed identity; Log Analytics Reader on one workspace"
   },
   "calendar": {
     "operations": ["read_session_status"],
     "source": "provider-owned NYSE calendar"
   },
   "telegram": {
-    "operations": ["send_notice", "poll_answer", "ack_answer", "confirm_offset", "send_brief"],
+    "operations": [
+      "send_notice", "poll_answer", "ack_answer", "confirm_offset", "send_brief", "send_alarm"
+    ],
     "access": "injected port"
   }
 }
@@ -184,6 +254,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `provider_max_staleness_days` | `7` | `int >= 0 <= 30` | YES | Daily dispatcher accepts a one-week fixture window across weekends. |
 | `pm_starting_cash` | `Decimal("100000.00")` | `Decimal >= 0 <= 1000000000` | YES | Seed paper PM sizing with a deterministic portfolio value. |
 | `preflight_max_age_minutes` | `70` | `int >= 10 <= 240` | YES | Require the latest hourly fleet preflight with ten minutes of scheduling slack before placing a trading run. |
+| `container_sensor_first_read_hours` | `24` | `int >= 1 <= 168` | YES | The first read covers one day: the day's deploys are seen, and a month of old events does not arrive as one alarm. |
+| `container_sensor_max_lookback_hours` | `168` | `int >= 24 <= 720` | YES | A read after a long gap covers at most a week of the workspace's 30 days. |
+| `container_sensor_overlap_minutes` | `10` | `int >= 3 <= 60` | YES | An event reached the workspace up to 2 min 36 s late (measured 2026-10-14); a row read twice is recorded once. |
+| `container_sensor_alarm_groups_max` | `8` | `int >= 1 <= 20` | YES | One alarm message stays readable and inside Telegram's limit; the rest are counted. |
+| `container_sensor_timeout_seconds` | `20.0` | `float >= 1.0 <= 120.0` | YES | A slow workspace read cannot hold the fire. |
 
 ## Divergence register
 
@@ -206,3 +281,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.2 — S251 (DL-259, DL-260; DRIFT-077): the purpose line and `DSP-IDN-03`'s scope sentence name the
   daily brief, which `DSP-IDN-04` added in v1.1 without touching either. `DSP-IDN-03` stays ⬜. No
   behaviour change; 32 / 36 unchanged.
+- v1.3 — S275 (DL-301, work-queue 119): the container sensor. New `DSP-IDN-05`, `DSP-IN-05`,
+  `DSP-TRG-04`, `DSP-OUT-07`, `DSP-OUT-08`, `DSP-NEV-03`, `DSP-IDM-04`, `DSP-FAIL-04`, `DSP-SEC-03` and
+  `DSP-OBS-03`; the purpose line, `DSP-IDN-03`'s scope sentence, `DSP-DEP-01`, `CAP` and `PARAM`
+  amended for it.

@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from kernel import InMemoryGraphStore
+from orchestration.container_sensor_guard import sense_safely
+from orchestration.tests.container_sensor_helpers import MEASURED, SETTINGS, FakeReader
 from orchestration.tests.daily_brief_fixtures import at, fire, seed_run
 from orchestration.tests.daily_brief_scenarios import seed_pair
 from orchestration.tests.scheduled_dispatch_human_helpers import (
@@ -100,6 +102,7 @@ def _operations(telegram: FakeTelegram) -> set[str]:
         "ack_answer": bool(telegram.acknowledgements),
         "confirm_offset": bool(telegram.confirmations),
         "send_brief": bool(telegram.briefs),
+        "send_alarm": bool(telegram.alarms),
     }
     return {name for name, seen in used.items() if seen}
 
@@ -132,7 +135,12 @@ def test_every_fire_stays_inside_the_declared_capability() -> None:
         graph.recording = True
         fire(graph, port, now)
         operations |= _operations(port)
-    graphs = (finished, red, held, degraded, failed)
+    sensed = _Recording()  # S275: the container sensor runs on every fire
+    sensed.recording = True
+    reader = FakeReader([MEASURED["killed"]])
+    sense_safely(sensed, reader, telegram, now=at(22, 50), settings=SETTINGS)
+    operations |= _operations(telegram)
+    graphs = (finished, red, held, degraded, failed, sensed)
     cap = _declared()
 
     written = {label for graph in graphs for label in graph.written}

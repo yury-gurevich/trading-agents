@@ -66,6 +66,15 @@ COPY agents/supervisor/store.py agents/supervisor/store.py
 COPY orchestration/__init__.py orchestration/__init__.py
 COPY orchestration/batch_chain.py orchestration/batch_chain.py
 COPY orchestration/batch_trace.py orchestration/batch_trace.py
+COPY orchestration/container_alarm_text.py orchestration/container_alarm_text.py
+COPY orchestration/container_brief.py orchestration/container_brief.py
+COPY orchestration/container_events.py orchestration/container_events.py
+COPY orchestration/container_lines.py orchestration/container_lines.py
+COPY orchestration/container_logs.py orchestration/container_logs.py
+COPY orchestration/container_queries.py orchestration/container_queries.py
+COPY orchestration/container_sensor.py orchestration/container_sensor.py
+COPY orchestration/container_sensor_graph.py orchestration/container_sensor_graph.py
+COPY orchestration/container_sensor_guard.py orchestration/container_sensor_guard.py
 COPY orchestration/daily_brief.py orchestration/daily_brief.py
 COPY orchestration/daily_brief_facts.py orchestration/daily_brief_facts.py
 COPY orchestration/daily_brief_fills.py orchestration/daily_brief_fills.py

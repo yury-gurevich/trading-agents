@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 from agents.supervisor.domain.health import compute_health
 from contracts.run_posture import RUN_POSTURE_DEGRADED, run_posture
 from orchestration.batch_chain import CHAIN, POSITION_SYNC_KEY
+from orchestration.container_brief import container_line
 from orchestration.daily_brief_fills import fills_between, parse_instant, run_orders
 from orchestration.daily_brief_text import (
     NOT_FINISHED,
@@ -71,6 +72,7 @@ def brief_facts(
         open_incidents=health["open_incidents"],
         critical_flags=health["pending_human_flags"],
         last_stage=_last_stage(nodes),
+        containers=container_line(graph, now=now, timezone=timezone),
     )
     snapshot = nodes.get("Snapshot")
     if snapshot is None or pm_run is None:

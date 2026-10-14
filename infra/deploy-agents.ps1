@@ -3,6 +3,7 @@
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
 #   pwsh infra/deploy-agents.ps1 up -Tag s103 # preflight → schema → master → 15 agents + cron job
 #   pwsh infra/deploy-agents.ps1 down         # delete apps + dispatcher job
+#   pwsh infra/deploy-agents.ps1 sensor       # the job's identity + workspace read (DL-301)
 #
 # Operator tunables and the dispatcher cron come from the pack
 # (orchestration/packs/trading_tunables.json), never from live cluster state: a
@@ -14,7 +15,7 @@
 # POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
 param(
-  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'down')]
+  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
   # DL-294 amendment 1: one readiness check, at the wake, before the 22:30 UTC dispatch.
@@ -43,6 +44,10 @@ $DISPATCHER_JOB = "dispatcher-cron"
 $POSTGRES_APP_SECRET = "postgres-dsn" # pragma: allowlist secret
 $SERVICEBUS_APP_SECRET = "servicebus-connection-string" # pragma: allowlist secret
 $SERVICEBUS_BUNDLE_SECRET = "servicebus-connection-strings" # pragma: allowlist secret
+# DL-301: the container sensor reads this one workspace, with this one role.
+$LOG_WORKSPACE = "trading-agents-logs"
+$SENSOR_ROLE = "Log Analytics Reader"
+$SENSOR_ENV = "LOG_ANALYTICS_WORKSPACE_ID"
 # Container App name → GHCR image suffix (app names can't contain underscores).
 $AGENTS = [ordered]@{
   scanner = "scanner"; analyst = "analyst"; "portfolio-manager" = "portfolio_manager"
@@ -514,7 +519,7 @@ function Assert-FleetEnvPreserved {
     $planned = @(Get-AgentEnv $name "url" "pub" | ForEach-Object { ($_ -split "=", 2)[0] })
     $ok = (Assert-EnvPreserved $name (Get-LiveEnvNames $name) $planned) -and $ok
   }
-  $dispatcherPlanned = @("POSTGRES_DSN", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID") +
+  $dispatcherPlanned = @("POSTGRES_DSN", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", $SENSOR_ENV) +
   @((Get-ServiceBusConfig "dispatcher").envVars | ForEach-Object { ($_ -split "=", 2)[0] })
   $ok = (Assert-EnvPreserved $DISPATCHER_JOB (Get-LiveJobEnvNames $DISPATCHER_JOB) $dispatcherPlanned) -and $ok
   Bot
@@ -721,6 +726,39 @@ function Set-JobVocabulary {
   return (Get-JobState $DISPATCHER_JOB) -eq "Succeeded"
 }
 
+function Enable-ContainerSensor {
+  # DL-301: the dispatcher job reads the platform's container events as its own
+  # system-assigned identity, which holds one role on the one workspace. Nothing
+  # is stored for it. Every step is idempotent and read back, so a re-run is safe.
+  Top "CONTAINER SENSOR"
+  $ws = az monitor log-analytics workspace show --resource-group $RG --subscription $SUB `
+    --workspace-name $LOG_WORKSPACE --query "{id:id, customerId:customerId}" -o json 2>$null |
+  ConvertFrom-Json
+  Check ([bool]$ws) "log workspace $LOG_WORKSPACE"
+  if (-not $ws) { Bot; return $false }
+  $principal = az containerapp job identity assign --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --system-assigned --query principalId -o tsv 2>$null
+  Check ([bool]$principal) "$DISPATCHER_JOB system-assigned identity"
+  if (-not $principal) { Bot; return $false }
+  $held = az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
+    --subscription $SUB --query "length(@)" -o tsv 2>$null
+  if ($held -ne "1") {
+    az role assignment create --assignee-object-id $principal --assignee-principal-type ServicePrincipal `
+      --role $SENSOR_ROLE --scope $ws.id --subscription $SUB -o none 2>$null | Out-Null
+    $held = az role assignment list --assignee $principal --role $SENSOR_ROLE --scope $ws.id `
+      --subscription $SUB --query "length(@)" -o tsv 2>$null
+  }
+  Check ($held -eq "1") "$SENSOR_ROLE on $LOG_WORKSPACE only"
+  $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --set-env-vars "$SENSOR_ENV=$($ws.customerId)" `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($state -eq "Succeeded") "$SENSOR_ENV set on $DISPATCHER_JOB"
+  $vocabOk = ($state -eq "Succeeded") -and (Set-JobVocabulary)
+  Check $vocabOk "graph vocabulary on $DISPATCHER_JOB"
+  Bot
+  return ($held -eq "1") -and $vocabOk
+}
+
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   # Refuse before the first create, not after the ninth: a deploy that discards
@@ -809,6 +847,8 @@ function Up {
   }
   Bot
   Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") (Get-ServiceBusConfig "dispatcher")
+  # A full `up` keeps the sensor's identity, role and workspace id (DL-301).
+  Enable-ContainerSensor | Out-Null
 
   if ($script:Failures.Count -gt 0) {
     Write-Host "`nDeploy FAILED for $($script:Failures.Count) target(s):" -ForegroundColor Red
@@ -934,5 +974,6 @@ switch ($Action) {
   'up' { Up }
   'postgres-flip' { Flip-PostgresRoles }
   'servicebus-flip' { Flip-ServiceBusSas }
+  'sensor' { if (-not (Enable-ContainerSensor)) { throw "container sensor not enabled" } }
   'down' { Down }
 }

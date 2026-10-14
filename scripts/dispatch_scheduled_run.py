@@ -23,6 +23,7 @@ if str(_ROOT) not in sys.path:
 
 from dotenv import load_dotenv  # noqa: E402
 
+from orchestration.container_sensor_guard import sense_from_env  # noqa: E402
 from orchestration.scheduled_dispatch import (  # noqa: E402
     CalendarWindowExceededError,
     ScheduledDispatchResult,
@@ -35,6 +36,17 @@ from orchestration.telegram_client import TelegramClient  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run one scheduled dispatch attempt, then the container sensor (DSP-TRG-04)."""
+    status = _dispatch(argv)
+    line = sense_from_env(
+        now=datetime.now(tz=UTC), graph_factory=_live_graph, port_factory=_telegram
+    )
+    if line:
+        print(line, file=sys.stderr if line.startswith("error") else sys.stdout)
+    return status
+
+
+def _dispatch(argv: list[str] | None) -> int:
     """Run one scheduled dispatch attempt and return a process status."""
     parser = argparse.ArgumentParser(description="scheduled graph-pull dispatcher")
     parser.add_argument(
@@ -75,10 +87,7 @@ def main(argv: list[str] | None = None) -> int:
                 graph,
                 as_of=as_of,
                 now=datetime.now(tz=UTC),
-                telegram=TelegramClient(
-                    api_token=os.environ.get("TELEGRAM_BOT_TOKEN", ""),
-                    chat_id=os.environ.get("TELEGRAM_CHAT_ID", ""),
-                ),
+                telegram=_telegram(),
             )
         finally:
             close = getattr(graph, "close", None)
@@ -117,6 +126,13 @@ def format_dispatch_result(result: ScheduledDispatchResult) -> str:
             f"failures={len(result.failures)}"
         )
     return f"{result.action} {result.run_id} reason={result.reason}"
+
+
+def _telegram() -> TelegramClient:
+    return TelegramClient(
+        api_token=os.environ.get("TELEGRAM_BOT_TOKEN", ""),
+        chat_id=os.environ.get("TELEGRAM_CHAT_ID", ""),
+    )
 
 
 def _live_graph() -> object:

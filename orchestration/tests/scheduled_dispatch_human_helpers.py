@@ -41,6 +41,8 @@ class FakeTelegram:
     acknowledgements: list[tuple[str, str]] = field(default_factory=list)
     confirmations: list[int] = field(default_factory=list)
     polls: int = 0
+    alarms: list[str] = field(default_factory=list)
+    last_error: str = ""
 
     def send_hold_notice(
         self, *, run_id: str, failures: tuple[str, ...], act_by: str
@@ -67,6 +69,10 @@ class FakeTelegram:
         if self.brief_returns_none:
             return None
         return 100 + len(self.briefs)
+
+    def send_alarm(self, *, text: str) -> int | None:
+        self.alarms.append(text)
+        return 200 + len(self.alarms)
 
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         self._raise_if_needed()

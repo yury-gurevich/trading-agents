@@ -52,6 +52,56 @@ class OrchestratorSettings(AgentSettings):
         le=240,
         unit="minutes",
     )
+    container_sensor_first_read_hours: int = tunable(
+        24,
+        why=(
+            "The sensor's first read covers one day, so the day's deploys before it "
+            "are seen and a month of old events does not arrive as one alarm (DL-301)."
+        ),
+        ge=1,
+        le=168,
+        unit="hours",
+    )
+    container_sensor_max_lookback_hours: int = tunable(
+        168,
+        why=(
+            "A read after a long gap covers at most a week; the workspace keeps 30 "
+            "days, and anything older than a week is history, not an alarm (DL-301)."
+        ),
+        ge=24,
+        le=720,
+        unit="hours",
+    )
+    container_sensor_overlap_minutes: int = tunable(
+        10,
+        why=(
+            "An event reached the workspace up to 2 min 36 s after it happened "
+            "(measured 2026-10-14, 48 hours); each read starts this long before the "
+            "last one ended, and a row read twice is recorded once (DL-301)."
+        ),
+        ge=3,
+        le=60,
+        unit="minutes",
+    )
+    container_sensor_alarm_groups_max: int = tunable(
+        8,
+        why=(
+            "One alarm message names at most this many kinds of failure and "
+            "counts the rest, so it stays readable and inside Telegram's limit."
+        ),
+        ge=1,
+        le=20,
+    )
+    container_sensor_timeout_seconds: float = tunable(
+        20.0,
+        why=(
+            "Each workspace call is bounded so a slow read cannot hold the fire; a "
+            "read of one day to one week took 1.3 to 3.6 s (measured 2026-10-14)."
+        ),
+        ge=1.0,
+        le=120.0,
+        unit="seconds",
+    )
 
 
 class DeliberationQualitySettings(AgentSettings):

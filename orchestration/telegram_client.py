@@ -84,6 +84,13 @@ class TelegramClient:
 
     def send_brief(self, *, text: str) -> int | None:
         """Send the daily brief as plain text to the configured chat, no buttons."""
+        return self._send_text(text)
+
+    def send_alarm(self, *, text: str) -> int | None:
+        """Send a container alarm as plain text to the configured chat, no buttons."""
+        return self._send_text(text)
+
+    def _send_text(self, text: str) -> int | None:
         response = self._request(
             "sendMessage", {"chat_id": self._chat_id, "text": text}
         )

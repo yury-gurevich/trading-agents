@@ -82,7 +82,9 @@
     "TradeNarrative",
     "TrainingExample",
     "WorkItemQuarantine",
-    "_Reachability"
+    "_Reachability",
+    "ContainerEvent",
+    "ContainerSensorRead"
   ],
   "edge_types": [
     "ADVISES",
@@ -130,6 +132,7 @@
     "STOPS_WITH",
     "SUMMARISES",
     "SURVIVED",
+    "TOLD",
     "TRAINED_ON"
   ],
   "edge_signatures": [
@@ -372,6 +375,11 @@
       "Snapshot",
       "SUMMARISES",
       "PMRun"
+    ],
+    [
+      "ContainerSensorRead",
+      "TOLD",
+      "ContainerEvent"
     ]
   ],
   "owners": {},
@@ -613,6 +621,37 @@
       "settled",
       "settling_ref",
       "voided"
+    ],
+    "ContainerEvent": [
+      "alarm",
+      "app",
+      "created_at",
+      "error_line",
+      "exit_code",
+      "kind",
+      "message",
+      "occurred_at",
+      "read_key",
+      "reason",
+      "replica",
+      "revision",
+      "times"
+    ],
+    "ContainerSensorRead": [
+      "alarms",
+      "capped",
+      "created_at",
+      "error",
+      "message_id",
+      "outcome",
+      "read_from",
+      "read_until",
+      "recorded",
+      "reports",
+      "rows",
+      "send_error",
+      "told",
+      "truncated"
     ]
   },
   "_owners_note": "Empty deliberately. The 8 agents that declare labels_owned mix write-sets with read-sets (reporter) and a wildcard (supervisor 'all'), so the declarations are not yet accurate enough to enforce. Reconciling them is the named next step - the mechanism (Vocabulary.check_node writer=) is built and tested."

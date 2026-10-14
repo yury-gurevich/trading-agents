@@ -69,10 +69,12 @@ class BriefFacts:
     open_incidents: int = 0
     critical_flags: int = 0
     last_stage: str | None = None
+    containers: str | None = None
 
 
 def compose_brief(facts: BriefFacts) -> str:
     """Return the plain-text message; a run with no report gets the RED brief."""
+    sensed = (facts.containers,) if facts.containers else ()
     if facts.verdict == NOT_FINISHED:
         stage = (
             f"Last stage finished: {facts.last_stage}"
@@ -80,7 +82,7 @@ def compose_brief(facts: BriefFacts) -> str:
             else "No stage finished"
         )
         return "\n".join(
-            (_header(facts), stage, _orders(facts.orders), _needs_you(facts))
+            (_header(facts), stage, _orders(facts.orders), *sensed, _needs_you(facts))
         )
     return "\n".join(
         (
@@ -89,6 +91,7 @@ def compose_brief(facts: BriefFacts) -> str:
             facts.scoreboard or "Scoreboard: not in this run's report",
             _orders(facts.orders),
             _fills(facts.fills),
+            *sensed,
             _needs_you(facts),
         )
     )

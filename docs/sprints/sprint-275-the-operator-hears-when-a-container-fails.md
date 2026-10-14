@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-275-the-operator-hears-when-a-container-fails`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.126.00`
 **Effort:** L
 **Decisions:** [DL-301](../design-log.md) (this sprint's ten decisions, made and measured) · [DL-283](../design-log.md) (the sensor's direction, 2026-10-09) · [DL-297](../design-log.md) amendments 2 and 3 (a clean stop logs nothing; the readiness probe fails after a stop) · [work-queue 119](../work-queue.md)
 
@@ -12,6 +12,8 @@
 > graph labels, an operator message and a brief line. MINOR.
 
 > 🔁 **Corrected after the first build's stop, 2026-10-14 18:00 AEDT (planner; DRIFT-114, DL-301 amendment 1).** The builder stopped before any code: § 9's `DSP-OUT-07` asked for one message line per app, kind and exit code, an alarm-event total and an overflow counted with apps, where § 7 and DL-301 D5 group by kind and exit code across apps. **The clause was wrong, not the code.** § 9 now says what § 1 to § 8 do in five clauses: `DSP-OUT-07` (D5's grouping, header and overflow, and the read record's message id, send error and row-limit cut), `DSP-OUT-08` (the brief counts repeats and names kinds with their apps), `DSP-FAIL-04` (a failure before the graph is open prints one line and records nothing), `DSP-IN-05` (an exit whose code cannot be read alarms; a row with no names is `unknown`) and `DSP-IDM-04` (an untold alarm's age is from its recording). § 8's `settings.py` diff words the alarm-groups tunable's `why` as kinds of failure. No other line of the Appendix changed: 18 of the 20 blobs are as before. The stopped handback is commit `1dc6b7ee` on the branch.
+
+> 🔁 **Corrected after the second stop, 2026-10-14 19:27 AEDT (planner; DRIFT-115, DL-301 amendment 2).** The resumed build stopped with all 20 files equal to the Appendix: its A24 found that a `ValueError`'s text reached the `Fault`'s stored traceback, because § 6's `sense_safely` called `_record` inside its `except` block and Python chained the handled error. **The code was wrong, not the clause** (`DSP-SEC-03` stands). § 6's `container_sensor_guard.py` now records once the handler has ended, as `daily_brief_guard.py` on `main` does; it is the only file that changed (re-apply it; 19 of the 20 blobs are as before). The builder's stopped handback is kept in the evidence folder (`codex_stop_drift115/`) and in the sections below until the build fills them again.
 
 ---
 
@@ -121,6 +123,7 @@ read-only, as the planner's own Azure login.
 | The prototype against the live workspace | four reads of a day or a week: **1.3 to 3.6 s**. At 2026-09-25 01:00 UTC: 491 rows, 488 alarms and 3 reports kept, a why for 193, one message of four lines (701 characters). At 2026-09-29 00:00: four lines, the first naming the master's refusal. At 2026-10-11 14:00: the master's two kills of the retag day | *[measured]* `f0_live_replay.py` (the prototype with the planner's CLI token in place of the job's identity, an in-memory graph, a port that prints) → `f0_replay_*.txt` |
 | The prototype passes the gate | `make ci` exit 0 in one run, all 16 steps: 4,930 passed, 9 skipped, 100.00 %, on `main` at `be0aec51` merged into the prototype, at `0.126.00` | *[measured]* `ci_prototype_merged.txt` |
 | The corrected prototype passes the gate (DRIFT-114) | `make ci` exit 0 in one run, all 16 steps: 4,930 passed, 9 skipped, 100.00 %, on `proto-s275` at `3fb32ada`, at `0.126.00` | *[measured]* `ci_prototype_drift114.txt` |
+| The guard records after its handler (DRIFT-115) | on `proto-s275` at `0ac22917`: the planner's tightened test red on the old guard (the plant in the stored traceback) and green on the new; `make ci` exit 0 in one run, all 16 steps: 4,930 passed, 9 skipped, 100.00 %; 38 planted breaks, 38 red in one saved run, judged by the planner's tests and `tests/test_dispatch_scheduled_run.py` (the file of the row *The planner's tests catch the breaks* holds the run before B28 was re-aimed, 36 of 37) | *[measured]* `ci_prototype_drift115.txt`, `breaks_on_prototype_drift115.txt` |
 | The planner's tests catch the breaks | 37 planted breaks, 37 red (one re-aimed: its first form changed nothing observable) | *[measured]* `break_s275.py` → `breaks_on_prototype.txt` |
 | The job's identity endpoint answers as documented | `IDENTITY_ENDPOINT` and `IDENTITY_HEADER` in the job's env; `GET {endpoint}?resource=https://api.loganalytics.io&api-version=2019-08-01` with header `X-IDENTITY-HEADER` returns `access_token` | *[ASSUMED — read in Microsoft's Container Apps managed-identity documentation, not measured]* the job has no identity to measure with; settled by F2 after the deploy |
 | How fast the role takes effect for a new identity | — | *[ASSUMED — not measured]* F2 reads the first fire after it |
@@ -267,19 +270,19 @@ Shape the platform rows as § 1's docstring and the *Measured* table give them.
 
 ## Success factors
 
-- [ ] A fire with the sensor configured reads, records each kept row once, and tells each alarm in
+- [x] A fire with the sensor configured reads, records each kept row once, and tells each alarm in
       one message with its why; a report alone sends nothing (A16 to A21).
-- [ ] With no workspace id, every existing test of the entrypoint, the brief and the dispatcher passes
+- [x] With no workspace id, every existing test of the entrypoint, the brief and the dispatcher passes
       unchanged, and the entrypoint prints exactly what it printed (A25, A26; the existing suite).
-- [ ] No failure of the sensor changes the fire's line or exit code (A24, A26).
-- [ ] The job reads as its system-assigned identity with one role on one workspace, and no secret
+- [x] No failure of the sensor changes the fire's line or exit code (A24, A26).
+- [x] The job reads as its system-assigned identity with one role on one workspace, and no secret
       exists for it (A11, A30).
-- [ ] The nine production modules and every other production change equal the Appendix byte for
+- [x] The nine production modules and every other production change equal the Appendix byte for
       byte (the planner checks blobs).
-- [ ] Law cycle: v1.3, ten rows citing your tests, the two roll-ups at 42 / 46.
-- [ ] Every break under *Traps* planted, red, restored — stated per break.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, at the bumped version.
+- [x] Law cycle: v1.3, ten rows citing your tests, the two roll-ups at 42 / 46.
+- [x] Every break under *Traps* planted, red, restored — stated per break.
+- [x] Every touched module < 200 lines.
+- [ ] `make ci` exit 0: verified failing at the offline audit; pytest reached 100.00 % at the bumped version.
 
 ---
 
@@ -300,6 +303,7 @@ instant, as the fleet does.
 🪤 **A password-shaped URL written as a literal trips the commit hook's secrets scan.** Build the
 plant at run time (an f-string placeholder); same for a bot-token literal (ruff S106).
 🪤 **`×` is ruff's RUF001.** The text module exports `TIMES = chr(0x00D7)`; use it in tests.
+🪤 **A `Fault` raised inside an `except` block carries the handled error in its stored traceback** (`traceback.format_exception` prints the chain). Record after the handler has ended, and test a fault's whole stored properties, not its message alone (DRIFT-115).
 🪤 **`sys.modules[name] = None` raises `ModuleNotFoundError`**, a subclass of `ImportError`: the line
 names the subclass.
 🪤 **Weekdays:** 2026-10-14 is a Wednesday, so 22:30 UTC that day is Thursday 15 Oct 09:30 in
@@ -311,7 +315,7 @@ two versions as integer groups since S274.
 🪤 **LF line endings** in every file you write.
 
 **Breaks to plant, one at a time; each must turn at least one of your tests red** (the planner's
-script `break_s275.py` plants 37 like these at review):
+script `break_s275.py` plants 38 like these at review):
 
 1. drop `"OOMKilled"` from `_BY_REASON`; 2. let an exit with code 0 alarm; 3. `_KILL_CODE = 138`;
 4. ignore `error` rows; 5. map `Preempted` to `START_FAILED`; 6. drop `Count_d` from `_KEY_FIELDS`;
@@ -324,7 +328,7 @@ run unconfigured; 21. re-raise in `sense_safely`; 22. keep the exception's text 
 the dispatch; 26. a quiet day returns `None`; 27. the brief's window to 48 hours; 28. oldest group
 first; 29. ignore the group limit; 30. scope the role to `$RG`; 31. drop the step from `Up`; 32. drop
 `error_line` from the vocabulary; 33. the brief's line after needs-you; 34. drop a module's `COPY` from
-the Dockerfile.
+the Dockerfile; 35. record the failure inside `sense_safely`'s `except` block (the shape before DRIFT-115).
 
 ---
 
@@ -333,7 +337,7 @@ the Dockerfile.
 - No agent imports another agent; kernel imports nothing above it (`import-linter`).
 - Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa` but the two the Appendix
   carries on `Request(...)` (the repo's pattern, as in `surfaces/dashboard/azure_http.py`).
-  📌 Sizes on `main` at `be0aec51` → on the prototype: `orchestration/settings.py` **84 → 134**; `orchestration/telegram_client.py` **133 → 140**; `orchestration/daily_brief_text.py` **179 → 182**; `orchestration/daily_brief_facts.py` **166 → 168**; `scripts/dispatch_scheduled_run.py` **129 → 145**; `orchestration/tests/test_dispatcher_capability.py` **142 → 150**; `orchestration/tests/scheduled_dispatch_human_helpers.py` **134 → 140**; `orchestration/container_events.py` **new, 155**; `orchestration/container_lines.py` **new, 64**; `orchestration/container_queries.py` **new, 91**; `orchestration/container_logs.py` **new, 129**; `orchestration/container_sensor_graph.py` **new, 91**; `orchestration/container_sensor.py` **new, 179**; `orchestration/container_sensor_guard.py` **new, 153**; `orchestration/container_alarm_text.py` **new, 177**; `orchestration/container_brief.py` **new, 58**.
+  📌 Sizes on `main` at `be0aec51` → on the prototype: `orchestration/settings.py` **84 → 134**; `orchestration/telegram_client.py` **133 → 140**; `orchestration/daily_brief_text.py` **179 → 182**; `orchestration/daily_brief_facts.py` **166 → 168**; `scripts/dispatch_scheduled_run.py` **129 → 145**; `orchestration/tests/test_dispatcher_capability.py` **142 → 150**; `orchestration/tests/scheduled_dispatch_human_helpers.py` **134 → 140**; `orchestration/container_events.py` **new, 155**; `orchestration/container_lines.py` **new, 64**; `orchestration/container_queries.py` **new, 91**; `orchestration/container_logs.py` **new, 129**; `orchestration/container_sensor_graph.py` **new, 91**; `orchestration/container_sensor.py` **new, 179**; `orchestration/container_sensor_guard.py` **new, 160**; `orchestration/container_alarm_text.py` **new, 177**; `orchestration/container_brief.py` **new, 58**.
 - Module docstring declares `Agent:` / `Role:` / `External I/O:`.
 - No magic numbers — the five tunables carry their `why`.
 - Faults, not silent failure — `kernel.fault_boundary`, as `daily_brief_guard.py` does.
@@ -347,8 +351,8 @@ the Dockerfile.
 
 1. Merge `main` in first; `git hash-object` of the production files against the prototype's blobs
    (`prototype_blobs.txt`); copy the planner's tests (`planner_tests/`) beside the builder's and run
-   them; `uv run --no-sync python <evidence>/break_s275.py <the builder's test files>` from the
-   worktree root (37 breaks, judged by exit code; a `NOT FOUND` means the build differs there);
+   them; `uv run --no-sync python <evidence>/break_s275.py <the builder's test files>
+   tests/test_dispatch_scheduled_run.py` from the worktree root (38 breaks, judged by exit code; a `NOT FOUND` means the build differs there);
    CodeQL set-diff against the last merged branch; `make gate-ran` from the worktree.
 2. Merge to `main` and push; check `main`'s runs and its open alerts.
 3. **F1 at no cost**, from a worktree of merged `main` (no `.env`): `f0_live_replay.py` at
@@ -438,24 +442,26 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| Nine `container_*.py` modules | Dispatcher `laws.md` and `test-plan.md` whole (v1.2); proposed v1.3 Appendix § 9; `docs/laws/conventions.md` and `drift-register.md` whole | Proposed `DSP-IDN-05`, `DSP-IN-05`, `DSP-TRG-04`, `DSP-OUT-07/08`, `DSP-NEV-03`, `DSP-IDM-04`, `DSP-FAIL-04`, `DSP-SEC-03`, `DSP-OBS-03`; existing `DSP-SEC-01/02` | Yes: stopped before code because proposed `DSP-OUT-07` contradicts Appendix § 7 and DL-301 D5; DRIFT-114. |
-| Scheduled entrypoint | Same dispatcher book and test plan; conventions; `CLAUDE.md` whole | `DSP-TRG-02`, `DSP-OUT-02`; proposed `DSP-TRG-04`, `DSP-IDN-05`, `DSP-FAIL-04` | The dispatch output and status must remain unchanged; implementation not done. |
-| Daily brief text and facts | Same dispatcher book and test plan; conventions | `DSP-IDN-04`, `DSP-TRG-03`, `DSP-OUT-06`, `DSP-SEC-02`; proposed `DSP-OUT-08` | Preserve the existing lines and insert only the approved container line; implementation not done. |
-| Telegram port and the two existing test edits | Same dispatcher book and test plan, including `CAP`; conventions | `DSP-SEC-01/02`; proposed `DSP-IDM-04`, `DSP-FAIL-04`, `CAP.telegram.send_alarm` | The capability equality assertion must remain intact; edits not done. |
-| Settings | Same dispatcher book and test plan, including `PARAM`; conventions | Five proposed `container_sensor_*` PARAM rows | Exact defaults, bounds and rationales only; edits not done. |
-| Graph vocabulary | `kernel/graph_vocabulary.py` module docstring; ADR-0012 whole; dispatcher book and test plan | ADR-0012 substrate/pack wall; proposed `DSP-OUT-07`, `DSP-OBS-03` | Vocabulary remains pack data; append lists exactly as the Appendix directs; edits not done. |
-| Dockerfile | Sprint Appendix § 8; dispatcher book and test plan | Proposed `DSP-FAIL-04` | The image must copy every named sensor module; edits not done. |
-| Deploy script | `CLAUDE.md` whole; dispatcher book and test plan; conventions | Proposed `DSP-SEC-03`, `DSP-TRG-04` | Read-only inspection only; no deploy or Azure command run. |
+| Nine `container_*.py` modules | Dispatcher `laws.md` and `test-plan.md` whole (v1.2), conventions and drift register read on the first pass; corrected v1.3 Appendix § 9 re-read against § 1–8 on resuming at `a6864f86` | Proposed `DSP-IDN-05`, `DSP-IN-05`, `DSP-TRG-04`, `DSP-OUT-07/08`, `DSP-NEV-03`, `DSP-IDM-04`, `DSP-FAIL-04`, `DSP-SEC-03`, `DSP-OBS-03`; existing `DSP-SEC-01/02` | Yes: the planner corrected DRIFT-114. Read-back confirms the five corrected clauses agree with the code; resume tests first, with no production edits yet. |
+| Scheduled entrypoint | Same dispatcher book and test plan; conventions; `CLAUDE.md` whole | `DSP-TRG-02`, `DSP-OUT-02`; proposed `DSP-TRG-04`, `DSP-IDN-05`, `DSP-FAIL-04` | Tests will pin dispatch-before-sensor ordering and the dispatch's own status and stdout, including an unconfigured fire. |
+| Daily brief text and facts | Same dispatcher book and test plan; conventions | `DSP-IDN-04`, `DSP-TRG-03`, `DSP-OUT-06`, `DSP-SEC-02`; proposed `DSP-OUT-08` | Pin the 24-hour recording window, repeats counted by incident peaks, and the new line before needs-you in full and RED briefs. |
+| Telegram port and the two existing test edits | Same dispatcher book and test plan, including `CAP`; conventions | `DSP-SEC-01/02`; proposed `DSP-IDM-04`, `DSP-FAIL-04`, `CAP.telegram.send_alarm` | Keep capability equality intact through the exact § 10 edits; use an injected sender and prove unsent alarms remain pending. |
+| Settings | Same dispatcher book and test plan, including `PARAM`; corrected § 8 diff | Five proposed `container_sensor_*` PARAM rows | The corrected alarm-groups rationale says kinds of failure. Apply the exact defaults, bounds and rationales. |
+| Graph vocabulary | `kernel/graph_vocabulary.py` module docstring; ADR-0012 whole; dispatcher book and test plan | ADR-0012 substrate/pack wall; proposed `DSP-OUT-07`, `DSP-OBS-03` | Test successful and failed reads through the guarded store; append lists exactly as the Appendix directs. |
+| Dockerfile | Sprint Appendix § 8; dispatcher book and test plan | Proposed `DSP-FAIL-04` | Pin all nine module copies in a new test; apply the exact file list. |
+| Deploy script | `CLAUDE.md` whole; dispatcher book and test plan; conventions | Proposed `DSP-SEC-03`, `DSP-TRG-04` | Prove the identity, workspace-only role, planned env, vocabulary and Up ordering from source only. No deploy or Azure command is authorized. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: a new dispatcher sensor guarantee, with no contracts change. The full cycle is owed. It stopped at this reading gate; no law amendment or test was written.
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: a new dispatcher sensor guarantee, with no contracts change. The full cycle is owed: apply § 9 exactly, cite the new tests in ten rows, synchronize PARAM and CAP and derive both rollups from the law gate.
 
-**Contradictions found between a law and this spec:** DRIFT-114, proposed `DSP-OUT-07` in Appendix § 9. It requires an alarm-event total, one line per app/kind/exit code, and overflow counted with apps. Appendix § 7 instead groups on `(kind, exit_code)` across apps, heads the message with app and kind counts, and counts only remaining kinds in the overflow. DL-301 D5 expressly chooses grouping across apps and rules out one line per app. A21 requires that exact Appendix message. These requirements cannot all hold. Stopped before writing code, as required; neither the clause nor the production Appendix was repaired.
+**Contradictions found between a law and this spec:** None remaining. DRIFT-114 and DRIFT-115 are corrected by the planner (DL-301 amendments 1 and 2). The corrected guard has blob 448b940223f8fb1d8a07c2ad74ffdecf23662221. A24 passes with an intact traceback and no original planted text; trap 35 restores the old handler shape and makes that assertion fail again. The clause remains unchanged.
 
-**Laws found silent where a decision was needed:** The current v1.2 book does not declare the sensor; the spec explicitly supplies that new guarantee in § 9. No additional undecided silence found. The proposed-text conflict is recorded in DRIFT-114.
+**Laws found silent where a decision was needed:** The current v1.2 book does not declare the sensor; the corrected § 9 supplies that guarantee. No additional undecided silence found on resuming.
 
-**Clauses that were ⬜ and are now proven:** None; tests not done. The v1.2 test plan's `DSP-IDN-03`, `DSP-NEV-02`, `DSP-TYP-01` and `DSP-DEP-01` remain ⬜. The scope and dependency rows relied on for reading (`DSP-IDN-03`, `DSP-DEP-01`) are unproven; no claim that the sensor changes that.
+**Clauses that were ⬜ and are now proven:** The ten new v1.3 clauses are proven by the passing 123-case A1–A30 suite; their cited rows are 🟩 and the law gate derives 42 / 46. DSP-IDN-03, DSP-NEV-02, DSP-TYP-01 and DSP-DEP-01 remain ⬜. Both earlier drifts are corrected by the planner; A24 passes after amendment 2.
 
 **Planner, after the stop (2026-10-14 18:00 AEDT):** DRIFT-114 is corrected in § 9 and § 8 (the note under the title; DL-301 amendment 1). The record above is the first build's, kept as written. On resuming, re-read § 9's five corrected clauses (`DSP-IN-05`, `DSP-OUT-07`, `DSP-OUT-08`, `DSP-IDM-04`, `DSP-FAIL-04`) against § 1 to § 8, then restate each paragraph above for the build you hand back.
+
+**Planner, after the second stop (2026-10-14 19:27 AEDT):** DRIFT-115 is corrected in § 6 (the second note under the title; DL-301 amendment 2). No clause changed. Re-apply § 6's `orchestration/container_sensor_guard.py` exactly and check its blob against the Appendix, run A24 again, then go on from where the build stopped and fill every handback section for the build you hand back.
 
 ---
 
@@ -463,52 +469,376 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to fill* | | | |
+| A1 | `test_a1_measured_kinds` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IN-05 |
+| A2 | `test_a2_noise_and_clean_exit_are_nothing` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IN-05 |
+| A3 | `test_a3_unknown_error_and_unreadable_exit` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IN-05 |
+| A4 | `test_a4_app_precedence_and_unknown` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IN-05 |
+| A5 | `test_a5_repeat_count` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-OUT-07 |
+| A6 | `test_a6_key_is_the_row_and_message_is_bounded` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IDM-04 |
+| A7 | `test_a7_query_matches_classifier_and_ingestion_window` | `orchestration/tests/test_container_events.py` | PASS (full suite) | DSP-IN-05 |
+| A8 | `test_a8_traceback_order_and_shape_precedence` | `orchestration/tests/test_container_lines.py` | PASS (full suite) | DSP-IN-05 |
+| A9 | `test_a9_console_window` | `orchestration/tests/test_container_lines.py` | PASS (full suite) | DSP-IN-05 |
+| A10 | `test_a10_credentials_and_amounts_are_masked` | `orchestration/tests/test_container_lines.py` | PASS (full suite) | DSP-SEC-03, DSP-SEC-02 |
+| A11 | `test_a11_one_identity_get_then_workspace_posts` | `orchestration/tests/test_container_reader.py` | PASS (full suite) | DSP-SEC-03 |
+| A12 | `test_a12_missing_identity_sends_nothing`; `test_a12_transport_and_identity_reply_failures`; `test_a12_http_status_never_includes_reason_or_body`; `test_a12_invalid_json_is_transport` | `orchestration/tests/test_container_reader.py` | PASS (full suite) | DSP-SEC-03, DSP-FAIL-04 |
+| A13 | `test_a13_bad_table_is_a_shape_failure`; `test_a13_hostile_replica_is_never_sent`; `test_a13_first_table_is_read_by_column_name` | `orchestration/tests/test_container_queries.py` | PASS (full suite) | DSP-SEC-03 |
+| A14 | `test_a14_first_read_then_overlapping_fire` | `orchestration/tests/test_container_sensor.py` | PASS (full suite) | DSP-TRG-04 |
+| A15 | `test_a15_long_gap_caps_window_and_message` | `orchestration/tests/test_container_sensor.py` | PASS (full suite) | DSP-TRG-04, DSP-OUT-07 |
+| A16 | `test_a16_records_every_kept_row_and_tells_seven_alarms` | `orchestration/tests/test_container_sensor.py` | PASS (full suite) | DSP-OUT-07, DSP-OBS-03 |
+| A17 | `test_a17_same_row_in_two_reads_is_never_remerged` | `orchestration/tests/test_container_sensor.py` | PASS (full suite) | DSP-IDM-04 |
+| A18 | `test_a18_unsent_then_raised_then_sent` | `orchestration/tests/test_container_telling.py` | PASS (full suite) | DSP-IDM-04, DSP-FAIL-04 |
+| A19 | `test_a19_report_only_and_row_limit` | `orchestration/tests/test_container_sensor.py` | PASS (full suite) | DSP-OUT-07 |
+| A20 | `test_a20_replica_line_reaches_graph_and_message` | `orchestration/tests/test_container_telling.py` | PASS (full suite) | DSP-IN-05, DSP-OUT-07 |
+| A21 | `test_a21_message_exactly_groups_kinds_across_apps`; `test_a21_five_apps_name_four_and_count_the_rest`; `test_a21_every_kind_has_its_words` | `orchestration/tests/test_container_alarm_text.py`; `orchestration/tests/test_container_alarm_words.py` | PASS (full suite) | DSP-OUT-07 |
+| A22 | `test_a22_first_failed_stale_and_quiet_read`; `test_a22_recording_window_counts_repeat_peaks` | `orchestration/tests/test_container_brief.py` | PASS (full suite) | DSP-OUT-08 |
+| A23 | `test_a23_container_line_is_just_before_needs_you`; `test_a23_real_brief_facts_include_the_sensor_line` | `orchestration/tests/test_container_brief.py` | PASS (full suite) | DSP-OUT-08 |
+| A24 | `test_a24_read_failure_is_one_fault_and_failed_read`; `test_a24_missing_sensor_module_is_contained`; `test_a24_refusing_port_records_one_fault_and_no_told_edge`; `test_a24_graph_refusing_all_writes_still_never_raises`; `test_a24_failure_status_is_used_only_when_text` | `orchestration/tests/test_container_faults.py` | PASS (full suite) | DSP-FAIL-04, DSP-SEC-03 |
+| A25 | `test_a25_unconfigured_sensor_builds_nothing`; `test_a25_configured_without_dsn_is_a_safe_line`; `test_a25_graph_factory_failure_exposes_only_type`; `test_a25_configured_reader_and_a24_close` | `orchestration/tests/test_container_env.py` | PASS (full suite) | DSP-TRG-04, DSP-OBS-03 |
+| A26 | `test_a26_weekend_skip_then_sensor_or_safe_failure` | `tests/test_container_sensor_script.py` | PASS (full suite) | DSP-TRG-04, DSP-IDN-05, DSP-FAIL-04 |
+| A27 | `test_a27_pack_accepts_events_reads_edges_and_failures` | `orchestration/tests/test_container_vocabulary.py` | PASS (full suite) | DSP-OUT-07, DSP-OBS-03 |
+| A28 | `test_a28_send_alarm_posts_only_chat_and_plain_text` | `orchestration/tests/test_container_vocabulary.py` | PASS (full suite) | DSP-SEC-01 |
+| A29 | `test_a29_sensor_has_only_log_reads_and_identity_get` | `orchestration/tests/test_container_vocabulary.py` | PASS (full suite) | DSP-NEV-03 |
+| A30 | `test_a30_sensor_identity_role_and_workspace_are_exact`; `test_a30_up_env_preservation_and_sensor_action` | `tests/test_container_sensor_deploy.py` | PASS (full suite) | DSP-SEC-03, DSP-TRG-04 |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** 10 additional edge/source tests, all run in the focused suite: `orchestration/tests/test_container_alarm_words.py::test_text_reads_malformed_facts_conservatively`; `orchestration/tests/test_container_alarm_words.py::test_brief_names_three_kinds_and_counts_the_rest`; `orchestration/tests/test_container_env.py::test_pre_graph_construction_failures_are_safe`; `orchestration/tests/test_container_env.py::test_graph_without_close_is_supported`; `orchestration/tests/test_container_sensor.py::test_recording_age_controls_pending_alarms`; `orchestration/tests/test_container_telling.py::test_refused_port_error_is_a_safe_word`; `orchestration/tests/test_container_telling.py::test_unexplained_alarm_queries_no_lines`; `orchestration/tests/test_container_vocabulary.py::test_image_copies_all_sensor_modules`; `tests/test_container_sensor_script.py::test_every_outcome_keeps_dispatch_order_and_status`; `tests/test_container_sensor_script.py::test_unconfigured_weekend_stdout_is_unchanged`. These cover conservative facts, extra failure shapes, recording age, image copies and all dispatch outcomes. No existing test outside § 10 was changed.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT — unit, regression, guard and coverage proofs pass; full CI is verified failing at the offline dependency audit.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s275`, branch `sprint-275-the-operator-hears-when-a-container-fails`, starting HEAD `a6864f86c6055c38f826fa2c486a86132f4d8128`; no `.env`. The planner's uncommitted corrections were preserved. Tests used synthetic readers, ports and graph factories; the full CI process denied external DNS/connect attempts with a temporary hook outside the worktree.
 
-**Result:** *to fill*
+**Result:** Built as the corrected Appendix: all 20 file blobs match, including guard `448b940223f8fb1d8a07c2ad74ffdecf23662221`. A1–A30 pass (123 cases), regression 567 passed, all 35 breaks red/restored, and the full pytest run passed 4,961 with 9 skipped at 100.00% statement/branch coverage. MINOR `0.126.00`, `uv lock --offline` and staged `uv.lock` are done. `make ci` exited 2 at step 14; the dependency audit is NOT RUN offline. Steps 15/16 passed separately. No full green CI claim.
 
-**Files changed:** *to fill*
+**Files changed:** The 20 exact Appendix files; 14 new test files and two helpers; dispatcher test plan; both law rollups; this sprint spec and README; pyproject.toml and uv.lock; plus the planner's preserved design-log and drift-register corrections. No other existing test, contracts, kernel, agents, surfaces, decision-path or STATE file changed.
 
-**Design decisions:** recorded as [DL-301](../design-log.md) by the planner before the build.
+**Design decisions:** recorded as [DL-301](../design-log.md), amendments 1 and 2, by the planner; the builder made no design-log edit.
 
 **Proof — the red run first:**
 
+Command: `uv run --offline --no-sync pytest --no-cov` with the 14 new test files.
+Existing production and existing tests were unchanged; only the law-reading record preceded this run.
+
 ```text
-to fill
+============================= test session starts =============================
+collected 0 items / 14 errors
+
+=================================== ERRORS ====================================
+______ ERROR collecting orchestration/tests/test_container_alarm_text.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_alarm_text.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_alarm_text.py:12: in <module>
+    from orchestration.container_alarm_text import TIMES, alarm_message, group_events
+E   ModuleNotFoundError: No module named 'orchestration.container_alarm_text'
+_____ ERROR collecting orchestration/tests/test_container_alarm_words.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_alarm_words.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_alarm_words.py:14: in <module>
+    from orchestration.container_alarm_text import (
+E   ModuleNotFoundError: No module named 'orchestration.container_alarm_text'
+________ ERROR collecting orchestration/tests/test_container_brief.py _________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_brief.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_brief.py:15: in <module>
+    from orchestration.container_brief import container_line
+E   ModuleNotFoundError: No module named 'orchestration.container_brief'
+_________ ERROR collecting orchestration/tests/test_container_env.py __________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_env.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_env.py:13: in <module>
+    from orchestration import container_logs, container_sensor_guard
+E   ImportError: cannot import name 'container_logs' from 'orchestration' (C:\Users\yury_\Downloads\project\ta-s275\orchestration\__init__.py)
+________ ERROR collecting orchestration/tests/test_container_events.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_events.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_events.py:14: in <module>
+    from orchestration.container_events import SENSED_REASONS, classify, event_key
+E   ModuleNotFoundError: No module named 'orchestration.container_events'
+________ ERROR collecting orchestration/tests/test_container_faults.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_faults.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_faults.py:16: in <module>
+    from orchestration.container_queries import ContainerLogReadError
+E   ModuleNotFoundError: No module named 'orchestration.container_queries'
+________ ERROR collecting orchestration/tests/test_container_lines.py _________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_lines.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_lines.py:14: in <module>
+    from orchestration.container_lines import choose_line, safe_line
+E   ModuleNotFoundError: No module named 'orchestration.container_lines'
+_______ ERROR collecting orchestration/tests/test_container_queries.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_queries.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_queries.py:14: in <module>
+    from orchestration.container_queries import (
+E   ModuleNotFoundError: No module named 'orchestration.container_queries'
+________ ERROR collecting orchestration/tests/test_container_reader.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_reader.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_reader.py:19: in <module>
+    from orchestration.container_queries import ContainerLogReadError
+E   ModuleNotFoundError: No module named 'orchestration.container_queries'
+________ ERROR collecting orchestration/tests/test_container_sensor.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_sensor.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_sensor.py:13: in <module>
+    from orchestration.container_events import classify
+E   ModuleNotFoundError: No module named 'orchestration.container_events'
+_______ ERROR collecting orchestration/tests/test_container_telling.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_telling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_telling.py:15: in <module>
+    from orchestration.container_sensor import sense_containers
+E   ModuleNotFoundError: No module named 'orchestration.container_sensor'
+______ ERROR collecting orchestration/tests/test_container_vocabulary.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\orchestration\tests\test_container_vocabulary.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_container_vocabulary.py:17: in <module>
+    from orchestration.container_queries import ContainerLogReadError
+E   ModuleNotFoundError: No module named 'orchestration.container_queries'
+___________ ERROR collecting tests/test_container_sensor_deploy.py ____________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\tests\test_container_sensor_deploy.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_container_sensor_deploy.py:13: in <module>
+    from orchestration.container_sensor_guard import WORKSPACE_ENV
+E   ModuleNotFoundError: No module named 'orchestration.container_sensor_guard'
+___________ ERROR collecting tests/test_container_sensor_script.py ____________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s275\tests\test_container_sensor_script.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_container_sensor_script.py:16: in <module>
+    from orchestration import container_logs
+E   ImportError: cannot import name 'container_logs' from 'orchestration' (C:\Users\yury_\Downloads\project\ta-s275\orchestration\__init__.py)
+=========================== short test summary info ===========================
+ERROR orchestration/tests/test_container_alarm_text.py
+ERROR orchestration/tests/test_container_alarm_words.py
+ERROR orchestration/tests/test_container_brief.py
+ERROR orchestration/tests/test_container_env.py
+ERROR orchestration/tests/test_container_events.py
+ERROR orchestration/tests/test_container_faults.py
+ERROR orchestration/tests/test_container_lines.py
+ERROR orchestration/tests/test_container_queries.py
+ERROR orchestration/tests/test_container_reader.py
+ERROR orchestration/tests/test_container_sensor.py
+ERROR orchestration/tests/test_container_telling.py
+ERROR orchestration/tests/test_container_vocabulary.py
+ERROR tests/test_container_sensor_deploy.py
+ERROR tests/test_container_sensor_script.py
+!!!!!!!!!!!!!!!!!! Interrupted: 14 errors during collection !!!!!!!!!!!!!!!!!!!
+============================= 14 errors in 2.64s ==============================
+RED_EXIT=2
+NEW_TEST_FILES=14
 ```
 
 **Proof — the green run:**
 
 ```text
-to fill
+============================= test session starts =============================
+collected 123 items
+
+orchestration\tests\test_container_alarm_text.py ..                      [  1%]
+orchestration\tests\test_container_alarm_words.py ...............        [ 13%]
+orchestration\tests\test_container_brief.py .....                        [ 17%]
+orchestration\tests\test_container_env.py ........                       [ 24%]
+orchestration\tests\test_container_events.py .........................   [ 44%]
+orchestration\tests\test_container_faults.py ......                      [ 49%]
+orchestration\tests\test_container_lines.py ......                       [ 54%]
+orchestration\tests\test_container_queries.py ...............            [ 66%]
+orchestration\tests\test_container_reader.py ...............             [ 78%]
+orchestration\tests\test_container_sensor.py ......                      [ 83%]
+orchestration\tests\test_container_telling.py .......                    [ 89%]
+orchestration\tests\test_container_vocabulary.py ....                    [ 92%]
+tests\test_container_sensor_deploy.py ..                                 [ 94%]
+tests\test_container_sensor_script.py .......                            [100%]
+
+============================= 123 passed in 2.76s =============================
+FOCUSED_EXIT=0
+============================= test session starts =============================
+collected 2 items
+
+orchestration\tests\test_container_faults.py ..                          [100%]
+
+============================== 2 passed in 1.17s ==============================
+A24_EXIT=0
+============================ 567 passed in 15.49s =============================
+REGRESSION_EXIT=0
+========= 4961 passed, 9 skipped, 2470 warnings in 398.19s (0:06:38) ==========
+TOTAL                                                           20978      0   4454      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
 ```
 
-**Guards planted:** *to fill, per break*
+**Guards planted:** All 35, one at a time, each failing a builder test and restored before the next. Repeated after the final test typing corrections; 35 / 35 again.
 
-**Module line counts:** *to fill*
+```text
+BREAK 01: RED exit=1; orchestration/tests/test_container_events.py::test_a1_measured_kinds[memory-kill-memory-kill-analyst-None-True]; restored
+BREAK 02: RED exit=1; orchestration/tests/test_container_events.py::test_a2_noise_and_clean_exit_are_nothing[platform_row3]; restored
+BREAK 03: RED exit=1; orchestration/tests/test_container_events.py::test_a1_measured_kinds[killed-killed-master-137-True]; restored
+BREAK 04: RED exit=1; orchestration/tests/test_container_events.py::test_a3_unknown_error_and_unreadable_exit[platform_row0-platform-error]; restored
+BREAK 05: RED exit=1; orchestration/tests/test_container_events.py::test_a1_measured_kinds[preempted-preempted-reporter-None-False]; restored
+BREAK 06: RED exit=1; orchestration/tests/test_container_events.py::test_a6_key_is_the_row_and_message_is_bounded; restored
+BREAK 07: RED exit=1; orchestration/tests/test_container_lines.py::test_a8_traceback_order_and_shape_precedence; restored
+BREAK 08: RED exit=1; orchestration/tests/test_container_lines.py::test_a9_console_window[-901-False]; restored
+BREAK 09: RED exit=1; orchestration/tests/test_container_lines.py::test_a10_credentials_and_amounts_are_masked; restored
+BREAK 10: RED exit=1; orchestration/tests/test_container_lines.py::test_a10_credentials_and_amounts_are_masked; restored
+BREAK 11: RED exit=1; orchestration/tests/test_container_lines.py::test_a10_credentials_and_amounts_are_masked; restored
+BREAK 12: RED exit=1; orchestration/tests/test_container_queries.py::test_a13_hostile_replica_is_never_sent[replica' | take 1]; restored
+BREAK 13: RED exit=1; orchestration/tests/test_container_events.py::test_a7_query_matches_classifier_and_ingestion_window; restored
+BREAK 14: RED exit=1; orchestration/tests/test_container_reader.py::test_a12_http_status_never_includes_reason_or_body[True]; restored
+BREAK 15: RED exit=1; orchestration/tests/test_container_reader.py::test_a11_one_identity_get_then_workspace_posts; restored
+BREAK 16: RED exit=1; orchestration/tests/test_container_sensor.py::test_a14_first_read_then_overlapping_fire; restored
+BREAK 17: RED exit=1; orchestration/tests/test_container_sensor.py::test_a15_long_gap_caps_window_and_message; restored
+BREAK 18: RED exit=1; orchestration/tests/test_container_faults.py::test_a24_read_failure_is_one_fault_and_failed_read[failure0-ContainerLogReadError (403)]; restored
+BREAK 19: RED exit=1; orchestration/tests/test_container_telling.py::test_a18_unsent_then_raised_then_sent; restored
+BREAK 20: RED exit=1; orchestration/tests/test_container_env.py::test_a25_unconfigured_sensor_builds_nothing; restored
+BREAK 21: RED exit=1; orchestration/tests/test_container_faults.py::test_a24_read_failure_is_one_fault_and_failed_read[failure0-ContainerLogReadError (403)]; restored
+BREAK 22: RED exit=1; orchestration/tests/test_container_faults.py::test_a24_read_failure_is_one_fault_and_failed_read[failure0-ContainerLogReadError (403)]; restored
+BREAK 23: RED exit=1; orchestration/tests/test_container_faults.py::test_a24_refusing_port_records_one_fault_and_no_told_edge; restored
+BREAK 24: RED exit=1; tests/test_container_sensor_script.py::test_every_outcome_keeps_dispatch_order_and_status[placed-0]; restored
+BREAK 25: RED exit=1; tests/test_container_sensor_script.py::test_every_outcome_keeps_dispatch_order_and_status[placed-0]; restored
+BREAK 26: RED exit=1; orchestration/tests/test_container_brief.py::test_a22_first_failed_stale_and_quiet_read; restored
+BREAK 27: RED exit=1; orchestration/tests/test_container_brief.py::test_a22_recording_window_counts_repeat_peaks; restored
+BREAK 28: RED exit=1; orchestration/tests/test_container_alarm_text.py::test_a21_message_exactly_groups_kinds_across_apps; restored
+BREAK 29: RED exit=1; orchestration/tests/test_container_alarm_text.py::test_a21_message_exactly_groups_kinds_across_apps; restored
+BREAK 30: RED exit=1; tests/test_container_sensor_deploy.py::test_a30_sensor_identity_role_and_workspace_are_exact; restored
+BREAK 31: RED exit=1; tests/test_container_sensor_deploy.py::test_a30_up_env_preservation_and_sensor_action; restored
+BREAK 32: RED exit=1; orchestration/tests/test_container_vocabulary.py::test_a27_pack_accepts_events_reads_edges_and_failures; restored
+BREAK 33: RED exit=1; orchestration/tests/test_container_brief.py::test_a23_container_line_is_just_before_needs_you[PASS]; restored
+BREAK 34: RED exit=1; orchestration/tests/test_container_vocabulary.py::test_image_copies_all_sensor_modules; restored
+BREAK 35: RED exit=1; orchestration/tests/test_container_faults.py::test_a24_read_failure_is_one_fault_and_failed_read[failure1-ValueError]; restored
+GUARDS_PROVEN=35/35
+ALL_MUTATED_FILES_RESTORED=True
+FINAL_GUARDS_EXIT=0
+```
 
-**`make ci`:** *to fill: the file, the exit code, passed and skipped, coverage, the audit, the
-secrets scans.*
+**Module line counts:** After final formatting, all 32 touched Python modules are below 200; maximum 198.
 
-**`make gate-ran`:** owed to the planner if you cannot push.
+```text
+177 orchestration/container_alarm_text.py
+ 58 orchestration/container_brief.py
+155 orchestration/container_events.py
+ 64 orchestration/container_lines.py
+129 orchestration/container_logs.py
+ 91 orchestration/container_queries.py
+179 orchestration/container_sensor.py
+ 91 orchestration/container_sensor_graph.py
+160 orchestration/container_sensor_guard.py
+168 orchestration/daily_brief_facts.py
+182 orchestration/daily_brief_text.py
+134 orchestration/settings.py
+140 orchestration/telegram_client.py
+ 53 orchestration/tests/container_reader_helpers.py
+128 orchestration/tests/container_sensor_helpers.py
+140 orchestration/tests/scheduled_dispatch_human_helpers.py
+ 78 orchestration/tests/test_container_alarm_text.py
+ 76 orchestration/tests/test_container_alarm_words.py
+124 orchestration/tests/test_container_brief.py
+172 orchestration/tests/test_container_env.py
+121 orchestration/tests/test_container_events.py
+158 orchestration/tests/test_container_faults.py
+ 83 orchestration/tests/test_container_lines.py
+ 71 orchestration/tests/test_container_queries.py
+157 orchestration/tests/test_container_reader.py
+198 orchestration/tests/test_container_sensor.py
+119 orchestration/tests/test_container_telling.py
+117 orchestration/tests/test_container_vocabulary.py
+150 orchestration/tests/test_dispatcher_capability.py
+145 scripts/dispatch_scheduled_run.py
+ 70 tests/test_container_sensor_deploy.py
+100 tests/test_container_sensor_script.py
+ALL_TOUCHED_PYTHON_MODULES_UNDER_200=True
+```
 
-**Not met / verified failing:** *to fill*
+**`make ci`:** `C:/Users/yury_/AppData/Local/Temp/s275-build-20261014/make-ci-final.txt`, redirected directly to the file with `make ci > <file> 2>&1`; real exit 2. Read the whole file. Steps 1–13 passed: ruff, format, mypy, import-linter, size/header, law coverage, PARAM, sprint/tracker/docs/version, and pytest. Step 14's fresh dependency audit is NOT RUN offline: 175 of 179 cache entries existed but none was fresh, and the required refresh was blocked before external DNS. The checker was unchanged. The overall gate is verified failing. Steps 15/16 were run separately under the same network block and passed; the secrets baseline is unchanged.
+
+```text
+Success: no issues found in 1228 source files
+========= 4961 passed, 9 skipped, 2470 warnings in 398.19s (0:06:38) ==========
+TOTAL                                                           20978      0   4454      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+uv run python scripts/check_dependency_audit.py
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 275 forbids external network access"))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+DEPENDENCY_AUDIT=NOT RUN offline
+Detect secrets...........................................................Passed
+TRACKED_SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 25 new file(s)
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** not done — no network/push authorized; owed to the planner for the final branch HEAD before merge.
+
+**Not met / verified failing:** Full `make ci` green: verified failing (exit 2) because the dependency audit is NOT RUN offline. The source/test/coverage proofs above are done. Push, remote gates, merge, deployment, rollback readback and F1/F2: not done, outside this offline build. Managed identity behavior and role propagation on the live job remain unproven until F2.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- Both earlier stops were resolved by the planner. A24 checks every stored Fault property and retains an intact traceback; trap 35 restores the leaking handler shape and fails it. DSP-SEC-03 stands unchanged.
+- A21/A22 use the existing time renderer exactly. New test helper annotations were corrected after the first CI attempt's mypy errors; no extra production or existing-test change was made.
+- All 20 Appendix files match, guard blob `448b940223f8fb1d8a07c2ad74ffdecf23662221`. All 35 specified breaks fail a builder test and restore exactly. Every touched Python module stays below 200 lines after formatting (maximum 198).
+- Dispatcher law book/test-plan header v1.3; ten new cited clauses proven; both law gate-derived rollups 42 / 46. DSP-IDN-03, DSP-NEV-02, DSP-TYP-01 and DSP-DEP-01 remain gray.
+- Version `0.126.00`, normalized lock version `0.126.0`; `uv lock --offline` passed and uv.lock is staged. The planner's design-log/drift-register bytes were preserved.
+- Full CI is verified failing at the network-dependent audit: NOT RUN offline, with no fresh cache entry. All tests and coverage passed and both secrets steps passed separately. The planner owes the audit and full remote gate for the final commit; do not merge on this local handback alone.
+- No live graph, broker, Azure, deploy, push or merge operation was performed. The job identity endpoint, role propagation and first fleet read/message are F2; F1/F2 and rollback verification are not done.
 
 ---
 
@@ -1269,7 +1599,7 @@ def _tell(
     return message_id, ""
 ```
 
-`orchestration/container_sensor_guard.py` — new, 153 lines:
+`orchestration/container_sensor_guard.py` — new, 160 lines:
 
 ```python
 """The fault boundary around the container sensor, and its wiring from the job's env.
@@ -1302,7 +1632,7 @@ if TYPE_CHECKING:
 
     from kernel import GraphStore
     from orchestration.container_logs import LogReader
-    from orchestration.container_sensor import AlarmPort
+    from orchestration.container_sensor import AlarmPort, SensorOutcome
 
 WORKSPACE_ENV = "LOG_ANALYTICS_WORKSPACE_ID"
 
@@ -1366,9 +1696,16 @@ def sense_safely(
         outcome = sense_containers(graph, reader, port, now=now, settings=settings)
     except Exception as exc:  # the boundary itself: a type and a status word
         failure = _failure(exc)
-        _record_failed_read(graph, now, failure)
-        _record(graph, f"container sensor did not read: {failure}")
-        return f"error container-sensor failed: {failure}"
+    else:
+        return _told(graph, outcome)
+    # Recorded once the handler has ended, so the Fault's traceback chains no earlier
+    # error and the exception's own text never reaches the graph (DSP-SEC-03).
+    _record_failed_read(graph, now, failure)
+    _record(graph, f"container sensor did not read: {failure}")
+    return f"error container-sensor failed: {failure}"
+
+
+def _told(graph: GraphStore, outcome: SensorOutcome) -> str:
     line = (
         f"container-sensor read {outcome.rows} rows: {outcome.recorded} new events, "
         f"{outcome.alarms} alarms, told {outcome.told}"

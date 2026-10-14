@@ -12,6 +12,30 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-300 - the deploy script's default becomes the master's live 22:00 wake, and a test says what the wake is for - status: MEASURED and DECIDED (planner, 2026-10-14 09:10 AEDT); specced as [S274](sprints/sprint-274-a-full-up-keeps-the-masters-live-start.md); work-queue 131 part (f)
+
+**Why.** [DL-294](design-log.md) amendment 1 moved the master's wake to 22:00 UTC on the live app by hand and left the script's default, its pinned test and the dashboard at 20:25. The operator asked for another sprint for the builder; this is the top fix in the queue that can be built now and it touches no file [S273](sprints/sprint-273-the-secrets-scan-reads-every-file-as-utf-8.md) touches.
+
+**Measured, 2026-10-14.** The script's own `Up`, run with every `az` call and credential a stand-in, gives 16 scale rules; 15 equal the live rules read the same hour and the master's start is `25 20 * * 1-5` against the live `0 22 * * 1-5`: a full `up` moves the wake back. The dashboard copies the default: at 20:30 and at 21:30 UTC on a weekday it reads the master as awake while the app is at 0 replicas, and it labels the window 07:25-10:30 Melbourne where the fleet's is 09:00-10:30. On the live graph a check is readable 29 to 50 seconds after a wake (eight nights) and a repeat follows 60 minutes and 9 to 24 seconds later. At the new wake two nights are on the graph: 2026-10-12 with checks at 22:00:50 and 23:01:05, and 2026-10-13 with its first at 22:00:45, read before that night's run; all passed. No run has ever been held on the fleet: the graph holds 0 `RunHold`.
+
+**Decided.**
+
+- **D1 - the script's default is the live wake, `0 22 * * 1-5`**, and the comment above it names the decision and the one check.
+- **D2 - the dashboard's `master_window_start_utc` defaults to `22:00`**; the existing test keeps it equal to the script's.
+- **D3 - the test named for two retries is removed, and one that says what the wake is for takes its job:** the check made at the wake is readable at least 5 minutes before the first placing tick and no older than the dispatcher's limit at it. Five minutes is six times the slowest landing measured. On the old default it fails: 125 minutes against 70, which the two repeats covered.
+- **D4 - a second test holds the master's interval (60), the dispatcher's limit (70) and the wake against each other:** at each of the six placing ticks, 22:30 to 23:20, the newest readable check is inside the limit. It changes no value.
+- **D5 - the law changes in its `PARAM` table only**, surfaces v1.8.
+
+**Answered by reading, where amendment 1 said "not measured".** A later check that passes releases a held run and the run is placed at that tick (`orchestration/scheduled_dispatch_gate.py::hold_unready_run`, `DSP-STA-01`, the passing test `test_recovery_releases_hold_and_places_run`). After a check that fails at the wake, the repeat lands at about 23:01 and the 23:10 tick is the first that can release the run, 20 minutes before the window's end. **This also answers work-queue 131 (c):** the master's second check is the only thing that can release a run held at 22:30, so it stays. Not measured on the fleet: no run has ever been held there.
+
+**Ruled out.** *Pass `-MasterScaleStart` at every `up`* - as in DL-295, the first `up` that forgets it moves the wake. *Put 20:25 back on the live master* - the operator chose 22:00. *Wake at 22:25* - it saves 25 minutes of the master a night, and the operator named 9:00 Melbourne. *The dashboard reads the live rule from Azure* - as in DL-295. *Change the dispatcher's limit or the master's interval* - not needed, D4 shows the three fit.
+
+**Named, not built.** After a failed check at the wake a released run has 20 minutes of window (work-queue 131 b). For a run day before 2026-10-12 the dashboard's log window will start at 22:00 and leave out the master's lines from 20:25. The day a failed check stays shown, across a weekend ([DL-295](design-log.md)).
+
+**On the prototype.** Two existing tests change (the one named for two retries is removed, one pinned start time moves); 3 of the 49 cases in the focused run fail on the unchanged code and all pass on the prototype; `make ci` exit 0 in one run, 16 steps, 4,824 passed, 8 skipped, 100.00 %; 17 planted breaks, 17 red, each on the test named for it; the script parses.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq131f-2026-10-14/`.
+
 ## DL-299 - the secrets scan reads every text file whatever the machine's default encoding, and the gate's self-test leaves nothing behind - status: MEASURED and DECIDED (planner, 2026-10-14 04:10 AEDT); specced as [S273](sprints/sprint-273-the-secrets-scan-reads-every-file-as-utf-8.md); work-queue 132 and 130
 
 **Why.** [DL-298](design-log.md) found that the commit hook's secrets scan passes over a file the platform's default encoding cannot decode. The operator asked for another sprint for the builder; this is the top fix in the queue that can be built now. Work-queue 130 (the self-test leaves a folder behind) is in the same runner and is mended with it.

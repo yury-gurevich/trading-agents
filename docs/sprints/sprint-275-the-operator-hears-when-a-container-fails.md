@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-275-the-operator-hears-when-a-container-fails`
-**Status:** BUILT
+**Status:** MERGED 2026-10-14 — `0.126.00`, fast-forwarded to `82909a54`, tag `v0.126.00`, GATE PROVEN `82909a54` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (the operator's call); F2 owed
 **Version:** `0.126.00`
 **Effort:** L
 **Decisions:** [DL-301](../design-log.md) (this sprint's ten decisions, made and measured) · [DL-283](../design-log.md) (the sensor's direction, 2026-10-09) · [DL-297](../design-log.md) amendments 2 and 3 (a clean stop logs nothing; the readiness probe fails after a stop) · [work-queue 119](../work-queue.md)
@@ -506,7 +506,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT — unit, regression, guard and coverage proofs pass; full CI is verified failing at the offline dependency audit.
+**Status:** MERGED — the build proof is the builder's, below; the full `make ci`, the remote gate, the breaks and F1 are in the planner's review at the merge. *The builder's line read:* BUILT — unit, regression, guard and coverage proofs pass; full CI is verified failing at the offline dependency audit.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s275`, branch `sprint-275-the-operator-hears-when-a-container-fails`, starting HEAD `a6864f86c6055c38f826fa2c486a86132f4d8128`; no `.env`. The planner's uncommitted corrections were preserved. Tests used synthetic readers, ports and graph factories; the full CI process denied external DNS/connect attempts with a temporary hook outside the worktree.
 
@@ -2721,3 +2721,55 @@ index 850beb29..a799ce29 100644
          self._raise_if_needed()
          self.polls += 1
 ```
+
+---
+
+## Planner's review at the merge — 2026-10-14
+
+Re-measured by the planner on the builder's commit `2ded9672` and on the merged commit `82909a54`.
+Nothing here is taken from the handback.
+
+- **Two stops during the build, both the planner's misses, both corrected before the code was
+  written or changed** ([DL-301](../design-log.md) amendments 1 and 2). DRIFT-114: § 9's
+  `DSP-OUT-07` asked for one message line per app where § 7 and D5 group by kind across apps; the
+  clause moved to the code, and a read-back of every new clause against § 1 to § 8 mended four
+  more. DRIFT-115: § 6's guard recorded its `Fault` inside an `except` block, so the handled
+  error's text reached the stored traceback; the guard now records after the handler, and the
+  planner's test reads every stored property.
+- **The 20 production files are the corrected prototype byte for byte** (`prototype_blobs.txt`,
+  guard `448b9402`). Against the spec's commit the branch changes the files the spec names, the
+  version pair, the builder's 14 test files and two helpers, and no other existing test than
+  the two § 10 names.
+- **The planner's own tests** (98, with `tests/test_dispatch_scheduled_run.py`) pass on the built
+  code, run in a separate tree because one helper shares a name with the builder's. They are not
+  committed.
+- **Guards.** The planner's 38 breaks, one at a time, judged by the builder's 14 test files and
+  `tests/test_dispatch_scheduled_run.py`: **38 red**, the tree clean afterwards. B38 (the record
+  back inside the handler) went red on the builder's A24.
+- **One planner change on the branch, `82909a54`.** CodeQL read two of the builder's asserts in
+  `orchestration/tests/test_container_env.py` as `py/side-effect-in-assert` at **error** level
+  (each held a factory that appends); the sensor is now called before the assert. After it: 133
+  open alerts on the branch, **0 errors**; against the S274 branch (130, 0 errors) the only new
+  ones are three notes, the `...` bodies of two Protocols, a pattern 16 existing notes share.
+- **`make ci` on Windows, the planner's, on `82909a54`:** exit 0 in one run, all 16 steps, 4,961
+  passed, 9 skipped, 100.00 %, the dependency audit clean (the builder's sandbox could not reach
+  the index for it). **Gate:** `GATE PROVEN` for `82909a54`, run from `../ta-s275`, whose `HEAD`
+  it is; `main` was fast-forwarded to that commit, so the proven commit is the merged one.
+- **Law rows.** Dispatcher v1.3, 42 / 46, in `docs/laws/INDEX.md` and `docs/laws/ledger.md`;
+  every limb of the five corrected clauses has a cited test (the failure before the graph opens
+  and an untold alarm's age among them).
+- **F1, at no cost, on the merged commit: passed.** From `../ta-s275` (no `.env`), the merged
+  sensor read the live workspace as the planner's own login into an in-memory graph, its port a
+  printer. At 2026-09-25 01:00 UTC: 491 rows, 488 alarms and 3 reports, a why for 193, one
+  message of four kind lines naming 16 apps (723 characters: the 701 of DL-301's replay plus
+  `(provider)` in its two why lines). At 2026-09-29 00:00 UTC: the four lines DL-301 recorded,
+  byte for byte, the master's refusal as the why.
+- **Not deployed.** The sensor ships in the dispatcher job's image and needs the job's identity
+  and role: the retag (`/deploy-fleet`) and then `pwsh infra/deploy-agents.ps1 sensor` are the
+  operator's call. Either order is safe. F2 is owed at the first weekday fire after both.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq119-2026-10-14/`
+(`breaks_on_built_2ded9672.txt`, `planner_tests_on_built_2ded9672.txt`, `codeql_s275_branch.tsv`,
+`s275-make-ci.txt`, `s275-gate-ran.txt`, `f1_replay_2026-09-25T01_82909a54.txt`,
+`f1_replay_2026-09-29T00_82909a54.txt`, `s275_review_assert_fix.py`, `s275_merge_docs.py`; the two
+stops: `codex_stop_drift115/`, `s275_drift114_*.py`, `s275_drift115_*.py`).

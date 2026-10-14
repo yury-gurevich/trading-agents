@@ -17,8 +17,8 @@ param(
   [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
-  # DL-179 §6: two hourly preflight retries complete before 22:30 UTC dispatch.
-  [string]$MasterScaleStart = '25 20 * * 1-5',
+  # DL-294 amendment 1: one readiness check, at the wake, before the 22:30 UTC dispatch.
+  [string]$MasterScaleStart = '0 22 * * 1-5',
   # DL-294: weekdays only, one hour. The dispatcher places no run on a weekend.
   [string]$AgentScaleStart = '30 22 * * 1-5',
   [string]$ScaleEnd = '30 23 * * 1-5',

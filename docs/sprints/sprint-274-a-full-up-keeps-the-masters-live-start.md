@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-274-a-full-up-keeps-the-masters-live-start`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** PATCH (the next free one at merge; do not pin the digits here)
 **Effort:** S
 **Decisions:** [DL-300](../design-log.md) (this sprint's five decisions, made and measured) · [DL-294](../design-log.md) amendment 1 (the operator's 22:00 wake, applied to the live master) · [work-queue 131](../work-queue.md) part (f)
@@ -228,13 +228,13 @@ If any other existing test fails, stop and report.
 
 ## Success factors
 
-- [ ] Every row of the Test plan is a passing test, under the name given.
-- [ ] `git hash-object` prints, on LF bytes, `c6ce85287bfa5f2c17ac5b303cdf9c535c5d1e43` for `infra/deploy-agents.ps1` and `0b26950dd75eeddfdf72b5c8e5c03edc6d25311d` for `surfaces/dashboard/settings.py`, or each difference is explained.
-- [ ] Two existing tests changed as named and no other (`git diff --stat main -- '*test_*.py'` shows the new file, the invariants file and the window-days file).
-- [ ] Law cycle done, every item: the `PARAM` row as given, `LOCKED v1.8`, the Changelog entry, the surfaces' row in `INDEX.md` and in `ledger.md`; `check_param_law_sync.py` exits 0.
-- [ ] Every guard planted, watched to fail on the test named for it, restored, stated per guard.
-- [ ] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, sixteen steps, 100.00 % coverage.
+- [x] Every row of the Test plan is a passing test, under the name given.
+- [x] `git hash-object` prints, on LF bytes, `c6ce85287bfa5f2c17ac5b303cdf9c535c5d1e43` for `infra/deploy-agents.ps1` and `0b26950dd75eeddfdf72b5c8e5c03edc6d25311d` for `surfaces/dashboard/settings.py`, or each difference is explained.
+- [x] The original two existing tests changed as named, plus the planner-authorized third comparison in `tests/test_check_version_scheme.py` (quoted below); no other existing test changed. The test diff has four files: one new and three existing.
+- [x] Law cycle done, every item: the `PARAM` row as given, `LOCKED v1.8`, the Changelog entry, the surfaces' row in `INDEX.md` and in `ledger.md`; `check_param_law_sync.py` exits 0.
+- [x] Every guard planted, watched to fail on the test named for it, restored, stated per guard.
+- [x] Every touched module under 200 lines.
+- [x] `make ci` exit 0, sixteen steps, 100.00 % coverage.
 
 ---
 
@@ -366,15 +366,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| <element> | <files> | <clause IDs> | <Yes/No + what changed> |
+| Dashboard setting and surfaces PARAM amendment | `surfaces/laws/laws.md` and `surfaces/laws/test-plan.md`, whole; `docs/laws/conventions.md` and `docs/laws/drift-register.md` (read 2026-10-14) | `PARAM`; conventions §§2–4, 7 and 7a; `SRF-DEP-01` / `SRF-DEP-02` and `SRF-NEV-01` / `SRF-NEV-02` / `SRF-NEV-03` reviewed | No. The wake hour is a declared parameter, not a new functional guarantee. No clause or law test-plan row changes. |
+| Script's master wake default and comment | `surfaces/laws/laws.md`, whole; `docs/deployment.md`; `docs/laws/conventions.md` and `docs/laws/drift-register.md` | `PARAM`; `SRF-DEP-*` / `SRF-NEV-*` reviewed; no clause fixes the wake hour | No. Apply only Appendix 1's two lines; do not run the script or Azure commands. |
+| New wake-window tests and two named existing test edits | `orchestration/laws/dispatcher/laws.md` and `agents/master/laws/laws.md`, whole; surfaces laws and test-plan above | `DSP-IN-03` (freshness), `DSP-TRG-01` (placing ticks); dispatcher `PARAM` (`preflight_max_age_minutes`); master `PARAM` (`fleet_preflight_interval_minutes`) | No. Read the existing settings with `_env_file=None`; no master clause fixes the wake hour. M3's proof comes from restored breaks, not red-first failure. |
+| Third existing-test edit, authorized by the planner on 2026-10-14 | `CLAUDE.md` version-scheme and proof rules re-read before this edit; this spec and the planner authorization below | Version scheme `MAJOR.MMM.PP`; `LAW-02` | Yes. Replace only the authorized version comparison, with no import or test-name change; normalized lock agreement replaces the old string-inequality assumption. No additional law amendment is owed. |
+| Law rollups and sprint handback | `docs/laws/INDEX.md`; `docs/laws/conventions.md`; `CLAUDE.md`; this spec, whole | Conventions §§3–4; `LAW-02` proof discipline | No. Keep 31 / 38, update both surfaces version labels, and record evidence here. `docs/STATE.md` is excluded by this handover. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Done: the exact surfaces PARAM row, LOCKED v1.8, its Changelog entry, and both surfaces rollup rows at v1.8; counts remain 31 / 38. The PARAM/settings and law-coverage checks exited 0. The reading above was recorded before any code change; no clause or contracts file changed.
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** none.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** No clause fixes the wake hour. DL-300 already decides this deployment/settings parameter choice; no new decision or drift row is needed.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** none; the counts stay 31 / 38.
 
 ---
 
@@ -382,54 +386,276 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| M1 | <name> | <file> | PASS/FAIL | <clause IDs> |
+| M1 | `test_script_defaults_are_the_live_wake_window` | `tests/test_master_wake_window.py` | PASS (50-case focused run and full CI) | none: deployment/PARAM guard, DL-300 |
+| M2 | `test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick` | `tests/test_master_wake_window.py` | PASS (50-case focused run and full CI) | `DSP-IN-03` / `DSP-TRG-01` |
+| M3 | `test_every_placing_tick_finds_a_fresh_check` | `tests/test_master_wake_window.py` | PASS (50-case focused run and full CI; not red-first) | `DSP-IN-03` / `DSP-TRG-01` |
+| V1 (planner-authorized existing test) | `test_real_pyproject_passes_despite_normalized_lockfile` | `tests/test_check_version_scheme.py` | PASS (50-case focused run and full CI) | repository version-scheme rule; no agent clause |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none. Three existing tests were edited: the two named in the original plan and the planner-authorized V1 comparison below.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s274`, branch `sprint-274-a-full-up-keeps-the-masters-live-start`, `.env` absent. Red, green and guard proofs ran on base `c5e54c360ba21cf2274686347945512acab22a41` plus this work. Before full CI, this branch fast-forwarded to the already-merged S273 at `25a0129dd600464d2dfb964cf623eea12acd6faa`; no work was performed on `main`. Both Appendix blobs stayed exact.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** The script retains the master's live `0 22 * * 1-5` wake by default and the dashboard defaults to `22:00`; both production blobs match the Appendix hashes. The three wake tests and the third authorized existing-test comparison pass in the 50-case focused run and full CI. All 17 planted breaks went red and were restored byte for byte. The surfaces PARAM amendment and both v1.8 rollups pass their checks, with 31 / 38 unchanged. PATCH `0.125.10` resolved offline; full `make ci` exited 0 over all 16 steps with 4,834 passed, 8 skipped and 100.00 % coverage. Audit and both secret scans passed.
 
-**Files changed:** <list>
+**Files changed:** `docs/laws/INDEX.md`, `docs/laws/ledger.md`, `docs/sprints/README.md`, `docs/sprints/sprint-274-a-full-up-keeps-the-masters-live-start.md`, `infra/deploy-agents.ps1`, `pyproject.toml`, `surfaces/dashboard/settings.py`, `surfaces/laws/laws.md`, `surfaces/tests/test_dashboard_window_days.py`, `tests/test_check_version_scheme.py`, `tests/test_deploy_script_invariants.py`, `tests/test_master_wake_window.py`, `uv.lock`.
+
+**Planner authorization — 2026-10-14 (quoted; third authorized existing-test edit):**
+
+> Authorized (planner): one more edit to an existing test, beyond the two the spec names.
+>
+> File: tests/test_check_version_scheme.py, test_real_pyproject_passes_despite_normalized_lockfile.
+> Replace line 60:
+>
+> ```python
+>     assert project_version != lock_version
+> ```
+>
+> with:
+>
+> ```python
+>     assert [int(part) for part in project_version.split(".")] == [
+>         int(part) for part in lock_version.split(".")
+>     ]
+> ```
+>
+> Keep the test's name, add no import, and change nothing else in the file.
+>
+> Why: the old line held only while the patch group began with 0 (0.125.09 locks as 0.125.9).
+> At 0.125.10 both strings match, and that is correct. The new line checks that the lock
+> agrees with pyproject once normalized, so it also fails on a stale lock.
+>
+> Then resume: rerun the focused suite (49 tests plus this one) after the S273
+> fast-forward and your import-order fix, run the full `make ci` redirected to a file,
+> and finish the remaining steps as specced (coverage, audit, secrets, BUILT status, commit).
+> In the closeout, list this as a third authorized existing-test edit and quote this
+> authorization. Do not merge main in; the planner does that at review.
+
+**Existing-test edits — three, all authorized:** remove `test_master_scale_window_starts_before_the_two_pre_dispatch_retries`; change only the named start assertion in `test_defaults_are_the_deployed_windows`; apply exactly the planner's three-line normalization comparison in `test_real_pyproject_passes_despite_normalized_lockfile`. The third test keeps its name and imports; every other byte of that file is unchanged.
 
 **Design decisions:** recorded as [DL-300](../design-log.md); none added by the build.
 
 **Proof — the red run first:**
 
 ```text
-<the failing test output, before the implementation>
+============================= test session starts =============================
+collected 49 items
+
+tests\test_master_wake_window.py FF.                                     [  6%]
+tests\test_deploy_script_invariants.py ..........                        [ 26%]
+surfaces\tests\test_dashboard_window_days.py ........................... [ 81%]
+.F                                                                       [ 85%]
+surfaces\tests\test_dashboard_schedule.py .......                        [100%]
+
+================================== FAILURES ===================================
+________________ test_script_defaults_are_the_live_wake_window ________________
+tests\test_master_wake_window.py:32: in test_script_defaults_are_the_live_wake_window
+    assert (
+E   assert b"  # DL-294 amendment 1: one readiness check, at the wake, before the 22:30 UTC dispatch.\n  [string]$MasterScaleStart = '0 22 * * 1-5',\n" in b'# deploy-agents.ps1 \xe2\x80\x94 One-command fleet deploy/teardown for Azure Container Apps.\n#\n#   pwsh infra/depl... }\n  \'postgres-flip\' { Flip-PostgresRoles }\n  \'servicebus-flip\' { Flip-ServiceBusSas }\n  \'down\' { Down }\n}\n'
+_____ test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick ______
+tests\test_master_wake_window.py:48: in test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+    assert timedelta(minutes=5) <= lead <= timedelta(minutes=limit)
+E   assert datetime.timedelta(seconds=7500) <= datetime.timedelta(seconds=4200)
+E    +  where datetime.timedelta(seconds=4200) = timedelta(minutes=70)
+___________________ test_defaults_are_the_deployed_windows ____________________
+surfaces\tests\test_dashboard_window_days.py:120: in test_defaults_are_the_deployed_windows
+    assert start == datetime(2026, 9, 25, 22, 0, tzinfo=UTC)
+E   assert datetime.datetime(2026, 9, 25, 20, 25, tzinfo=datetime.timezone.utc) == datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc)
+E    +  where datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc) = datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc)
+=========================== short test summary info ===========================
+FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+======================== 3 failed, 46 passed in 5.51s =========================
+RED_EXIT=1
 ```
 
-**Proof — the green run:**
+**Proof — the green run (after the S273 fast-forward, import-order fix and third authorized existing-test edit):**
 
 ```text
-<the passing output>
+============================= test session starts =============================
+collected 50 items
+
+tests\test_master_wake_window.py ...                                     [  6%]
+tests\test_deploy_script_invariants.py ..........                        [ 26%]
+surfaces\tests\test_dashboard_window_days.py ........................... [ 80%]
+..                                                                       [ 84%]
+surfaces\tests\test_dashboard_schedule.py .......                        [ 98%]
+tests\test_check_version_scheme.py .                                     [100%]
+
+============================= 50 passed in 3.81s ==============================
+RESUMED_FOCUSED_EXIT=0
 ```
 
-**Guards planted:** <per guard: what was planted, the test that failed, that it was restored>
+**Guards planted:** all 17, each alone. The output below names every failing test and confirms byte-for-byte restoration before the next plant. Daily-field plants fail M1 and the deployed-windows test; hour plants fail M1 and the schedule-equality test. M3 passed on the unchanged production code by design and went red for G14, G15 and G17.
 
-**Module line counts:** <file **n**, file **n**>
+```text
+G01 old master wake 20:25: exit 1; 3 failed in 5.31s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+  FAILED surfaces/tests/test_dashboard_schedule.py::test_schedule_defaults_are_the_deployed_schedule
+G02 old retries comment above new wake: exit 1; 1 failed in 1.51s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+G03 master wake 22:28: exit 1; 1 failed in 1.41s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+G04 master wake 21:15: exit 1; 1 failed in 1.38s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+G05 master wake 22:45: exit 1; 1 failed in 1.40s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+G06 master days daily: exit 1; 2 failed in 2.09s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+G07 master hour 21:00: exit 1; 3 failed in 5.33s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+  FAILED surfaces/tests/test_dashboard_schedule.py::test_schedule_defaults_are_the_deployed_schedule
+G08 agent days daily: exit 1; 2 failed in 2.09s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+G09 agent hour 21:30: exit 1; 2 failed in 5.16s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED surfaces/tests/test_dashboard_schedule.py::test_schedule_defaults_are_the_deployed_schedule
+G10 end days daily: exit 1; 2 failed in 2.14s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+G11 end hour 00:30: exit 1; 2 failed in 5.28s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_script_defaults_are_the_live_wake_window
+  FAILED surfaces/tests/test_dashboard_schedule.py::test_schedule_defaults_are_the_deployed_schedule
+G12 dashboard wake 20:25: exit 1; 2 failed in 13.84s; RESTORED byte-for-byte
+  FAILED surfaces/tests/test_dashboard_schedule.py::test_schedule_defaults_are_the_deployed_schedule
+  FAILED surfaces/tests/test_dashboard_window_days.py::test_defaults_are_the_deployed_windows
+G13 preflight limit 25 minutes: exit 1; 1 failed in 1.89s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+G14 preflight limit 50 minutes: exit 1; 1 failed in 1.73s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_every_placing_tick_finds_a_fresh_check
+G15 master interval 120 minutes: exit 1; 1 failed in 1.77s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_every_placing_tick_finds_a_fresh_check
+G16 first placing tick 22:02: exit 1; 1 failed in 1.95s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick
+G17 last placing tick 23:50: exit 1; 1 failed in 1.87s; RESTORED byte-for-byte
+  FAILED tests/test_master_wake_window.py::test_every_placing_tick_finds_a_fresh_check
+GUARDS_PROVEN=17/17; ALL_MUTATED_FILES_RESTORED byte-for-byte
+```
 
-**`make ci`:** redirected to `<path>`. Exit code <n>. `<N passed, M skipped>`, coverage `<100.00 %>`.
-dependency audit `<result>`. detect-secrets `<result>`.
+**Module line counts:** `tests/test_master_wake_window.py` **68**, `tests/test_deploy_script_invariants.py` **169**, `surfaces/tests/test_dashboard_window_days.py` **122**, `tests/test_check_version_scheme.py` **64**, `surfaces/dashboard/settings.py` **178**; all under 200, all LF. No `noqa` added.
 
-**`make gate-ran`:** the planner's, from the proving worktree.
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\ta-s274-evidence-20261014\ci-resumed.txt`; the complete file was read and its proof lines extracted below. Exit code **0**, all **16** commands counted from `Makefile`; **4,834 passed, 8 skipped**, coverage **100.00 %**. Dependency audit: **no unaccepted vulnerabilities; one accepted advisory re-checked** (`PYSEC-2026-2447`, diskcache 5.6.3). detect-secrets: **Passed**. Untracked-secrets check: **no untracked files to scan**, exit 0.
 
-**Not met / verified failing:** <plainly, or "none">
+**Proof — resumed full gate (actual log lines and captured exit):**
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+uv run pre-commit run detect-secrets --all-files
+uv run python scripts/check_untracked_secrets.py
+Success: no issues found in 1205 source files
+Contracts: 5 kept, 0 broken.
+TOTAL                                                           20473      0   4358      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 4834 passed, 8 skipped, 2470 warnings in 444.87s (0:07:24) ==========
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 1 of 15 Dockerfiles; each installing command excludes diskcache by name; the dev group carries it too, and every sync passes --no-dev or excludes it by name; no fix release exists; every deployed optimizer installation excludes diskcache by name (S254, DL-266, ADR-0032) [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+detect-secrets (untracked): no untracked files to scan
+CI_EXIT=0
+```
+
+**Prior CI attempts — retained evidence:** attempt 1 exited 2 at ruff I001 in the new test; only import ordering was fixed. Attempt 2 passed the first 12 steps and stopped during pytest at the existing version-string inequality; that failure was reproduced without editing it, and the planner then authorized the exact third existing-test replacement quoted above. The resumed 50-case focused run and full gate both pass after that replacement.
+
+**Proof — redirected CI attempt 1 (actual output):**
+
+```text
+uv run ruff check . --output-format=github
+::error title=ruff (I001),file=C:\Users\yury_\Downloads\project\ta-s274\tests\test_master_wake_window.py,line=8,endLine=16::tests\test_master_wake_window.py:8:1: I001 Import block is un-sorted or un-formatted%0A  help: Organize imports
+make: *** [Makefile:47: ci] Error 1
+```
+
+**Proof — CI commands reached before the stop (actual log lines):**
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+```
+
+**Proof — the prior existing-test stop, before planner authorization:**
+
+```text
+============================= test session starts =============================
+collected 1 item
+
+tests\test_check_version_scheme.py F                                     [100%]
+
+================================== FAILURES ===================================
+___________ test_real_pyproject_passes_despite_normalized_lockfile ____________
+tests\test_check_version_scheme.py:60: in test_real_pyproject_passes_despite_normalized_lockfile
+    assert project_version != lock_version
+E   AssertionError: assert '0.125.10' != '0.125.10'
+=========================== short test summary info ===========================
+FAILED tests/test_check_version_scheme.py::test_real_pyproject_passes_despite_normalized_lockfile
+============================== 1 failed in 1.36s ==============================
+EXISTING_FAILURE_EXIT=1
+```
+
+**Proof — Appendix hashes, parsing, scope and lock:**
+
+```text
+c6ce85287bfa5f2c17ac5b303cdf9c535c5d1e43
+0b26950dd75eeddfdf72b5c8e5c03edc6d25311d
+i/lf    w/lf    attr/text=auto eol=lf infra/deploy-agents.ps1
+i/lf    w/lf    attr/text=auto eol=lf surfaces/dashboard/settings.py
+POWERSHELL_PARSE_ERRORS=0
+Resolved 180 packages in 1.84s
+Updated trading-agents v0.125.9 -> v0.125.10
+UV_LOCK_OFFLINE_EXIT=0
+ surfaces/tests/test_dashboard_window_days.py |  2 +-
+ tests/test_deploy_script_invariants.py       |  9 ----
+ tests/test_master_wake_window.py             | 68 ++++++++++++++++++++++++++++
+ 3 files changed, 69 insertions(+), 10 deletions(-)
+```
+
+`uv lock --offline` changed only the root package version from `0.125.9` to `0.125.10`; no dependency changed. `uv.lock` was staged with the PATCH bump. Repository git writes work. The final focused run above was performed after the already-completed S273 fast-forward and import-order fix. No further merge of `main` was made after the planner's resume instruction.
+
+**`make gate-ran`:** not done; the planner's from the proving worktree. Push, remote proof, merge, deploy and live proof are not done.
+
+**Not met / verified failing:** none among the local build success factors. The prior version-test failure is resolved by the exact planner-authorized edit. Push, remote gate, merge, deploy and live proof are **not done** and belong to review/follow-up; no script execution or Azure command ran.
 
 ---
 
 ## Return notes
 
-- <Scope held / where it moved and why.>
-- <What you disagreed with in the spec after reading the laws.>
-- <What the next sprint should know that is not obvious from the diff.>
+- Scope held: both Appendix blobs are exact. The original two existing-test edits and the planner-authorized third edit are listed and quoted above; no other existing test changed. All transient orchestration/master breaks were restored byte for byte. `docs/STATE.md`, the design log, shared `_settings()`, excluded surfaces files and all contracts are unchanged. No deploy script or Azure command ran.
+- No law/spec contradiction was found. The old version test assumed project and lock strings always differ; at PATCH `0.125.10` they correctly match. The planner authorized the exact numeric-component comparison, which retains the format gate and catches a stale lock. No import or test name changed.
+- S273 was already brought into this branch in the earlier turn at `25a0129dd600464d2dfb964cf623eea12acd6faa`. The resumed focused and full gates ran on that tree plus S274. No further merge of `main` was made; the planner handles it at review. The full-suite count includes S273, explaining the difference from the prototype's 4,824 passes.
+- M3 passes before the production change by design. Its proof is the red/restored limit, interval and final-tick plants. Neither a failed check at the new wake nor hold recovery was measured live here. Historical log windows before 2026-10-12 still start at the new 22:00 default, as the spec warns.
+- The surfaces law test-plan header still names v1.6, predating the PARAM-only v1.7/v1.8 amendments; it was read and left unchanged as required. The clauses and 31 / 38 count are unchanged. Final handback/status edits are checked separately before commit.
 
 ---
 

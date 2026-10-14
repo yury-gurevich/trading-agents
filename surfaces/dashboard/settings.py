@@ -138,7 +138,7 @@ class DashboardSettings(ScorecardSettings):
         unit="rows per container",
     )
     master_window_start_utc: str = tunable(
-        "20:25",
+        "22:00",
         why="Matches $MasterScaleStart in infra/deploy-agents.ps1 (test-pinned).",
     )
     agent_window_start_utc: str = tunable(

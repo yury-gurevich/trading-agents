@@ -117,6 +117,6 @@ def test_defaults_are_the_deployed_windows() -> None:
     assert weekdays == {defaults.window_days_utc} == {"1-5"}
     assert defaults.window_end_utc == "23:30"
     start, end = run_window("2026-09-25", defaults)
-    assert start == datetime(2026, 9, 25, 20, 25, tzinfo=UTC)
+    assert start == datetime(2026, 9, 25, 22, 0, tzinfo=UTC)
     assert end == datetime(2026, 9, 25, 23, 30, tzinfo=UTC)
     assert start.date() == end.date() == date(2026, 9, 25)

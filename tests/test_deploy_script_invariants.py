@@ -167,12 +167,3 @@ def test_gitignored_deploy_json_can_come_from_process_env() -> None:
     assert "GHCR_LOCAL_JSON" in text
     assert "KEY_VAULT_LOCAL_JSON" in text
     assert '[Environment]::GetEnvironmentVariable($envName, "Process")' in text
-
-
-def test_master_scale_window_starts_before_the_two_pre_dispatch_retries() -> None:
-    text = _script_text()
-
-    assert "[string]$MasterScaleStart = '25 20 * * 1-5'" in text
-    assert "[string]$AgentScaleStart = '30 22 * * 1-5'" in text
-    assert "[string]$ScaleEnd = '30 23 * * 1-5'" in text
-    assert "DL-179 §6" in text

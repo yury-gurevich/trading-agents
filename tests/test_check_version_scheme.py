@@ -57,6 +57,8 @@ def test_real_pyproject_passes_despite_normalized_lockfile(capsys):
         if package["name"] == "trading-agents"
     )
 
-    assert project_version != lock_version
+    assert [int(part) for part in project_version.split(".")] == [
+        int(part) for part in lock_version.split(".")
+    ]
     assert _checker()([str(root / "pyproject.toml")]) == 0
     assert capsys.readouterr().out == ""

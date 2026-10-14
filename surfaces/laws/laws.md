@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -204,7 +204,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `log_tail_default` | `200` | `int >= 1 <= 1000` | YES | Match the operator-requested useful default log excerpt. |
 | `log_tail_max` | `500` | `int >= 1 <= 5000` | YES | Keep interactive Log Analytics reads and responses bounded. |
 | `bundle_log_tail` | `40` | `int >= 1 <= 500` | YES | Give the repair bundle useful evidence without multiplying its size. |
-| `master_window_start_utc` | `"20:25"` | `str` | YES | Matches `$MasterScaleStart` in `infra/deploy-agents.ps1` and is test-pinned. |
+| `master_window_start_utc` | `"22:00"` | `str` | YES | Matches `$MasterScaleStart` in `infra/deploy-agents.ps1` and is test-pinned. |
 | `agent_window_start_utc` | `"22:30"` | `str` | YES | Matches `$AgentScaleStart` in `infra/deploy-agents.ps1` and is test-pinned. |
 | `window_end_utc` | `"23:30"` | `str` | YES | Matches `$ScaleEnd` in `infra/deploy-agents.ps1` and is test-pinned. |
 | `window_days_utc` | `"1-5"` | `str` | YES | The weekday field of the three scale windows in `infra/deploy-agents.ps1`, read as cron reads it, and is test-pinned. |
@@ -225,6 +225,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
+
+- v1.8 — S274 / DL-300 (2026-10-14): PARAM only. master_window_start_utc is 22:00, the master's
+  live wake (DL-294 amendment 1). No clause changes.
 
 - v1.7 — S270 / DL-295 (2026-10-11): PARAM only. window_end_utc is 23:30 and the new
   window_days_utc is 1-5, the operator's wake window (DL-294). No clause changes.

@@ -366,7 +366,7 @@ Evidence outside the repo: OneDrive `trading-agents-data/wq128-2026-10-11/`.
 
 ---
 
-## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT); P1 and P2 SPECCED as S276 (amendment 1, 2026-10-15), P3 not specced; work-queue 123 widened to it
+## DL-289 - an LLM role runs on the first working entry of a declared, ordered list of vendor, model and effort; it does not refuse to start, and it does not fail its orders open, while another entry can do the job - status: DIRECTION SET (operator, 2026-10-11 12:41 AEDT); P1 and P2 SPECCED as S276 (amendment 1, 2026-10-15) and MERGED as `0.127.00` (amendment 2), P3 not specced; work-queue 123 widened to it
 
 **Why.** Work-queue 123 asked the operator what a debater does when its vendor refuses its configured effort or model: refuse to start (no debate record, so under the binding posture every buy of the night is dropped) or fail each order open (the buys go undebated). The operator took neither: *"Refuse to start when another LLM can do the job and miss a day's run is not a best Idea. Let's create a list of LLM that can replace currently not working one ... we can switch Andropic with OpenAI or make a list of LLM+Effort combinations."* Before that, the operator asked whether the error can be recognised at run time: *"Does a return code tell you it is a 'effort mismatch'?"*
 
@@ -415,6 +415,8 @@ Each body's `type` is `invalid_request_error`, and the effort message lists the 
 - *Answered:* a time-out moves to the next candidate at activation, where it costs no debate time; the operator's chat does not follow the list (not now); the change restarts nothing in the fidelity count: no decision path changes (`DECISION_PATHS` against the prototype's diff prints none), and the first candidate is tonight's `openai` / `gpt-5.5` / `high`.
 - *Ruled out:* templating the probe body as text (the body is serialised once on purpose); each deliberator probing for itself (the master tests every credential before handing it over, DL-36); a second order value written by the switch (`MASTER_LLM_PROVIDER` already is one); handing over every passing key now (nothing switches in the night yet); a full `up` as the deploy (it reverts three live-only settings); a line in every brief.
 - *Assumed, not measured:* that Anthropic answers 200 to `max_tokens: 1` with effort `max`, and OpenAI to `reasoning_effort: high` with `max_completion_tokens: 256`. F1b measures both after the merge, about $0.01, on the operator's word.
+
+**Amendment 2 — merged (planner, 2026-10-15 11:10 AEDT).** S276 merged as `0.127.00` (`fe6da5ac`, GATE PROVEN, tag `v0.127.00`). One change to the design at review, the planner's own miss: CodeQL read the prototype's `credential_outcomes` and `model_choice` importing `CredentialTest` and `PassCache` from `credential_test`, which imports both of them, as seven `py/unsafe-cyclic-import` errors. *Decided:* the two types and `Cost` move to a leaf module, `agents/master/credential_check.py`, that `credential_test` re-exports through `__all__`. *Ruled out:* importing `Outcomes` and `choose_llm` inside the function (the cycle stays, only hidden from the module level); repointing the 30 other importers (no gain once the re-export exists). F1a passed at no cost; F1b's two assumptions above are still unmeasured.
 
 ---
 

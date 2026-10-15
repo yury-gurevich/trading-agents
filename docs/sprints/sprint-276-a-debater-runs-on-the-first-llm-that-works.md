@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-276-a-debater-runs-on-the-first-llm-that-works`
-**Status:** BUILT
+**Status:** MERGED 2026-10-15 — `0.127.00`, fast-forwarded to `fe6da5ac`, tag `v0.127.00`, GATE PROVEN `fe6da5ac` (CI, CodeQL, Security Findings; CI on attempt 2, attempt 1 a midnight-straddle flake in a scanner test already on `main`, fixed by its own chore); Windows `make ci` exit 0 (5,031 passed, 8 skipped, 100.00 %, audit clean); built by Codex, its 29 production files the planner's prototype byte for byte; the planner's 32 breaks 32 red against the builder's tests; one planner change at review, an import cycle CodeQL read as seven errors (133 open alerts after, 0 errors); F1a passed at no cost; F1b (paid, about $0.01) on the operator's word; not deployed: the `llm-candidates` step, then the retag, then F2
 **Version:** `0.127.00` (MINOR; lock package `0.127.0`)
 **Effort:** L
 **Decisions:** [DL-289](../design-log.md) (the direction, operator 2026-10-11; amendment 1 holds this sprint's ten decisions, made and measured) · [DL-282](../design-log.md) (one declared vendor, S262) · [DL-284](../design-log.md) (the two holes, found 2026-10-09) · [work-queue 123](../work-queue.md)
@@ -316,8 +316,8 @@ Name the tests as you like; cite the clause in each docstring. Every row must be
 - [x] No decision-path file changed (`DECISION_PATHS` against `git diff origin/main` prints none).
 - [x] Law cycle: three books, three test plans, both roll-ups at the derived counts.
 - [x] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, redirected to a file.
-- [ ] **F1a (planner, after merge, no cost):** the deploy script's own `llm-candidates` step and `Up`
+- [x] `make ci` exit 0, 100.00 % coverage, redirected to a file (the planner's Windows run, 2026-10-15).
+- [x] **F1a (planner, after merge, no cost; PASSED 2026-10-15 on `fe6da5ac`):** the deploy script's own `llm-candidates` step and `Up`
       on a stand-in `az` (`llm_step_standin.ps1`): vocabulary then pack, the pack decoding to
       `trading_llm.json` byte for byte, a failed vocabulary sending no pack; the master's create
       carrying `MASTER_LLM_PACK_B64` and `MASTER_LLM_PROVIDER=openai` within 32,767 characters.
@@ -560,7 +560,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT — local build proof only; see the CI and not-met records below.
+**Status:** MERGED 2026-10-15 as `0.127.00` (`fe6da5ac`, GATE PROVEN); the builder's line read: BUILT — local build proof only; see the CI and not-met records below.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s276`, branch `sprint-276-a-debater-runs-on-the-first-llm-that-works`; no `.env`. CI used a stripped child environment, `UV_OFFLINE=1`, `PIP_NO_INDEX=1` and an external socket guard refusing non-local connections. No vendor, Azure, deploy or external network call was made.
 
@@ -926,6 +926,10 @@ UNTRACKED_SECRETS_EXIT=0
 **Planner review (2026-10-15, `87aa3ee0`):** the 29 production files are the prototype `b3f85ee6` byte for byte (`git diff proto-s276 HEAD` names only the three law test plans); `uv.lock` changes the package version alone. Windows `make ci` with network, redirected to a file: **exit 0**, 5,031 passed, 8 skipped, 100.00 %, dependency audit clean (no unaccepted vulnerabilities, 1 accepted advisory re-checked); this discharges the offline exit 2 above. The planner's 67 tests pass on the built code. The planner's 32 breaks, run against the builder's 14 new and edited test files only, **32 of 32 red**, tree restored clean. Evidence: OneDrive `trading-agents-data/wq123-2026-10-15/` (`s276-make-ci.txt`, `planner_tests_on_built.txt`, `breaks_on_builder_tests.txt`). Push, CodeQL set-diff and `make gate-ran` follow on this commit.
 
 **One planner change at review, the planner's own miss:** the CodeQL set-diff against sprint 275's branch (133 open, 0 errors) found **7 new errors**, `py/unsafe-cyclic-import`, in `credential_outcomes.py`, `credential_test.py` and `model_choice.py`: the prototype's two new modules read `CredentialTest` and `PassCache` from `credential_test` (under `TYPE_CHECKING`), which imports both of them at run time. The two types and `Cost` now live in a new leaf module, `agents/master/credential_check.py` (77 lines), that `credential_test` re-exports through `__all__`, so none of the other 30 importers changed and the cycle is gone, not hidden. The same diff found one warning in a builder test (`py/incomplete-url-substring-sanitization`, A7's host check), now a `urlsplit(...).hostname` comparison. Windows `make ci` on the fix: exit 0 (5,031 passed, 8 skipped, 100.00 %, audit clean; `s276-make-ci-cycle-fix.txt`).
+
+**Merged (planner, 2026-10-15 11:10 AEDT):** GATE PROVEN `10e8913c`, the CodeQL set-diff against sprint 275's branch then empty (133 open, 0 errors, none new, none gone). `main` held one docs commit the branch lacked (`38a1c0b7`), merged in as `fe6da5ac` (one sprint-list line). Its first CI attempt failed at 99.99 %: `agents/scanner/domain/beta.py:35` uncovered, because the suite was collected at 23:59:58 UTC and `test_scanner_beta.py` dated its import-time series and its in-test series a day apart, so the flat-benchmark test returned `None` before the variance; a planted one-day shift reproduces it on `main` (`beta_straddle_probe.py`). The code being identical to `10e8913c`'s, the failed job was re-run: GATE PROVEN `fe6da5ac` (CI attempt 2); the test is fixed in `chore-beta-test-dates-once`. `main` fast-forwarded to `fe6da5ac`, tag `v0.127.00`.
+
+**F1a — PASSED 2026-10-15, no cost:** `llm_step_standin.ps1` against `infra/deploy-agents.ps1` on merged `main`: output identical to the prototype's (`f1a_main_fe6da5ac.txt`): the step sets the vocabulary then the pack, the pack decodes to `trading_llm.json` byte for byte, a failed vocabulary sends no pack, a failed pack reports itself; the master's create carries `MASTER_LLM_PACK_B64` and `MASTER_LLM_PROVIDER=openai` in 20,069 of 32,767 characters. **Owed:** F1b (paid, about $0.01, on the operator's word), then the deploy (`deploy-agents.ps1 -Action llm-candidates`, then the image-only retag), then F2.
 
 ---
 

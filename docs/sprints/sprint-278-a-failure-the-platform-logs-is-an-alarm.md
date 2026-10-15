@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-278-a-failure-the-platform-logs-is-an-alarm`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-301](../design-log.md) amendment 7 (measured and decided, planner, 2026-10-15; amendment 6 is the operator's decision) · [work-queue 133](../work-queue.md) · stacked on [S277](sprint-277-a-refused-request-is-answered-by-the-next-llm.md)'s built commit `6a5742c8`
@@ -217,13 +217,13 @@ planner judges the breaks by them). Build platform rows with `container_sensor_h
 
 ## Success factors
 
-- [ ] A31 to A37 exist under the names above, each citing its clause, red before section 1 and green after.
-- [ ] Appendix sections 1 and 2 applied exactly: the five production files and `laws.md` equal the
+- [x] A31 to A37 exist under the names above, each citing its clause, red suite before section 1 (six failed; A33 already passed) and all green after.
+- [x] Appendix sections 1 and 2 applied exactly: the five production files and `laws.md` equal the
       prototype's blobs (`prototype_blobs.txt`, OneDrive `trading-agents-data/wq133-2026-10-15/`).
-- [ ] No existing test changed; every existing container test passes.
-- [ ] B01 to B22 each red against your tests, each restored.
-- [ ] Every touched module, the new test file included, under 200 lines after `ruff format`.
-- [ ] Version `0.128.01`, `uv.lock` one line changed.
+- [x] No existing test changed; every existing container test passes.
+- [x] B01 to B22 each red against your tests, each restored.
+- [x] Every touched module, the new test file included, under 200 lines after `ruff format`.
+- [x] Version `0.128.01`, `uv.lock` one line changed.
 - [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot reach
       its network; say so if it is).
 - [ ] **F1 (the planner's, at review, no cost):** the replay on the built tree equals
@@ -381,15 +381,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Classification and row identity (`container_events.py`) | `orchestration/laws/dispatcher/laws.md` and `test-plan.md` (whole); `docs/laws/conventions.md` and `drift-register.md` (whole), read 2026-10-15 before code | `DSP-IDN-05`, `DSP-IN-05`, `DSP-IDM-04` | Yes: platform fixtures must carry `Type_s="Warning"`, `Level="info"`; identity must ignore `Type_s`. Apply only the authorized Appendix amendment. |
+| Query (`container_queries.py`) | Same four files, whole | `DSP-IN-05`, `DSP-SEC-03` | Keep expectations literal for the five measured exclusions and the projected marker. |
+| Why and operator words (`container_lines.py`, `container_sensor.py`, `container_alarm_text.py`) | Same four files, whole | `DSP-IN-05`, `DSP-OUT-07`, `DSP-OUT-08`, `DSP-SEC-03`, `DSP-FAIL-04`, `DSP-NEV-03` | Prove stored masked/cut why and cross-app wording with different event times; preserve the exact Appendix and sensor boundaries. |
+| New tests and law rollups | Same four files, whole; repository `CLAUDE.md` and documentation indexes | conventions §§3, 4, 7, 7a; `DSP-IN-05`, `DSP-IDM-04`, `DSP-OUT-07` | Cite each governing clause; derive the count from the gate. No existing test changes. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: one existing guarantee is widened by the exact `DSP-IN-05` amendment in Appendix section 2, v1.5 → v1.6; no new clause and no `contracts/` change. Decisions are already recorded in DL-301 amendment 7. Worktree `C:\Users\yury_\Downloads\project\ta-s278`, branch `sprint-278-a-failure-the-platform-logs-is-an-alarm`, clean starting HEAD `13ecb63674e3843597de14241656dcde431e57a9`, with S277 built commit `6a5742c8` an ancestor. This record precedes code changes.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None. The old input clause is intentionally widened only as authorized by Appendix section 2. DRIFT-114 and DRIFT-115 are already corrected; their boundaries remain unchanged.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** None beyond the amendment already decided in DL-301 amendment 7; no new drift row needed.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** None at this pre-code reading. Binding rows are already 🟩. `DSP-IDN-03`, `DSP-NEV-02`, `DSP-TYP-01`, and `DSP-DEP-01` remain ⬜; their unproven scope is not claimed by this sprint.
 
 ---
 
@@ -397,43 +400,347 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder)* | | | | |
+| A31 | `test_a31_platform_failures_alarm` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05` |
+| A32 | `test_a32_revision_gone_is_nothing` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05` |
+| A33 | `test_a33_measured_warnings_are_nothing` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05` |
+| A34 | `test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05` |
+| A35 | `test_a35_query_asks_for_unknown_warnings_not_measured_ones` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05 / DSP-IDM-04` |
+| A36 | `test_a36_platform_why_is_its_own_words` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-IN-05 / DSP-OUT-07` |
+| A37 | `test_a37_platform_kinds_in_the_operators_words` | `orchestration/tests/test_container_platform.py` | PASS | `DSP-OUT-07` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** None; seven exact planned test functions, with literal cases inside them.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder)*
+**Status:** BUILT — local implementation and guards proven; overall CI verified failing only at the offline dependency audit. Planner review, remote gates, F1 and F2 not done.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s278`, branch `sprint-278-a-failure-the-platform-logs-is-an-alarm`; `.env` absent. Prepared worktree venv; `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PYTHONUTF8=1`. External Python DNS/connect calls blocked by a temporary `sitecustomize.py` outside the worktree; loopback fixtures remain available. No bare `uv sync`.
 
-**Result:** *(builder)*
+**Result:** Exact Appendix production and law blobs matched against local prototype commit `f182d2ee`; A31-A37 pass, all 130 container tests pass, and B01-B22 each make a builder test red before restoration. PATCH `0.128.01`; offline lock update changes one package-version line. Full pytest: 5095 passed, 9 skipped, 2470 warnings in 452.26s (0:07:32); coverage 100.00%. Overall `make ci` exit 2: only dependency audit could not obtain fresh external advisory data; its success is not claimed.
 
-**Files changed:** *(builder)*
+**Files changed:**
+
+- `orchestration/container_events.py`
+- `orchestration/container_queries.py`
+- `orchestration/container_lines.py`
+- `orchestration/container_sensor.py`
+- `orchestration/container_alarm_text.py`
+- `orchestration/tests/test_container_platform.py`
+- `orchestration/laws/dispatcher/laws.md`
+- `orchestration/laws/dispatcher/test-plan.md`
+- `docs/laws/ledger.md`
+- `docs/laws/INDEX.md`
+- `pyproject.toml`
+- `uv.lock`
+- `docs/sprints/sprint-278-a-failure-the-platform-logs-is-an-alarm.md`
+- `docs/sprints/README.md`
 
 **Design decisions:** recorded as [`DL-301`](../design-log.md) amendment 7 (planner).
 
-**Proof — the red run first:** *(builder)*
+**Proof — the red run first:** On unchanged production and law blobs, `uv run --offline --no-sync pytest orchestration/tests/test_container_platform.py --no-cov -q`, exit 1. A33 already passes on the old classifier; the six changed-behavior tests fail.
 
-**Proof — the green run:** *(builder)*
+```text
+RED_EXIT=1
+FF.FFFF                                                                  [100%]
+================================== FAILURES ===================================
+______________________ test_a31_platform_failures_alarm _______________________
+orchestration\tests\test_container_platform.py:50: in test_a31_platform_failures_alarm
+    assert event is not None
+E   assert None is not None
+______________________ test_a32_revision_gone_is_nothing ______________________
+orchestration\tests\test_container_platform.py:59: in test_a32_revision_gone_is_nothing
+    assert event is not None
+E   assert None is not None
+________ test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not ________
+orchestration\tests\test_container_platform.py:81: in test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not
+    assert event is not None
+E   assert None is not None
+_________ test_a35_query_asks_for_unknown_warnings_not_measured_ones __________
+orchestration\tests\test_container_platform.py:98: in test_a35_query_asks_for_unknown_warnings_not_measured_ones
+    assert (
+E   assert "or (Type_s == 'Warning' and Reason_s !in ('AssigningReplicaFailed', 'Completed', 'ReplicaUnhealthy', 'ScaledObjectCheckFailed', 'ScaledObjectDeleted'))" in 'ContainerAppSystemLogs_CL\n| where ingestion_time() > datetime(2026-10-14T21:30:00.000000Z) and ingestion_time() <= d..., JobName_s, RevisionName_s, ReplicaName_s, Reason_s, Level, Log_s, Count_d\n| order by TimeGenerated asc\n| take 5000'
+___________________ test_a36_platform_why_is_its_own_words ____________________
+orchestration\tests\test_container_platform.py:129: in test_a36_platform_why_is_its_own_words
+    assert (result.recorded, result.alarms, result.told) == (4, 4, 4)
+E   assert (1, 1, 1) == (4, 4, 4)
+E
+E     At index 0 diff: 1 != 4
+E     Use -v to get more diff
+_______________ test_a37_platform_kinds_in_the_operators_words ________________
+orchestration\tests\test_container_platform.py:158: in test_a37_platform_kinds_in_the_operators_words
+    assert kind_words(group) == words
+E   AssertionError: assert 'revision-failed' == 'revision update failed'
+E
+E     - revision update failed
+E     ?         ^^^^^^^^
+E     + revision-failed
+E     ?         ^
+=========================== short test summary info ===========================
+FAILED orchestration/tests/test_container_platform.py::test_a31_platform_failures_alarm
+FAILED orchestration/tests/test_container_platform.py::test_a32_revision_gone_is_nothing
+FAILED orchestration/tests/test_container_platform.py::test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not
+FAILED orchestration/tests/test_container_platform.py::test_a35_query_asks_for_unknown_warnings_not_measured_ones
+FAILED orchestration/tests/test_container_platform.py::test_a36_platform_why_is_its_own_words
+FAILED orchestration/tests/test_container_platform.py::test_a37_platform_kinds_in_the_operators_words
+6 failed, 1 passed in 3.35s
+```
 
-**Guards planted:** *(builder)*
+**Proof — the green run:** New suite after the Appendix, followed by all `test_container*.py` under `orchestration/tests/` and `tests/`, each with `uv run --offline --no-sync pytest --no-cov -q` (exit 0). No existing test edited.
 
-**Module line counts:** *(builder)*
+```text
+.......                                                                  [100%]
+7 passed in 1.07s
+```
 
-**`make ci`:** *(builder)*
+```text
+........................................................................ [ 55%]
+..........................................................               [100%]
+130 passed in 3.77s
+```
+
+The two Appendix sections, unchanged after formatting:
+
+```text
+APPENDIX_SECTION_1=APPLIED_EXACTLY
+orchestration/container_alarm_text.py: 832df2da8a18a0ed9515925b545c8a00f6e0794b MATCH prototype f182d2ee
+orchestration/container_events.py: 94bf741ea815deaa0daba4b36a6caabdaec69d9a MATCH prototype f182d2ee
+orchestration/container_lines.py: a0d828c6b45c21f00b0639ba00ea1c6ba124b49b MATCH prototype f182d2ee
+orchestration/container_queries.py: 6047f95ffa54bac3c73217f9ccde8163c686312d MATCH prototype f182d2ee
+orchestration/container_sensor.py: 1e717a54bb2faaef68e1001deb7f1d93a18d9601 MATCH prototype f182d2ee
+APPENDIX_SECTION_2=APPLIED_EXACTLY
+orchestration/laws/dispatcher/laws.md: 8dedaee706a7a51cd3327067c1cd090a1e6a43ba MATCH prototype f182d2ee
+```
+
+Law counter derived by the gate implementation (`_derived_counter`) and full law gate:
+
+```text
+DISPATCHER_DERIVED=43/47
+LAW_COVERAGE_EXIT=0
+```
+
+**Guards planted:** Each exact B01-B22 mutation ran alone against the seven builder tests only (`.venv/Scripts/python.exe -m pytest orchestration/tests/test_container_platform.py --no-cov -q`). Each exit was 1 with an actual test failure, not a collection error. All five production byte sequences checked restored before the next mutation; final restored suite exit 0.
+
+```text
+B01: exit 1; RED test_a31_platform_failures_alarm, test_a32_revision_gone_is_nothing, test_a36_platform_why_is_its_own_words; RESTORED
+B02: exit 1; RED test_a31_platform_failures_alarm, test_a32_revision_gone_is_nothing; RESTORED
+B03: exit 1; RED test_a31_platform_failures_alarm, test_a32_revision_gone_is_nothing, test_a36_platform_why_is_its_own_words; RESTORED
+B04: exit 1; RED test_a31_platform_failures_alarm, test_a32_revision_gone_is_nothing, test_a36_platform_why_is_its_own_words; RESTORED
+B05: exit 1; RED test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not; RESTORED
+B06: exit 1; RED test_a32_revision_gone_is_nothing; RESTORED
+B07: exit 1; RED test_a32_revision_gone_is_nothing; RESTORED
+B08: exit 1; RED test_a32_revision_gone_is_nothing; RESTORED
+B09: exit 1; RED test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not; RESTORED
+B10: exit 1; RED test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not; RESTORED
+B11: exit 1; RED test_a33_measured_warnings_are_nothing, test_a35_query_asks_for_unknown_warnings_not_measured_ones; RESTORED
+B12: exit 1; RED test_a34_unknown_warning_alarms_and_unmarked_unknown_does_not, test_a35_query_asks_for_unknown_warnings_not_measured_ones; RESTORED
+B13: exit 1; RED test_a35_query_asks_for_unknown_warnings_not_measured_ones; RESTORED
+B14: exit 1; RED test_a35_query_asks_for_unknown_warnings_not_measured_ones; RESTORED
+B15: exit 1; RED test_a35_query_asks_for_unknown_warnings_not_measured_ones; RESTORED
+B16: exit 1; RED test_a36_platform_why_is_its_own_words; RESTORED
+B17: exit 1; RED test_a36_platform_why_is_its_own_words; RESTORED
+B18: exit 1; RED test_a36_platform_why_is_its_own_words; RESTORED
+B19: exit 1; RED test_a36_platform_why_is_its_own_words; RESTORED
+B20: exit 1; RED test_a36_platform_why_is_its_own_words, test_a37_platform_kinds_in_the_operators_words; RESTORED
+B21: exit 1; RED test_a36_platform_why_is_its_own_words, test_a37_platform_kinds_in_the_operators_words; RESTORED
+B22: exit 1; RED test_a37_platform_kinds_in_the_operators_words; RESTORED
+GUARDS_PROVEN=22/22
+RESTORED_EXIT=0
+.......                                                                  [100%]
+7 passed in 0.99s
+```
+
+**Module line counts:** After `ruff format` (six files unchanged); all under 200.
+
+```text
+orchestration/container_events.py: 181 lines
+orchestration/container_queries.py: 93 lines
+orchestration/container_lines.py: 77 lines
+orchestration/container_sensor.py: 179 lines
+orchestration/container_alarm_text.py: 183 lines
+orchestration/tests/test_container_platform.py: 158 lines
+POST_FORMAT_APPENDIX_BLOBS=MATCH
+```
+
+Offline version/lock update (`uv lock --offline`, exit 0; `uv.lock` staged):
+
+```text
+Resolved 180 packages in 341ms
+Updated trading-agents v0.128.0 -> v0.128.1
+```
+
+```text
+1	1	uv.lock
+```
+
+**`make ci`:** Ran from this worktree as `make ci > $env:TEMP/ta-s278-evidence/ci.txt 2>&1`, captured `$LASTEXITCODE=2`, and read the log. Steps 1-13 passed; step 14 (dependency audit) is verified failing because fresh PyPI advisory data cannot be fetched offline. The network-dependent advisory refresh is **NOT RUN**; the planner owes it. Make stopped before steps 15-16, so both security steps were run separately and passed. Full raw logs remain outside the repository at `%TEMP%/ta-s278-evidence/`. Command lines, coverage/result, skips and audit failure below are pasted log excerpts; module warnings, per-file test progress and coverage rows omitted.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+TOTAL                                                           21353      0   4568      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5095 passed, 9 skipped, 2470 warnings in 452.26s (0:07:32) ==========
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\util\connection.py", line 60, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\AppData\Local\Temp\ta-s278-evidence\sitecustomize.py", line 20, in _resolve
+    raise OSError('Sprint 278 offline guard: external DNS blocked')
+OSError: Sprint 278 offline guard: external DNS blocked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connectionpool.py", line 494, in _make_request
+    raise new_e
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connectionpool.py", line 470, in _make_request
+    self._validate_conn(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1125, in _validate_conn
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connection.py", line 254, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 278 offline guard: external DNS blocked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\urllib3\util\retry.py", line 555, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 278 offline guard: external DNS blocked"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Scripts\pip-audit.exe\__main__.py", line 10, in <module>
+    sys.exit(audit())
+             ~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\pip_audit\_cli.py", line 554, in audit
+    for spec, vulns in auditor.audit(source):
+                       ~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\pip_audit\_audit.py", line 68, in audit
+    for dep, vulns in self._service.query_all(specs):
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\pip_audit\_service\interface.py", line 180, in query_all
+    yield self.query(spec)
+          ~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\pip_audit\_service\pypi.py", line 64, in query
+    response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\cachecontrol\adapter.py", line 76, in send
+    resp = super().send(request, stream, timeout, verify, cert, proxies)
+  File "C:\Users\yury_\Downloads\project\ta-s278\.venv\Lib\site-packages\requests\adapters.py", line 729, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: Sprint 278 offline guard: external DNS blocked"))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+Separate final two steps:
+
+```text
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
 
 **`make gate-ran`:** *(planner, at review)*
 
-**Not met / verified failing:** *(builder)*
+**Not met / verified failing:** Overall `make ci` is verified failing (exit 2); the fresh dependency-advisory refresh is NOT RUN (offline). The nine pytest cases listed above were skipped, so their runtime proof is not done. Planner blob-file comparison with `prototype_blobs.txt`, planner tests/break runner, CodeQL set-diff, F1 replay, `make gate-ran`, push, merge, deploy and F2 are not done. Local full-object comparison to `f182d2ee` proves the six Appendix blobs; it does not substitute for F1/F2.
 
 ---
 
 ## Return notes
 
-*(builder)*
+- No scope or implementation pivot: production and law match the authorized prototype exactly. Existing tests, S277 implementation, protected sensor modules, contracts, packs, Dockerfile, infra, `docs/STATE.md`, `docs/design-log.md` and `docs/work-queue.md` are unchanged relative to the starting HEAD.
+- Command correction: Windows subprocess text-mode stdin made `git apply --check` reject the diff as corrupt at line 7; `--recount` did not help. Sending the original UTF-8 diff as bytes fixed the transport, without editing hunks or Appendix text. Both sections then applied and all full blob IDs matched.
+- A33 already passes on the unchanged classifier, which ignored those reasons. The initial suite is red (six failed, one passed); B11 proves A33 detects a removed benign reason. Seven builder test functions hold their literal cases in 158 lines. The prototype's 172-line file and its test count describe a different test implementation; this run's actual count and nine skips are recorded above.
+- Derived dispatcher count reproduces 43 / 47; the amended description is the complete normalized `DSP-IN-05` clause. No gray clause promoted and no new drift discovered.
+- Offline `uv lock --offline` succeeded, resolving 180 packages; the lock normalizes the project version to `0.128.1`. Its only changed line is staged with `pyproject.toml`'s `0.128.01` bump.
+- Commit-hook correction: the first attempt exited 1 on markdownlint MD012, one extra blank line in the added handback. Removed it; a separate full Markdown lint then passed (exit 0). All other hooks in that attempt passed.
+- Build evidence is local. Planner owes the fresh dependency audit, review gates, replay F1 and post-deploy F2. S277 must merge first; any rebase or changed base needs re-gating.
+
+Final documentation and scope checks after setting BUILT (all exit 0):
+
+```text
+FINAL_SCOPE=14/14 approved paths; no protected or existing-test edits
+SIX_APPENDIX_BLOBS=MATCH
+TESTS=7 exact planned functions; clause docstrings; 158 lines
+VERSION=0.128.01; uv.lock=one line; SPEC_APPENDIX=UNCHANGED
+check_law_coverage.py: exit 0
+check_sprint_status.py: exit 0
+docs/sprints/sprint-278-a-failure-the-platform-logs-is-an-alarm.md: BUILT | **Status:** BUILT
+docs_seen=283 SPEC=10 BUILT=2 MERGED=271 UNMAPPED=0 MISSING=0
+check_tracker_size.py: exit 0
+check_markdown_links.py: exit 0
+check_version_scheme.py: exit 0
+MARKDOWN_EXIT=0
+markdownlint-cli2........................................................Passed
+```
 
 ---
 

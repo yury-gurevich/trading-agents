@@ -15,7 +15,7 @@ import re
 from datetime import UTC
 from typing import TYPE_CHECKING
 
-from orchestration.container_events import SENSED_REASONS
+from orchestration.container_events import BENIGN_WARNINGS, SENSED_REASONS, WARNING
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -44,13 +44,15 @@ class ContainerLogReadError(RuntimeError):
 def events_query(start: datetime, until: datetime) -> str:
     """Return the query for the sensed rows ingested after ``start`` up to ``until``."""
     reasons = ", ".join(f"'{reason}'" for reason in SENSED_REASONS)
+    benign = ", ".join(f"'{reason}'" for reason in BENIGN_WARNINGS)
     return (
         "ContainerAppSystemLogs_CL\n"
         f"| where ingestion_time() > {kql_time(start)}"
         f" and ingestion_time() <= {kql_time(until)}\n"
-        f"| where Reason_s in ({reasons}) or Level =~ 'error'\n"
+        f"| where Reason_s in ({reasons}) or Level =~ 'error'"
+        f" or (Type_s == '{WARNING}' and Reason_s !in ({benign}))\n"
         "| project TimeGenerated, time_t, ContainerAppName_s, JobName_s, "
-        "RevisionName_s, ReplicaName_s, Reason_s, Level, Log_s, Count_d\n"
+        "RevisionName_s, ReplicaName_s, Reason_s, Type_s, Level, Log_s, Count_d\n"
         "| order by TimeGenerated asc\n"
         f"| take {EVENT_ROWS_MAX}"
     )

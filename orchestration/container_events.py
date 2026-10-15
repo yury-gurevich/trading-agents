@@ -4,9 +4,10 @@ Agent: orchestration
 Role: classify Azure Container Apps system-log rows for the container sensor (DL-301).
 External I/O: none.
 
-A row is one record of the workspace's `ContainerAppSystemLogs_CL`. The kinds are an
-allow list measured on its 30 days (2026-10-14): a reason not named here is ignored,
-except that a row the platform itself marks `error` is always an alarm.
+A row is one record of the workspace's `ContainerAppSystemLogs_CL`. A row the platform
+marks `error` or `Warning` is an alarm unless it is one of the warnings measured as
+a deploy's or a wake's by-product on the workspace's 30 days (2026-10-15, DL-301
+amendment 7); a reason not named here and not so marked is ignored.
 """
 
 from __future__ import annotations
@@ -27,6 +28,9 @@ KILLED = "killed"
 EXIT_ERROR = "exit-error"
 PLATFORM_ERROR = "platform-error"
 PREEMPTED = "preempted"
+REVISION_FAILED = "revision-failed"
+AUTOSCALER_FAILED = "autoscaler-failed"
+PLATFORM_WARNING = "platform-warning"
 
 ALARM_KINDS = frozenset(
     {
@@ -37,8 +41,12 @@ ALARM_KINDS = frozenset(
         KILLED,
         EXIT_ERROR,
         PLATFORM_ERROR,
+        REVISION_FAILED,
+        AUTOSCALER_FAILED,
+        PLATFORM_WARNING,
     }
 )
+PLATFORM_KINDS = frozenset({REVISION_FAILED, AUTOSCALER_FAILED, PLATFORM_WARNING})
 
 EXIT_REASON = "Error"  # the platform's reason for every exit; the code says which
 _BY_REASON = {
@@ -48,8 +56,19 @@ _BY_REASON = {
     "OOMKilled": MEMORY_KILL,
     "Preempted": PREEMPTED,
     "ScaleDown": PREEMPTED,
+    "RevisionFailure": REVISION_FAILED,
+    "FailedGetScale": AUTOSCALER_FAILED,
+    "FailedUpdateStatus": AUTOSCALER_FAILED,
 }
 SENSED_REASONS = (*_BY_REASON, EXIT_REASON)  # the query's filter is built from this
+WARNING = "Warning"
+BENIGN_WARNINGS = (  # each one ends by itself: measured 2026-10-15 (DL-301 amendment 7)
+    "AssigningReplicaFailed",
+    "Completed",
+    "ReplicaUnhealthy",
+    "ScaledObjectCheckFailed",
+    "ScaledObjectDeleted",
+)
 _KEY_FIELDS = (
     "TimeGenerated",
     "time_t",
@@ -65,6 +84,7 @@ _KEY_FIELDS = (
 _EXIT_CODE = re.compile(r"exit code '(-?\d+)'")
 _REVISION_SUFFIX = re.compile(r"--[a-z0-9]+$")
 _PROVISIONING = "Error provisioning revision"
+_GONE = " not found"  # the autoscaler asked for a revision a deploy had just removed
 _KILL_CODE = 137
 MESSAGE_LIMIT = 300
 
@@ -95,7 +115,7 @@ def classify(row: Mapping[str, object]) -> ContainerEvent | None:
     reason = _text(row, "Reason_s")
     message = _text(row, "Log_s")
     code = _exit_code(message)
-    kind = _kind(reason, _text(row, "Level"), message, code)
+    kind = _kind(reason, _text(row, "Level"), _text(row, "Type_s"), message, code)
     if kind is None:
         return None
     revision = _text(row, "RevisionName_s")
@@ -124,15 +144,21 @@ def event_key(row: Mapping[str, object]) -> str:
     return f"container-event:{hashlib.sha256(joined.encode()).hexdigest()[:32]}"
 
 
-def _kind(reason: str, level: str, message: str, code: int | None) -> str | None:
+def _kind(
+    reason: str, level: str, marked: str, message: str, code: int | None
+) -> str | None:
     if reason == EXIT_REASON:
         if code == 0:
             return None
         return KILLED if code == _KILL_CODE else EXIT_ERROR
+    if _BY_REASON.get(reason) == AUTOSCALER_FAILED and message.endswith(_GONE):
+        return None
     if reason in _BY_REASON:
         return _BY_REASON[reason]
     if level.lower() == "error":
         return PROVISION_FAILED if message.startswith(_PROVISIONING) else PLATFORM_ERROR
+    if marked == WARNING and reason not in BENIGN_WARNINGS:
+        return PLATFORM_WARNING
     return None
 
 

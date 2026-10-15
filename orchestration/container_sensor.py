@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from orchestration.container_alarm_text import alarm_message, group_events
 from orchestration.container_events import ContainerEvent, classify
-from orchestration.container_lines import LINE_WINDOW, choose_line
+from orchestration.container_lines import LINE_WINDOW, choose_line, platform_why
 from orchestration.container_queries import EVENT_ROWS_MAX
 from orchestration.container_sensor_graph import (
     CONTAINER_EVENT,
@@ -151,7 +151,7 @@ def _why(event: ContainerEvent, lines: _Lines) -> str:
     occurred = parse_instant(event.occurred_at)
     if not event.alarm or occurred is None:
         return ""
-    return choose_line(lines.get(event.replica, []), occurred)
+    return choose_line(lines.get(event.replica, []), occurred) or platform_why(event)
 
 
 def _tell(

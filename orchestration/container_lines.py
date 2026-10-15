@@ -7,6 +7,8 @@ External I/O: none.
 Lines of one traceback share a timestamp, so "the last line" is not the error: the
 line is chosen by its shape. A container's closing line naming a failed close comes
 first, then an exception line, then the line saying it was told to stop (DL-297).
+A failure of the platform itself has no replica and so no console: its why is the
+platform's own reason and message (DL-301 amendment 7).
 """
 
 from __future__ import annotations
@@ -15,9 +17,13 @@ import re
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+from orchestration.container_events import PLATFORM_KINDS
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
+
+    from orchestration.container_events import ContainerEvent
 
 LINE_WINDOW = timedelta(minutes=15)  # how far before an alarm its line may be
 _LINE_AFTER = timedelta(minutes=1)  # the platform stamps an exit after its last line
@@ -51,6 +57,13 @@ def choose_line(lines: Sequence[tuple[datetime, str]], occurred: datetime) -> st
         if matching:
             return safe_line(max(matching, key=lambda item: item[0])[1])
     return ""
+
+
+def platform_why(event: ContainerEvent) -> str:
+    """Return the platform's own words for a platform failure, made safe; else ''."""
+    if event.kind not in PLATFORM_KINDS:
+        return ""
+    return safe_line(f"{event.reason}: {event.message}")
 
 
 def safe_line(text: str) -> str:

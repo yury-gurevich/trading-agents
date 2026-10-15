@@ -16,12 +16,15 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from orchestration.container_events import (
+    AUTOSCALER_FAILED,
     EXIT_ERROR,
     KILLED,
     MEMORY_KILL,
     PLATFORM_ERROR,
+    PLATFORM_WARNING,
     PREEMPTED,
     PROVISION_FAILED,
+    REVISION_FAILED,
     SCALER_FAILED,
     START_FAILED,
 )
@@ -39,6 +42,9 @@ _WORDS = {
     KILLED: "killed (exit code 137)",
     PLATFORM_ERROR: "platform error",
     PREEMPTED: "moved off its node by the platform",
+    REVISION_FAILED: "revision update failed",
+    AUTOSCALER_FAILED: "the platform's autoscaler failed",
+    PLATFORM_WARNING: "platform warning",
 }
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 TIMES = chr(0x00D7)  # the multiplication sign of a repeat count

@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
 > brief the operator once on each run it placed, and tell the operator when a container of the
@@ -47,10 +47,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `run_id`. Free text, stale run ids, and malformed answer payloads cannot decide today's placement.
 - **DSP-IN-05** — The sensor's input is the rows of the workspace's `ContainerAppSystemLogs_CL` that
   reached it inside the read window, read by their ingestion time, and for an alarm's why the stderr
-  lines of `ContainerAppConsoleLogs_CL` of the same replica. A row is an alarm (a failed start or a
-  failed scale-up, a revision that failed to provision, a scale rule the scaler refused, a memory kill,
-  an exit with code 137, any other exit whose code is not 0 or cannot be read, any other row the
-  platform marks `error`), a report (a preemption, or a node scale-down that moved a replica), or
+  lines of `ContainerAppConsoleLogs_CL` of the same replica, or, for a failure of the platform itself,
+  the row's own reason and message. A row is an alarm (a failed start or a failed scale-up, a revision
+  that failed to provision, a scale rule the scaler refused, a memory kill, an exit with code 137, any
+  other exit whose code is not 0 or cannot be read, a revision update the platform failed, the
+  platform's autoscaler failing to read or update a scale unless it found the revision gone, any
+  other row the platform marks `error`, and any other row it marks `Warning` except the five each
+  deploy and each wake leave behind: a replica waiting for its node, a probe refused while a replica
+  starts or stops, a scale object checked or removed with its revision, and a completed container),
+  a report (a preemption, or a node scale-down that moved a replica), or
   nothing; an exit with code 0 is nothing. The app is the row's app or job name, else its revision's
   name less the revision suffix, else `unknown`.
 
@@ -295,3 +300,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `CAP` amended for the `AgentInstance` read.
 - v1.5 — S277 (DL-289 P3, work-queue 123): the brief's LLM line also names a switch during the run,
   read from the run's `DeliberationRun`. `DSP-OUT-09` amended. No clause added.
+- v1.6 — S278 (DL-301 amendment 7, work-queue 133): a failure the platform logs is an alarm
+  whoever caused it: a revision update the platform failed, its autoscaler failing, and any other
+  row it marks `Warning` but the five measured by-products of a deploy or a wake. `DSP-IN-05`
+  amended. No clause added.

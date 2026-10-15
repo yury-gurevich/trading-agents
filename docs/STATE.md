@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-15 20:00 AEDT · **Version:** **0.128.01 on `main`** (`9781b4e1`, tags `v0.128.00` S277 and `v0.128.01` S278, both GATE PROVEN, not deployed) · **the fleet on `s276` = 0.127.00, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
+**Last updated:** 2026-10-15 21:05 AEDT · **Version:** **0.128.01 on `main`** (`9781b4e1`, tags `v0.128.00` S277 and `v0.128.01` S278, both GATE PROVEN, not deployed) · **the fleet on `s276` = 0.127.00, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -109,8 +109,12 @@ second ranking.
    `v0.128.01`, rollback `s276`), then S277's and S278's F2.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
-3. Codex-sized and off the fidelity decision paths: what execution still downloads in its first five minutes
-   (work-queue 101).
+3. **[S279](sprints/sprint-279-a-pass-reads-each-label-once.md) is specced for Codex** (work-queue 101,
+   [DL-302](design-log.md)): what execution downloads in its first minute is the drop sweep listing every
+   `Fill` once per broker order, and the stop-width resolver does the same once per adopted position in
+   three agents; one read per pass, three new PERF clauses, no decision changes (measured on live data).
+   The worktree `../ta-s279` is ready; not handed over. Found on the way: the broker's order list is the
+   newest 500 and passes 500 around early December (work-queue 134, measured, not decided).
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from
    `sched-2026-10-08`, read from a worktree pinned at `v0.123.04` (`v0.125.00` holds the same
    decision code); on PASS,

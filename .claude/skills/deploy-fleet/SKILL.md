@@ -74,6 +74,15 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    existing label's property list changed, and no app writes the new labels. The 16 apps then
    hold the earlier pack until the next full `up`; say so in the deploy record.
 
+   🪤 **A pack the master reads at start moved too? Run its narrow step before the retag** (S276,
+   [DL-289](../../../docs/design-log.md) amendment 3). `pwsh infra/deploy-agents.ps1 -Action
+   llm-candidates` sets the master's vocabulary, then its credential pack and its LLM pack in one
+   update, each read back; the old master reads the new packs, so it goes first. Retagging first
+   leaves the new master on the old injected packs: it writes properties the old vocabulary refuses,
+   and it refuses to start on a role probe without `candidate_paths`. The spec's step missed the
+   credential pack; the diff of all three packs above is what caught it, so read the live env's
+   decoded hashes against the repo every time, not the script's list.
+
 2. **Build all 15 images at the tag, from the gated merge commit.** If `main` still equals that commit,
    dispatch on `main`. If anything has landed above it, dispatch on its release tag instead, so the
    build is not of an ungated commit (the S186 hazard). Since S215, `record_deploy.py` accepts a build

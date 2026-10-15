@@ -14,9 +14,14 @@ from agents.scanner.domain.filters import apply_filters
 from agents.scanner.settings import ScannerSettings
 from contracts.provider import OHLCVBar
 
+# One date for every bar: some series are built at import and others inside a test,
+# so a clock read per bar puts them a day apart when the suite crosses 00:00 UTC,
+# and the flat-benchmark test returns None for too few returns, not a zero variance.
+_TODAY = datetime.now(tz=UTC).date()
+
 
 def _bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
-    day = datetime.now(tz=UTC).date() - timedelta(days=days_ago)
+    day = _TODAY - timedelta(days=days_ago)
     open_ = close * 0.99
     return OHLCVBar(
         ticker=ticker,
@@ -83,7 +88,7 @@ def test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history() -> None:
         bars,
         _BENCH,
         {},
-        datetime.now(tz=UTC).date(),
+        _TODAY,
         _beta_settings(),
     )
 

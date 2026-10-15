@@ -789,7 +789,7 @@ function Enable-LlmCandidates {
     )
   }
   $packOk = ($null -ne $state) -and ((Get-AppState "master") -eq "Succeeded")
-  Check $packOk "MASTER_CREDENTIAL_TESTS_B64 and MASTER_LLM_PACK_B64 on master"
+  Check $packOk "credential and LLM packs on master"
   Bot
   return $vocabOk -and $packOk
 }

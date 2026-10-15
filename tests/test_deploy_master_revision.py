@@ -67,12 +67,16 @@ def test_a1_create_carries_probes_secret_map_and_provider() -> None:
 
 
 def test_a2_no_later_call_delivers_the_probe_pack() -> None:
-    """DL-296: only the getter definition and master's create list name it."""
+    """DL-296: in a full up only master's create names it; the narrow step is apart."""
     text = _script_text()
+    up = text.split("function Up {", 1)[1].split("\n}", 1)[0]
+    step = text.split("function Enable-LlmCandidates {", 1)[1].split("\n}", 1)[0]
 
     assert "Set-MasterCredentialTests" not in text
     assert "credentialTestsOk" not in text
-    assert text.count("Get-MasterCredentialTestsEnv") == 2
+    assert text.count("Get-MasterCredentialTestsEnv") == 3
+    assert up.count("Get-MasterCredentialTestsEnv") == 1
+    assert step.count("Get-MasterCredentialTestsEnv") == 1
     assert text.count("MASTER_CREDENTIAL_TESTS_B64") == 1
 
 

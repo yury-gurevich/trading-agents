@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-277-a-refused-request-is-answered-by-the-next-llm`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.128.00` (MINOR)
 **Effort:** L
 **Decisions:** [DL-289](../design-log.md) (the direction, operator 2026-10-11; P3 is this sprint; amendment 4 holds its ten decisions, made and measured) · [DL-282](../design-log.md) (S262's one-key rule, reversed here for the three declared roles alone) · [work-queue 123](../work-queue.md)
@@ -555,7 +555,7 @@ Reading recorded before any code change, 2026-10-15, in `C:\Users\yury_\Download
 
 ## Closeout — evidence
 
-**Status:** BUILT — local tests and guards proven; overall CI verified failing at the offline dependency audit; remote gate and live checks owed.
+**Status:** MERGED 2026-10-15 — `0.128.00`, fast-forwarded with S278 to `9781b4e1` (S277's own commit `6a5742c8`, tag `v0.128.00`), GATE PROVEN `6a5742c8` (CI, CodeQL, Security Findings); merged before S276's F2 on the operator's word (*"can we do it now?"*), so `main` runs ahead of the fleet (`s276`); F1a passed at no cost; not deployed (the `llm-candidates` step, then the retag, is the operator's call). The builder's handback read: BUILT — local tests and guards proven; overall CI verified failing at the offline dependency audit; remote gate and live checks owed.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s277`, branch `sprint-277-a-refused-request-is-answered-by-the-next-llm`; `.env` absent. Ready worktree `.venv`; no sync or vendor call. Proof artifacts are in `C:\Users\yury_\AppData\Local\Temp\s277-evidence`.
 
@@ -998,7 +998,7 @@ detect-secrets (untracked): scanning 11 new file(s)
 UNTRACKED_SECRETS_EXIT=0
 ```
 
-**`make gate-ran`:** owed to the planner (the sandbox has no network).
+**`make gate-ran`:** (planner) from `../ta-s277`: `GATE PROVEN for 6a5742c8` (CI, including the dependency audit the sandbox could not reach, CodeQL, Security Findings), SHA checked against `git rev-parse HEAD`. **Planner review:** 24 of 24 production, law and existing-test blobs equal the prototype's; the planner's tests beside the builder's on the built tree, 110 passed; 27 of 27 breaks red against the builder's tests alone; CodeQL set-diff against the S276 branch, nothing new, 0 errors. **F1a (merged `main` `9781b4e1`, no cost):** `s277_switch_measure.py` printed what it printed on the prototype, line for line (the real SDKs' refusals with made-up keys, HTTP 401 on both; the time-out with no status; the switch, the stay, both refused, the DSPy turn and the run's `llm_switches`); the deploy script's own `llm-candidates` step on a stand-in `az` set the vocabulary on the master and the three roles before one pack update carrying both packs, each decoding to its file byte for byte, and a failed vocabulary on the master or on `deliberator-opponent` sent no pack (OneDrive `trading-agents-data/wq123p3-2026-10-15/`, `s277_f1a_main_9781b4e1.txt`, `s277_f1a_standin_main_9781b4e1.txt`).
 
 **Not met / verified failing:** dependency audit verified failing; fresh advisory lookups **not done** offline. `make gate-ran`, push, merge, F1a, deploy, F2 and a real fleet refusal switch **not done**; these remain the planner/operator sequence. F0 is the planner-provided prototype evidence, not a builder rerun. All executed existing tests pass; the nine skips and their reasons are in the full CI log. No excluded existing test was edited.
 

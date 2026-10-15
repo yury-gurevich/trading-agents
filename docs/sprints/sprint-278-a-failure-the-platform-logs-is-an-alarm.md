@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-278-a-failure-the-platform-logs-is-an-alarm`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-301](../design-log.md) amendment 7 (measured and decided, planner, 2026-10-15; amendment 6 is the operator's decision) · [work-queue 133](../work-queue.md) · stacked on [S277](sprint-277-a-refused-request-is-answered-by-the-next-llm.md)'s built commit `6a5742c8`
@@ -414,7 +414,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT — local implementation and guards proven; overall CI verified failing only at the offline dependency audit. Planner review, remote gates, F1 and F2 not done.
+**Status:** MERGED 2026-10-15 — `0.128.01`, fast-forwarded to `9781b4e1` (tag `v0.128.01`), GATE PROVEN `9781b4e1` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (image-only retag with S277). The builder's handback read: BUILT — local implementation and guards proven; overall CI verified failing only at the offline dependency audit. Planner review, remote gates, F1 and F2 not done.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s278`, branch `sprint-278-a-failure-the-platform-logs-is-an-alarm`; `.env` absent. Prepared worktree venv; `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PYTHONUTF8=1`. External Python DNS/connect calls blocked by a temporary `sitecustomize.py` outside the worktree; loopback fixtures remain available. No bare `uv sync`.
 
@@ -708,7 +708,7 @@ detect-secrets (untracked): no untracked files to scan
 UNTRACKED_SECRETS_EXIT=0
 ```
 
-**`make gate-ran`:** *(planner, at review)*
+**`make gate-ran`:** (planner) from `../ta-s278`: `GATE PROVEN for 9781b4e1581e42f31c99edb16349758d1a834d02` (CI, including the dependency audit, CodeQL, Security Findings), SHA checked against `git rev-parse HEAD`. **Planner review:** the five production files, `laws.md`, `test-plan.md`, `pyproject.toml` and `uv.lock` equal the prototype's blobs (9 of 11; the ledger and INDEX rows differ in wording only); the Appendix unchanged; the planner's 17 tests beside the builder's 7 on the built tree, 24 passed; 22 of 22 breaks red against the builder's test file alone; CodeQL set-diff against the S277 branch: the same 133 open alerts, 0 errors, nothing new. **F1 (no cost):** the live 30-day replay on the built tree equals the prototype's, week for week and message for message (OneDrive `trading-agents-data/wq133-2026-10-15/`, `f1_ta-s278-built_9781b4e1.txt`).
 
 **Not met / verified failing:** Overall `make ci` is verified failing (exit 2); the fresh dependency-advisory refresh is NOT RUN (offline). The nine pytest cases listed above were skipped, so their runtime proof is not done. Planner blob-file comparison with `prototype_blobs.txt`, planner tests/break runner, CodeQL set-diff, F1 replay, `make gate-ran`, push, merge, deploy and F2 are not done. Local full-object comparison to `f182d2ee` proves the six Appendix blobs; it does not substitute for F1/F2.
 

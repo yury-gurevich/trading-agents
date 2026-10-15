@@ -28,6 +28,25 @@ PRODUCTION_RUN_PREFIX = "pm-run-"
 _EXECUTES_EDGE = "EXECUTES"
 
 
+class LineageFills:
+    """The Fill label for one pass over a held book: read once, and only if asked.
+
+    A pass that resolves many Positions shares one of these, so an adopted Position
+    costs no fresh read of every Fill (DL-302).
+    """
+
+    def __init__(self, graph: GraphStore) -> None:
+        """Hold the store; nothing is read until an adopted Position asks."""
+        self._graph = graph
+        self._nodes: tuple[Node, ...] | None = None
+
+    def nodes(self) -> tuple[Node, ...]:
+        """Every Fill node, read on the first call and held for the pass."""
+        if self._nodes is None:
+            self._nodes = self._graph.list_nodes("Fill")
+        return self._nodes
+
+
 class DecidedStop(NamedTuple):
     """A stop width and the source it was read from."""
 
@@ -36,7 +55,11 @@ class DecidedStop(NamedTuple):
 
 
 def decided_stop_pct(
-    graph: GraphStore, position: Node, *, fallback: float | None = None
+    graph: GraphStore,
+    position: Node,
+    *,
+    fallback: float | None = None,
+    fills: LineageFills | None = None,
 ) -> DecidedStop:
     """Return the stop width the PM decided for a held Position, and its source.
 
@@ -44,11 +67,12 @@ def decided_stop_pct(
     whose quantity and broker price equal it exactly; with no exact match it keeps
     the width it recorded at adoption and says `fallback`. Any other Position is
     its own `position` source. `fallback` applies only to a Position that records
-    no width at all; without one, that Position raises ValueError.
+    no width at all; without one, that Position raises ValueError. A pass over
+    many Positions passes one `fills` for all of them.
     """
     recorded = _recorded_stop_pct(position)
     if position.props.get("provenance") == ADOPTED_PROVENANCE:
-        decided = _lineage_stop_pct(graph, position)
+        decided = _lineage_stop_pct(graph, position, fills or LineageFills(graph))
         if decided is not None:
             return DecidedStop(decided, "lineage")
         return DecidedStop(_or_fallback(recorded, fallback), "fallback")
@@ -73,9 +97,11 @@ def _or_fallback(recorded: float | None, fallback: float | None) -> float:
     return width
 
 
-def _lineage_stop_pct(graph: GraphStore, position: Node) -> float | None:
+def _lineage_stop_pct(
+    graph: GraphStore, position: Node, fills: LineageFills
+) -> float | None:
     matches = sorted(
-        (fill for fill in graph.list_nodes("Fill") if _equals_holding(fill, position)),
+        (fill for fill in fills.nodes() if _equals_holding(fill, position)),
         key=lambda fill: (str(fill.props.get("submitted_at") or ""), fill.key),
     )
     if not matches:

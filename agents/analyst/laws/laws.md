@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -271,6 +271,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **ANLZ-PERF-01** — The analyst's latency budget is dominated by two provider round-trips
   (market data + regime). The scoring computation itself (all pillars for all candidates in a
   typical 5-candidate set) is pure in-process Python and adds negligible latency.
+- **ANLZ-PERF-02** — One run's held-stop read (`ANLZ-OUT-09`'s stop inputs) reads the `Fill` label
+  at most once, whatever the number of held positions, and not at all when no position is
+  broker-adopted; each position still takes its own lineage width. *(DL-302; measured 11.2 MB a
+  run before it, 32 adopted positions.)*
 
 ---
 
@@ -431,3 +435,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.10 — amendment (S259 / DL-276, 2026-10-08). `PARAM` only: the Type cell of
   `scaled_stop_atr_multiplier` states the bounds the settings enforce; S258 had recorded it as
   excused. No clause, default or code bound changes; 29 / 52 unchanged.
+
+- v1.11 — amendment (S279 / DL-302, 2026-10-15). Adds and proves `ANLZ-PERF-02`: the held-stop
+  read shares one `Fill` read across the book, where it read the label once per position. No
+  threshold, stop check or recommendation changes; 29 / 52 → 30 / 53.

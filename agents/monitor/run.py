@@ -23,6 +23,7 @@ from agents.monitor.store import (
     write_monitor_run,
 )
 from contracts.monitor import CloseDecisionSet
+from contracts.stop_width import LineageFills
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -92,6 +93,7 @@ def _evaluate_positions(
 ) -> tuple[int, int]:
     positions_checked = 0
     stop_breaches = 0
+    fills = LineageFills(graph)
     for position in positions:
         ticker = str(position.props["ticker"])
         current_price_cents = prices.get(ticker)
@@ -100,7 +102,9 @@ def _evaluate_positions(
             continue
         positions_checked += 1
         stop_breaches += int(
-            evaluate_one(graph, sink, monitor_run_id, position, current_price_cents)
+            evaluate_one(
+                graph, sink, monitor_run_id, position, current_price_cents, fills=fills
+            )
         )
     return positions_checked, stop_breaches
 

@@ -111,6 +111,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-ORD-01 | Candidate order must not affect individual scores. | ordering | _tbd_ | ⬜ |
 | ANLZ-ORD-02 | Consecutive and concurrent analyze calls must not share mutable scoring state. | concurrency | _tbd_ | ⬜ |
 | ANLZ-PERF-01 | Analyst latency budget needs an explicit bounded-latency/per-round-trip proof. | performance | _tbd_ | ⬜ |
+| ANLZ-PERF-02 | One run held-stop read (ANLZ-OUT-09 stop inputs) reads Fill at most once regardless of held-position count, never when none is broker-adopted; each position keeps its own lineage width. | distinct widths + lazy + source guard | `tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once`; `tests/test_stop_width_reads.py::test_a9_a_book_with_no_adopted_position_reads_no_fill`; `tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read` | 🟩 |
 | ANLZ-SEC-01 | Analyst must hold no credentials or external API authority. | security | _tbd_ | ⬜ |
 | ANLZ-SEC-03 | Removing the scan.candidates.ready subscription must quarantine the analyst without corrupting persisted state. | quarantine | _tbd_ | ⬜ |
 | ANLZ-DEP-01 | Analyst bus dependency stands on the Layer-0 bus charter for request/reply and subscribe/publish. | structural | dependencies.md DEP-BUS-* + probes/checks.py | 🧱 |

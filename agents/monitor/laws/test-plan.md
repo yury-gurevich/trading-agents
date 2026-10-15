@@ -41,6 +41,7 @@
 | MON-OBS-01 | 🟩 | `test_monitor_decision_result_node_in_graph` |
 | MON-OBS-02 | ⬜ | — |
 | MON-PERF-01 | ⬜ | — |
+| MON-PERF-03 | 🟩 | One end-of-run evaluation reads Fill at most once across every position, never when none is broker-adopted; each position keeps its own decided lineage width. `tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once`; `tests/test_stop_width_reads.py::test_a9_a_book_with_no_adopted_position_reads_no_fill`; `tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read` |
 | MON-CAP | ⬜ | — |
 | MON-IN-04 | ⬜ | malformed input must degrade with a returned payload and never raise to the bus; _tbd_ |
 | MON-NEV-05 | ⬜ | monitor must read fills/recommendations without mutating another agent's nodes; _tbd_ |
@@ -50,4 +51,4 @@
 | MON-SEC-02 | ⬜ | monitor must not log position, price, PnL, or ticker details to external systems; _tbd_ |
 | MON-SEC-03 | ⬜ | monitor can be revoked and later replay pending fills without breaking the system; _tbd_ |
 
-**Green: 21 / 46**
+**Green: 22 / 47**

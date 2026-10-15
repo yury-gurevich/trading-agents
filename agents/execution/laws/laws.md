@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.14 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -328,6 +328,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-PERF-01** — Each broker order submission is bounded by `alpaca_timeout` (default
   15 s). Sequential submission of a typical 5-order set completes within 75 s in the worst
   case. No external I/O beyond the broker is performed during `submit`.
+- **EXEC-PERF-02** — A pass reads a whole graph label once, never once per item it walks. One
+  run-start drop sweep reads `Fill` and `BrokerStopOrder` at most once each, whatever the number of
+  broker orders, and neither when the broker lists no order; a drop it writes is seen by every later
+  order in the same sweep, as a fresh read would see it. One stop-threshold plan reads `Fill` at most
+  once for every active position's decided width, and not at all when no position is
+  broker-adopted. A failed read in the sweep is one contained fault and no order is touched.
+  *(Declares the bound decided in DL-302; measured 126.3 MB of 136 MB per run start before it.)*
 
 ---
 
@@ -520,3 +527,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   corrected). Payload/grace tests and the existing submit-anchor test prove the new clause;
   39 / 65 -> 40 / 66. No broker, posture, grace, exit or protective-stop policy changes.
 - **v1.13 — S258 / DL-276 (2026-10-08).** PARAM only: reconciles the bounds of `slippage_bps`, `min_promotion_runs`, `min_approval_rate` and `alpaca_timeout` with settings; no clause, default or code bound changes.
+- **v1.14 — S279 / DL-302 (2026-10-15).** New `EXEC-PERF-02`: the drop sweep reads `Fill` and
+  `BrokerStopOrder` once per sweep and the stop-threshold plan reads `Fill` once per plan, where both
+  read the whole label once per item. Why: 348 broker orders made each run start list 346 Fills 348
+  times. No drop, cancel, stop or reconciliation decision changes; 40 / 66 -> 41 / 67.

@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-279-a-pass-reads-each-label-once`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.128.02` (PATCH)
 **Effort:** S
 **Decisions:** [DL-302](../design-log.md) (measured and decided, planner, 2026-10-15) · [work-queue 101](../work-queue.md) · follows [S252](sprint-252-every-finder-fetches-only-its-pending-work.md) / DL-261
 
@@ -229,14 +229,14 @@ which `EXECUTES` an `OrderIntent` carrying the decided `stop_pct`.
 
 ## Success factors
 
-- [ ] A1 to A12 exist under the names above, each citing its clauses; A1, A2, A5, A6, A7, A8, A10 and
+- [x] A1 to A12 exist under the names above, each citing its clauses; A1, A2, A5, A6, A7, A8, A10 and
       A11 red before section 1; all twelve green after.
-- [ ] Appendix sections 1 to 3 applied exactly: the nine production files, three `laws.md` and S258's
+- [x] Appendix sections 1 to 3 applied exactly: the nine production files, three `laws.md` and S258's
       test equal the prototype's blobs (`prototype_blobs.txt`, OneDrive `trading-agents-data/wq101-2026-10-15/`).
-- [ ] No existing test changed but the one Appendix section 3 gives; every existing test passes.
-- [ ] B1 to B14 each red against your tests, each restored.
-- [ ] Every touched module, test files included, under 200 lines after `ruff format`.
-- [ ] Version `0.128.02`, `uv.lock` one line changed.
+- [x] No existing test changed but the one Appendix section 3 gives; every existing test passes.
+- [x] B1 to B14 each red against your tests, each restored.
+- [x] Every touched module, test files included, under 200 lines after `ruff format`.
+- [x] Version `0.128.02`, `uv.lock` one line changed.
 - [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot reach
       its network; say so if it is).
 - [ ] **F1 (the planner's, at review, no cost):** `wq101_read_paths.py` and `wq101_checks.py` on the
@@ -388,15 +388,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Drop sweep, cached label reads and attempt chains | `agents/execution/laws/laws.md` v1.13 and its whole `test-plan.md` | `EXEC-TRG-07`, `EXEC-OUT-07`, `EXEC-IDM-02`, `EXEC-FAIL-02`, new `EXEC-PERF-02` | Read 2026-10-15 before code. Preserve separately contained cleanup, append-safe drop evidence, stable attempt keys, and read-back visibility; count faults over two orders. `EXEC-OUT-07` is currently ⬜; its row remains unchanged in this scope. |
+| Shared resolver, analyst held book and execution stop plan | All three whole `laws.md` and adjacent `test-plan.md`: execution v1.13, monitor v1.3, analyst v1.10 | `EXEC-OBS-06`, `ANLZ-OUT-09`, new `EXEC-PERF-02` / `ANLZ-PERF-02` | Read 2026-10-15 before code. Seed exact production-buy lineage and three distinct widths; preserve optional lone calls and lazy reads. Existing `EXEC-OBS-06` and `ANLZ-OUT-09` rows are 🟩. |
+| Monitor end-of-run evaluation | `agents/monitor/laws/laws.md` v1.3 and its whole `test-plan.md` | `MON-TRG-02`, `MON-STA-01`, new `MON-PERF-03` | Read 2026-10-15 before code. Exercise the end-of-run pass with one price between the decided stop and fallback; count around the pass only. `MON-TRG-02` and `MON-STA-01` are 🟩; no exit-authority change. |
+| Test citations, amendments and rollups | Whole `docs/laws/conventions.md`, whole `docs/laws/drift-register.md`; `docs/laws/INDEX.md` | Conventions §§2–4, 7, 7a, 9; DRIFT-026 / 064 / 073 / 074 / 086 / 097 / 100 | Read 2026-10-15 before code. Apply only the Appendix's three amendments, cite each test's clauses, preserve existing gray rows, and derive counts with the gate. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, both, as decided in DL-302: the two named contracts change and the three Appendix PERF clauses add the per-pass bounds. Tests first; apply the exact amendments after the production patch.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None in the scoped changes. The handover's blanket `run.py` exclusion is a path wording error: Appendix section 1 explicitly includes `agents/monitor/run.py`; apply only that named diff (Return notes).
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** The per-pass label-read bounds were previously undeclared; DL-302 D6 and Appendix section 2 already decide their three new clauses. No additional undecided silence found; no drift row needed.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** Pre-code record: none was yet proven. At closeout, the newly declared `EXEC-PERF-02`, `MON-PERF-03` and `ANLZ-PERF-02` are proven by A1–A12 and B1–B14. No existing ⬜ row was promoted; `EXEC-OUT-07` remains ⬜ as scoped.
 
 ---
 
@@ -404,43 +407,337 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder)* | | | | |
+| A1 | `test_a1_one_sweep_reads_each_label_once` | `agents/execution/tests/test_drop_sweep_reads.py` | PASS; red before patch | EXEC-PERF-02 / EXEC-OUT-07 |
+| A2 | `test_a2_the_run_start_reads_fill_twice_whatever_the_orders` | `agents/execution/tests/test_drop_sweep_reads.py` | PASS; red before patch | EXEC-PERF-02 / EXEC-TRG-07 |
+| A3 | `test_a3_a_drop_in_the_sweep_is_seen_by_a_later_order` | `agents/execution/tests/test_drop_sweep_reads.py` | PASS; already green | EXEC-PERF-02 / EXEC-IDM-02 |
+| A4 | `test_a4_no_broker_order_reads_no_label` | `agents/execution/tests/test_drop_sweep_reads.py` | PASS; already green | EXEC-PERF-02 |
+| A5 | `test_a5_a_failed_read_is_one_fault_and_no_cancel` | `agents/execution/tests/test_drop_sweep_reads.py` | PASS; red before patch | EXEC-PERF-02 / EXEC-FAIL-02 |
+| A6 | `test_a6_the_analysts_held_book_reads_fill_once` | `tests/test_stop_width_reads.py` | PASS; red before patch | ANLZ-PERF-02 / ANLZ-OUT-09 |
+| A7 | `test_a7_executions_stop_plan_reads_fill_once` | `tests/test_stop_width_reads.py` | PASS; red before patch | EXEC-PERF-02 / EXEC-OBS-06 |
+| A8 | `test_a8_the_monitors_evaluation_reads_fill_once` | `tests/test_stop_width_reads.py` | PASS; red before patch | MON-PERF-03 / MON-TRG-02 |
+| A9 | `test_a9_a_book_with_no_adopted_position_reads_no_fill` | `tests/test_stop_width_reads.py` | PASS; already green | EXEC-PERF-02 / MON-PERF-03 / ANLZ-PERF-02 |
+| A10 | `test_a10_a_lone_call_still_reads_its_lineage` | `tests/test_stop_width_reads.py` | PASS; red before patch | EXEC-OBS-06 / ANLZ-OUT-09 |
+| A11 | `test_a11_every_resolver_call_shares_its_pass_read` | `tests/test_stop_width_reads_guard.py` | PASS; red before patch | EXEC-PERF-02 / MON-PERF-03 / ANLZ-PERF-02 |
+| A12 | `test_a12_the_guard_sees_a_call_without_a_shared_read` | `tests/test_stop_width_reads_guard.py` | PASS; already green | EXEC-PERF-02 / MON-PERF-03 / ANLZ-PERF-02 |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** None; exactly A1–A12 plus `tests/label_reads_support.py`. A12 also pins exclusion of nested `tests` directories within its temporary probe tree.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder)*
+**Status:** BUILT — local implementation proven; overall CI verified failing only at the offline dependency audit.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s279`, branch `sprint-279-a-pass-reads-each-label-once`, base `88cdb4032649270a2aeb03e34f50ade6addd6d5d` (also the starting `origin/main`). `.env` present: `False`, checked before and after the proofs. The pre-existing venv was used offline.
 
-**Result:** *(builder)*
+**Result:** A1–A12 reproduce the specified eight-red/four-pass baseline and all twelve pass after the exact Appendix; all fourteen breaks fail the new tests and are restored. All thirteen prescribed blobs equal the prototype commit in full. Full pytest: **5,107 passed, 9 skipped, 100.00 % coverage**. No executed existing test failed; only S258’s authorized existing test changed. The fresh dependency audit is **verified failing offline**; overall `make ci` is not green. F1/F2 and remote/deployment proof are not done.
 
-**Files changed:** *(builder)*
+**Files changed:** Exact scoped paths (`git diff --name-only HEAD`; new files already staged):
+
+```text
+agents/analyst/laws/laws.md
+agents/analyst/laws/test-plan.md
+agents/execution/broker_stop_thresholds.py
+agents/execution/drop_sweep.py
+agents/execution/drop_sweep_reads.py
+agents/execution/fill_attempts.py
+agents/execution/laws/laws.md
+agents/execution/laws/test-plan.md
+agents/execution/tests/test_drop_sweep_reads.py
+agents/monitor/decide.py
+agents/monitor/domain/positions.py
+agents/monitor/laws/laws.md
+agents/monitor/laws/test-plan.md
+agents/monitor/run.py
+contracts/positions.py
+contracts/stop_width.py
+docs/laws/INDEX.md
+docs/laws/ledger.md
+docs/sprints/README.md
+docs/sprints/sprint-279-a-pass-reads-each-label-once.md
+pyproject.toml
+tests/label_reads_support.py
+tests/test_param_law_sync_execution_rows.py
+tests/test_stop_width_reads.py
+tests/test_stop_width_reads_guard.py
+uv.lock
+```
 
 **Design decisions:** recorded as [`DL-302`](../design-log.md) (planner).
 
-**Proof — the red run first:** *(builder)*
+**Proof — the red run first:** On unchanged production and laws at `88cdb403`, after writing and formatting only A1–A12 and their support.
 
-**Proof — the green run:** *(builder)*
+Command: `uv run pytest agents/execution/tests/test_drop_sweep_reads.py tests/test_stop_width_reads.py tests/test_stop_width_reads_guard.py --no-cov -v` (`UV_OFFLINE=1`, `UV_NO_SYNC=1`). Exit 1; exact required red/pass split.
 
-**Guards planted:** *(builder)*
+```text
+============================= test session starts =============================
+collecting ... collected 12 items
 
-**Module line counts:** *(builder)*
+agents/execution/tests/test_drop_sweep_reads.py::test_a1_one_sweep_reads_each_label_once FAILED [  8%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a2_the_run_start_reads_fill_twice_whatever_the_orders FAILED [ 16%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a3_a_drop_in_the_sweep_is_seen_by_a_later_order PASSED [ 25%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a4_no_broker_order_reads_no_label PASSED [ 33%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a5_a_failed_read_is_one_fault_and_no_cancel FAILED [ 41%]
+tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once FAILED [ 50%]
+tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once FAILED [ 58%]
+tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once FAILED [ 66%]
+tests/test_stop_width_reads.py::test_a9_a_book_with_no_adopted_position_reads_no_fill PASSED [ 75%]
+tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage FAILED [ 83%]
+tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read FAILED [ 91%]
+tests/test_stop_width_reads_guard.py::test_a12_the_guard_sees_a_call_without_a_shared_read PASSED [100%]
 
-**`make ci`:** *(builder)*
+================================== FAILURES ===================================
+___________________ test_a1_one_sweep_reads_each_label_once ___________________
+agents\execution\tests\test_drop_sweep_reads.py:43: in test_a1_one_sweep_reads_each_label_once
+    assert graph.listed["Fill"] == 1
+E   assert 3 == 1
+_________ test_a2_the_run_start_reads_fill_twice_whatever_the_orders __________
+agents\execution\tests\test_drop_sweep_reads.py:57: in test_a2_the_run_start_reads_fill_twice_whatever_the_orders
+    assert graph.listed["Fill"] == 2
+E   assert 4 == 2
+______________ test_a5_a_failed_read_is_one_fault_and_no_cancel _______________
+agents\execution\tests\test_drop_sweep_reads.py:128: in test_a5_a_failed_read_is_one_fault_and_no_cancel
+    assert len(sink.faults) == 1
+E   assert 2 == 1
+E    +  where 2 = len([AgentFault(occurred_at=datetime.datetime(2026, 10, 15, 10, 15, 58, 957845, tzinfo=datetime.timezone.utc), source_agent='execution', source_module='agents.execution.drop_sweep', capability='drop_unfilled_orders', severity='error', error_type='RuntimeError', message='Fill label unavailable', traceback='Traceback (most recent call last):\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\kernel\\errors.py", line 121, in fault_boundary\n    yield capture\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 49, in sweep_unfilled_orders\n    recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 71, in _sweep_order\n    fill = latest_fill_attempt(graph, order.idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 55, in latest_fill_attempt\n    chain = fill_attempt_chain(graph, broker_idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 65, in fill_attempt_chain\n    for node in graph.list_nodes("Fill")...k='Traceback (most recent call last):\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\kernel\\errors.py", line 121, in fault_boundary\n    yield capture\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 49, in sweep_unfilled_orders\n    recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 71, in _sweep_order\n    fill = latest_fill_attempt(graph, order.idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 55, in latest_fill_attempt\n    chain = fill_attempt_chain(graph, broker_idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 65, in fill_attempt_chain\n    for node in graph.list_nodes("Fill")\n                ~~~~~~~~~~~~~~~~^^^^^^^^\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\tests\\test_drop_sweep_reads.py", line 114, in list_nodes\n    raise RuntimeError("Fill label unavailable")\nRuntimeError: Fill label unavailable\n', correlation_id=None, context={})])
+E    +    where [AgentFault(occurred_at=datetime.datetime(2026, 10, 15, 10, 15, 58, 957845, tzinfo=datetime.timezone.utc), source_agent='execution', source_module='agents.execution.drop_sweep', capability='drop_unfilled_orders', severity='error', error_type='RuntimeError', message='Fill label unavailable', traceback='Traceback (most recent call last):\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\kernel\\errors.py", line 121, in fault_boundary\n    yield capture\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 49, in sweep_unfilled_orders\n    recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 71, in _sweep_order\n    fill = latest_fill_attempt(graph, order.idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 55, in latest_fill_attempt\n    chain = fill_attempt_chain(graph, broker_idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 65, in fill_attempt_chain\n    for node in graph.list_nodes("Fill")...k='Traceback (most recent call last):\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\kernel\\errors.py", line 121, in fault_boundary\n    yield capture\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 49, in sweep_unfilled_orders\n    recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\drop_sweep.py", line 71, in _sweep_order\n    fill = latest_fill_attempt(graph, order.idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 55, in latest_fill_attempt\n    chain = fill_attempt_chain(graph, broker_idempotency_key)\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\fill_attempts.py", line 65, in fill_attempt_chain\n    for node in graph.list_nodes("Fill")\n                ~~~~~~~~~~~~~~~~^^^^^^^^\n  File "C:\\Users\\yury_\\Downloads\\project\\ta-s279\\agents\\execution\\tests\\test_drop_sweep_reads.py", line 114, in list_nodes\n    raise RuntimeError("Fill label unavailable")\nRuntimeError: Fill label unavailable\n', correlation_id=None, context={})] = <kernel.errors.CollectingFaultSink object at 0x00000275E559F050>.faults
+_______________ test_a6_the_analysts_held_book_reads_fill_once ________________
+tests\test_stop_width_reads.py:28: in test_a6_the_analysts_held_book_reads_fill_once
+    assert graph.listed["Fill"] == 1
+E   assert 3 == 1
+________________ test_a7_executions_stop_plan_reads_fill_once _________________
+tests\test_stop_width_reads.py:43: in test_a7_executions_stop_plan_reads_fill_once
+    assert graph.listed["Fill"] == 1
+E   assert 3 == 1
+_______________ test_a8_the_monitors_evaluation_reads_fill_once _______________
+tests\test_stop_width_reads.py:62: in test_a8_the_monitors_evaluation_reads_fill_once
+    assert graph.listed["Fill"] - before == 1
+E   assert (3 - 0) == 1
+________________ test_a10_a_lone_call_still_reads_its_lineage _________________
+tests\test_stop_width_reads.py:101: in test_a10_a_lone_call_still_reads_its_lineage
+    from contracts.stop_width import LineageFills
+E   ImportError: cannot import name 'LineageFills' from 'contracts.stop_width' (C:\Users\yury_\Downloads\project\ta-s279\contracts\stop_width.py)
+______________ test_a11_every_resolver_call_shares_its_pass_read ______________
+tests\test_stop_width_reads_guard.py:47: in test_a11_every_resolver_call_shares_its_pass_read
+    assert all(shared for _path, _line, shared in calls), calls
+E   AssertionError: [(WindowsPath('C:/Users/yury_/Downloads/project/ta-s279/agents/execution/broker_stop_thresholds.py'), 121, False), (WindowsPath('C:/Users/yury_/Downloads/project/ta-s279/agents/monitor/domain/positions.py'), 73, False), (WindowsPath('C:/Users/yury_/Downloads/project/ta-s279/contracts/positions.py'), 186, False)]
+E   assert False
+E    +  where False = all(<generator object test_a11_every_resolver_call_shares_its_pass_read.<locals>.<genexpr> at 0x00000275E332AA40>)
+=========================== short test summary info ===========================
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a1_one_sweep_reads_each_label_once
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a2_the_run_start_reads_fill_twice_whatever_the_orders
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a5_a_failed_read_is_one_fault_and_no_cancel
+FAILED tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage
+FAILED tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read
+========================= 8 failed, 4 passed in 2.65s =========================
+RED_EXIT=1
+```
 
-**`make gate-ran`:** *(the planner's, at review)*
+**Proof — the green run:** Same command as the red run, after all breaks were restored, at `0.128.02`.
 
-**Not met / verified failing:** *(builder)*
+```text
+============================= test session starts =============================
+collecting ... collected 12 items
+
+agents/execution/tests/test_drop_sweep_reads.py::test_a1_one_sweep_reads_each_label_once PASSED [  8%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a2_the_run_start_reads_fill_twice_whatever_the_orders PASSED [ 16%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a3_a_drop_in_the_sweep_is_seen_by_a_later_order PASSED [ 25%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a4_no_broker_order_reads_no_label PASSED [ 33%]
+agents/execution/tests/test_drop_sweep_reads.py::test_a5_a_failed_read_is_one_fault_and_no_cancel PASSED [ 41%]
+tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once PASSED [ 50%]
+tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once PASSED [ 58%]
+tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once PASSED [ 66%]
+tests/test_stop_width_reads.py::test_a9_a_book_with_no_adopted_position_reads_no_fill PASSED [ 75%]
+tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage PASSED [ 83%]
+tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read PASSED [ 91%]
+tests/test_stop_width_reads_guard.py::test_a12_the_guard_sees_a_call_without_a_shared_read PASSED [100%]
+
+============================= 12 passed in 2.12s ==============================
+RESTORED_GREEN_EXIT=0
+```
+
+Full blob comparison with local prototype commit `d24daa79` (not just the Appendix’s abbreviated hashes):
+
+```text
+PROTOTYPE_BLOB_OK agents/execution/broker_stop_thresholds.py 7b417606921f8177372559b5df3a7e178aa5454c
+PROTOTYPE_BLOB_OK agents/execution/drop_sweep.py 93114f4551d9d881dc5c504db87ee96cf80084cd
+PROTOTYPE_BLOB_OK agents/execution/drop_sweep_reads.py 34caf09a421bd5019d337e4179e9d7b3428fbf50
+PROTOTYPE_BLOB_OK agents/execution/fill_attempts.py b325b61ebd658b764ce3282285b595871f08b3da
+PROTOTYPE_BLOB_OK agents/monitor/decide.py be3265a9c49837133ea255d69855cfb83333fad9
+PROTOTYPE_BLOB_OK agents/monitor/domain/positions.py a8746c0251766d7a0758bf579f7b3742c4612194
+PROTOTYPE_BLOB_OK agents/monitor/run.py f290576406721d81e274a77d821bca7dbac64e9e
+PROTOTYPE_BLOB_OK contracts/positions.py 3b11bf6cb3d9b53a41d99995f928d3082ac2aeb5
+PROTOTYPE_BLOB_OK contracts/stop_width.py e81388603cf7d9e23a2612009f764bbcf72ff68b
+PROTOTYPE_BLOB_OK agents/analyst/laws/laws.md b6b301441ce0d8c60c5eeeca7a07a666fe9045c3
+PROTOTYPE_BLOB_OK agents/execution/laws/laws.md 280f64a59eb20f1ef24d18e699c48a8fc6982043
+PROTOTYPE_BLOB_OK agents/monitor/laws/laws.md 057293cb31b92cb8d834d6c8f5619f8ad98e7a02
+PROTOTYPE_BLOB_OK tests/test_param_law_sync_execution_rows.py 129ba257d9eac39745712491b14cf603c418f0fc
+PROTOTYPE_BLOBS=13/13 (full SHA-1 equality to d24daa79)
+```
+
+**Guards planted:** Each break ran against A1–A12 only with `--no-cov -q`; each file restored byte-for-byte in `finally` before the next break. Real output:
+
+```text
+B1: exit=1; 1 failed, 11 passed in 2.36s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a3_a_drop_in_the_sweep_is_seen_by_a_later_order
+
+B2: exit=1; 1 failed, 11 passed in 2.74s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a3_a_drop_in_the_sweep_is_seen_by_a_later_order
+
+B3: exit=1; 2 failed, 10 passed in 2.42s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a1_one_sweep_reads_each_label_once
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a2_the_run_start_reads_fill_twice_whatever_the_orders
+
+B4: exit=1; 2 failed, 10 passed in 2.33s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a1_one_sweep_reads_each_label_once
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a2_the_run_start_reads_fill_twice_whatever_the_orders
+
+B5: exit=1; 1 failed, 11 passed in 2.43s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a4_no_broker_order_reads_no_label
+
+B6: exit=1; 1 failed, 11 passed in 2.33s; restored=byte-exact
+FAILED agents/execution/tests/test_drop_sweep_reads.py::test_a5_a_failed_read_is_one_fault_and_no_cancel
+
+B7: exit=1; 4 failed, 8 passed in 2.40s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage
+
+B8: exit=1; 2 failed, 10 passed in 2.29s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a9_a_book_with_no_adopted_position_reads_no_fill
+FAILED tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage
+
+B9: exit=1; 4 failed, 8 passed in 2.72s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+FAILED tests/test_stop_width_reads.py::test_a10_a_lone_call_still_reads_its_lineage
+
+B10: exit=1; 1 failed, 11 passed in 2.30s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a6_the_analysts_held_book_reads_fill_once
+
+B11: exit=1; 1 failed, 11 passed in 2.29s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a7_executions_stop_plan_reads_fill_once
+
+B12: exit=1; 1 failed, 11 passed in 2.28s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+
+B13: exit=1; 1 failed, 11 passed in 2.33s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+
+B14: exit=1; 2 failed, 10 passed in 2.33s; restored=byte-exact
+FAILED tests/test_stop_width_reads.py::test_a8_the_monitors_evaluation_reads_fill_once
+FAILED tests/test_stop_width_reads_guard.py::test_a11_every_resolver_call_shares_its_pass_read
+
+BREAKS_PROVEN=14/14
+```
+
+**Module line counts:** Measured after `ruff format` (four new files unchanged by the final formatting run); all touched Python files are strictly below 200:
+
+```text
+agents/execution/broker_stop_thresholds.py: 146 lines
+agents/execution/drop_sweep.py: 183 lines
+agents/execution/drop_sweep_reads.py: 46 lines
+agents/execution/fill_attempts.py: 137 lines
+agents/monitor/decide.py: 62 lines
+agents/monitor/domain/positions.py: 97 lines
+agents/monitor/run.py: 121 lines
+contracts/positions.py: 193 lines
+contracts/stop_width.py: 141 lines
+tests/test_param_law_sync_execution_rows.py: 36 lines
+tests/label_reads_support.py: 83 lines
+agents/execution/tests/test_drop_sweep_reads.py: 130 lines
+tests/test_stop_width_reads.py: 112 lines
+tests/test_stop_width_reads_guard.py: 64 lines
+A_TESTS=12; clause docstrings=12/12
+```
+
+**`make ci`:** **Verified failing, exit 2**, at step 14 only: the dependency audit needs fresh PyPI vulnerability data. Steps 1–13 passed, including the unlowered **100.00 %** line and branch coverage floor. Steps 15–16 were then run separately and passed, with the five new files staged so the tracked-files scan included them. Thus 15 checks passed; the fresh dependency audit is not done. No green overall CI claim.
+
+Command: `make ci > C:/Users/yury_/AppData/Local/Temp/s279-ci.txt 2>&1`; exit read directly, never through a pipe. The log was read. `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PYTHONUTF8=1`; an audit-only `sitecustomize.py` under the system temporary directory rejects socket/DNS calls, and proxy variables point at loopback. This enforces the authorized offline run without editing any repository gate or accepting stale audit data. Actual log excerpts:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1759 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1257 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           21395      0   4572      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5107 passed, 9 skipped, 2470 warnings in 445.73s (0:07:25) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: S279 offline constraint: network access is disabled")))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+Commands run separately after make stopped:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+The first law-coverage run derived the new rollups before they were written:
+
+```text
+[FAIL] docs/laws/ledger.md:40: analyst claims 29 / 52; derived 30 / 53
+[FAIL] docs/laws/ledger.md:44: execution claims 40 / 66; derived 41 / 67
+[FAIL] docs/laws/ledger.md:45: monitor claims 21 / 46; derived 22 / 47
+```
+
+The gate passed after the rollups were synchronized. Offline lock command output:
+
+```text
+Resolved 180 packages in 367ms
+Updated trading-agents v0.128.1 -> v0.128.2
+```
+
+`pyproject.toml` reads `0.128.02`; `uv.lock` has one changed line (`0.128.1` → `0.128.2`, normalized package spelling) and was staged with the bump.
+
+**`make gate-ran`:** not done — the planner’s at review, from this worktree for the final exact HEAD; no network access was authorized here.
+
+**Not met / verified failing:** Overall `make ci` and the dependency audit are verified failing for want of network; a fresh vulnerability audit is not done. The nine skipped test cases are not done (the actual skip reasons are pasted above). Remote CI / Security Findings, `make gate-ran`, push, merge, deploy, live-data F1 equivalence, and post-deploy F2 transfer measurements are not done. No live byte or digest measurement was substituted with fixture proof.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- Path correction: the handover’s blanket `run.py` exclusion is read as excluding every other `run.py`; Appendix section 1 explicitly requires `agents/monitor/run.py`. Only that exact diff was applied. No law contradiction, failed existing test or non-reproducing scoped measurement was found.
+- No production design pivot: D1–D8 were already decided in DL-302. The three new PERF clauses were applied exactly; existing gray rows were preserved. `EXEC-OUT-07` is exercised by A1 but its existing row remains gray in this scope.
+- The full Makefile gate stops at the audit. Its two later security checks were run separately, not inferred. The planner owes the fresh dependency audit, final-SHA remote gates and F1; F2 follows the planner’s merge/deploy sequence.
+- All proof logs and the offline audit guard are under the system temporary directory, outside the repository. The authoritative handback is here. No bare `uv sync` was run. The build used the ready venv and `uv lock --offline`; the lock diff is one line.
+- `docs/STATE.md`, `docs/design-log.md`, `docs/work-queue.md`, `kernel/`, packs, Dockerfiles, `agents/execution/run.py` and `broker_stop_writes.py` are unchanged. The only existing-test edit is Appendix section 3; all touched Python files are below 200 after formatting. No `noqa` was added.
+- Local commit is the final build step; its executed result is reported with the handback in chat. Push, merge and deployment remain not done.
 
 ---
 

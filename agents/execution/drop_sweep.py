@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.execution.drop_sweep_ack import has_untracked_order_ack
+from agents.execution.drop_sweep_reads import SweepReads
 from agents.execution.drop_sweep_records import (
     DROP_REASON,
     mark_execution_runs,
@@ -17,12 +18,10 @@ from agents.execution.drop_sweep_records import (
     record_stop_mismatch,
     remember_execution_run,
 )
-from agents.execution.fill_attempts import latest_fill_attempt
 from contracts.broker_lifecycle import (
     is_broker_stop_order,
     is_resolved_drop_status,
 )
-from contracts.broker_stops import broker_stop_orders
 from kernel import fault_boundary
 
 if TYPE_CHECKING:
@@ -35,6 +34,9 @@ def sweep_unfilled_orders(
 ) -> int:
     """Cancel previous-run non-stop orders and record each dropped decision."""
     broker_orders = _read_broker_orders(broker, sink)
+    reads = _read_graph(graph, sink) if broker_orders else None
+    if reads is None:
+        return 0
     dropped = 0
     touched_runs: set[str] = set()
     for order in broker_orders:
@@ -46,7 +48,7 @@ def sweep_unfilled_orders(
             capability="drop_unfilled_orders",
             reraise=False,
         ):
-            recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)
+            recorded = _sweep_order(reads, broker, sink, order, run_id, touched_runs)
         if recorded:
             dropped += 1
     with fault_boundary(
@@ -61,15 +63,16 @@ def sweep_unfilled_orders(
 
 
 def _sweep_order(
-    graph: GraphStore,
+    reads: SweepReads,
     broker: Broker,
     sink: FaultSink,
     order: BrokerFill,
     run_id: str,
     touched_runs: set[str],
 ) -> bool:
-    fill = latest_fill_attempt(graph, order.idempotency_key)
-    if _skip_order(graph, order, fill, run_id, sink):
+    graph = reads.graph
+    fill = reads.latest_fill(order.idempotency_key)
+    if _skip_order(reads, order, fill, run_id, sink):
         return False
     if _is_resolved_drop(order):
         recorded = record_drop(graph, sink, order, fill, _resolved_drop_status(order))
@@ -78,7 +81,8 @@ def _sweep_order(
         recorded = record_drop(graph, sink, order, fill, "canceled")
     else:
         return False
-    if recorded:
+    if recorded and fill is not None:
+        reads.reread(fill)
         remember_execution_run(graph, fill, touched_runs)
     return recorded
 
@@ -95,8 +99,20 @@ def _read_broker_orders(broker: Broker, sink: FaultSink) -> tuple[BrokerFill, ..
     return () if capture.fault is not None else orders
 
 
+def _read_graph(graph: GraphStore, sink: FaultSink) -> SweepReads | None:
+    with fault_boundary(
+        sink,
+        agent="execution",
+        module="agents.execution.drop_sweep",
+        capability="drop_unfilled_orders",
+        reraise=False,
+    ) as capture:
+        reads = SweepReads.read(graph)
+    return None if capture.fault is not None else reads
+
+
 def _skip_order(
-    graph: GraphStore,
+    reads: SweepReads,
     order: BrokerFill,
     fill: Node | None,
     run_id: str,
@@ -108,9 +124,9 @@ def _skip_order(
         return True
     if _is_current_run(order, fill, run_id):
         return True
-    if fill is None and has_untracked_order_ack(graph, order):
+    if fill is None and has_untracked_order_ack(reads.graph, order):
         return True
-    return _is_stop_order(graph, order, sink)
+    return _is_stop_order(reads, order, sink)
 
 
 def _pipeline_owned(order: BrokerFill) -> bool:
@@ -128,9 +144,9 @@ def _is_current_run(order: BrokerFill, fill: Node | None, run_id: str) -> bool:
     return fill is not None and fill.props.get("source_run_id") == run_id
 
 
-def _is_stop_order(graph: GraphStore, order: BrokerFill, sink: FaultSink) -> bool:
+def _is_stop_order(reads: SweepReads, order: BrokerFill, sink: FaultSink) -> bool:
     broker_stop = is_broker_stop_order(order)
-    graph_stop = _tracked_as_stop(graph, order)
+    graph_stop = _tracked_as_stop(reads, order)
     if broker_stop != graph_stop:
         record_stop_mismatch(
             sink, order, broker_stop=broker_stop, graph_stop=graph_stop
@@ -138,11 +154,11 @@ def _is_stop_order(graph: GraphStore, order: BrokerFill, sink: FaultSink) -> boo
     return is_broker_stop_order(order) or graph_stop
 
 
-def _tracked_as_stop(graph: GraphStore, order: BrokerFill) -> bool:
+def _tracked_as_stop(reads: SweepReads, order: BrokerFill) -> bool:
     return any(
         order.idempotency_key == stop.key
         or order.broker_order_id == stop.broker_order_id
-        for stop in broker_stop_orders(graph)
+        for stop in reads.stops
     )
 
 

@@ -21,7 +21,7 @@ from contracts.positions import (
     active_position_nodes,
     open_positions,
 )
-from contracts.stop_width import decided_stop_pct
+from contracts.stop_width import LineageFills, decided_stop_pct
 
 if TYPE_CHECKING:
     from agents.execution.broker_stop_types import StopPctSource
@@ -51,6 +51,7 @@ def broker_stop_thresholds(
     }
     plans: list[BrokerStopThresholdPlan] = []
     errors: list[BrokerStopThresholdError] = []
+    fills = LineageFills(graph)
     for ticker, nodes in sorted(positions_by_ticker.items()):
         try:
             plans.append(
@@ -60,6 +61,7 @@ def broker_stop_thresholds(
                     tuple(sorted(nodes, key=lambda node: node.key)),
                     refs_by_ticker[ticker],
                     fallback_stop_pct=fallback_stop_pct,
+                    fills=fills,
                 )
             )
         except ValueError as exc:
@@ -83,8 +85,9 @@ def _threshold_plan_or_raise(
     position_ref: str,
     *,
     fallback_stop_pct: float,
+    fills: LineageFills,
 ) -> BrokerStopThresholdPlan:
-    lots = tuple(_lot(graph, ticker, node, fallback_stop_pct) for node in nodes)
+    lots = tuple(_lot(graph, ticker, node, fallback_stop_pct, fills) for node in nodes)
     stop_pcts = {lot.stop_pct for lot in lots}
     if len(stop_pcts) != 1:
         raise ValueError(f"active lots for {ticker} carry different stop_pct values")
@@ -113,12 +116,18 @@ def _threshold_plan_or_raise(
 
 
 def _lot(
-    graph: GraphStore, ticker: Ticker, node: Node, fallback_stop_pct: float
+    graph: GraphStore,
+    ticker: Ticker,
+    node: Node,
+    fallback_stop_pct: float,
+    fills: LineageFills,
 ) -> _Lot:
     try:
         quantity = _int_prop(node, "quantity")
         opened = _int_prop(node, "opened_price_cents")
-        stop_pct, source = decided_stop_pct(graph, node, fallback=fallback_stop_pct)
+        stop_pct, source = decided_stop_pct(
+            graph, node, fallback=fallback_stop_pct, fills=fills
+        )
     except (TypeError, ValueError) as exc:
         message = f"active lot for {ticker} lacks stop threshold inputs"
         raise ValueError(message) from exc

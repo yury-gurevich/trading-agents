@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
     from kernel import GraphStore, Node
 
@@ -52,7 +52,14 @@ def select_fill_attempt(
 
 def latest_fill_attempt(graph: GraphStore, broker_idempotency_key: str) -> Node | None:
     """Return the latest Fill node for one broker idempotency key."""
-    chain = fill_attempt_chain(graph, broker_idempotency_key)
+    return latest_fill_attempt_in(graph.list_nodes("Fill"), broker_idempotency_key)
+
+
+def latest_fill_attempt_in(
+    fills: Iterable[Node], broker_idempotency_key: str
+) -> Node | None:
+    """Return the latest attempt for one broker key from Fill nodes already read."""
+    chain = fill_attempt_chain_in(fills, broker_idempotency_key)
     return None if not chain else chain[-1]
 
 
@@ -60,11 +67,14 @@ def fill_attempt_chain(
     graph: GraphStore, broker_idempotency_key: str
 ) -> tuple[Node, ...]:
     """Return Fill nodes for one broker key, ordered by attempt ordinal."""
-    nodes = [
-        node
-        for node in graph.list_nodes("Fill")
-        if _belongs_to_chain(node, broker_idempotency_key)
-    ]
+    return fill_attempt_chain_in(graph.list_nodes("Fill"), broker_idempotency_key)
+
+
+def fill_attempt_chain_in(
+    fills: Iterable[Node], broker_idempotency_key: str
+) -> tuple[Node, ...]:
+    """Return the chain for one broker key from Fill nodes already read."""
+    nodes = [node for node in fills if _belongs_to_chain(node, broker_idempotency_key)]
     return tuple(
         sorted(nodes, key=lambda node: attempt_ordinal(node, broker_idempotency_key))
     )

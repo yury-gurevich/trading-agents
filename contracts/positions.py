@@ -12,7 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
 from contracts.position_refs import position_ref_for_keys
-from contracts.stop_width import decided_stop_pct
+from contracts.stop_width import LineageFills, decided_stop_pct
 
 if TYPE_CHECKING:
     from contracts.common import Ticker
@@ -96,8 +96,9 @@ def open_position_stop_thresholds(
     graph: GraphStore,
 ) -> tuple[PositionStopThreshold, ...]:
     """Return weighted stop inputs for active positions grouped by ticker."""
+    fills = LineageFills(graph)
     return tuple(
-        _stop_threshold(graph, ticker, tuple(sorted(nodes, key=lambda n: n.key)))
+        _stop_threshold(graph, ticker, tuple(sorted(nodes, key=lambda n: n.key)), fills)
         for ticker, nodes in sorted(_active_nodes_by_ticker(graph).items())
     )
 
@@ -154,9 +155,9 @@ def _basis_lot(node: Node) -> PositionBasisLot | None:
 
 
 def _stop_threshold(
-    graph: GraphStore, ticker: Ticker, nodes: tuple[Node, ...]
+    graph: GraphStore, ticker: Ticker, nodes: tuple[Node, ...], fills: LineageFills
 ) -> PositionStopThreshold:
-    lots = tuple(_stop_lot(graph, ticker, node) for node in nodes)
+    lots = tuple(_stop_lot(graph, ticker, node, fills) for node in nodes)
     stop_pcts = {stop_pct for _quantity, _opened, stop_pct in lots}
     if len(stop_pcts) != 1:
         raise ValueError(f"active lots for {ticker} carry different stop_pct values")
@@ -178,12 +179,14 @@ def _stop_threshold(
     )
 
 
-def _stop_lot(graph: GraphStore, ticker: Ticker, node: Node) -> tuple[int, int, float]:
+def _stop_lot(
+    graph: GraphStore, ticker: Ticker, node: Node, fills: LineageFills
+) -> tuple[int, int, float]:
     try:
         return (
             int(node.props["quantity"]),
             int(node.props["opened_price_cents"]),
-            decided_stop_pct(graph, node).stop_pct,
+            decided_stop_pct(graph, node, fills=fills).stop_pct,
         )
     except (KeyError, TypeError, ValueError) as exc:
         message = f"active lot for {ticker} lacks stop threshold inputs"

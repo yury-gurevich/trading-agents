@@ -1,6 +1,6 @@
 # `Monitor` — Laws
 
-**Prefix:** `MON` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `MON` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Watch open positions and decide when to exit under policy (stop, target, time, regime)
 > — then hand every close to execution and explain every hold.
@@ -159,6 +159,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MON-PERF-01** — `price_lookback_days=2` keeps the provider request window narrow.
 - **MON-PERF-02** — The monitor holds no open connections between calls; provider request latency
   is bounded by the bus timeout (no infinite wait).
+- **MON-PERF-03** — One end-of-run evaluation reads the `Fill` label at most once for every
+  position's decided stop width, whatever the number of positions, and not at all when no position
+  is broker-adopted; each position still takes its own lineage width. *(DL-302; measured 11.1 MB a
+  run before it, 32 adopted positions.)*
 
 ## Capability declaration (`CAP`)
 
@@ -213,3 +217,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   linked snapshot. Why: snapshot-side discovery downloaded snapshots that never become sync work.
   The existing work and marker writer are unchanged; a later snapshot for a synced request is
   excluded and a half-written marker is repaired. DRIFT-097 corrected; 21 / 46 unchanged.
+- v1.4 — S279 / DL-302 (2026-10-15). New `MON-PERF-03`: the end-of-run evaluation shares one
+  `Fill` read across its positions' stop widths, where it read the label once per position. No
+  check, breach or adoption decision changes; 21 / 46 -> 22 / 47.

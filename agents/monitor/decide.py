@@ -16,6 +16,7 @@ from kernel import AgentFault
 from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
+    from contracts.stop_width import LineageFills
     from kernel import FaultSink, GraphStore, Node
 
 
@@ -25,11 +26,13 @@ def evaluate_one(
     monitor_run_id: str,
     position: Node,
     current_price_cents: int,
+    *,
+    fills: LineageFills | None = None,
 ) -> bool:
     """Evaluate one open position; return whether its stop is breached."""
     ticker = str(position.props["ticker"])
     observation, trigger = evaluate_position(
-        exit_position(graph, position), current_price_cents
+        exit_position(graph, position, fills=fills), current_price_cents
     )
     breached = observation == "stop_breached"
     write_check(

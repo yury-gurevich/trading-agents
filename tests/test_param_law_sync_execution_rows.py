@@ -1,10 +1,11 @@
 """DL-276 D3 pins the four authorized execution PARAM amendments.
 
 Agent: tooling
-Role: pin exact Type cells, next book version and the one S258 Changelog line.
+Role: pin exact Type cells, the book at S258's version or later, and its Changelog line.
 External I/O: read the execution law book only.
 """
 
+import re
 from pathlib import Path
 
 from scripts.param_law_sync_sources import param_rows
@@ -29,5 +30,7 @@ def test_the_four_execution_rows_state_the_decided_bounds():
     rows = param_rows(_ROOT, "execution")
     assert {name: rows[name].type_cell for name in _CELLS} == _CELLS
     book = (_ROOT / _BOOK).read_text(encoding="utf-8")
-    assert "**status:** LOCKED v1.13" in book
+    status = re.search(r"\*\*status:\*\* LOCKED v1\.(\d+) ", book)
+    assert status is not None
+    assert int(status.group(1)) >= 13  # v1.13 is S258's; a later amendment moves it on
     assert book.splitlines().count(_CHANGELOG) == 1

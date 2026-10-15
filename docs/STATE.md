@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-15 15:56 AEDT · **Version:** **0.127.00 on `main` and on the fleet as `s276`, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
+**Last updated:** 2026-10-15 18:25 AEDT · **Version:** **0.127.00 on `main` and on the fleet as `s276`, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -101,8 +101,11 @@ second ranking.
    `VocabularyError`). P3, the switch during the night, is specced as
    [S277](sprints/sprint-277-a-refused-request-is-answered-by-the-next-llm.md) for Codex (DL-289
    amendment 4; prototype `make ci` exit 0, 27 breaks red); merge after S276's F2.
-   **Work-queue 133**, the operator's decision of 2026-10-15: a failure the platform logs at `info`
-   (`RevisionFailure` and the autoscaler's refusals) alarms; measure the reasons, then spec.
+   **Work-queue 133** (the operator's decision of 2026-10-15) is specced as
+   [S278](sprints/sprint-278-a-failure-the-platform-logs-is-an-alarm.md) for Codex ([DL-301](design-log.md) amendment 7): a row the
+   platform marks `Warning` or `error` alarms, except five measured by-products of a deploy or a
+   wake. It is stacked on S277's built commit `6a5742c8` on its own branch, which also carries these
+   docs, so `main` stays a fast-forward for S277; merge after S277.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. Codex-sized and off the fidelity decision paths: what execution still downloads in its first five minutes

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-15 12:49 AEDT · **Version:** **0.127.00 on `main` and on the fleet as `s276`, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
+**Last updated:** 2026-10-15 15:56 AEDT · **Version:** **0.127.00 on `main` and on the fleet as `s276`, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -98,7 +98,9 @@ second ranking.
 1. **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed as `s276`**
    (work-queue 123, [DL-289](design-log.md) amendment 3): F2 at the first weekday fire (the three
    deliberators' `llm_candidate`, the fleet checks' empty `llm_passed_over`, no `LLM:` line, no
-   `VocabularyError`). P3 (the switch during the night) is the sprint after.
+   `VocabularyError`). P3, the switch during the night, is specced as
+   [S277](sprints/sprint-277-a-refused-request-is-answered-by-the-next-llm.md) for Codex (DL-289
+   amendment 4; prototype `make ci` exit 0, 27 breaks red); merge after S276's F2.
    **Work-queue 133**, the operator's decision of 2026-10-15: a failure the platform logs at `info`
    (`RevisionFailure` and the autoscaler's refusals) alarms; measure the reasons, then spec.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first

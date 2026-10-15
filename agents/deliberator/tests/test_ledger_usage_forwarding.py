@@ -1,7 +1,7 @@
 """A truncated or refused completion is still billed, so it is still counted.
 
 Agent: deliberator
-Role: prove `_LedgerLLM` forwards the provider's usage on the stopped path as
+Role: prove `LedgerLLM` forwards the provider's usage on the stopped path as
       well as the clean one.
 External I/O: none.
 
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from agents.deliberator.agent import _LedgerLLM
+from agents.deliberator.turn_ledger import LedgerLLM
 from kernel import InMemoryGraphStore, LLMCompletionStoppedError
 from kernel.llm_tokens import SOURCE_ESTIMATED, SOURCE_VENDOR, LLMUsage
 
@@ -57,7 +57,7 @@ def _props(graph: InMemoryGraphStore, key: str) -> dict[str, object]:
 def test_a_truncated_completion_still_records_what_it_burned() -> None:
     """DLIB-OBS-05: the tokens were spent whether or not an answer came back."""
     graph = InMemoryGraphStore()
-    ledger = _LedgerLLM(
+    ledger = LedgerLLM(
         graph,
         _StoppingLLM(),
         calling_agent="deliberator-opponent",
@@ -78,7 +78,7 @@ def test_a_truncated_completion_still_records_what_it_burned() -> None:
 def test_a_provider_that_reports_no_usage_falls_back_and_says_so() -> None:
     """DLIB-OBS-05: the fake LLM in CI has no usage, and must not look measured."""
     graph = InMemoryGraphStore()
-    ledger = _LedgerLLM(
+    ledger = LedgerLLM(
         graph,
         _SilentLLM(),
         calling_agent="deliberator-opponent",

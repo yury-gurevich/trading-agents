@@ -34,11 +34,17 @@ class LlmCandidate:
 
 @dataclass(frozen=True)
 class LlmRole:
-    """The configuration keys an agent type reads its chosen candidate from."""
+    """The configuration keys an agent type reads its candidates from.
+
+    The chosen candidate's vendor, model and effort, and the later candidates that
+    also passed, in order, as ``vendor/model/effort`` labels joined by commas
+    (DL-289 P3).
+    """
 
     vendor_key: str
     model_key: str
     effort_key: str
+    fallbacks_key: str
 
 
 @dataclass(frozen=True)
@@ -94,7 +100,8 @@ def _candidate(entry: object) -> LlmCandidate:
 def _role(name: object, keys: object) -> LlmRole:
     if not isinstance(keys, dict):
         raise ValueError(f"LLM role {name!r} must be an object")
-    return LlmRole(*(_text(keys, key) for key in ("vendor", "model", "effort")))
+    fields = ("vendor", "model", "effort", "fallbacks")
+    return LlmRole(*(_text(keys, key) for key in fields))
 
 
 def _text(entry: dict[str, object], key: str) -> str:

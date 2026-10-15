@@ -143,3 +143,27 @@ def role_models(
         or settings.model_for_role(role)
         for role, identity in served
     }
+
+
+def llm_switches(
+    graph: GraphStore | None, llm_call_keys: tuple[str, ...] | list[str]
+) -> list[str]:
+    """Return each role that answered on a later candidate, and what refused first.
+
+    Read from the run's own `LLMCall` rows: a row whose request a candidate refused
+    before it names them under `llm_passed_over` (DLIB-FAIL-05). One line per role,
+    model and refusals, in the order the rows were written.
+    """
+    lines: list[str] = []
+    for key in llm_call_keys:
+        node = graph.get_node("LLMCall", key) if graph is not None else None
+        over = node.props.get("llm_passed_over") if node is not None else None
+        if node is None or not isinstance(over, (list, tuple)) or not over:
+            continue
+        line = (
+            f"{node.props.get('calling_agent', '')} switched to "
+            f"{node.props.get('model', '')} (passed over {'; '.join(map(str, over))})"
+        )
+        if line not in lines:
+            lines.append(line)
+    return lines

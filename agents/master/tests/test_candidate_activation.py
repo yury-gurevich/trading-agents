@@ -12,20 +12,25 @@ import pytest
 from agents.master.tests.candidate_testkit import FIRST, SECOND, world
 
 
-def test_a1_first_passing_candidate_is_handed_over_alone() -> None:
-    """MST-OUT-05 / MST-OBS-04: the first pass and its key alone reach the role."""
+def test_a1_first_passing_candidate_is_handed_over_with_its_fallback() -> None:
+    """MST-OUT-05 / MST-OBS-04: the first pass, then the later pass as a fallback."""
     fixture = world()
     reply = fixture.activate()
-    assert fixture.labels() == [FIRST]
+    assert fixture.labels() == [FIRST, SECOND]
     assert reply.config["DELIBERATOR_LLM_PROVIDER"] == "openai"
     assert reply.config["DELIBERATOR_CHALLENGER_MODEL"] == "gpt-5.5"
     assert reply.config["DELIBERATOR_EFFORT"] == "high"
+    assert reply.config["DELIBERATOR_LLM_FALLBACKS"] == SECOND
     assert "OPENAI_API_KEY" in reply.config
-    assert "ANTHROPIC_API_KEY" not in reply.config
+    assert "ANTHROPIC_API_KEY" in reply.config
     (instance,) = fixture.graph.list_nodes("AgentInstance")
     assert instance.props["llm_candidate"] == FIRST
+    assert list(instance.props["llm_fallbacks"]) == [SECOND]
     assert list(instance.props["llm_passed_over"]) == []
-    assert list(instance.props["credential_tests_passed"]) == ["openai:gpt-5.5:high"]
+    assert list(instance.props["credential_tests_passed"]) == [
+        "openai:gpt-5.5:high",
+        "anthropic:claude-opus-5:max",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -66,9 +71,10 @@ def test_a3_declared_providers_candidates_go_first() -> None:
     """MST-OUT-05: the declared Anthropic provider is tried before OpenAI."""
     fixture = world(provider="anthropic")
     reply = fixture.activate()
-    assert fixture.labels() == [SECOND]
+    assert fixture.labels() == [SECOND, FIRST]
     assert reply.config["DELIBERATOR_LLM_PROVIDER"] == "anthropic"
-    assert "OPENAI_API_KEY" not in reply.config
+    assert reply.config["DELIBERATOR_LLM_FALLBACKS"] == FIRST
+    assert "OPENAI_API_KEY" in reply.config
 
 
 def test_a7_nonchoosing_type_keeps_its_single_vendor() -> None:

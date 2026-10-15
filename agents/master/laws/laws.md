@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -64,15 +64,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   declared LLM provider for every agent type in the grant policy and writes one `FleetPreflight`
   node per check. An empty provider leaves every probe applicable. The check passes only if every
   probe passed or has a fresh costly-pass cache entry. A credential failure or a transport failure
-  fails it. An LLM candidate passed over for a later one fails nothing (`MST-FAIL-08`); the node
-  lists each as `<agent type>: <vendor/model/effort>: <reason>` under `llm_passed_over`.
+  fails it. An LLM candidate passed over fails nothing (`MST-FAIL-08`); the node lists each as
+  `<agent type>: <vendor/model/effort>: <reason>` under `llm_passed_over`.
 - **MST-OUT-05** — An agent type named under `roles` in the pack's LLM declaration is activated on
   the first declared candidate (a vendor, a model and an effort) whose probes pass, the declared
-  provider's candidates tried first, each group in declared order. Each candidate is probed with
-  its own model and effort; the ones after the first that passes are not probed. ACTIVATE's config
-  names the chosen vendor, model and effort under the role's three keys and holds no other vendor's
-  key. The `AgentInstance` records `llm_candidate` (`vendor/model/effort`) and `llm_passed_over`,
-  one `<vendor/model/effort>: <reason>` for each candidate tried before it.
+  provider's candidates tried first, each group in declared order. Every candidate is probed, each
+  with its own model and effort. ACTIVATE's config names the chosen vendor, model and effort under
+  the role's `vendor`, `model` and `effort` keys and, under its `fallbacks` key, each later candidate
+  whose probes also passed, as `vendor/model/effort` joined by commas in that order (empty when
+  none); it holds the key of each vendor those candidates name and no other. The `AgentInstance`
+  records `llm_candidate` (`vendor/model/effort`), `llm_fallbacks` (the labels handed over after
+  it) and `llm_passed_over`, one `<vendor/model/effort>: <reason>` for each other candidate.
 
 ## Never (`NEV`)
 
@@ -93,7 +95,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   or an agent type granted the declared vendor's key without a probe tagged for that vendor.
   An empty provider preserves the original probes and secret map after validating probe tags.
   An agent type named under the LLM declaration's `roles` keeps every vendor's probes and keys at
-  start; `MST-OUT-05` withholds the vendors not chosen at each activation.
+  start; `MST-OUT-05` withholds at each activation the key of every vendor that neither the chosen
+  candidate nor a fallback names.
 - **MST-NEV-08** — Master refuses to start on an LLM declaration with no candidate, a candidate of an
   unknown vendor, a model of another known vendor's family, a repeated candidate, a field that is not
   a non-empty string, or a role whose agent type has, for some candidate, no probe of that vendor, a
@@ -169,11 +172,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the setting that fixes it (`MASTER_REMEDIATION_MODE=manual`), so the switch is never silently
   inert. `manual` starts unchanged. *(DRIFT-059; the guard is `agents/master/remediation_posture.py`,
   S203.)*
-- **MST-FAIL-08** — An LLM candidate whose probes were refused or went unanswered, when a later
+- **MST-FAIL-08** — An LLM candidate whose probes were refused or went unanswered, when another
   candidate passes, is neither a credential failure of the activation nor a failure of the fleet
-  check. When no candidate passes, the first whose probes were only unanswered is handed over
-  unproven, as `MST-FAIL-04` allows; when every candidate was refused, every refusal stands and the
-  activation is refused (`MST-NEV-06`).
+  check, before the chosen candidate or after it; it is passed over, and never handed over as a
+  fallback. When no candidate passes, the first whose probes were only unanswered is handed over
+  unproven, as `MST-FAIL-04` allows, with no fallback; when every candidate was refused, every
+  refusal stands and the activation is refused (`MST-NEV-06`).
 
 **Remediation is outside this constitution.** No clause governs *attempting* a remediation: what
 master may attempt, the one-shot bound, or what is recorded when an attempt fails. Those clauses are
@@ -230,8 +234,8 @@ guarantees.
 - **MST-OBS-03** — Fault channel receives all graph/Key Vault errors via `fault_boundary`.
 - **MST-OBS-04** — Successful activation records applicable credential-test evidence on the
   `AgentInstance`: live-tested names, live-passed names, cached-pass names, optional failures, and
-  transport failures; for an agent type that chose an LLM candidate, also the candidate and the ones
-  passed over (`MST-OUT-05`).
+  transport failures; for an agent type that chose an LLM candidate, also the candidate, the
+  fallbacks handed over after it and the ones passed over (`MST-OUT-05`).
 - **MST-OBS-05** — A stop leaves two lines on the container's stderr. When the signal arrives:
   `[<agent>] stop signal <NAME>: taking no new work`, written unbuffered from the handler, so a
   process killed later still shows that it was told to stop. When the process has closed what it
@@ -294,6 +298,12 @@ guarantees.
 | DRIFT-002 | MST-DEP-02: Key Vault resolves credentials in ACTIVATE | `config={}` in S73 | **RESOLVED S75** — `resolve_config()` in `agents/master/secret_map.py`; `SecretStore` protocol; KV + env-var impls |
 
 ## Changelog
+
+- v1.12 — S277 / DL-289 P3 (2026-10-15): a role can move to a later candidate during the night.
+  `MST-OUT-05` amended: every candidate is probed, and each later one that passes is handed over as
+  a fallback under the role's `fallbacks` key with its vendor's key, recorded as `llm_fallbacks`;
+  this reverses S262's one-key rule for the declared roles alone (DL-282). `MST-OUT-04`, `MST-NEV-07`,
+  `MST-FAIL-08` and `MST-OBS-04` amended for it. No clause added.
 
 - v1.11 — S276 / DL-289 (2026-10-15): an LLM role runs on the first declared candidate that works.
   New `MST-OUT-05` (the choice at activation and its record), `MST-NEV-08` (the start-time refusals

@@ -50,8 +50,13 @@ def write_deliberation_run(
     failed_open_tickers: list[str],
     failed_open_reason: str,
     llm_call_keys: list[str],
+    llm_switches: list[str] | None = None,
 ) -> Node:
-    """Write one idempotent DeliberationRun and link LLM audit calls."""
+    """Write one idempotent DeliberationRun and link LLM audit calls.
+
+    ``llm_switches`` names each role that answered on a later candidate during
+    the run (DLIB-OUT-02); written empty when none did.
+    """
     key = order_set.run_id
     current = graph.get_node(DELIBERATION_RUN_LABEL, key)
     if current is None:
@@ -72,6 +77,7 @@ def write_deliberation_run(
                 "orphaned_reply_count": orphaned_reply_count,
                 "failed_open_tickers": failed_open_tickers,
                 "failed_open_reason": failed_open_reason,
+                "llm_switches": list(llm_switches or []),
                 "created_at": datetime.now(tz=UTC).isoformat(),
             },
         )

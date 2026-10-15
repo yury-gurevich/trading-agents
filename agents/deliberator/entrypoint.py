@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.deliberator.agent import DeliberatorAgent
+from agents.deliberator.model_chain import build_role_chain
 from agents.deliberator.peer_client import BusPeerClient, ServiceBusPeerClient
 from agents.deliberator.settings import DeliberatorSettings
 from kernel import AzureServiceBusSettings, CollectingFaultSink, InProcessBus
@@ -24,6 +25,7 @@ PEER_SERVE_IDLE_SLEEP_SECONDS = 0
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
+    from agents.deliberator.model_chain import ModelChain
     from agents.deliberator.peer_client import PeerClient
     from kernel import FaultSink, GraphStore, LLMClient, MessageBus
 
@@ -41,7 +43,7 @@ def build_served_bus(
 def build_manager(
     graph: GraphStore,
     settings: DeliberatorSettings | None = None,
-    llm: LLMClient | None = None,
+    llm: LLMClient | ModelChain | None = None,
     sink: FaultSink | None = None,
 ) -> tuple[DeliberatorAgent, PeerClient]:
     """Build the manager and its production peer-client port."""
@@ -92,8 +94,17 @@ def build_role_llm(
     )
 
 
+def build_role_models(
+    settings: DeliberatorSettings, environ: Mapping[str, str]
+) -> ModelChain:
+    """Build the role's chosen client, then one per handed-over fallback (DL-289)."""
+    return build_role_chain(settings, environ, build_role_llm(settings, environ))
+
+
 def serve_peer(
-    graph: GraphStore, settings: DeliberatorSettings, llm: LLMClient | None
+    graph: GraphStore,
+    settings: DeliberatorSettings,
+    llm: LLMClient | ModelChain | None,
 ) -> None:
     """Serve a peer without sleeping beyond the Service Bus receive wait."""
     bus = InProcessBus()
@@ -122,7 +133,7 @@ def main() -> None:  # pragma: no cover
         master_public_key_from_env(),
     )
     graph = build_graph_from_env()
-    llm = build_role_llm(settings, os.environ)
+    llm = build_role_models(settings, os.environ)
     if settings.role == "manager":
         fault_sink = GraphFaultSink(graph, CollectingFaultSink())
         manager, peer_client = build_manager(graph, settings, llm=llm, sink=fault_sink)

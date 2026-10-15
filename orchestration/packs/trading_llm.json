@@ -1,5 +1,5 @@
 {
-  "_comment": "The fleet's LLM declaration (DL-282, DL-289). candidates: the ordered ways an LLM role may run, each a vendor, a model and an effort, the preferred first. The master probes an agent type in roles with each candidate in order at every activation and hands it the first that works; the vendor of the first candidate is the declared provider, written by infra/deploy-agents.ps1 and scripts/switch_llm_config.py into each app key under apps (master first), and the master puts that vendor's candidates first. roles: the configuration keys each choosing agent type is handed its candidate in.",
+  "_comment": "The fleet's LLM declaration (DL-282, DL-289). candidates: the ordered ways an LLM role may run, each a vendor, a model and an effort, the preferred first. The master probes an agent type in roles with each candidate in order at every activation and hands it the first that works; the vendor of the first candidate is the declared provider, written by infra/deploy-agents.ps1 and scripts/switch_llm_config.py into each app key under apps (master first), and the master puts that vendor's candidates first. The master probes every candidate and hands over each later one that also works as a fallback, which the role moves to when a vendor refuses a request during the night. roles: the configuration keys each choosing agent type is handed its candidate and its fallbacks in.",
   "candidates": [
     { "vendor": "openai", "model": "gpt-5.5", "effort": "high" },
     { "vendor": "anthropic", "model": "claude-opus-5", "effort": "max" }
@@ -15,17 +15,20 @@
     "deliberator-manager": {
       "vendor": "DELIBERATOR_LLM_PROVIDER",
       "model": "DELIBERATOR_JUDGE_MODEL",
-      "effort": "DELIBERATOR_EFFORT"
+      "effort": "DELIBERATOR_EFFORT",
+      "fallbacks": "DELIBERATOR_LLM_FALLBACKS"
     },
     "deliberator-proponent": {
       "vendor": "DELIBERATOR_LLM_PROVIDER",
       "model": "DELIBERATOR_DEFENDER_MODEL",
-      "effort": "DELIBERATOR_EFFORT"
+      "effort": "DELIBERATOR_EFFORT",
+      "fallbacks": "DELIBERATOR_LLM_FALLBACKS"
     },
     "deliberator-opponent": {
       "vendor": "DELIBERATOR_LLM_PROVIDER",
       "model": "DELIBERATOR_CHALLENGER_MODEL",
-      "effort": "DELIBERATOR_EFFORT"
+      "effort": "DELIBERATOR_EFFORT",
+      "fallbacks": "DELIBERATOR_LLM_FALLBACKS"
     }
   }
 }

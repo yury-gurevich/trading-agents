@@ -770,9 +770,11 @@ function Enable-ContainerSensor {
 }
 
 function Enable-LlmCandidates {
-  # DL-289: run BEFORE the retag that brings the master's S276 image. That image writes
-  # llm_passed_over on every fleet check and llm_candidate on a chosen activation, which
-  # the earlier vocabulary refuses; so the vocabulary goes first, then the candidate pack.
+  # DL-289: run BEFORE the retag that brings a master or a role image of S276 or later.
+  # Those images write properties the earlier vocabulary refuses: the master
+  # llm_passed_over, llm_candidate and llm_fallbacks; each role (the pack's roles) the
+  # LLMCall row's llm_passed_over and the DeliberationRun's llm_switches (S277). So the
+  # vocabulary goes first, on the master and on every role, then the candidate pack.
   # The credential pack rides with it: the injected one wins over the image's file, and
   # the S276 master refuses to start on an LLM probe without candidate_paths. An older
   # image ignores the candidate pack and the new probe keys. Each step is read back, so a
@@ -780,6 +782,11 @@ function Enable-LlmCandidates {
   Top "LLM CANDIDATES"
   $vocabOk = Set-AppVocabulary "master"
   Check $vocabOk "graph vocabulary on master"
+  foreach ($role in @((Load-LlmPack).roles.PSObject.Properties.Name)) {
+    $roleOk = Set-AppVocabulary $role
+    Check $roleOk "graph vocabulary on $role"
+    $vocabOk = $vocabOk -and $roleOk
+  }
   $state = $null
   if ($vocabOk) {
     $state = Invoke-Az @(

@@ -90,6 +90,7 @@ class Outcomes:
         *,
         llm_candidate: str = "",
         llm_passed_over: tuple[str, ...] = (),
+        llm_fallbacks: tuple[str, ...] = (),
     ) -> CredentialTestReport:
         """Freeze the outcomes into the activation evidence."""
         return CredentialTestReport(
@@ -104,4 +105,5 @@ class Outcomes:
             tuple(self.credential_failures),
             llm_candidate,
             llm_passed_over,
+            llm_fallbacks,
         )

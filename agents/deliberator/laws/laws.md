@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.17 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.18 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -50,7 +50,10 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   containing only `overturn` verdicts, per-ticker debate turns, role models,
   narrative, and creation time. A role's model is the one its `LLMCall` rows in
   the run name for the identity that served it, several joined in sorted order;
-  a role with no row names its resolved setting.
+  a role with no row names its resolved setting. `llm_switches` holds, for each
+  of the run's `LLMCall` rows that names `llm_passed_over` (`DLIB-FAIL-05`), one
+  line `<calling agent> switched to <model> (passed over <its lines joined by
+  "; ">)`, each distinct line once, in row order; it is empty when none does.
 + **DLIB-OUT-03** -- Each LLM call writes a shared `LLMCall` with
   `calling_agent`, model, hashes, token counts, latency, and timestamp.
 + **DLIB-OUT-04** -- `overturn` verdicts may only subtract existing
@@ -126,7 +129,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 + **DLIB-FAIL-01** -- Any LLM, peer-call, or unreadable judge-ruling failure
   is fail-open for the affected order and records an uphold verdict with a
-  failure rationale.
+  failure rationale. An LLM request is failed only once `DLIB-FAIL-05` has no
+  candidate left to send it to.
 + **DLIB-FAIL-02** -- A graph-write failure records a fault; no compensating
   delete is attempted.
 + **DLIB-FAIL-03** -- After a crash, the manager retries any `PMRun` that still
@@ -134,6 +138,15 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-FAIL-04** -- A provider-declared truncated or refused completion, or a
   judge response that cannot be read as one of the declared rulings, is a
   failed LLM call with its stop or parse reason named.
++ **DLIB-FAIL-05** -- A request a vendor answers with an HTTP error status (400
+  to 599) is sent to the role's next handed-over candidate, and the process stays
+  on that candidate for every later request; a request refused by a candidate the
+  process has already left is sent to the one in use, so each candidate is tried
+  at most once a request. A time-out, a dropped connection, a truncated
+  completion or an unreadable reply moves nothing. Each attempt is its own
+  `LLMCall` row, under its candidate's model; the row of an attempt made after a
+  refusal names, under `llm_passed_over`, each `<vendor/model/effort>:
+  http_<status>` that refused the request before it.
 
 ## Type Alignment (`TYP`)
 
@@ -168,8 +181,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-DEP-03** -- `DEP-LLM` for external model calls and fail-open behaviour.
 + **DLIB-DEP-04** -- `DEP-CONFIG` for role, round, model, and credential settings.
 + **DLIB-DEP-05** -- Each role runs on the vendor, model and effort its settings
-  hold after activation, so the ones the master handed it (DL-289) and never the
-  values read before. An empty effort sends the vendor none.
+  hold after activation, so the ones the master handed it (DL-289), its
+  fallbacks included, and never the values read before. An empty effort sends
+  the vendor none.
 
 ## Observability & Audit (`OBS`)
 
@@ -229,7 +243,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `role` | `manager` | enum | YES | Selects one of the three image identities |
 | `instance_name` | empty | string | YES | Allows an explicit fleet app identity |
 | `max_rounds` | `2` | int >= 1 <= 5 | YES | More than one live round while bounded |
-| `llm_provider` | `anthropic` | string | YES | Which vendor answers deliberation calls; switching is an operator act, never an automatic fallback, so which model reviewed an order stays answerable (DL-99) |
+| `llm_provider` | `anthropic` | string | YES | The vendor the role's first candidate is on; the master hands it over at activation, and a move to a fallback is recorded on the `LLMCall` row, so which model reviewed an order stays answerable (DL-289) |
+| `llm_fallbacks` | empty | string | YES | The later candidates the master handed over, `vendor/model/effort` joined by commas; a vendor's error answer moves the process to the next (`DLIB-FAIL-05`); empty means none |
 | `defender_model` | empty | string | YES | Proponent role model; empty resolves the provider default |
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
@@ -346,3 +361,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   runs on what the master handed it at activation) and `DLIB-NEV-11` (no model
   of another vendor's family is sent); amends and proves `DLIB-OUT-02` (role
   models are the ones that answered). PARAM: `effort` defaults to empty.
++ v1.18 -- S277 / DL-289 P3 (2026-10-15). Adds `DLIB-FAIL-05` (a request a
+  vendor refuses is sent to the role's next handed-over candidate, and the
+  process stays there); amends `DLIB-FAIL-01` (an LLM request fails only with no
+  candidate left), `DLIB-OUT-02` (`llm_switches`) and `DLIB-DEP-05` (the
+  fallbacks are handed over too). PARAM: `llm_fallbacks` added, `llm_provider`
+  reworded.

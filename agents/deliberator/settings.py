@@ -58,9 +58,18 @@ class DeliberatorSettings(AgentSettings):
     llm_provider: str = tunable(
         default="anthropic",
         why=(
-            "Which vendor answers deliberation calls. A tunable, not an automatic "
-            "fallback: a silent switch would make 'which model reviewed this order' "
-            "unanswerable afterwards. Switching is an operator act (DL-99)."
+            "Which vendor answers deliberation calls first. The master hands each "
+            "role its chosen candidate's vendor at activation (DL-289); a move to a "
+            "fallback is recorded on the LLMCall row, so 'which model reviewed this "
+            "order' stays answerable."
+        ),
+    )
+    llm_fallbacks: str = tunable(
+        "",
+        why=(
+            "The later candidates the master handed over, vendor/model/effort joined "
+            "by commas. A vendor that answers a request with an error status sends "
+            "it to the next, and the process stays there (DL-289 P3). Empty: none."
         ),
     )
     defender_model: str = tunable(

@@ -58,6 +58,7 @@ def record_llm_call(
     prompt: str,
     system_prompt: str = "",
     prompt_recipe_hash: str = RECIPE_UNKNOWN,
+    passed_over: tuple[str, ...] = (),
 ) -> Iterator[LLMCallCapture]:
     """Persist one LLM call after the wrapped completion finishes.
 
@@ -66,7 +67,8 @@ def record_llm_call(
     `DLIB-IDM-02` reads as though the recorded hashes bound what the model was
     asked, and until now only the *user* half was hashed, so two calls with
     different system prompts and identical user context were indistinguishable —
-    exactly what a role-prompt experiment changes.
+    exactly what a role-prompt experiment changes. ``passed_over`` names the
+    candidates that refused this same request before this call was made.
     """
     started = time.perf_counter()
     capture = LLMCallCapture(prompt=prompt)
@@ -93,6 +95,7 @@ def record_llm_call(
             token_source=counts.token_source,
             system_prompt_hash=digest_text(system_prompt),
             prompt_recipe_hash=prompt_recipe_hash,
+            passed_over=passed_over,
         )
 
 
@@ -113,6 +116,7 @@ def write_llm_call(
     token_source: str = SOURCE_ESTIMATED,
     system_prompt_hash: str = "",
     prompt_recipe_hash: str = RECIPE_UNKNOWN,
+    passed_over: tuple[str, ...] = (),
 ) -> Node:
     """Append this completion under the first free shared LLM call ledger key.
 
@@ -120,33 +124,34 @@ def write_llm_call(
     it cannot silently present a word count as a vendor measurement, and
     ``prompt_recipe_hash`` defaults to ``unknown`` for the same reason: an
     unrecorded renderer must read as unrecorded, never as *this* renderer.
+    ``llm_passed_over`` is written only when a candidate refused the request
+    before this call, so every other row is unchanged.
     """
     first = f"llmcall:{calling_agent}:{correlation_id}"
     key, repeat = first, 0
     while graph.get_node("LLMCall", key) is not None:
         repeat += 1
         key = f"{first}:repeat-{repeat}"
-    return graph.merge_node(
-        "LLMCall",
-        key,
-        {
-            "calling_agent": calling_agent,
-            "correlation_id": correlation_id,
-            "model": model,
-            "prompt_hash": prompt_hash,
-            "response_hash": response_hash,
-            "tokens_in": tokens_in,
-            "tokens_out": tokens_out,
-            "cache_read_tokens": cache_read_tokens,
-            "cache_write_tokens": cache_write_tokens,
-            "token_source": token_source,
-            "system_prompt_hash": system_prompt_hash,
-            "prompt_recipe_hash": prompt_recipe_hash,
-            "latency_ms": latency_ms,
-            "stop_reason": str(stop_reason or "").strip() or STOP_REASON_UNKNOWN,
-            "created_at": datetime.now(tz=UTC).isoformat(),
-        },
-    )
+    props: dict[str, object] = {
+        "calling_agent": calling_agent,
+        "correlation_id": correlation_id,
+        "model": model,
+        "prompt_hash": prompt_hash,
+        "response_hash": response_hash,
+        "tokens_in": tokens_in,
+        "tokens_out": tokens_out,
+        "cache_read_tokens": cache_read_tokens,
+        "cache_write_tokens": cache_write_tokens,
+        "token_source": token_source,
+        "system_prompt_hash": system_prompt_hash,
+        "prompt_recipe_hash": prompt_recipe_hash,
+        "latency_ms": latency_ms,
+        "stop_reason": str(stop_reason or "").strip() or STOP_REASON_UNKNOWN,
+        "created_at": datetime.now(tz=UTC).isoformat(),
+    }
+    if passed_over:
+        props["llm_passed_over"] = list(passed_over)
+    return graph.merge_node("LLMCall", key, props)
 
 
 def digest_text(value: str) -> str:

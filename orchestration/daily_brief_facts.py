@@ -74,7 +74,7 @@ def brief_facts(
         critical_flags=health["pending_human_flags"],
         last_stage=_last_stage(nodes),
         containers=container_line(graph, now=now, timezone=timezone),
-        llm=llm_line(graph, now=now),
+        llm=llm_line(graph, now=now, deliberation=nodes.get("DeliberationRun")),
     )
     snapshot = nodes.get("Snapshot")
     if snapshot is None or pm_run is None:

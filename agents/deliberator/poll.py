@@ -16,6 +16,7 @@ from agents.deliberator.review_record import (
     OrderReview,
     fail_open_review,
     failed_open_reason,
+    llm_switches,
     narrative,
     role_models,
 )
@@ -85,6 +86,7 @@ def review_pm_node(
         failed_open_tickers=batch.failed_open_tickers,
         failed_open_reason=_combined_failed_open_reason(batch.failed_open_reasons),
         llm_call_keys=batch.llm_call_keys,
+        llm_switches=llm_switches(graph, batch.llm_call_keys),
     )
 
 

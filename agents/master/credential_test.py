@@ -68,7 +68,7 @@ def resolve_and_test_report(
     """Resolve secrets, run applicable tests, and return activation evidence.
 
     An agent type with LLM candidates runs its other tests first, then is handed
-    the first candidate that passes (`model_choice`).
+    the first candidate that passes and each later one that passes (`model_choice`).
     """
     config = resolve_config(agent_type, store, secret_map)
     str_config = {k: v for k, v in config.items() if isinstance(v, str)}
@@ -86,6 +86,13 @@ def resolve_and_test_report(
     ]
     if not candidates:
         return outcomes.report(config)
-    chosen, label, passed_over = choose_llm(candidates, config, str_config, cache)
+    chosen, label, passed_over, fallbacks = choose_llm(
+        candidates, config, str_config, cache
+    )
     outcomes.extend(chosen)
-    return outcomes.report(config, llm_candidate=label, llm_passed_over=passed_over)
+    return outcomes.report(
+        config,
+        llm_candidate=label,
+        llm_passed_over=passed_over,
+        llm_fallbacks=fallbacks,
+    )

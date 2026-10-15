@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-277-a-refused-request-is-answered-by-the-next-llm`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.128.00` (MINOR)
 **Effort:** L
 **Decisions:** [DL-289](../design-log.md) (the direction, operator 2026-10-11; P3 is this sprint; amendment 4 holds its ten decisions, made and measured) · [DL-282](../design-log.md) (S262's one-key rule, reversed here for the three declared roles alone) · [work-queue 123](../work-queue.md)
 
@@ -303,13 +303,13 @@ stand-in whose `complete` raises an exception with an integer `status_code`.
 
 - [ ] **F0 (planner, done before handover):** the prototype passes `make ci` (`make ci` exit 0, sixteen steps: 5,075 passed, 9 skipped, 100.00 %; the dependency audit clean) and its
       27 planted breaks each turn the planner's tests red (`s277_breaks_proto.txt`).
-- [ ] The Appendix applied exactly: the 19 production files equal the prototype's blobs
+- [x] The Appendix applied exactly: the 19 production files equal the prototype's blobs
       (`prototype_blobs.txt`), the three `laws.md` equal § 6.
-- [ ] A1–A24 pass; each docstring cites its clause.
-- [ ] Every break under *Traps* planted one at a time turns one of your tests red, then restored.
-- [ ] No decision-path file changed (`DECISION_PATHS` against `git diff origin/main` prints none).
-- [ ] Law cycle: three books, three test plans, both roll-ups at the derived counts.
-- [ ] Every touched module < 200 lines.
+- [x] A1–A24 pass; each docstring cites its clause.
+- [x] Every break under *Traps* planted one at a time turns one of your tests red, then restored.
+- [x] No decision-path file changed (`DECISION_PATHS` against `git diff origin/main` prints none).
+- [x] Law cycle: three books, three test plans, both roll-ups at the derived counts.
+- [x] Every touched module < 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage, redirected to a file.
 - [ ] **F1a (planner, after merge, no cost):** `s277_switch_measure.py` on merged `main` prints what
       it printed on the prototype (the real SDKs' refusals with made-up keys, the switch, the stay,
@@ -502,15 +502,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| Master choice, probes, report, pack and deploy | `agents/master/laws/laws.md` v1.11 and `test-plan.md`, whole | MST-OUT-04/05, MST-NEV-06/07/08, MST-FAIL-04/08, MST-OBS-04, MST-SEC-02/04, MST-DEP-05 | Yes: only proven later candidates and their keys may be handed over; unanswered fallbacks stay out. MST-SEC-02 remains gray; this sprint proves only the named candidate-key boundary. |
+| Deliberator chain, ledger, startup, run records | `agents/deliberator/laws/laws.md` v1.17 and `test-plan.md`, whole | DLIB-FAIL-01/04 (new FAIL-05 supplied by §6), DLIB-OUT-02/03/05, DLIB-STA-03, DLIB-OBS-05/07/08, DLIB-DEP-05, DLIB-NEV-10/11, DLIB-SEC-02, PARAM | Yes: one row per attempt; no new peer-owned node; refusal rows retain unknown stop reason. STA-03 and DEP-03 remain gray; no claim to prove their whole envelopes. |
+| Shared kernel ledger and unchanged operator callers | `agents/operator/laws/laws.md` v1.10 and `test-plan.md`, whole; deliberator book above | OPR-STA-03, OPR-IDM-02, OPR-DEP-01; DLIB-OUT-03, DLIB-OBS-08 | Yes: optional metadata is absent on ordinary rows; operator remains on its one selected vendor. |
+| Dispatcher brief | `orchestration/laws/dispatcher/laws.md` v1.4 and `test-plan.md`, whole | DSP-OUT-06/08/09, DSP-DEP-01 | Yes: activation parts precede run switches; no qualifying fact means no line. DEP-01 remains gray beyond the bounded graph-read proof. |
+| Law cycle and substrate/pack boundary | `docs/laws/conventions.md` and `drift-register.md`, whole; `docs/decisions/0012-platform-domain-separation.md`; S276 `llm-candidates` step | conventions §2/3/4/7/7a/9/10; ADR-0012 | Yes: use §6 verbatim, faithful amended summaries, functional citations and gate-derived rollups; pack policy stays injected data. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No contract change; yes, the declared-role fallback handover, refusal switch and recorded switch guarantees change. Apply exactly §6: master v1.12, deliberator v1.18, dispatcher v1.5, with the test-plan/rollup cycle in this unit.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None beyond the deliberate amendments expressly supplied by §6.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** The new refusal-switch guarantee is not in v1.17 and is supplied by DLIB-FAIL-05 in §6; no further undecided silence found. No extra clause or decision is introduced.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** New DLIB-FAIL-05 is proven; no previously declared gray envelope is promoted. Existing gray envelopes named above remain gray. The amended green clauses are re-proven by the new tests; the gate derives master 33 / 58, deliberator 35 / 66, dispatcher 43 / 47.
+
+Reading recorded before any code change, 2026-10-15, in `C:\Users\yury_\Downloads\project\ta-s277`, clean branch `sprint-277-a-refused-request-is-answered-by-the-next-llm`, HEAD and `origin/main` `53fcfcc2c21ae8394c6a7eecb62958c65b1b2fb0`. No `.env`; ready `.venv`. Scope is the Appendix, new tests, named existing-test edits, law rows, version and handback only; no tracker, decision-path, network, vendor or deploy action.
 
 ---
 
@@ -518,51 +524,497 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | |
+| A1 | `test_a1_refusal_moves_request_and_process` | `agents/deliberator/tests/test_refusal_attempts.py` | PASS | DLIB-FAIL-05, DLIB-OBS-08 |
+| A2 | `test_a2_without_error_status_nothing_moves` | `agents/deliberator/tests/test_refusal_attempts.py` | PASS | DLIB-FAIL-05 |
+| A3 | `test_a3_last_refusal_is_raised_and_stays_on_last` | `agents/deliberator/tests/test_refusal_attempts.py` | PASS | DLIB-FAIL-05, DLIB-FAIL-01 |
+| A4 | `test_a4_already_left_candidate_lands_on_current` | `agents/deliberator/tests/test_refusal_concurrency.py` | PASS | DLIB-FAIL-05 |
+| A5 | `test_a5_concurrent_refusals_skip_no_candidate` | `agents/deliberator/tests/test_refusal_concurrency.py` | PASS | DLIB-FAIL-05 |
+| A6 | `test_a6_reason_is_only_integer_status` | `agents/deliberator/tests/test_refusal_attempts.py` | PASS | DLIB-FAIL-05 |
+| A7 | `test_a7_handed_candidates_build_with_their_own_vendor_key` | `agents/deliberator/tests/test_handed_fallbacks.py` | PASS | DLIB-DEP-05 |
+| A8 | `test_a8_unreadable_fallback_stops_before_build` | `agents/deliberator/tests/test_handed_fallbacks.py` | PASS | DLIB-DEP-05 |
+| A9 | `test_a9_kernel_refuses_unrunnable_fallback`; `test_a9_empty_chain_is_refused` | `agents/deliberator/tests/test_handed_fallbacks.py` | PASS | DLIB-NEV-11, DLIB-DEP-05; DLIB-DEP-05 |
+| A10 | `test_a10_real_review_records_answered_model_and_switch` | `agents/deliberator/tests/test_refusal_run.py` | PASS | DLIB-OUT-02, DLIB-FAIL-05 |
+| A11 | `test_a11_run_always_writes_empty_switches`; `test_a11_switch_reader_skips_bad_rows_and_deduplicates_in_row_order` | `agents/deliberator/tests/test_refusal_run.py` | PASS | DLIB-OUT-02 |
+| A12 | `test_a12_entrypoint_builds_and_uses_role_chain` | `agents/deliberator/tests/test_handed_fallbacks.py` | PASS | DLIB-DEP-05 |
+| A13 | `test_a13_refused_fallback_is_recorded_and_key_withheld` | `agents/master/tests/test_fallback_handover.py` | PASS | MST-OUT-05, MST-FAIL-08, MST-NEV-07, MST-OBS-04 |
+| A14 | `test_a14_unanswered_fallback_is_never_handed_over` | `agents/master/tests/test_fallback_handover.py` | PASS | MST-FAIL-08, MST-NEV-06 |
+| A15 | `test_a15_refused_fallback_fails_no_fleet_check` | `agents/master/tests/test_fallback_handover.py` | PASS | MST-OUT-04, MST-FAIL-08 |
+| A16 | `test_a16_no_fallback_after_last_or_unproven_choice` | `agents/master/tests/test_fallback_handover.py` | PASS | MST-OUT-05, MST-FAIL-08 |
+| A17 | `test_a17_every_role_names_its_fallbacks_key`; `test_a17_missing_fallback_key_refuses_pack` | `agents/master/tests/test_fallback_declaration.py` | PASS | MST-OUT-05, MST-NEV-08; MST-NEV-08 |
+| A18 | `test_a18_nonchoosing_type_keeps_its_one_vendor` | `agents/master/tests/test_fallback_handover.py` | PASS | MST-NEV-07 |
+| A19 | `test_a19_brief_names_each_switch_in_run_order` | `orchestration/tests/test_llm_brief_switches.py` | PASS | DSP-OUT-09 |
+| A20 | `test_a20_activation_parts_precede_run_switches` | `orchestration/tests/test_llm_brief_switches.py` | PASS | DSP-OUT-09 |
+| A21 | `test_a21_no_switch_means_no_line` | `orchestration/tests/test_llm_brief_switches.py` | PASS | DSP-OUT-09 |
+| A22 | `test_a22_real_fire_carries_the_runs_switch` | `orchestration/tests/test_llm_brief_switches.py` | PASS | DSP-OUT-09 |
+| A23 | `test_a23_role_vocabulary_success_gates_pack_delivery` | `tests/test_fallback_delivery.py` | PASS | MST-OUT-05 |
+| A24 | `test_a24_vocabulary_declares_every_fallback_property_in_sorted_lists` | `tests/test_fallback_delivery.py` | PASS | MST-OBS-04, DLIB-OUT-02, DLIB-FAIL-05 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record` (MST-OUT-05, MST-NEV-07, MST-OBS-04). The plan produces 55 cases and this passing-fallback control adds one: 56 cases total. A9, A11 and A17 each use more than one test function.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT — local tests and guards proven; overall CI verified failing at the offline dependency audit; remote gate and live checks owed.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s277`, branch `sprint-277-a-refused-request-is-answered-by-the-next-llm`; `.env` absent. Ready worktree `.venv`; no sync or vendor call. Proof artifacts are in `C:\Users\yury_\AppData\Local\Temp\s277-evidence`.
 
-**Result:** *(builder fills)*
+**Result:** Appendix applied exactly: all 24 supplied raw blob hashes match (19 production, 3 law books, 2 existing test files). All A1–A24 cases and the extra passing-fallback control pass (56 new cases); B1–B27 each turn a new test red and restore exact bytes. Full pytest: 5088 passed, 9 skipped, 2470 warnings in 443.47s (0:07:23), 100.00 % coverage. The dependency audit is verified failing offline; a fresh advisory check is not done. No decision path changed; no remote, merge, deploy or live proof claimed.
 
-**Files changed:** *(builder fills)*
+**Files changed:** 42, exactly the scoped production/law/test/version/handback surfaces:
+
+```text
+agents/deliberator/agent.py
+agents/deliberator/entrypoint.py
+agents/deliberator/laws/laws.md
+agents/deliberator/laws/test-plan.md
+agents/deliberator/model_chain.py
+agents/deliberator/poll.py
+agents/deliberator/review_record.py
+agents/deliberator/settings.py
+agents/deliberator/store.py
+agents/deliberator/tests/refusal_testkit.py
+agents/deliberator/tests/test_handed_fallbacks.py
+agents/deliberator/tests/test_ledger_usage_forwarding.py
+agents/deliberator/tests/test_refusal_attempts.py
+agents/deliberator/tests/test_refusal_concurrency.py
+agents/deliberator/tests/test_refusal_run.py
+agents/deliberator/turn_ledger.py
+agents/master/credential_outcomes.py
+agents/master/credential_report.py
+agents/master/credential_test.py
+agents/master/laws/laws.md
+agents/master/laws/test-plan.md
+agents/master/model_candidates.py
+agents/master/model_choice.py
+agents/master/tests/test_candidate_activation.py
+agents/master/tests/test_fallback_declaration.py
+agents/master/tests/test_fallback_handover.py
+docs/laws/INDEX.md
+docs/laws/ledger.md
+docs/sprints/README.md
+docs/sprints/sprint-277-a-refused-request-is-answered-by-the-next-llm.md
+infra/deploy-agents.ps1
+kernel/llm_ledger.py
+orchestration/daily_brief_facts.py
+orchestration/laws/dispatcher/laws.md
+orchestration/laws/dispatcher/test-plan.md
+orchestration/llm_brief.py
+orchestration/packs/trading_graph_vocabulary.json
+orchestration/packs/trading_llm.json
+orchestration/tests/test_llm_brief_switches.py
+pyproject.toml
+tests/test_fallback_delivery.py
+uv.lock
+```
 
 **Design decisions:** DL-289 amendment 4 (the planner's, on `main`); no new DL.
 
 **Proof — the red run first:**
 
 ```text
-(builder fills)
+Unchanged production tree; .venv/Scripts/python.exe -m pytest <eight new test files>
+--no-cov -q --tb=short --continue-on-collection-errors
+RED_EXIT=1
+FFFFF.FFFFFFFFFFFFFF                                                     [100%]
+=================================== ERRORS ====================================
+_____ ERROR collecting agents/deliberator/tests/test_refusal_attempts.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\tests\test_refusal_attempts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\tests\test_refusal_attempts.py:10: in <module>
+    from agents.deliberator.model_chain import refusal
+E   ModuleNotFoundError: No module named 'agents.deliberator.model_chain'
+____ ERROR collecting agents/deliberator/tests/test_refusal_concurrency.py ____
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\tests\test_refusal_concurrency.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\tests\test_refusal_concurrency.py:11: in <module>
+    from agents.deliberator.tests.refusal_testkit import (
+agents\deliberator\tests\refusal_testkit.py:12: in <module>
+    from agents.deliberator.model_chain import ModelChain, RoleCandidate
+E   ModuleNotFoundError: No module named 'agents.deliberator.model_chain'
+_____ ERROR collecting agents/deliberator/tests/test_handed_fallbacks.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\tests\test_handed_fallbacks.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\tests\test_handed_fallbacks.py:12: in <module>
+    from agents.deliberator.entrypoint import build_role_models, main
+E   ImportError: cannot import name 'build_role_models' from 'agents.deliberator.entrypoint' (C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\entrypoint.py)
+________ ERROR collecting agents/deliberator/tests/test_refusal_run.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\tests\test_refusal_run.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\deliberator\tests\test_refusal_run.py:11: in <module>
+    from agents.deliberator.review_record import llm_switches
+E   ImportError: cannot import name 'llm_switches' from 'agents.deliberator.review_record' (C:\Users\yury_\Downloads\project\ta-s277\agents\deliberator\review_record.py)
+================================== FAILURES ===================================
+___________ test_a13_refused_fallback_is_recorded_and_key_withheld ____________
+agents\master\tests\test_fallback_handover.py:17: in test_a13_refused_fallback_is_recorded_and_key_withheld
+    assert fixture.labels() == [FIRST, SECOND]
+E   AssertionError: assert ['openai/gpt-5.5/high'] == ['openai/gpt-...e-opus-5/max']
+E
+E     Right contains one more item: 'anthropic/claude-opus-5/max'
+E     Use -v to get more diff
+______________ test_a14_unanswered_fallback_is_never_handed_over ______________
+agents\master\tests\test_fallback_handover.py:34: in test_a14_unanswered_fallback_is_never_handed_over
+    assert fixture.labels() == [FIRST, SECOND]
+E   AssertionError: assert ['openai/gpt-5.5/high'] == ['openai/gpt-...e-opus-5/max']
+E
+E     Right contains one more item: 'anthropic/claude-opus-5/max'
+E     Use -v to get more diff
+_______________ test_a15_refused_fallback_fails_no_fleet_check ________________
+agents\master\tests\test_fallback_handover.py:55: in test_a15_refused_fallback_fails_no_fleet_check
+    assert list(check.props["llm_passed_over"]) == [
+E   AssertionError: assert [] == ['deliberator...ble:http_429']
+E
+E     Right contains 3 more items, first extra item: 'deliberator-manager: anthropic/claude-opus-5/max: unrecoverable:http_429'
+E     Use -v to get more diff
+_________ test_a16_no_fallback_after_last_or_unproven_choice[429-200] _________
+agents\master\tests\test_fallback_handover.py:72: in test_a16_no_fallback_after_last_or_unproven_choice
+    assert reply.config["DELIBERATOR_LLM_FALLBACKS"] == ""
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'DELIBERATOR_LLM_FALLBACKS'
+_________ test_a16_no_fallback_after_last_or_unproven_choice[401-503] _________
+agents\master\tests\test_fallback_handover.py:72: in test_a16_no_fallback_after_last_or_unproven_choice
+    assert reply.config["DELIBERATOR_LLM_FALLBACKS"] == ""
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'DELIBERATOR_LLM_FALLBACKS'
+________________ test_proven_fallback_keeps_its_key_and_record ________________
+agents\master\tests\test_fallback_handover.py:95: in test_proven_fallback_keeps_its_key_and_record
+    assert fixture.labels() == [FIRST, SECOND]
+E   AssertionError: assert ['openai/gpt-5.5/high'] == ['openai/gpt-...e-opus-5/max']
+E
+E     Right contains one more item: 'anthropic/claude-opus-5/max'
+E     Use -v to get more diff
+_________________ test_a17_every_role_names_its_fallbacks_key _________________
+agents\master\tests\test_fallback_declaration.py:21: in test_a17_every_role_names_its_fallbacks_key
+    assert role.fallbacks_key == "DELIBERATOR_LLM_FALLBACKS"
+           ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'LlmRole' object has no attribute 'fallbacks_key'
+_______ test_a17_missing_fallback_key_refuses_pack[deliberator-manager] _______
+agents\master\tests\test_fallback_declaration.py:31: in test_a17_missing_fallback_key_refuses_pack
+    with pytest.raises(ValueError, match="'fallbacks'.*non-empty string"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+______ test_a17_missing_fallback_key_refuses_pack[deliberator-proponent] ______
+agents\master\tests\test_fallback_declaration.py:31: in test_a17_missing_fallback_key_refuses_pack
+    with pytest.raises(ValueError, match="'fallbacks'.*non-empty string"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+______ test_a17_missing_fallback_key_refuses_pack[deliberator-opponent] _______
+agents\master\tests\test_fallback_declaration.py:31: in test_a17_missing_fallback_key_refuses_pack
+    with pytest.raises(ValueError, match="'fallbacks'.*non-empty string"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+________________ test_a19_brief_names_each_switch_in_run_order ________________
+orchestration\tests\test_llm_brief_switches.py:31: in test_a19_brief_names_each_switch_in_run_order
+    assert llm_line(graph, now=NOW, deliberation=run) == (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+_______________ test_a20_activation_parts_precede_run_switches ________________
+orchestration\tests\test_llm_brief_switches.py:52: in test_a20_activation_parts_precede_run_switches
+    llm_line(graph, now=NOW, deliberation=run)
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+_________________ test_a21_no_switch_means_no_line[switches0] _________________
+orchestration\tests\test_llm_brief_switches.py:63: in test_a21_no_switch_means_no_line
+    assert llm_line(graph, now=NOW, deliberation=run) is None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+_________________ test_a21_no_switch_means_no_line[switches1] _________________
+orchestration\tests\test_llm_brief_switches.py:63: in test_a21_no_switch_means_no_line
+    assert llm_line(graph, now=NOW, deliberation=run) is None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+___________________ test_a21_no_switch_means_no_line[None] ____________________
+orchestration\tests\test_llm_brief_switches.py:63: in test_a21_no_switch_means_no_line
+    assert llm_line(graph, now=NOW, deliberation=run) is None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+________________ test_a21_no_switch_means_no_line[wrong shape] ________________
+orchestration\tests\test_llm_brief_switches.py:63: in test_a21_no_switch_means_no_line
+    assert llm_line(graph, now=NOW, deliberation=run) is None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: llm_line() got an unexpected keyword argument 'deliberation'
+_________________ test_a22_real_fire_carries_the_runs_switch __________________
+orchestration\tests\test_llm_brief_switches.py:75: in test_a22_real_fire_carries_the_runs_switch
+    assert telegram.briefs[0].splitlines()[-2] == f"LLM: {SWITCH} during the run"
+E   AssertionError: assert 'Filled: none' == 'LLM: deliber...uring the run'
+E
+E     - LLM: deliberator-opponent switched to claude-opus-5 (passed over openai/gpt-5.5/high: http_429) during the run
+E     + Filled: none
+____________ test_a23_role_vocabulary_success_gates_pack_delivery _____________
+tests\test_fallback_delivery.py:23: in test_a23_role_vocabulary_success_gates_pack_delivery
+    assert loop in body
+E   assert 'foreach ($role in @((Load-LlmPack).roles.PSObject.Properties.Name)) {' in '\n  # DL-289: run BEFORE the retag that brings the master\'s S276 image. That image writes\n  # llm_passed_over on ev...master") -eq "Succeeded")\n  Check $packOk "credential and LLM packs on master"\n  Bot\n  return $vocabOk -and $packOk'
+____ test_a24_vocabulary_declares_every_fallback_property_in_sorted_lists _____
+tests\test_fallback_delivery.py:53: in test_a24_vocabulary_declares_every_fallback_property_in_sorted_lists
+    assert prop in names
+E   AssertionError: assert 'llm_fallbacks' in ['agent_type', 'boot_id', 'credential_tests_cached', 'credential_tests_declared', 'credential_tests_failed_optional', 'credential_tests_passed', ...]
+=========================== short test summary info ===========================
+ERROR agents/deliberator/tests/test_refusal_attempts.py
+ERROR agents/deliberator/tests/test_refusal_concurrency.py
+ERROR agents/deliberator/tests/test_handed_fallbacks.py
+ERROR agents/deliberator/tests/test_refusal_run.py
+FAILED agents/master/tests/test_fallback_handover.py::test_a13_refused_fallback_is_recorded_and_key_withheld
+FAILED agents/master/tests/test_fallback_handover.py::test_a14_unanswered_fallback_is_never_handed_over
+FAILED agents/master/tests/test_fallback_handover.py::test_a15_refused_fallback_fails_no_fleet_check
+FAILED agents/master/tests/test_fallback_handover.py::test_a16_no_fallback_after_last_or_unproven_choice[429-200]
+FAILED agents/master/tests/test_fallback_handover.py::test_a16_no_fallback_after_last_or_unproven_choice[401-503]
+FAILED agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record
+FAILED agents/master/tests/test_fallback_declaration.py::test_a17_every_role_names_its_fallbacks_key
+FAILED agents/master/tests/test_fallback_declaration.py::test_a17_missing_fallback_key_refuses_pack[deliberator-manager]
+FAILED agents/master/tests/test_fallback_declaration.py::test_a17_missing_fallback_key_refuses_pack[deliberator-proponent]
+FAILED agents/master/tests/test_fallback_declaration.py::test_a17_missing_fallback_key_refuses_pack[deliberator-opponent]
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a19_brief_names_each_switch_in_run_order
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a20_activation_parts_precede_run_switches
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a21_no_switch_means_no_line[switches0]
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a21_no_switch_means_no_line[switches1]
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a21_no_switch_means_no_line[None]
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a21_no_switch_means_no_line[wrong shape]
+FAILED orchestration/tests/test_llm_brief_switches.py::test_a22_real_fire_carries_the_runs_switch
+FAILED tests/test_fallback_delivery.py::test_a23_role_vocabulary_success_gates_pack_delivery
+FAILED tests/test_fallback_delivery.py::test_a24_vocabulary_declares_every_fallback_property_in_sorted_lists
+19 failed, 1 passed, 4 errors in 12.24s
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder fills)
+........................................................                 [100%]
+56 passed in 5.70s
+GREEN_EXIT=0
+
+Final full CI pytest:
+5088 passed, 9 skipped, 2470 warnings in 443.47s (0:07:23)
+TOTAL                                                           21336      0   4562      0  100.00%
 ```
 
-**Guards planted:** *(builder fills: B1–B27, each red on which test, each restored)*
+**Guards planted:** each mutation was applied to one production file, tested only against a new builder test, then restored before the next. Raw bytes rechecked after every restore.
 
-**Module line counts:** *(builder fills)*
+```text
+B1: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record; RESTORED=True
+B2: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_a14_unanswered_fallback_is_never_handed_over; RESTORED=True
+B3: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record; RESTORED=True
+B4: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record; RESTORED=True
+B5: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record; RESTORED=True
+B6: exit=1; RED=agents/master/tests/test_fallback_handover.py::test_proven_fallback_keeps_its_key_and_record; RESTORED=True
+B7: exit=1; RED=agents/master/tests/test_fallback_declaration.py::test_a17_missing_fallback_key_refuses_pack[deliberator-manager]; RESTORED=True
+B8: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a2_without_error_status_nothing_moves[error0]; RESTORED=True
+B9: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[500]; RESTORED=True
+B10: exit=1; RED=agents/deliberator/tests/test_refusal_concurrency.py::test_a4_already_left_candidate_lands_on_current; RESTORED=True
+B11: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[400]; RESTORED=True
+B12: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[400]; RESTORED=True
+B13: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[400]; RESTORED=True
+B14: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[400]; RESTORED=True
+B15: exit=1; RED=agents/deliberator/tests/test_refusal_attempts.py::test_a1_refusal_moves_request_and_process[400]; RESTORED=True
+B16: exit=1; RED=agents/deliberator/tests/test_refusal_run.py::test_a11_switch_reader_skips_bad_rows_and_deduplicates_in_row_order; RESTORED=True
+B17: exit=1; RED=agents/deliberator/tests/test_refusal_run.py::test_a11_run_always_writes_empty_switches; RESTORED=True
+B18: exit=1; RED=agents/deliberator/tests/test_refusal_run.py::test_a10_real_review_records_answered_model_and_switch; RESTORED=True
+B19: exit=1; RED=orchestration/tests/test_llm_brief_switches.py::test_a19_brief_names_each_switch_in_run_order; RESTORED=True
+B20: exit=1; RED=orchestration/tests/test_llm_brief_switches.py::test_a20_activation_parts_precede_run_switches; RESTORED=True
+B21: exit=1; RED=orchestration/tests/test_llm_brief_switches.py::test_a22_real_fire_carries_the_runs_switch; RESTORED=True
+B22: exit=1; RED=tests/test_fallback_delivery.py::test_a24_vocabulary_declares_every_fallback_property_in_sorted_lists; RESTORED=True
+B23: exit=1; RED=agents/master/tests/test_fallback_declaration.py::test_a17_every_role_names_its_fallbacks_key; RESTORED=True
+B24: exit=1; RED=tests/test_fallback_delivery.py::test_a23_role_vocabulary_success_gates_pack_delivery; RESTORED=True
+B25: exit=1; RED=agents/deliberator/tests/test_handed_fallbacks.py::test_a12_entrypoint_builds_and_uses_role_chain; RESTORED=True
+B26: exit=1; RED=agents/deliberator/tests/test_handed_fallbacks.py::test_a8_unreadable_fallback_stops_before_build[anthropic/claude-opus-5]; RESTORED=True
+B27: exit=1; RED=agents/deliberator/tests/test_handed_fallbacks.py::test_a7_handed_candidates_build_with_their_own_vendor_key; RESTORED=True
+GUARDS_PROVEN=27/27; all Appendix bytes restored
+MUTATIONS_EXIT=0
+```
 
-**`make ci`:** *(builder fills: the file, the exit code, passed/skipped, coverage, the audit, detect-secrets)*
+Rechecked after the fixture type corrections:
+
+```text
+B16 after fixture type correction: red, restored exact bytes
+B25 after fixture type correction: red, restored exact bytes
+RECHECK_EXIT=0
+```
+
+**Module line counts:** after formatting:
+
+```text
+agents/deliberator/agent.py: 106
+agents/deliberator/entrypoint.py: 160
+agents/deliberator/model_chain.py: 122
+agents/deliberator/poll.py: 190
+agents/deliberator/review_record.py: 169
+agents/deliberator/settings.py: 178
+agents/deliberator/store.py: 93
+agents/deliberator/tests/refusal_testkit.py: 78
+agents/deliberator/tests/test_handed_fallbacks.py: 129
+agents/deliberator/tests/test_ledger_usage_forwarding.py: 93
+agents/deliberator/tests/test_refusal_attempts.py: 112
+agents/deliberator/tests/test_refusal_concurrency.py: 49
+agents/deliberator/tests/test_refusal_run.py: 133
+agents/deliberator/turn_ledger.py: 115
+agents/master/credential_outcomes.py: 109
+agents/master/credential_report.py: 99
+agents/master/credential_test.py: 98
+agents/master/model_candidates.py: 111
+agents/master/model_choice.py: 91
+agents/master/tests/test_candidate_activation.py: 92
+agents/master/tests/test_fallback_declaration.py: 32
+agents/master/tests/test_fallback_handover.py: 107
+kernel/llm_ledger.py: 159
+orchestration/daily_brief_facts.py: 170
+orchestration/llm_brief.py: 52
+orchestration/tests/test_llm_brief_switches.py: 78
+tests/test_fallback_delivery.py: 64
+ALL_TOUCHED_PYTHON_MODULES_LT_200=True; new test docstrings cite clauses
+```
+
+**`make ci`:** redirected directly to `C:\Users\yury_\AppData\Local\Temp\s277-evidence\make-ci.txt`, exit 2. Steps 1–13 pass; step 14 fails because fresh dependency-advisory evidence requires the network. Steps 15 and 16 pass when run separately after make stops. Overall CI is **verified failing**, not green. The launcher sets `UV_OFFLINE=1`, `UV_NO_SYNC=1`, disables Python downloads and pip indexes, restricts Git transport to local files, and loads an external process-local guard rejecting nonlocal DNS/connects. No production file is modified for this boundary.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1254 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+5088 passed, 9 skipped, 2470 warnings in 443.47s (0:07:23)
+TOTAL                                                           21336      0   4562      0  100.00%
+MAKE_CI_EXIT=2
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\util\connection.py", line 60, in create_connection
+    for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+               ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\AppData\Local\Temp\s277-evidence\offline\sitecustomize.py", line 13, in _offline_getaddrinfo
+    raise socket.gaierror('Sprint 277 offline: external DNS disabled')
+socket.gaierror: Sprint 277 offline: external DNS disabled
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connectionpool.py", line 494, in _make_request
+    raise new_e
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connectionpool.py", line 470, in _make_request
+    self._validate_conn(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1125, in _validate_conn
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connection.py", line 246, in _new_conn
+    raise NameResolutionError(self.host, self, e) from e
+urllib3.exceptions.NameResolutionError: HTTPSConnection(host='pypi.org', port=443): Failed to resolve 'pypi.org' (Sprint 277 offline: external DNS disabled)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\urllib3\util\retry.py", line 555, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NameResolutionError("HTTPSConnection(host='pypi.org', port=443): Failed to resolve 'pypi.org' (Sprint 277 offline: external DNS disabled)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Scripts\pip-audit.exe\__main__.py", line 10, in <module>
+    sys.exit(audit())
+             ~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\pip_audit\_cli.py", line 554, in audit
+    for spec, vulns in auditor.audit(source):
+                       ~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\pip_audit\_audit.py", line 68, in audit
+    for dep, vulns in self._service.query_all(specs):
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\pip_audit\_service\interface.py", line 180, in query_all
+    yield self.query(spec)
+          ~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\pip_audit\_service\pypi.py", line 64, in query
+    response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\cachecontrol\adapter.py", line 76, in send
+    resp = super().send(request, stream, timeout, verify, cert, proxies)
+  File "C:\Users\yury_\Downloads\project\ta-s277\.venv\Lib\site-packages\requests\adapters.py", line 729, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NameResolutionError("HTTPSConnection(host='pypi.org', port=443): Failed to resolve 'pypi.org' (Sprint 277 offline: external DNS disabled)"))
+make: *** [Makefile:60: ci] Error 1
+
+Detect secrets...........................................................Passed
+TRACKED_SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 11 new file(s)
+UNTRACKED_SECRETS_EXIT=0
+```
 
 **`make gate-ran`:** owed to the planner (the sandbox has no network).
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** dependency audit verified failing; fresh advisory lookups **not done** offline. `make gate-ran`, push, merge, F1a, deploy, F2 and a real fleet refusal switch **not done**; these remain the planner/operator sequence. F0 is the planner-provided prototype evidence, not a builder rerun. All executed existing tests pass; the nine skips and their reasons are in the full CI log. No excluded existing test was edited.
 
 ---
 
 ## Return notes
 
-*(builder fills)*
+- The untracked secret scan initially flagged the literal stand-in in A7. The fixture now supplies the same dummy through a local value; the scan passes with no baseline change or allowlist. The final 56-case run above includes that correction.
+- Only the Appendix changes production; the 19 production, 3 laws and 2 existing-test raw blobs equal the supplied OneDrive `prototype_blobs.txt`. Deploy bytes, including backslashes and LF endings, are exact.
+- The Appendix extraction command needed no blank separator between diff blocks: `git apply --recount` treats a separator as additional context. The failed `--check` wrote nothing; the corrected application passed all target hash checks. No spec intent changed.
+- New fixture construction was corrected to supply the stopped-error constructor's keyword-only provider and stop reason. The first CI attempt then found two new-test type errors; explicit OpenAI client narrowing and a distinct switch-props variable fixed them. The final redirected run above supersedes that attempt; production blobs stayed exact.
+- The version is 0.128.00. `uv lock --offline` exited 0, resolved 180 packages and changed only the project version in `uv.lock`; the lock was staged. No bare `uv sync` ran.
+- Law rows retain their broader gray envelopes. DLIB-FAIL-05 is the only new green clause; the derived rollups are 33 / 58, 35 / 66 and 43 / 47. The supplied production module measurements reproduce; every touched Python file is below 200 lines after formatting.
+- Builder tests use eight new test files and one helper, so the final changed-file count is 42. The new suite has 56 cases; the prototype's 43 additional cases are its own test count.
+- No network, vendor, infrastructure or deploy action was used. The dependency audit is left to the planner. The planner also owes the exact-HEAD remote gate and the stated post-merge/live checks; the real fleet switch remains unclaimed.
+- `docs/STATE.md`, `docs/design-log.md`, `docs/work-queue.md`, contracts, tunables and every other decision path are unchanged. No new design-log number, drift row, law wording or existing-test edit beyond the authorized Appendix is introduced.
 
 ---
 

@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
 > brief the operator once on each run it placed, and tell the operator when a container of the
@@ -114,10 +114,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Prohibitions (`NEV`)
 
 - **DSP-OUT-09** — A brief whose last 24 hours hold an `AgentInstance` activated on an LLM candidate
-  after passing over another carries one line after the container line and before needs-you:
-  `LLM: ` then, for each distinct choice and passed-over list, the agent types sorted, ` on ` the
-  chosen `vendor/model/effort`, and in brackets `passed over ` each passed-over line, the parts
-  joined by ` · `. With no such activation there is no line.
+  with another passed over, or whose run's `DeliberationRun` names an `llm_switches` line, carries
+  one line after the container line and before needs-you: `LLM: ` then, for each distinct choice and
+  passed-over list, the agent types sorted, ` on ` the chosen `vendor/model/effort`, and in brackets
+  `passed over ` each passed-over line; then each `llm_switches` line followed by ` during the run`;
+  the parts joined by ` · `. With neither there is no line.
 - **DSP-NEV-01** — The scheduled dispatcher never writes master-owned `FleetPreflight` evidence.
 - **DSP-NEV-02** — The scheduled dispatcher never talks to the broker, never chooses tickers beyond
   the configured universe membership, and never decides what to buy, sell, size, or veto.
@@ -292,3 +293,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   amended for it.
 - v1.4 — S276 (DL-289, work-queue 123): the brief's LLM line. New `DSP-OUT-09`; `DSP-DEP-01` and
   `CAP` amended for the `AgentInstance` read.
+- v1.5 — S277 (DL-289 P3, work-queue 123): the brief's LLM line also names a switch during the run,
+  read from the run's `DeliberationRun`. `DSP-OUT-09` amended. No clause added.

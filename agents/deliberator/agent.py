@@ -10,8 +10,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from agents.deliberator.guided_turn import guided_turn
-from agents.deliberator.prompt_recipe import PROMPT_RECIPE_HASH
 from agents.deliberator.settings import DeliberatorSettings
+from agents.deliberator.turn_ledger import LedgerLLM
 from contracts.deliberator import (
     DebateProposition,
     DebateTurnRecord,
@@ -21,20 +21,12 @@ from contracts.deliberator import (
     VerdictRequest,
     contract_for,
 )
-from kernel import (
-    AgentBase,
-    FakeLLMClient,
-    LLMCompletionStoppedError,
-    Proposition,
-    Turn,
-    llm_stop_reason,
-    llm_usage,
-    record_llm_call,
-)
+from kernel import AgentBase, FakeLLMClient, Proposition, Turn
 from kernel import judge_verdict as judge_kernel_verdict
 
 if TYPE_CHECKING:
-    from kernel import GraphStore, LLMClient, MessageBus, Node
+    from agents.deliberator.model_chain import ModelChain
+    from kernel import GraphStore, LLMClient, MessageBus
     from kernel.agent import AgentHandler
 
 
@@ -46,14 +38,19 @@ class DeliberatorAgent(AgentBase):
         bus: MessageBus,
         *,
         graph: GraphStore,
-        llm: LLMClient | None = None,
+        llm: LLMClient | ModelChain | None = None,
         settings: DeliberatorSettings | None = None,
     ) -> None:
-        """Create a deliberator instance with injected bus, graph, and LLM."""
+        """Create a deliberator instance with injected bus, graph, and LLM.
+
+        In the fleet *llm* is the role's `ModelChain`: its handed-over candidates.
+        """
         self.settings = settings if settings is not None else DeliberatorSettings()
         super().__init__(contract_for(self.settings.identity, self.settings.role), bus)
         self._graph = graph
-        self._llm = llm if llm is not None else FakeLLMClient({})
+        self._llm: LLMClient | ModelChain = (
+            llm if llm is not None else FakeLLMClient({})
+        )
         self.handlers = cast(
             "dict[str, AgentHandler]",
             {"debate_turn": self.debate_turn, "verdict": self.verdict},
@@ -65,7 +62,7 @@ class DeliberatorAgent(AgentBase):
         if peer_role is not None and request.role != peer_role:
             raise ValueError(f"{self.settings.identity} cannot serve {request.role}")
         model = self.settings.model_for_role(request.role)
-        ledger = _LedgerLLM(
+        ledger = LedgerLLM(
             self._graph,
             self._llm,
             calling_agent=self.settings.identity,
@@ -81,7 +78,7 @@ class DeliberatorAgent(AgentBase):
     def verdict(self, request: VerdictRequest) -> VerdictReply:
         """Return the manager ruling using the unchanged verdict parser."""
         model = self.settings.model_for_role("judge")
-        ledger = _LedgerLLM(
+        ledger = LedgerLLM(
             self._graph,
             self._llm,
             calling_agent=self.settings.identity,
@@ -99,65 +96,6 @@ class DeliberatorAgent(AgentBase):
             rationale=verdict.rationale,
             llm_call_key=ledger.last_node_key,
         )
-
-
-class _LedgerLLM:
-    """LLMClient wrapper that writes one shared LLMCall node per completion."""
-
-    def __init__(
-        self,
-        graph: GraphStore,
-        llm: LLMClient,
-        *,
-        calling_agent: str,
-        model: str,
-        correlation_id: str,
-    ) -> None:
-        self._graph = graph
-        self._llm = llm
-        self._calling_agent = calling_agent
-        self._model = model
-        self._correlation_id = correlation_id
-        self.last_node_key: str | None = None
-
-    def complete(
-        self, *, system: str, user: str, tool_schema: dict[str, object]
-    ) -> str:
-        """Record a call around the injected LLM completion."""
-        raw = ""
-        stopped: LLMCompletionStoppedError | None = None
-        with record_llm_call(
-            self._graph,
-            calling_agent=self._calling_agent,
-            correlation_id=self._correlation_id,
-            model=self._model,
-            prompt=user,
-            system_prompt=system,
-            prompt_recipe_hash=PROMPT_RECIPE_HASH,
-        ) as call:
-            try:
-                raw = self._llm.complete(
-                    system=system, user=user, tool_schema=tool_schema
-                )
-            except LLMCompletionStoppedError as exc:
-                call.set_stop_reason(exc.stop_reason)
-                stopped = exc
-            else:
-                call.set_response(raw)
-                call.set_stop_reason(llm_stop_reason(self._llm))
-            # Usage is read on both paths: a truncated or refused completion was
-            # still generated and still billed, so dropping its tokens here would
-            # under-report exactly the calls that cost the most — `effort=max`
-            # spends the whole output budget before raising `max_tokens`, and the
-            # estimate fallback sees an empty response, so a success-only capture
-            # records those calls as costing *zero* output. Measured: planting
-            # that guard turned the truncation test red at `assert 0 == 4096`.
-            call.set_usage(llm_usage(self._llm))
-        node: Node | None = call.node
-        self.last_node_key = node.key if node is not None else None
-        if stopped is not None:
-            raise stopped
-        return raw
 
 
 def _proposition(proposition: DebateProposition) -> Proposition:

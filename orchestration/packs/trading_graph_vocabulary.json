@@ -396,6 +396,7 @@
       "drain_at",
       "drain_reason",
       "llm_candidate",
+      "llm_fallbacks",
       "llm_passed_over",
       "started_at",
       "state"
@@ -406,6 +407,7 @@
       "failed_open_count",
       "failed_open_reason",
       "failed_open_tickers",
+      "llm_switches",
       "max_rounds",
       "narrative",
       "orphaned_reply_count",
@@ -526,6 +528,7 @@
       "correlation_id",
       "created_at",
       "latency_ms",
+      "llm_passed_over",
       "model",
       "prompt_hash",
       "prompt_recipe_hash",

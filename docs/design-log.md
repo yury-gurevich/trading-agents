@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-302 - a pass reads a whole graph label once, never once per item it walks: execution's drop sweep and the stop-width resolver's three passes - status: MEASURED and DECIDED (planner, 2026-10-15 21:00 AEDT); specced as [S279](sprints/sprint-279-a-pass-reads-each-label-once.md); work-queue 101; follows [DL-261](design-log.md) (S252, the finders) and [DL-223](design-log.md) (the one stop-width resolver)
+## DL-302 - a pass reads a whole graph label once, never once per item it walks: execution's drop sweep and the stop-width resolver's three passes - status: MEASURED and DECIDED (planner, 2026-10-15 21:00 AEDT); specced as [S279](sprints/sprint-279-a-pass-reads-each-label-once.md), merged as `0.128.02` (`eae68f28`) 2026-10-15, F1 passed, not deployed; work-queue 101; follows [DL-261](design-log.md) (S252, the finders) and [DL-223](design-log.md) (the one stop-width resolver)
 
 **Why.** Work-queue 101's F2 (2026-10-10, `sched-2026-10-08`) left two apps above S252's target of ten times less than the 2026-10-01 baseline: execution read 154.0 MB a night (target 40.3) and the monitor 20.6 MB (target 14.3), with 134.7 MB of execution's arriving in its first five minutes. The operator, 2026-10-15: speccing it for Codex is a yes. Cheap as transfer (about half a cent a night), but it grows with the product of two labels, and it is the last open part of a closed shape (DL-246, DL-261).
 

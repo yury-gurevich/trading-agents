@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-15 21:05 AEDT · **Version:** **0.128.01 on `main`** (`9781b4e1`, tags `v0.128.00` S277 and `v0.128.01` S278, both GATE PROVEN, not deployed) · **the fleet on `s276` = 0.127.00, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
+**Last updated:** 2026-10-15 21:50 AEDT · **Version:** **0.128.02 on `main`** (`eae68f28`, tags `v0.128.00` S277, `v0.128.01` S278 and `v0.128.02` S279, all GATE PROVEN, not deployed) · **the fleet on `s276` = 0.127.00, deployed 2026-10-15** (`fe6da5ac`, tag `v0.127.00`; rollback `s275`) · **[S276](sprints/sprint-276-a-debater-runs-on-the-first-llm-that-works.md) is deployed: a debater runs on the first declared LLM that works, chosen by the master at activation (work-queue 123, DL-289 P1 and P2); F1a and F1b passed, F2 owed at the first weekday fire; S275's F2 passed at the first weekday fire, work-queue 119 closed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -60,6 +60,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🟩 **MERGED 2026-10-15 — [S279](sprints/sprint-279-a-pass-reads-each-label-once.md) (work-queue 101, [DL-302](design-log.md)), `0.128.02`, fast-forwarded to `eae68f28`, tag `v0.128.02`, GATE PROVEN; not deployed.** INTENT: a pass over the broker's orders or the held book reads each graph label once, never once per item; three new PERF clauses, no decision changes. PROVEN RESULT: built by Codex, 13 of 13 blobs the prototype's; the planner's 12 tests passed on the built tree; 14 of 14 breaks red against the builder's tests alone; CodeQL nothing new, 0 errors; F1 at no cost: on the live data, run the same hour, `main` (`88cdb403`) read 126.81, 12.91, 14.81 and 11.23 MB where the built tree reads 0.88, 2.14, 4.04 and 0.46 MB (execution's run start, its submit, the monitor's evaluation, the analyst's held-stop read), and every write the paths make and the thresholds hash equal. NOT YET: the retag and F2.
+
 🟩 **MERGED 2026-10-15 — [S278](sprints/sprint-278-a-failure-the-platform-logs-is-an-alarm.md) (work-queue 133, [DL-301](design-log.md) amendment 7), `0.128.01`, fast-forwarded to `9781b4e1`, tag `v0.128.01`, GATE PROVEN; not deployed.** INTENT: a row the platform marks `Warning` or `error` is an alarm, except five measured by-products of a deploy or a wake; a platform failure's why is its own reason and message. PROVEN RESULT: built by Codex, the five production files and the law the prototype's blobs; the planner's 17 tests beside the builder's 7, 24 passed; 22 of 22 breaks red against the builder's tests alone; CodeQL nothing new, 0 errors; F1 at no cost: the live 30-day replay on the built tree equals the prototype's (four weeks as before, the last + 25 `revision-failed` and 16 `autoscaler-failed`, each with its why). NOT YET: the retag and F2.
 
 🟩 **MERGED 2026-10-15 — [S277](sprints/sprint-277-a-refused-request-is-answered-by-the-next-llm.md) (work-queue 123 P3, [DL-289](design-log.md) amendment 4), `0.128.00`, tag `v0.128.00` on `6a5742c8`, GATE PROVEN; merged before S276's F2 on the operator's word; not deployed.** INTENT: a request a vendor refuses during the night goes to the role's next declared LLM, which the master hands over as a fallback, and the role stays there; the ledger, the run and the brief name the switch. PROVEN RESULT: built by Codex, 24 of 24 blobs the prototype's; 110 tests passed with the planner's beside the builder's; 27 of 27 breaks red; F1a on merged `main` at no cost: the switch script printed what it printed on the prototype, and the deploy's `llm-candidates` step on a stand-in `az` set the vocabulary on the master and the three roles before both packs, and sent no pack when any vocabulary failed. NOT YET: S276's F2, then the deploy and S277's F2.
@@ -104,16 +106,16 @@ second ranking.
    deliberators' `llm_candidate`, the fleet checks' empty `llm_passed_over`, no `LLM:` line, no
    `VocabularyError`). [S277](sprints/sprint-277-a-refused-request-is-answered-by-the-next-llm.md)
    (P3, the switch during the night) and [S278](sprints/sprint-278-a-failure-the-platform-logs-is-an-alarm.md)
-   (work-queue 133, platform failures alarm) are merged as `0.128.01`, not deployed. After S276's F2: one
-   deploy for both, on the operator's go (the `llm-candidates` step first, then an image-only retag from
-   `v0.128.01`, rollback `s276`), then S277's and S278's F2.
+   (work-queue 133, platform failures alarm) are merged as `0.128.01`, and
+   [S279](sprints/sprint-279-a-pass-reads-each-label-once.md) (work-queue 101) as `0.128.02`; none is
+   deployed. After S276's F2: one deploy for all three, on the operator's go (the `llm-candidates` step
+   first, then an image-only retag from `v0.128.02`, rollback `s276`), then S277's, S278's and S279's F2.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
-3. **[S279](sprints/sprint-279-a-pass-reads-each-label-once.md) is specced for Codex** (work-queue 101,
-   [DL-302](design-log.md)): what execution downloads in its first minute is the drop sweep listing every
-   `Fill` once per broker order, and the stop-width resolver does the same once per adopted position in
-   three agents; one read per pass, three new PERF clauses, no decision changes (measured on live data).
-   The worktree `../ta-s279` is ready; not handed over. Found on the way: the broker's order list is the
+3. **[S279](sprints/sprint-279-a-pass-reads-each-label-once.md) is merged as `0.128.02`** (work-queue 101,
+   [DL-302](design-log.md)), deployed with item 1: its F2 is execution's first five minutes under 5 MB,
+   its night under 40.3 MB and the monitor's under 14.3 MB on the first weekday night on the new tag;
+   then work-queue 101 closes. Found on the way: the broker's order list is the
    newest 500 and passes 500 around early December (work-queue 134, measured, not decided).
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from
    `sched-2026-10-08`, read from a worktree pinned at `v0.123.04` (`v0.125.00` holds the same

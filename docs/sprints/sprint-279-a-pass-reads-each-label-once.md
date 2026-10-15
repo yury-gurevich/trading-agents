@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-279-a-pass-reads-each-label-once`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.128.02` (PATCH)
 **Effort:** S
 **Decisions:** [DL-302](../design-log.md) (measured and decided, planner, 2026-10-15) · [work-queue 101](../work-queue.md) · follows [S252](sprint-252-every-finder-fetches-only-its-pending-work.md) / DL-261
@@ -237,9 +237,9 @@ which `EXECUTES` an `OrderIntent` carrying the decided `stop_pct`.
 - [x] B1 to B14 each red against your tests, each restored.
 - [x] Every touched module, test files included, under 200 lines after `ruff format`.
 - [x] Version `0.128.02`, `uv.lock` one line changed.
-- [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot reach
+- [x] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot reach
       its network; say so if it is).
-- [ ] **F1 (the planner's, at review, no cost):** `wq101_read_paths.py` and `wq101_checks.py` on the
+- [x] **F1 (the planner's, at review, no cost):** `wq101_read_paths.py` and `wq101_checks.py` on the
       built tree read what the prototype read and hash every write and the thresholds equal to `main`'s.
 - [ ] **F2 (the planner's, after deploy):** the first weekday night on the new tag: execution's
       `RxBytes` at its start under 5 MB and its night under 40.3 MB, the monitor's night under 14.3 MB;
@@ -426,7 +426,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT — local implementation proven; overall CI verified failing only at the offline dependency audit.
+**Status:** MERGED 2026-10-15 — `0.128.02`, fast-forwarded to `eae68f28` (tag `v0.128.02`), GATE PROVEN `eae68f28` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed (image-only retag, with or after S277 and S278). The builder's handback read: BUILT — local implementation proven; overall CI verified failing only at the offline dependency audit.
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s279`, branch `sprint-279-a-pass-reads-each-label-once`, base `88cdb4032649270a2aeb03e34f50ade6addd6d5d` (also the starting `origin/main`). `.env` present: `False`, checked before and after the proofs. The pre-existing venv was used offline.
 
@@ -724,7 +724,7 @@ Updated trading-agents v0.128.1 -> v0.128.2
 
 `pyproject.toml` reads `0.128.02`; `uv.lock` has one changed line (`0.128.1` → `0.128.2`, normalized package spelling) and was staged with the bump.
 
-**`make gate-ran`:** not done — the planner’s at review, from this worktree for the final exact HEAD; no network access was authorized here.
+**`make gate-ran`:** (planner) from `../ta-s279`: `GATE PROVEN for eae68f280a2808ff5ed38424d6f588c81a89659a` (CI, including the dependency audit, CodeQL, Security Findings), SHA checked against `git rev-parse HEAD`. **Planner review:** the 26 changed files are exactly the spec's; 13 of 13 production, law and existing-test blobs equal the prototype's; the planner's 12 tests on the built tree in place of the builder's, 12 passed; 14 of 14 breaks red against the builder's tests alone, tree restored clean; CodeQL set-diff against the S278 branch: the same 133 open alerts, 0 errors, nothing new; version and `uv.lock` right (one line). **F1 (no cost):** on the live data, run the same hour, `main` (`88cdb403`) read 126.81, 12.91, 14.81 and 11.23 MB where the built tree reads 0.88, 2.14, 4.04 and 0.46 MB (execution's run start, its submit, the monitor's evaluation, the analyst's held-stop read), and every write the paths make and the thresholds hash equal (OneDrive `trading-agents-data/wq101-2026-10-15/`, `f1_summary_main_88cdb403.txt`, `f1_summary_built_eae68f28.txt`).
 
 **Not met / verified failing:** Overall `make ci` and the dependency audit are verified failing for want of network; a fresh vulnerability audit is not done. The nine skipped test cases are not done (the actual skip reasons are pasted above). Remote CI / Security Findings, `make gate-ran`, push, merge, deploy, live-data F1 equivalence, and post-deploy F2 transfer measurements are not done. No live byte or digest measurement was substituted with fixture proof.
 

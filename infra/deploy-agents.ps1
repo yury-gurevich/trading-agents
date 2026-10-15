@@ -773,7 +773,10 @@ function Enable-LlmCandidates {
   # DL-289: run BEFORE the retag that brings the master's S276 image. That image writes
   # llm_passed_over on every fleet check and llm_candidate on a chosen activation, which
   # the earlier vocabulary refuses; so the vocabulary goes first, then the candidate pack.
-  # An older image ignores both. Each step is read back, so a re-run is safe.
+  # The credential pack rides with it: the injected one wins over the image's file, and
+  # the S276 master refuses to start on an LLM probe without candidate_paths. An older
+  # image ignores the candidate pack and the new probe keys. Each step is read back, so a
+  # re-run is safe.
   Top "LLM CANDIDATES"
   $vocabOk = Set-AppVocabulary "master"
   Check $vocabOk "graph vocabulary on master"
@@ -781,12 +784,12 @@ function Enable-LlmCandidates {
   if ($vocabOk) {
     $state = Invoke-Az @(
       "containerapp", "update", "--name", "master", "--resource-group", $RG,
-      "--subscription", $SUB, "--set-env-vars", (Get-MasterLlmPackEnv),
+      "--subscription", $SUB, "--set-env-vars", (Get-MasterCredentialTestsEnv), (Get-MasterLlmPackEnv),
       "--query", "properties.provisioningState", "-o", "tsv"
     )
   }
   $packOk = ($null -ne $state) -and ((Get-AppState "master") -eq "Succeeded")
-  Check $packOk "MASTER_LLM_PACK_B64 on master"
+  Check $packOk "MASTER_CREDENTIAL_TESTS_B64 and MASTER_LLM_PACK_B64 on master"
   Bot
   return $vocabOk -and $packOk
 }

@@ -11,6 +11,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from agents.execution.broker import BrokerFill
+from contracts.broker_lifecycle import RESOLVED_UNFILLED_BROKER_STATUSES
 from contracts.common import Money
 
 _PENDING = frozenset({"new", "accepted", "pending_new", "held", "accepted_for_bidding"})
@@ -78,7 +79,8 @@ def fill_from_order(
     """Map an Alpaca order object onto a BrokerFill; never raise on a dict."""
     if not isinstance(order, dict):
         return rejected(idempotency_key, reference, "malformed_broker_response")
-    status = status_of(str(order.get("status", "")))
+    filled = filled_quantity_of(order)
+    status = status_of(str(order.get("status", "")), filled or 0)
     return BrokerFill(
         idempotency_key=idempotency_key,
         ticker=str(order.get("symbol", "")),
@@ -92,6 +94,7 @@ def fill_from_order(
         order_type=_optional_str(order.get("type")),
         time_in_force=_optional_str(order.get("time_in_force")),
         order_status=_optional_str(order.get("status")),
+        filled_quantity=filled,
     )
 
 
@@ -109,15 +112,29 @@ def rejected(idempotency_key: str, reference: Money, reason: str) -> BrokerFill:
     )
 
 
-def status_of(raw: str) -> BrokerStatus:
-    """Map Alpaca order status onto the broker contract status."""
-    if raw == "filled":
+def status_of(raw: str, filled_quantity: int = 0) -> BrokerStatus:
+    """Map Alpaca order status onto the broker contract status.
+
+    An order the broker ended after filling part of it is a fill of that part: the
+    filled quantity was executed and only the rest went unfilled (DL-303).
+    """
+    if raw == "filled" or (
+        raw in RESOLVED_UNFILLED_BROKER_STATUSES and filled_quantity > 0
+    ):
         return "filled"
     if raw == "partially_filled":
         return "partial"
     if raw in _PENDING:
         return "pending"
     return "rejected"
+
+
+def filled_quantity_of(order: dict[str, object]) -> int | None:
+    """Return Alpaca's `filled_qty` in whole shares, or None when it is absent."""
+    raw = order.get("filled_qty")
+    if raw in (None, ""):
+        return None
+    return int(float(str(raw)))
 
 
 def side_of(raw: str) -> BrokerSide:

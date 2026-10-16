@@ -17,6 +17,7 @@ from agents.execution.broker_status_refresh import (
 )
 from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
+from agents.execution.partial_fill import report_unfilled_remainder
 from agents.execution.realized_pnl import realized_pnl_props
 from agents.execution.snapshot_account import account_snapshot_props
 from contracts.broker_lifecycle import is_terminal_fill_broker_status
@@ -64,6 +65,7 @@ def refresh_pending_fills(
         )
         if props:
             graph.merge_node("Fill", node.key, props)
+        report_unfilled_remainder(sink, node, broker_fill)
 
 
 def write_snapshot(

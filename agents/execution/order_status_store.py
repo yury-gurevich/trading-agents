@@ -31,6 +31,7 @@ def write_order_status(
             "fill_key": fill_node.key,
             "ticker": broker_fill.ticker,
             "quantity": broker_fill.quantity,
+            "filled_quantity": broker_fill.filled_quantity,
             "broker_order_id": broker_fill.broker_order_id,
             "status": broker_fill.status,
             "reason": broker_fill.reason,

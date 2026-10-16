@@ -48,6 +48,16 @@ class BrokerFill:
     # The broker's raw order status (Alpaca `new`, `accepted`, ...). `status` folds
     # `new` and `accepted` into `pending`, and only a `new` order is replaceable.
     order_status: str | None = None
+    # The broker's filled quantity (Alpaca `filled_qty`); `quantity` stays the ordered
+    # one. None where a broker does not say (DL-303).
+    filled_quantity: int | None = None
+
+
+def executed_quantity(fill: BrokerFill) -> int:
+    """Return the shares the broker executed: its filled quantity, else the order's."""
+    if fill.filled_quantity is not None:
+        return fill.filled_quantity
+    return fill.quantity if fill.status in ("filled", "partial") else 0
 
 
 @dataclass(frozen=True)

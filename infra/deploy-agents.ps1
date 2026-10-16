@@ -15,7 +15,7 @@
 # POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
 param(
-  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'llm-candidates', 'down')]
+  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'llm-candidates', 'vocabulary', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
   # DL-294 amendment 1: one readiness check, at the wake, before the 22:30 UTC dispatch.
@@ -769,6 +769,24 @@ function Enable-ContainerSensor {
   return ($held -eq "1") -and $vocabOk
 }
 
+function Enable-Vocabulary {
+  # DL-303: a vocabulary that moved reaches the master, every agent app and the job
+  # without a full `up`, which would revert the live-only settings. Run it BEFORE the
+  # retag: an older image never writes the new properties, so it reads the new pack
+  # unharmed. Each target is read back; a failed one is reported and the rest still set.
+  Top "GRAPH VOCABULARY"
+  $ok = $true
+  foreach ($name in @("master") + @($AGENTS.Keys)) {
+    $appOk = Set-AppVocabulary $name
+    Check $appOk "graph vocabulary on $name"
+    $ok = $ok -and $appOk
+  }
+  $jobOk = Set-JobVocabulary
+  Check $jobOk "graph vocabulary on $DISPATCHER_JOB"
+  Bot
+  return $ok -and $jobOk
+}
+
 function Enable-LlmCandidates {
   # DL-289: run BEFORE the retag that brings a master or a role image of S276 or later.
   # Those images write properties the earlier vocabulary refuses: the master
@@ -1018,5 +1036,6 @@ switch ($Action) {
   'servicebus-flip' { Flip-ServiceBusSas }
   'sensor' { if (-not (Enable-ContainerSensor)) { throw "container sensor not enabled" } }
   'llm-candidates' { if (-not (Enable-LlmCandidates)) { throw "LLM candidates not enabled" } }
+  'vocabulary' { if (-not (Enable-Vocabulary)) { throw "graph vocabulary not set" } }
   'down' { Down }
 }

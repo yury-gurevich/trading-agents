@@ -14,7 +14,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from contracts.broker_lifecycle import FILLED_BROKER_STATUSES, is_resting_stop_fill
+from contracts.broker_lifecycle import (
+    FILLED_BROKER_STATUSES,
+    fill_quantity_key,
+    is_resting_stop_fill,
+)
 from orchestration.daily_brief_text import BriefDataError, FillLine, OrderLine
 
 if TYPE_CHECKING:
@@ -55,7 +59,7 @@ def fills_between(
             continue
         line = FillLine(
             side=_text(fill, "side"),
-            quantity=_whole(fill, "quantity"),
+            quantity=_whole(fill, fill_quantity_key(fill)),
             ticker=_text(fill, "ticker"),
             price_cents=_cents(fill, "broker_price_cents"),
             stopped_out=is_resting_stop_fill(fill),

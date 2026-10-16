@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, NamedTuple
 
-from contracts.broker_lifecycle import is_filled_buy_fill
+from contracts.broker_lifecycle import fill_quantity_key, is_filled_buy_fill
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -110,9 +110,12 @@ def _lineage_stop_pct(
 
 
 def _equals_holding(fill: Node, position: Node) -> bool:
-    """Exact quantity AND exact broker price: never a guess across lots (DL-223)."""
+    """Exact filled quantity AND exact broker price: never a guess across lots.
+
+    DL-223; the quantity is the one the broker filled (DL-303).
+    """
     run_id = fill.props.get("source_run_id")
-    quantity = _whole(fill.props.get("quantity"))
+    quantity = _whole(fill.props.get(fill_quantity_key(fill)))
     price = _whole(fill.props.get("broker_price_cents"))
     return (
         quantity is not None

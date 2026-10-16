@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* (the prototype took `0.128.02` → `0.128.03`)
 **Effort:** M
 **Decisions:** [DL-303](../design-log.md) (measured and decided, planner, 2026-10-16) · [work-queue 135](../work-queue.md) · amends `EXEC-OUT-07`, `EXEC-OBS-06`; new `EXEC-TYP-04`
@@ -252,14 +252,14 @@ The red/green split above is the prototype's tests run on `main` at the spec com
 
 ## Success factors
 
-- [ ] A1 to A21 exist under the names above, each citing its clauses; the red/green split on the
+- [x] A1 to A21 exist under the names above, each citing its clauses; the red/green split on the
       unchanged tree is the Test plan's; all green after.
-- [ ] Appendix sections 1 to 3 applied exactly: every file equals the prototype's blob
+- [x] Appendix sections 1 to 3 applied exactly: every file equals the prototype's blob
       (`prototype_blobs.txt`, OneDrive `trading-agents-data/wq135-2026-10-16/`).
-- [ ] No existing test changed; every existing test passes.
-- [ ] B1 to B24 each red against your tests, each restored.
-- [ ] Every touched module, test files included, under 200 lines after `ruff format`.
-- [ ] Version PATCH, `uv.lock` one line changed.
+- [x] No existing test changed; every existing test passes.
+- [x] B1 to B24 each red against your tests, each restored.
+- [x] Every touched module, test files included, under 200 lines after `ruff format`.
+- [x] Version PATCH, `uv.lock` one line changed.
 - [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot
       reach its network; say so if it is).
 - [ ] **F1 (the planner's, at review, no cost):** `wq135_f1_replay.py` on the built tree prints what
@@ -425,15 +425,29 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Broker mapping and ordered/filled quantities | `agents/execution/laws/laws.md` and `test-plan.md`, whole | `EXEC-OUT-07`, `EXEC-TYP-02`, `EXEC-NEV-02`; Appendix's new `EXEC-TYP-04` | Preserve ordered quantity; distinguish a filled part from a zero-fill drop. |
+| Refresh, status facts, remainder and PnL | Same execution book and test plan, whole | `EXEC-STA-05`, `EXEC-STA-06`, `EXEC-OBS-01`, `EXEC-OBS-02`, `EXEC-OUT-07` | Refresh twice to prove settlement and one warning; keep unresolved-PnL semantics. |
+| Stop-width resolver, entry stops and Position draft | Execution book/plan; `agents/monitor/laws/laws.md` and `test-plan.md`; `agents/analyst/laws/laws.md` and `test-plan.md`, all whole | `EXEC-OBS-06`, `MON-FAIL-03`, `ANLZ-OUT-09` | Assert fallback before refresh, lineage after, and a one-share stop plan. |
+| Daily brief | `orchestration/laws/dispatcher/laws.md` and `test-plan.md`, whole | `DSP-OUT-06` | Read the executed size as stored, with legacy fallback. |
+| Vocabulary and exact law amendment | `docs/laws/conventions.md` and `drift-register.md`, whole; `docs/laws/INDEX.md`; DL-303 | Conventions sections 2, 3, 4, 7 and 7a; Appendix section 2 | Apply only the supplied amendment; functional test docstrings cite clauses. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+Reading completed before any code change, in `C:\Users\yury_\Downloads\project\ta-s280`,
+branch `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`, clean base
+`aa4d3a645c74bcad9b76aa70fb85d9181333931b`; `.env` absent.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, both;
+the authorized cycle is Appendix section 2, execution v1.15, 43 / 68 after proof.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Contradictions found between a law and this spec:** None found in the required reading.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Laws found silent where a decision was needed:** The new filled-size guarantee is supplied by
+`EXEC-TYP-04` in Appendix section 2; no additional undecided silence found.
+
+**Clauses that were ⬜ and are now proven:** Not done yet. `EXEC-OUT-07` is gray;
+`EXEC-STA-06`, `EXEC-OBS-01`, `EXEC-OBS-02` and `EXEC-NEV-02` also have gray rows and are not
+claimed proven as whole clauses by this sprint. `EXEC-TYP-04` is new and awaits proof.
+
+At closeout: `EXEC-OUT-07` is now proven and new `EXEC-TYP-04` is proven by the passing tests below; Appendix section 2 records execution v1.15 at 43 / 68. The other gray clauses above remain unclaimed.
 
 ---
 
@@ -441,43 +455,389 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder)* | | | | |
+| A1 | `test_an_expired_order_that_filled_part_is_a_fill_of_that_part` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-OUT-07` / `EXEC-TYP-04` |
+| A2 | `test_every_ended_status_with_a_fill_is_filled` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-OUT-07` |
+| A3 | `test_an_ended_order_with_nothing_filled_stays_unfilled` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-OUT-07` |
+| A4 | `test_a_partly_filled_order_in_flight_stays_partial` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-STA-05` |
+| A5 | `test_a_replaced_order_is_not_read_as_a_fill` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-OUT-07` |
+| A6 | `test_a_fractional_or_missing_filled_qty_is_read_as_whole_shares` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-TYP-04` |
+| A7 | `test_where_the_broker_does_not_say_the_order_quantity_stands` | `agents/execution/tests/test_partial_fill_mapping.py` | PASSED | `EXEC-TYP-04` |
+| A8 | `test_the_sweep_drops_no_part_of_a_partly_filled_order` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OUT-07` |
+| A9 | `test_an_ended_order_that_filled_nothing_is_still_dropped` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OUT-07` |
+| A10 | `test_the_refresh_settles_the_filled_part_and_tells_the_rest_once` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OUT-07` / `EXEC-TYP-04` / `EXEC-STA-05` |
+| A11 | `test_a_whole_fill_writes_its_quantity_and_tells_nothing` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-TYP-04` |
+| A12 | `test_an_ended_order_with_nothing_filled_writes_no_filled_quantity` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OUT-07` / `EXEC-TYP-04` |
+| A13 | `test_the_adopted_share_takes_the_decided_stop` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OBS-06` |
+| A14 | `test_the_entry_stop_covers_only_the_shares_the_broker_filled` | `agents/execution/tests/test_partial_fill_refresh.py` | PASSED | `EXEC-OBS-06` / `EXEC-TYP-04` |
+| A15 | `test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold` | `agents/execution/tests/test_partial_fill_pnl.py` | PASSED | `EXEC-TYP-04` / `EXEC-OUT-07` |
+| A16 | `test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one` | `agents/monitor/tests/test_position_from_partial_fill.py` | PASSED | `EXEC-TYP-04` |
+| A17 | `test_a_fill_line_counts_the_shares_the_broker_filled` | `orchestration/tests/test_daily_brief_filled_quantity.py` | PASSED | `DSP-OUT-06` / `EXEC-TYP-04` |
+| A18 | `test_the_action_is_declared_and_dispatched` | `tests/test_vocabulary_step.py` | PASSED | `DL-303 D7` |
+| A19 | `test_the_step_sets_every_app_and_the_job_and_reads_each_back` | `tests/test_vocabulary_step.py` | PASSED | `DL-303 D7` |
+| A20 | `test_the_agent_list_holds_the_fifteen_agent_apps` | `tests/test_vocabulary_step.py` | PASSED | `DL-303 D7` |
+| A21 | `test_the_pack_declares_the_filled_quantity_on_fill` | `tests/test_vocabulary_step.py` | PASSED | `EXEC-TYP-04` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** None; 21 named tests, 27 parametrized cases, and the required support module.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder)*
+**Status:** BUILT — 2026-10-16, local branch proof; overall CI is not green because the dependency audit cannot run offline.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s280`, branch `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`; `.env` absent. Base `aa4d3a645c74bcad9b76aa70fb85d9181333931b`.
 
-**Result:** *(builder)*
+**Result:** The required unchanged-tree split reproduced, all 27 new cases pass, and all 24 specified breaks turn a builder test red and are restored. All 18 Appendix files match the supplied blob hashes. Existing tests are unchanged; full pytest passed 5,134 tests with 9 skipped and 100.00 % coverage. Version is `0.128.03`; offline lock succeeded with one lockfile line changed and staged. `make ci` exit 2 is verified failing at the dependency audit only; its last two secret checks passed separately. Remote proof, merge, deployment, F1 and F2 are not done.
 
-**Files changed:** *(builder)*
+**Files changed:** The 29 scoped paths below (12 production Python files, four law-cycle files, the pack and deploy script, seven new test/support files, version and lock, sprint and README).
+
+```text
+agents/execution/alpaca_orders.py
+agents/execution/broker.py
+agents/execution/broker_status_refresh.py
+agents/execution/filled_entry_stops.py
+agents/execution/laws/laws.md
+agents/execution/laws/test-plan.md
+agents/execution/order_status_store.py
+agents/execution/partial_fill.py
+agents/execution/realized_pnl.py
+agents/execution/reconciliation_store.py
+agents/execution/tests/partial_fill_helpers.py
+agents/execution/tests/test_partial_fill_mapping.py
+agents/execution/tests/test_partial_fill_pnl.py
+agents/execution/tests/test_partial_fill_refresh.py
+agents/monitor/domain/positions.py
+agents/monitor/tests/test_position_from_partial_fill.py
+contracts/broker_lifecycle.py
+contracts/stop_width.py
+docs/laws/INDEX.md
+docs/laws/ledger.md
+docs/sprints/README.md
+docs/sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md
+infra/deploy-agents.ps1
+orchestration/daily_brief_fills.py
+orchestration/packs/trading_graph_vocabulary.json
+orchestration/tests/test_daily_brief_filled_quantity.py
+pyproject.toml
+tests/test_vocabulary_step.py
+uv.lock
+```
+
+All three Appendix patches passed `git apply --check`, were applied in order, and their resulting blobs were rechecked after all restores:
+
+```text
+BLOB_OK agents/execution/alpaca_orders.py fc44c57e738c57965c69c0470f2fb54a34b60fb8
+BLOB_OK agents/execution/broker.py c361209f539fec8c5f4dc8487a5c7a0c200a37f0
+BLOB_OK agents/execution/broker_status_refresh.py f501a13a9d17844f56e1892bfa101b3ce2b777a4
+BLOB_OK agents/execution/filled_entry_stops.py 8932a0f4a981fab7a65ec673eb38342bc11fec80
+BLOB_OK agents/execution/order_status_store.py 22a1e75d6478a6fd865e8185b65558ac456c310b
+BLOB_OK agents/execution/partial_fill.py d9417d6883fa751c60d5e1571b8a1d5196f39a86
+BLOB_OK agents/execution/realized_pnl.py 57ce989935ccfdcec6cba3689ab777af298f8052
+BLOB_OK agents/execution/reconciliation_store.py 17478988f89c70db0f853c8a58e15fdf3d814c5f
+BLOB_OK agents/monitor/domain/positions.py 8b7858286f1ff24dd01cc99adddf57b55f9877d4
+BLOB_OK contracts/broker_lifecycle.py d3057a0b77ca0aea7cc9d7efc1d92f41389a4084
+BLOB_OK contracts/stop_width.py 03b523d99bb3491c52ed053bab9a1008264da3c1
+BLOB_OK orchestration/daily_brief_fills.py 2c51b22fe118393433ae7d70d029076fee3cf0b0
+BLOB_OK agents/execution/laws/laws.md 6005b0fadb337988facd02e0d5d58fdad82dae32
+BLOB_OK agents/execution/laws/test-plan.md dfae7a5c88bbebeac67ad34887217dbba9758ffb
+BLOB_OK docs/laws/INDEX.md a01725d79c0a31f853e4d88c10ed4c99e28ff893
+BLOB_OK docs/laws/ledger.md e6d3bbe97707e5c0d40110845525e7f9049e4ed1
+BLOB_OK infra/deploy-agents.ps1 43a6b497d5ce4d4086c59d5c88d3e2be350164e7
+BLOB_OK orchestration/packs/trading_graph_vocabulary.json ca89bb11a7659f987616ab4c05fc89973ee546e3
+```
 
 **Design decisions:** recorded as [`DL-303`](../design-log.md) by the planner.
 
-**Proof — the red run first:** *(builder)*
+**Proof — the red run first:** Production unchanged at `aa4d3a645c74bcad9b76aa70fb85d9181333931b`; `.venv/Scripts/python.exe -m pytest --continue-on-collection-errors --no-cov -v` with the six new test files. Pytest exit **1**. A9, A12 and A20 passed; A1–A7 could not collect because `executed_quantity` is absent; A3 and A5 are red by that module import only. All other planned tests failed as specified.
 
-**Proof — the green run:** *(builder)*
+```text
+============================= test session starts =============================
+collecting ... collected 14 items / 1 error
 
-**Guards planted:** *(builder)*
+agents/execution/tests/test_partial_fill_refresh.py::test_the_sweep_drops_no_part_of_a_partly_filled_order FAILED [  7%]
+agents/execution/tests/test_partial_fill_refresh.py::test_an_ended_order_that_filled_nothing_is_still_dropped PASSED [ 14%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once FAILED [ 21%]
+agents/execution/tests/test_partial_fill_refresh.py::test_a_whole_fill_writes_its_quantity_and_tells_nothing FAILED [ 28%]
+agents/execution/tests/test_partial_fill_refresh.py::test_an_ended_order_with_nothing_filled_writes_no_filled_quantity PASSED [ 35%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_adopted_share_takes_the_decided_stop FAILED [ 42%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_entry_stop_covers_only_the_shares_the_broker_filled FAILED [ 50%]
+agents/execution/tests/test_partial_fill_pnl.py::test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold FAILED [ 57%]
+agents/monitor/tests/test_position_from_partial_fill.py::test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one FAILED [ 64%]
+orchestration/tests/test_daily_brief_filled_quantity.py::test_a_fill_line_counts_the_shares_the_broker_filled FAILED [ 71%]
+tests/test_vocabulary_step.py::test_the_action_is_declared_and_dispatched FAILED [ 78%]
+tests/test_vocabulary_step.py::test_the_step_sets_every_app_and_the_job_and_reads_each_back FAILED [ 85%]
+tests/test_vocabulary_step.py::test_the_agent_list_holds_the_fifteen_agent_apps PASSED [ 92%]
+tests/test_vocabulary_step.py::test_the_pack_declares_the_filled_quantity_on_fill FAILED [100%]
 
-**Module line counts:** *(builder)*
+=================================== ERRORS ====================================
+____ ERROR collecting agents/execution/tests/test_partial_fill_mapping.py _____
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s280\agents\execution\tests\test_partial_fill_mapping.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\execution\tests\test_partial_fill_mapping.py:14: in <module>
+    from agents.execution.broker import BrokerFill, executed_quantity
+E   ImportError: cannot import name 'executed_quantity' from 'agents.execution.broker' (C:\Users\yury_\Downloads\project\ta-s280\agents\execution\broker.py)
+================================== FAILURES ===================================
+____________ test_the_sweep_drops_no_part_of_a_partly_filled_order ____________
+agents\execution\tests\test_partial_fill_refresh.py:27: in test_the_sweep_drops_no_part_of_a_partly_filled_order
+    assert dropped == 0
+E   assert 1 == 0
+______ test_the_refresh_settles_the_filled_part_and_tells_the_rest_once _______
+agents\execution\tests\test_partial_fill_refresh.py:60: in test_the_refresh_settles_the_filled_part_and_tells_the_rest_once
+    assert first["broker_status"] == "filled"
+E   AssertionError: assert 'rejected' == 'filled'
+E
+E     - filled
+E     + rejected
+___________ test_a_whole_fill_writes_its_quantity_and_tells_nothing ___________
+agents\execution\tests\test_partial_fill_refresh.py:81: in test_a_whole_fill_writes_its_quantity_and_tells_nothing
+    assert stored_fill(graph).props["broker_filled_quantity"] == 2
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'broker_filled_quantity'
+________________ test_the_adopted_share_takes_the_decided_stop ________________
+agents\execution\tests\test_partial_fill_refresh.py:102: in test_the_adopted_share_takes_the_decided_stop
+    assert after == (DECIDED_STOP, "lineage")
+E   AssertionError: assert DecidedStop(s...ce='fallback') == (0.0565007908...57, 'lineage')
+E
+E     At index 0 diff: 0.05 != 0.05650079080214057
+E
+E     Full diff:
+E     + DecidedStop(stop_pct=0.05, source='fallback')
+E     - (
+E     -     0.05650079080214057,
+E     -     'lineage',
+E     - )
+________ test_the_entry_stop_covers_only_the_shares_the_broker_filled _________
+agents\execution\tests\test_partial_fill_refresh.py:115: in test_the_entry_stop_covers_only_the_shares_the_broker_filled
+    assert len(plans) == 1
+E   assert 0 == 1
+E    +  where 0 = len(())
+________ test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold _________
+agents\execution\tests\test_partial_fill_pnl.py:51: in test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold
+    assert stored.props["realized_pnl_cents"] == 540
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'realized_pnl_cents'
+_____ test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one ______
+agents\monitor\tests\test_position_from_partial_fill.py:32: in test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one
+    assert draft.quantity == expected
+E   AssertionError: assert 2 == 1
+E    +  where 2 = PositionDraft(run_id='run', ticker='UNH', opened_price_cents=40111, quantity=2, stop_pct=0.05, target_pct=0.1, horizon_days=14, opened_at='2026-10-16T01:51:01.796873+00:00', degraded=True).quantity
+____________ test_a_fill_line_counts_the_shares_the_broker_filled _____________
+orchestration\tests\test_daily_brief_filled_quantity.py:40: in test_a_fill_line_counts_the_shares_the_broker_filled
+    assert lines[0].quantity == expected
+E   AssertionError: assert 2 == 1
+E    +  where 2 = FillLine(side='buy', quantity=2, ticker='UNH', price_cents=40111, stopped_out=False).quantity
+_________________ test_the_action_is_declared_and_dispatched __________________
+tests\test_vocabulary_step.py:30: in test_the_action_is_declared_and_dispatched
+    assert "'vocabulary'" in declared.group(1)
+E   assert "'vocabulary'" in "'preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'llm-candidates', 'down'"
+E    +  where "'preflight', 'up', 'postgres-flip', 'servicebus-flip', 'sensor', 'llm-candidates', 'down'" = <built-in method group of re.Match object at 0x000001AFFBABE0E0>(1)
+E    +    where <built-in method group of re.Match object at 0x000001AFFBABE0E0> = <re.Match object; span=(980, 1084), match="[ValidateSet('preflight', 'up', 'postgres-flip', >.group
+________ test_the_step_sets_every_app_and_the_job_and_reads_each_back _________
+tests\test_vocabulary_step.py:41: in test_the_step_sets_every_app_and_the_job_and_reads_each_back
+    body = _function("Enable-Vocabulary")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_vocabulary_step.py:21: in _function
+    assert found is not None, f"missing {name}"
+E   AssertionError: missing Enable-Vocabulary
+E   assert None is not None
+_____________ test_the_pack_declares_the_filled_quantity_on_fill ______________
+tests\test_vocabulary_step.py:70: in test_the_pack_declares_the_filled_quantity_on_fill
+    assert "broker_filled_quantity" in pack["properties"]["Fill"]
+E   AssertionError: assert 'broker_filled_quantity' in ['attempt_ordinal', 'actual_open_price_cents', 'broker_idempotency_key', 'broker_order_id', 'broker_price_cents', 'broker_status', ...]
+=========================== short test summary info ===========================
+ERROR agents/execution/tests/test_partial_fill_mapping.py
+FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_sweep_drops_no_part_of_a_partly_filled_order
+FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once
+FAILED agents/execution/tests/test_partial_fill_refresh.py::test_a_whole_fill_writes_its_quantity_and_tells_nothing
+FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_adopted_share_takes_the_decided_stop
+FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_entry_stop_covers_only_the_shares_the_broker_filled
+FAILED agents/execution/tests/test_partial_fill_pnl.py::test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold
+FAILED agents/monitor/tests/test_position_from_partial_fill.py::test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one
+FAILED orchestration/tests/test_daily_brief_filled_quantity.py::test_a_fill_line_counts_the_shares_the_broker_filled
+FAILED tests/test_vocabulary_step.py::test_the_action_is_declared_and_dispatched
+FAILED tests/test_vocabulary_step.py::test_the_step_sets_every_app_and_the_job_and_reads_each_back
+FAILED tests/test_vocabulary_step.py::test_the_pack_declares_the_filled_quantity_on_fill
+==================== 11 failed, 3 passed, 1 error in 2.14s ====================
+```
 
-**`make ci`:** *(builder)*
+**Proof — the green run:** `.venv/Scripts/python.exe -m pytest --no-cov -v` with the six new test files, exit 0:
 
-**`make gate-ran`:** *(planner, at review)*
+```text
+============================= test session starts =============================
+collecting ... collected 27 items
 
-**Not met / verified failing:** *(builder)*
+agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part PASSED [  3%]
+agents/execution/tests/test_partial_fill_mapping.py::test_every_ended_status_with_a_fill_is_filled[expired] PASSED [  7%]
+agents/execution/tests/test_partial_fill_mapping.py::test_every_ended_status_with_a_fill_is_filled[canceled] PASSED [ 11%]
+agents/execution/tests/test_partial_fill_mapping.py::test_every_ended_status_with_a_fill_is_filled[cancelled] PASSED [ 14%]
+agents/execution/tests/test_partial_fill_mapping.py::test_an_ended_order_with_nothing_filled_stays_unfilled[0] PASSED [ 18%]
+agents/execution/tests/test_partial_fill_mapping.py::test_an_ended_order_with_nothing_filled_stays_unfilled[None] PASSED [ 22%]
+agents/execution/tests/test_partial_fill_mapping.py::test_a_partly_filled_order_in_flight_stays_partial PASSED [ 25%]
+agents/execution/tests/test_partial_fill_mapping.py::test_a_replaced_order_is_not_read_as_a_fill PASSED [ 29%]
+agents/execution/tests/test_partial_fill_mapping.py::test_a_fractional_or_missing_filled_qty_is_read_as_whole_shares PASSED [ 33%]
+agents/execution/tests/test_partial_fill_mapping.py::test_where_the_broker_does_not_say_the_order_quantity_stands[filled-3] PASSED [ 37%]
+agents/execution/tests/test_partial_fill_mapping.py::test_where_the_broker_does_not_say_the_order_quantity_stands[partial-3] PASSED [ 40%]
+agents/execution/tests/test_partial_fill_mapping.py::test_where_the_broker_does_not_say_the_order_quantity_stands[rejected-0] PASSED [ 44%]
+agents/execution/tests/test_partial_fill_mapping.py::test_where_the_broker_does_not_say_the_order_quantity_stands[pending-0] PASSED [ 48%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_sweep_drops_no_part_of_a_partly_filled_order PASSED [ 51%]
+agents/execution/tests/test_partial_fill_refresh.py::test_an_ended_order_that_filled_nothing_is_still_dropped PASSED [ 55%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once PASSED [ 59%]
+agents/execution/tests/test_partial_fill_refresh.py::test_a_whole_fill_writes_its_quantity_and_tells_nothing PASSED [ 62%]
+agents/execution/tests/test_partial_fill_refresh.py::test_an_ended_order_with_nothing_filled_writes_no_filled_quantity PASSED [ 66%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_adopted_share_takes_the_decided_stop PASSED [ 70%]
+agents/execution/tests/test_partial_fill_refresh.py::test_the_entry_stop_covers_only_the_shares_the_broker_filled PASSED [ 74%]
+agents/execution/tests/test_partial_fill_pnl.py::test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold PASSED [ 77%]
+agents/monitor/tests/test_position_from_partial_fill.py::test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one PASSED [ 81%]
+orchestration/tests/test_daily_brief_filled_quantity.py::test_a_fill_line_counts_the_shares_the_broker_filled PASSED [ 85%]
+tests/test_vocabulary_step.py::test_the_action_is_declared_and_dispatched PASSED [ 88%]
+tests/test_vocabulary_step.py::test_the_step_sets_every_app_and_the_job_and_reads_each_back PASSED [ 92%]
+tests/test_vocabulary_step.py::test_the_agent_list_holds_the_fifteen_agent_apps PASSED [ 96%]
+tests/test_vocabulary_step.py::test_the_pack_declares_the_filled_quantity_on_fill PASSED [100%]
+
+============================= 27 passed in 1.89s ==============================
+```
+
+After the 24 restores, the same files with `--no-cov -q`, exit 0:
+
+```text
+...........................                                              [100%]
+27 passed in 1.83s
+```
+
+**Guards planted:** B1 to B24 from Traps, individually, against the six builder test files only. Each pytest run exited 1 with at least one assertion failure (not a collection error); every file was restored from its exact original bytes in `finally` before proceeding. Captured output:
+
+```text
+B1: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part; RESTORED
+B2: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part; RESTORED
+B3: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part; RESTORED
+B4: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part; RESTORED
+B5: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_a_replaced_order_is_not_read_as_a_fill; RESTORED
+B6: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_expired_order_that_filled_part_is_a_fill_of_that_part; RESTORED
+B7: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_ended_order_with_nothing_filled_stays_unfilled[None]; RESTORED
+B8: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once; RESTORED
+B9: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once; RESTORED
+B10: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once; RESTORED
+B11: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once; RESTORED
+B12: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_refresh_settles_the_filled_part_and_tells_the_rest_once; RESTORED
+B13: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_a_whole_fill_writes_its_quantity_and_tells_nothing; RESTORED
+B14: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_adopted_share_takes_the_decided_stop; RESTORED
+B15: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_adopted_share_takes_the_decided_stop; RESTORED
+B16: EXIT=1; FAILED agents/execution/tests/test_partial_fill_refresh.py::test_the_entry_stop_covers_only_the_shares_the_broker_filled; RESTORED
+B17: EXIT=1; FAILED agents/monitor/tests/test_position_from_partial_fill.py::test_the_draft_holds_the_filled_quantity_where_the_broker_gave_one; RESTORED
+B18: EXIT=1; FAILED orchestration/tests/test_daily_brief_filled_quantity.py::test_a_fill_line_counts_the_shares_the_broker_filled; RESTORED
+B19: EXIT=1; FAILED agents/execution/tests/test_partial_fill_pnl.py::test_a_partly_filled_sell_realizes_pnl_on_the_shares_it_sold; RESTORED
+B20: EXIT=1; FAILED tests/test_vocabulary_step.py::test_the_pack_declares_the_filled_quantity_on_fill; RESTORED
+B21: EXIT=1; FAILED tests/test_vocabulary_step.py::test_the_step_sets_every_app_and_the_job_and_reads_each_back; RESTORED
+B22: EXIT=1; FAILED tests/test_vocabulary_step.py::test_the_step_sets_every_app_and_the_job_and_reads_each_back; RESTORED
+B23: EXIT=1; FAILED tests/test_vocabulary_step.py::test_the_action_is_declared_and_dispatched; RESTORED
+B24: EXIT=1; FAILED agents/execution/tests/test_partial_fill_mapping.py::test_an_ended_order_with_nothing_filled_stays_unfilled[0]; RESTORED
+GUARDS_PROVEN=24/24; every plant restored byte-for-byte
+```
+
+**Module line counts:** After `ruff format`, every touched Python module is below 200 lines:
+
+```text
+163 agents/execution/alpaca_orders.py
+143 agents/execution/broker.py
+ 82 agents/execution/broker_status_refresh.py
+174 agents/execution/filled_entry_stops.py
+ 48 agents/execution/order_status_store.py
+ 50 agents/execution/partial_fill.py
+120 agents/execution/realized_pnl.py
+162 agents/execution/reconciliation_store.py
+ 98 agents/monitor/domain/positions.py
+182 contracts/broker_lifecycle.py
+144 contracts/stop_width.py
+105 orchestration/daily_brief_fills.py
+ 89 agents/execution/tests/test_partial_fill_mapping.py
+119 agents/execution/tests/test_partial_fill_refresh.py
+ 54 agents/execution/tests/test_partial_fill_pnl.py
+ 32 agents/monitor/tests/test_position_from_partial_fill.py
+ 40 orchestration/tests/test_daily_brief_filled_quantity.py
+ 70 tests/test_vocabulary_step.py
+105 agents/execution/tests/partial_fill_helpers.py
+```
+
+**`make ci`:** Ran in this worktree, redirected to a file (never piped); the complete log was read. The first 13 steps passed. The dependency audit is verified failing for lack of network; audit completion is **NOT RUN** and remains the planner's. `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `PIP_NO_INDEX=1`, an external `sitecustomize.py` refusing outbound Python DNS/connects, and `GIT_ALLOW_PROTOCOL=file` kept the proof offline; no repository source or Makefile was altered for this. Original log: `C:\Users\yury_\AppData\Local\Temp\s280-proof-20261016\ci.txt`. Captured step lines and final output:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+uv run python scripts/check_dependency_audit.py
+Success: no issues found in 1264 source files
+TOTAL                                                           21430      0   4582      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5134 passed, 9 skipped, 2470 warnings in 455.50s (0:07:35) ==========
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NameResolutionError("HTTPSConnection(host='pypi.org', port=443): Failed to resolve 'pypi.org' (S280 offline proof: outbound resolution disabled)"))
+make: *** [Makefile:60: ci] Error 1
+CI_EXIT=2
+```
+
+Make stopped at step 14. Steps 15 and 16 were then run separately on the explicitly staged scoped files:
+
+```text
+uv run --offline --no-sync pre-commit run detect-secrets --all-files
+uv run --offline --no-sync python scripts/check_untracked_secrets.py
+DETECT-SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+UNTRACKED-SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+```
+
+Offline lock output:
+
+```text
+UV_LOCK_OFFLINE_EXIT=0
+Resolved 180 packages in 329ms
+Updated trading-agents v0.128.2 -> v0.128.3
+STAGE_LOCK_EXIT=0
+1	1	uv.lock
+```
+
+**`make gate-ran`:** Not done; the planner runs it at review for the exact branch HEAD after remote gates. No network was reached, and no push, merge or deployment was attempted.
+
+**Final handback checks:** Rechecked after filling the handback and setting both status entries;
+the source remains the already-tested Appendix. Captured output:
+
+```text
+SCOPE_OK=29 authorized paths; APPENDIX_BLOBS_MATCH=18/18
+EXISTING_TESTS_AND_HELPERS_UNCHANGED=906
+DIFF_CHECK_EXIT=0
+CHECK_SPRINT_STATUS_EXIT=0
+CHECK_TRACKER_SIZE_EXIT=0
+CHECK_MARKDOWN_LINKS_EXIT=0
+MARKDOWN_EXIT=0
+markdownlint-cli2........................................................Passed
+```
+
+**Not met / verified failing:** Overall `make ci` exit 2, dependency audit verified failing offline; vulnerability-audit completion NOT RUN. The other 15 checks passed (the two secret checks separately). Planner review against `prototype_blobs.txt`, planner tests/breaks, CodeQL comparison, F1, remote `make gate-ran`, merge, vocabulary deployment/retag and F2 are not done. Skipped tests remain skipped; local fixtures prove no live outcome.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- The unchanged-tree run and every break reproduced the required behavior; no law contradiction, existing-test failure or Appendix measurement mismatch was found. No existing test was changed.
+- Tier-1 command correction: the first CI-log reader failed while printing Unicode through Windows cp1252. It was rerun with `sys.stdout.reconfigure(encoding="utf-8")`; the saved CI run and its exit code were unaffected. Trailing whitespace in pasted pytest output is stripped for repository hygiene.
+- Tier-1 command correction: a read-only scope check passed every existing test path to `git diff` and exceeded Windows' command-line limit (`WinError 206`). It was corrected to intersect `git diff --name-only HEAD` with the tracked test/helper paths; no test or production file was changed by the failed command.
+- DL-303's older prose names `filled_fill_quantity` and omits `partial` from its fallback sentence. The binding spec, A7 and Appendix instead name `fill_quantity_key` and explicitly retain the legacy `partial` fallback. Those exact supplied changes were applied; the design log was not edited.
+- Evidence logs and the offline guard are outside the worktree, in `C:\Users\yury_\AppData\Local\Temp\s280-proof-20261016`. The original red, green, each B1–B24, restored green, full CI, lock and secret logs remain there; the required output is pasted above.
+- No `infra/` script, `pwsh` or `az` command was run. `kernel/`, Dockerfiles, other packs, `docs/STATE.md`, `docs/design-log.md`, `docs/work-queue.md` and `.secrets.baseline` are unchanged. The live UNH record is unchanged; its repair remains a later sprint.
+- Carry forward: planner runs the dependency audit, independent review/F1, remote gates and deployment/F2 in the spec's order. Overall CI, remote, merged, deployed and live-proven states are not claimed here.
 
 ---
 

@@ -446,6 +446,7 @@
     "Fill": [
       "attempt_ordinal",
       "actual_open_price_cents",
+      "broker_filled_quantity",
       "broker_idempotency_key",
       "broker_order_id",
       "broker_price_cents",

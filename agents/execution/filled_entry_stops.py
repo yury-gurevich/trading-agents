@@ -12,7 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution.broker_stop_types import BrokerStopThresholdPlan
-from contracts.broker_lifecycle import is_filled_buy_fill
+from contracts.broker_lifecycle import fill_quantity_key, is_filled_buy_fill
 from contracts.position_refs import position_ref_for_keys
 from contracts.positions import PositionStopThreshold
 
@@ -71,7 +71,7 @@ def _pending_lot(
     if graph.get_node("Position", position_key) is not None:
         return None
     try:
-        quantity = _int_prop(fill, "quantity")
+        quantity = _int_prop(fill, fill_quantity_key(fill))
         opened_price_cents = _opened_price_cents(fill)
     except (TypeError, ValueError):
         return None

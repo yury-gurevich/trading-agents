@@ -50,6 +50,9 @@ TERMINAL_BROKER_ORDER_STATUSES = frozenset(
 RESOLVED_UNFILLED_BROKER_STATUSES = frozenset({"canceled", "cancelled", "expired"})
 COMPLETED_EXIT_BROKER_STATUSES = frozenset({"filled", "partial", "partially_filled"})
 FILLED_BROKER_STATUSES = frozenset({"filled"})
+# The refresh writes the broker's filled quantity beside `quantity`, the ordered
+# one (DL-303).
+BROKER_FILLED_QUANTITY_PROP = "broker_filled_quantity"
 _ENDED_MARKERS = ("cancelled_at", "replaced_at")
 
 
@@ -146,6 +149,17 @@ def is_resolved_unfilled_broker_status(value: object) -> bool:
 def is_completed_exit_fill(fill: Node) -> bool:
     """Return whether a prior exit Fill already completed the sell decision."""
     return _effective_fill_status(fill) in COMPLETED_EXIT_BROKER_STATUSES
+
+
+def fill_quantity_key(fill: Node) -> str:
+    """Name the property that holds a Fill's executed size (DL-303).
+
+    The broker's filled quantity once the refresh wrote one, else the ordered
+    `quantity` (a Fill settled before DL-303, or one still in flight).
+    """
+    if BROKER_FILLED_QUANTITY_PROP in fill.props:
+        return BROKER_FILLED_QUANTITY_PROP
+    return "quantity"
 
 
 def is_filled_buy_fill(fill: Node) -> bool:

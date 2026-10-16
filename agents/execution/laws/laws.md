@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.14 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.15 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -114,7 +114,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `Fill.dropped_at` plus an append-only `BrokerOrderStatus` drop fact. The broker's normalised
   account of the order stays in `Fill.broker_status` and a **raw terminal reason is never
   written into it** — two vocabularies in that one property is what stalled the fleet on
-  2026-07-30. *(Declares capability decided in ADR-0018; shape settled by S151/DL-79.)*
+  2026-07-30. A decision whose order the broker ended (`expired`, `canceled`) after filling
+  **part** of it is **not** dropped: its `Fill` settles `filled` for the part that filled
+  (`EXEC-TYP-04`), no drop evidence is written for it, and the unfilled rest is told once as an
+  `UnfilledRemainder` warning fault naming the ticker, filled of ordered and the broker's end word.
+  *(Declares capability decided in ADR-0018; shape settled by S151/DL-79; the partly filled
+  order by S280 / DL-303.)*
 - **EXEC-OUT-08** — Every submitted order records its price-tolerance evidence durably: the
   selected mode, the decided price, the **applied** tolerance and limit price, and the
   **counterfactual** mode, tolerance and limit price for the band that was not used. The
@@ -235,6 +240,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `current_stage`, `reason`, and `provenance` (`EXEC-OUT-05`). `CONTRACT.version` names the current
   schema. No clause promises that it moves when a payload field is added, removed or renamed
   (DRIFT-060). Since v1.11 the output clauses name exactly these fields (DRIFT-061).
+- **EXEC-TYP-04** — `Fill.quantity` is the quantity ordered; `Fill.broker_filled_quantity` is the
+  whole number of shares the broker filled, from 1 to `Fill.quantity`, written once with
+  `broker_status` `filled` and read from the broker's own filled quantity where it gives one.
+  Every reader of a Fill's executed size (the stop-width match, an entry stop's lot, a Position
+  drawn from a Fill, the brief's fills, a sell's realized PnL) reads the filled quantity where it
+  is written, else `Fill.quantity`. *(S280 / DL-303.)*
 
 ---
 
@@ -301,7 +312,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the S190 / DL-139 correction for DRIFT-055 and the S209 / DL-170 correction for DRIFT-064.)*
 - **EXEC-OBS-06** — The protective stop resting at the broker is the stop the PM decided. Its width
   is read through the one shared stop-width resolver: a broker-adopted position takes the `stop_pct`
-  of the one filled production buy that equals it exactly in quantity and broker price, and with no
+  of the one filled production buy that equals it exactly in the quantity the broker filled
+  (`EXEC-TYP-04`) and in broker price, and with no
   exact match it takes the fallback; every stop fact records its `stop_pct_source` (`lineage`,
   `position` or `fallback`). A live stop whose price differs from the decided price by one cent or
   more is **replaced in place**, never cancelled and re-placed, so the position is never without a
@@ -531,3 +543,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `BrokerStopOrder` once per sweep and the stop-threshold plan reads `Fill` once per plan, where both
   read the whole label once per item. Why: 348 broker orders made each run start list 346 Fills 348
   times. No drop, cancel, stop or reconciliation decision changes; 40 / 66 -> 41 / 67.
+- **v1.15 — S280 / DL-303 (2026-10-16).** `EXEC-OUT-07` amended and proven for the first time: an
+  order the broker ended after filling part of it is a fill of that part, never a dropped
+  decision, and its rest is told once. New `EXEC-TYP-04`: `Fill.broker_filled_quantity`, and every
+  reader of an executed size reads it. `EXEC-OBS-06` matches an adopted position on the quantity
+  the broker filled. Why: UNH's 1 of 2 on 2026-10-15 was written dropped and its share adopted
+  on the fallback stop. 41 / 67 -> 43 / 68.

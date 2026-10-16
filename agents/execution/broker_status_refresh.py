@@ -11,6 +11,9 @@ from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
+from agents.execution.broker import executed_quantity
+from contracts.broker_lifecycle import BROKER_FILLED_QUANTITY_PROP
+
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill
     from kernel import Node
@@ -51,6 +54,8 @@ def broker_status_props(
             "broker_status_broker_order_id": broker_fill.broker_order_id,
             _BROKER_STATUS_REFRESHED_AT_PROP: datetime.now(tz=UTC).isoformat(),
         }
+        if broker_fill.status == _FILLED_STATUS:
+            props[BROKER_FILLED_QUANTITY_PROP] = executed_quantity(broker_fill)
     if _should_write_price(node, broker_fill):
         props[_BROKER_PRICE_CENTS_PROP] = current_broker_price_cents
     return props

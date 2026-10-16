@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.monitor.domain.exit_rules import ExitPosition
+from contracts.broker_lifecycle import fill_quantity_key
 from contracts.stop_width import decided_stop_pct
 
 if TYPE_CHECKING:
@@ -54,7 +55,7 @@ def position_from_fill(
         run_id=run_id,
         ticker=str(fill.props["ticker"]),
         opened_price_cents=int(fill.props["price_cents"]),
-        quantity=int(fill.props["quantity"]),
+        quantity=int(fill.props[fill_quantity_key(fill)]),
         stop_pct=stop_pct,
         target_pct=target_pct,
         horizon_days=default_horizon_days,

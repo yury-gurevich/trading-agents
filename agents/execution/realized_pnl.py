@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.execution.broker import executed_quantity
 from agents.execution.broker_status_refresh import completes_partial_fill
 from contracts.pnl import realized_pnl_cents
 from contracts.positions import PositionBasis, position_basis_for_ref
@@ -43,7 +44,7 @@ def realized_pnl_props(
     basis = position_basis_for_ref(
         graph, position_ref=position_ref, ticker=broker_fill.ticker
     )
-    pnl = _pnl_from_basis(basis, broker_fill.quantity, exit_price_cents)
+    pnl = _pnl_from_basis(basis, executed_quantity(broker_fill), exit_price_cents)
     if pnl is None:
         _record_unresolved(sink, fill_node, broker_fill, "entry basis unresolved")
         return _unresolved_props()

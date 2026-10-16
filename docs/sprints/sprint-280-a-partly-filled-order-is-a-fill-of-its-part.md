@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`
-**Status:** BUILT
-**Version:** *next available PATCH at merge* (the prototype took `0.128.02` → `0.128.03`)
+**Status:** MERGED
+**Version:** `0.128.03` (`85752f1a`, tag `v0.128.03`)
 **Effort:** M
 **Decisions:** [DL-303](../design-log.md) (measured and decided, planner, 2026-10-16) · [work-queue 135](../work-queue.md) · amends `EXEC-OUT-07`, `EXEC-OBS-06`; new `EXEC-TYP-04`
 
@@ -260,9 +260,9 @@ The red/green split above is the prototype's tests run on `main` at the spec com
 - [x] B1 to B24 each red against your tests, each restored.
 - [x] Every touched module, test files included, under 200 lines after `ruff format`.
 - [x] Version PATCH, `uv.lock` one line changed.
-- [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot
+- [x] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot
       reach its network; say so if it is).
-- [ ] **F1 (the planner's, at review, no cost):** `wq135_f1_replay.py` on the built tree prints what
+- [x] **F1 (the planner's, at review, no cost):** `wq135_f1_replay.py` on the built tree prints what
       it prints on the prototype (`f1_prototype.txt`): no drop, `filled` 1 of 2 at 40111, one
       `UnfilledRemainder`, the adopted share's stop `(0.0565…, lineage)`, an entry-stop plan of 1.
 - [ ] **F2 (the planner's, after deploy):** the vocabulary step reads every target `[OK]` and every
@@ -483,7 +483,7 @@ At closeout: `EXEC-OUT-07` is now proven and new `EXEC-TYP-04` is proven by the 
 
 ## Closeout — evidence
 
-**Status:** BUILT — 2026-10-16, local branch proof; overall CI is not green because the dependency audit cannot run offline.
+**Status:** MERGED 2026-10-16 — `0.128.03`, fast-forwarded to `85752f1a`, tag `v0.128.03`, GATE PROVEN `85752f1a` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed: owed `deploy-agents.ps1 -Action vocabulary` (17 `[OK]`), then an image-only retag from `v0.128.03` after tonight's S277–S279 F2s (rollback `s279`), then F2. The builder's handback read: BUILT — 2026-10-16, local branch proof; overall CI is not green because the dependency audit cannot run offline.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s280`, branch `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`; `.env` absent. Base `aa4d3a645c74bcad9b76aa70fb85d9181333931b`.
 
@@ -809,7 +809,7 @@ STAGE_LOCK_EXIT=0
 1	1	uv.lock
 ```
 
-**`make gate-ran`:** Not done; the planner runs it at review for the exact branch HEAD after remote gates. No network was reached, and no push, merge or deployment was attempted.
+**`make gate-ran`:** (planner) from `../ta-s280`: `GATE PROVEN for 85752f1a58736ffd595b87e76c7f6991bb45e007` (CI, including the dependency audit, CodeQL, Security Findings), SHA checked against `git rev-parse HEAD`. The builder's line read: Not done; the planner runs it at review for the exact branch HEAD after remote gates. **Planner review:** the 29 changed files are exactly the spec's; 20 of 20 production, law, pack, script, version and lock blobs equal the prototype's; no existing test changed; the planner's 27 cases on the built tree in place of the builder's, 27 passed; 24 of 24 breaks red against the builder's tests alone, tree restored clean; CodeQL set-diff against the S279 branch: the same 133 open alerts, 0 errors, nothing new; version and `uv.lock` right (one line). **F1 (no cost):** `wq135_f1_replay.py` on the built tree, UNH's real order read from Alpaca and its lineage from the live graph into an in-memory graph, prints byte for byte what the prototype printed: no drop, the Fill `filled` with `broker_filled_quantity` 1 of 2 at 40111, one `UnfilledRemainder`, the adopted share's stop `(0.0565…, lineage)`, an entry-stop plan of 1 share.
 
 **Final handback checks:** Rechecked after filling the handback and setting both status entries;
 the source remains the already-tested Appendix. Captured output:

@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-303 - an order the broker ends after filling part of it is a fill of that part, never a dropped decision; every reader of an executed size reads the filled quantity - status: MEASURED and DECIDED (planner, 2026-10-16 12:00 AEDT); specced as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md), merged as `0.128.03` (`85752f1a`) 2026-10-16, F1 passed, not deployed; work-queue 135 (the operator, 2026-10-16: *"deploy them first, then fix UNH as the next sprint"*)
+## DL-303 - an order the broker ends after filling part of it is a fill of that part, never a dropped decision; every reader of an executed size reads the filled quantity - status: MEASURED and DECIDED (planner, 2026-10-16 12:00 AEDT); specced as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md), merged as `0.128.03` (`85752f1a`) 2026-10-16, F1 passed, deployed as `s280` 2026-10-16; work-queue 135 (the operator, 2026-10-16: *"deploy them first, then fix UNH as the next sprint"*)
 
 **Why.** `sched-2026-10-14`'s UNH buy filled one share of two and expired; `sched-2026-10-15`'s drop sweep recorded the whole decision as dropped unfilled. The broker holds the share; the graph says it was never bought. Reconciliation adopted it with no lineage, so it is managed on the monitor's defaults, not the PM's decision.
 

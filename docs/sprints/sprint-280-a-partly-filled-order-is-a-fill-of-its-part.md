@@ -483,7 +483,7 @@ At closeout: `EXEC-OUT-07` is now proven and new `EXEC-TYP-04` is proven by the 
 
 ## Closeout — evidence
 
-**Status:** MERGED 2026-10-16 — `0.128.03`, fast-forwarded to `85752f1a`, tag `v0.128.03`, GATE PROVEN `85752f1a` (CI, CodeQL, Security Findings); F1 passed at no cost; not deployed: owed `deploy-agents.ps1 -Action vocabulary` (17 `[OK]`), then an image-only retag from `v0.128.03` after tonight's S277–S279 F2s (rollback `s279`), then F2. The builder's handback read: BUILT — 2026-10-16, local branch proof; overall CI is not green because the dependency audit cannot run offline.
+**Status:** MERGED 2026-10-16 — `0.128.03`, fast-forwarded to `85752f1a`, tag `v0.128.03`, GATE PROVEN `85752f1a` (CI, CodeQL, Security Findings); F1 passed at no cost; **deployed as `s280` 2026-10-16** on the operator's word (the vocabulary step 17 of 17 `[OK]`, then the image-only retag; rollback `s279`); F2 owed on the first weekday night. The builder's handback read: BUILT — 2026-10-16, local branch proof; overall CI is not green because the dependency audit cannot run offline.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s280`, branch `sprint-280-a-partly-filled-order-is-a-fill-of-its-part`; `.env` absent. Base `aa4d3a645c74bcad9b76aa70fb85d9181333931b`.
 

@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-304 - a replay arm declares how its positions exit besides the stop: a take-profit at the PM's target, a time exit, a trailing stop and a re-entry cool-down - status: MEASURED and DECIDED (planner, 2026-10-16 15:15 AEDT); specced as [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"let's start putting something for Codex to do"*)
+## DL-304 - a replay arm declares how its positions exit besides the stop: a take-profit at the PM's target, a time exit, a trailing stop and a re-entry cool-down - status: MEASURED and DECIDED (planner, 2026-10-16 15:15 AEDT); specced as [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md), MERGED 2026-10-16 (`f4e621af`, GATE PROVEN, F1 passed); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"let's start putting something for Codex to do"*)
 
 **Question.** DL-240's sequence runs an exit experiment on the replay cache before anything sells at a
 profit live. The replay can only stop a position out. What must it learn so that experiment can run,

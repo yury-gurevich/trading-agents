@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-16 15:17 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
+**Last updated:** 2026-10-16 16:47 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN; S281 on top, scripts only, no bump: `f4e621af`) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -127,8 +127,8 @@ second ranking.
    `sched-2026-10-16`, read from a worktree pinned at `v0.128.03`; on PASS,
    [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md),
    which is also S250's F2, and work-queue 92's exit experiment, on the harness of
-   [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md) (specced for Codex
-   2026-10-16, [DL-304](design-log.md): take-profit, time exit, trailing stop and cool-down arms).
+   [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md) (merged
+   2026-10-16 as `f4e621af`, F1 passed, [DL-304](design-log.md): take-profit, time exit, trailing stop and cool-down arms).
 5. **Anthropic's account accepts paid calls again** (measured 2026-10-11: one call of one output
    token answered HTTP 200; S264's F1b on Anthropic passed the same day, *Now*): EXP-019's
    remainder on Opus, then the debate workflow in the order of

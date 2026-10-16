@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-281-a-replay-arm-declares-how-its-positions-exit`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *no bump*
 **Effort:** M
 **Decisions:** [DL-304](../design-log.md) (this sprint, ten decisions) · [DL-240](../design-log.md) step 3 (the exit experiment it serves) · work-queue 92
@@ -204,15 +204,15 @@ helper `tests/replay_exit_fixtures.py` (a four-session, one-line cache written w
 
 ## Success factors
 
-- [ ] A stops-only replay is unchanged: F1a (planner) shows `equity.csv`, `fills.csv` and
+- [x] A stops-only replay is unchanged: F1a (planner) shows `equity.csv`, `fills.csv` and
       `sessions.csv` byte-identical to `main` on the window, `summary.json` differing only by
       `sell_without_position: 0`.
-- [ ] Each exit runs on the real cache and equals the prototype: F1b (planner).
+- [x] Each exit runs on the real cache and equals the prototype: F1b (planner).
 - [x] A1–A20 pass, each docstring citing its ID.
 - [x] B01–B32 each turn at least one of the builder's tests red (planner re-runs `s281_breaks.py`).
 - [x] The Appendix applied exactly: every production blob equals the prototype's.
 - [x] No existing test changed; every touched module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage (the remote gate, `f4e621af`).
 
 ---
 
@@ -601,6 +601,28 @@ FINAL_UNTRACKED_SECRETS_EXIT=0
 **`make gate-ran`:** the planner's; not done here.
 
 **Not met / verified failing:** The network-dependent dependency audit is verified failing offline; its online result and a green overall CI are not done (planner). F1a/F1b on the real cache, the planner's independent review and CodeQL comparison, `make gate-ran`, push, merge and deploy are not done. Local fixture proof is not any of those stages.
+
+### The planner's review and merge (2026-10-16)
+
+Kit and outputs in OneDrive `trading-agents-data/wq92-2026-10-16/`.
+
+- **Scope:** the 14 changed files are the spec's; the five test files are new; no existing test changed.
+- **Production blobs:** 7 of 7 equal `prototype_blobs.txt`.
+- **Breaks:** 32 of 32 red against the builder's four test files alone
+  (`s281_breaks_on_built_builder_tests.txt`).
+- **The planner's tests on the built tree** (swapped in at the same paths, restored with
+  `git checkout`): 24 passed (`s281_planner_tests_on_built_f4e621af.txt`).
+- **CodeQL** set-diff against the S280 branch: the same 133 open alerts, 0 errors
+  (`codeql_s281_branch.tsv`).
+- **`make gate-ran`** from `../ta-s281`: GATE PROVEN for `f4e621af` (CI, which runs the dependency
+  audit the builder could not reach, CodeQL, Security Findings; `s281-gate-ran-branch.txt`).
+- **F1a passed:** stops only on the built tree writes `equity.csv`, `fills.csv` and `sessions.csv`
+  byte for byte as `main` `9d9db45b` did; `summary.json` differs only by
+  `absent_inputs.sell_without_position: 0` (`f1_built_f4e621af.txt`, outputs in `f1/built/`).
+- **F1b passed:** each of the five exit arms prints what the prototype printed (`f1_proto.txt`, the
+  table below).
+- **Merged:** `main` fast-forwarded `05e650f4` → `f4e621af`; no tag (no bump); no deploy (scripts
+  ship in no image).
 
 ### The planner's prototype (measured 2026-10-16, before handover)
 

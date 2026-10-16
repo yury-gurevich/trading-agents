@@ -193,7 +193,8 @@ Do not edit `docs/design-log.md`. In short (the entry has the measurements and t
 2. The design decisions are recorded (DL-303). Do not edit `docs/design-log.md`.
 3. **Write `agents/execution/tests/partial_fill_helpers.py` and the tests A1 to A21** under the names
    and files below. Run them on the unchanged tree and paste the output: the red/green split must be
-   the one the Test plan states.
+   the one the Test plan states (the mapping module cannot import there: run `pytest` with
+   `--continue-on-collection-errors`).
 4. **Apply Appendix section 1** (production) exactly. Change nothing else in production code.
 5. **Apply Appendix section 2** (the law book, its test plan, the ledger and INDEX rows) exactly.
 6. **Apply Appendix section 3** (the vocabulary pack and the deploy script) exactly.
@@ -370,7 +371,7 @@ In order:
    the spec BEFORE any code.
 2. Write agents/execution/tests/partial_fill_helpers.py and the tests A1 to A21 under the exact
    names and files in the Test plan, each docstring citing its clauses. Run them on the unchanged
-   tree and paste the output into the Closeout: the red/green split must be the Test plan's last
+   tree with pytest --continue-on-collection-errors and paste the output into the Closeout: the red/green split must be the Test plan's last
    column (A9, A12 and A20 pass already; A3 and A5 are red only by their module's import).
 3. Apply Appendix section 1 exactly (twelve files; agents/execution/partial_fill.py is new). Change
    nothing else in production code. Change no existing test.

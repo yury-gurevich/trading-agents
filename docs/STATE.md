@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-16 14:25 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
+**Last updated:** 2026-10-16 15:17 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -48,11 +48,11 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   `up` puts 120 back, and a rollback to `s255` or older must set 120 first.
 - **The five-minute message lock is live only** on the two debater subscriptions; a re-created
   subscription reverts to one minute.
-- **The fidelity count restarted at `sched-2026-10-08`.** Four clean sessions and ten judged PM
-  recommendations are needed before EXP-014 may start ([DL-237](design-log.md)). A deploy that changes a
-  decision path restarts it; the retag to `s262` changed none. **It closed at `sched-2026-10-15`:**
-  `s279` (2026-10-16) changed `contracts/` and the analyst's law book, so six sessions (10-08 to 10-15)
-  ran on decision code equal to `v0.123.04`; whether they hold ten judged PM recommendations is unread.
+- **The fidelity count restarts at `sched-2026-10-16` on `s280`** (replay from a worktree pinned at
+  `v0.128.03`). Four clean sessions and ten judged PM recommendations are needed before EXP-014 or the
+  exit experiment may start ([DL-237](design-log.md)); a deploy that changes a decision path restarts
+  it. The 10-08 to 10-15 window read **INSUFFICIENT on 9 of 10** PM recommendations, 100 % agreement,
+  0 unexplained ([DL-304](design-log.md)); `s279` had changed `contracts/`.
 - **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
   the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
   nightly window. The pack says 1, so a full `up` puts 1 back on all three. F2 is owed on the first
@@ -124,10 +124,11 @@ second ranking.
    then work-queue 101 closes. Found on the way: the broker's order list is the
    newest 500 and passes 500 around early December (work-queue 134, measured, not decided).
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from
-   `sched-2026-10-08`, read from a worktree pinned at `v0.123.04` (`v0.125.00` holds the same
-   decision code); on PASS,
+   `sched-2026-10-16`, read from a worktree pinned at `v0.128.03`; on PASS,
    [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md),
-   which is also S250's F2.
+   which is also S250's F2, and work-queue 92's exit experiment, on the harness of
+   [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md) (specced for Codex
+   2026-10-16, [DL-304](design-log.md): take-profit, time exit, trailing stop and cool-down arms).
 5. **Anthropic's account accepts paid calls again** (measured 2026-10-11: one call of one output
    token answered HTTP 200; S264's F1b on Anthropic passed the same day, *Now*): EXP-019's
    remainder on Opus, then the debate workflow in the order of

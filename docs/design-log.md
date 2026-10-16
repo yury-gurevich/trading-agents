@@ -12,6 +12,82 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-304 - a replay arm declares how its positions exit besides the stop: a take-profit at the PM's target, a time exit, a trailing stop and a re-entry cool-down - status: MEASURED and DECIDED (planner, 2026-10-16 15:15 AEDT); specced as [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"let's start putting something for Codex to do"*)
+
+**Question.** DL-240's sequence runs an exit experiment on the replay cache before anything sells at a
+profit live. The replay can only stop a position out. What must it learn so that experiment can run,
+and how is each exit simulated on daily bars?
+
+**Measured, 2026-10-16** (read from the code on `main` `9d9db45b` and from earlier replay outputs):
+
+- `scripts/replay_broker.py` simulates two things: a DAY limit order on its target session, and a GTC
+  stop active from the session after the fill. Nothing else leaves the book but a PM sell and a line
+  whose bars end.
+- Every approved buy reaching the replay carries its `target_pct` (`OrderIntent`, PM-OUT-02, set by
+  the PM's gate report), so a take-profit needs no new input.
+- The ten-year smoke (`replays/index-2016-2026-10bps`, OneDrive): 1,044 fills: 552 buys, 463 stops, 8
+  PM limit sells, 21 ended-line exits. A sell of a line no longer held: **0** there and 0 in S250's F1
+  run. The settle step would credit cash for one (it prices a missing position at the fill), so the
+  defect is latent; a time exit waiting while a stop or target fills first makes it reachable.
+- `replay_ledger.equity_cents` has no caller.
+- S241's F4 (2026-10-16): the stop came first on 47.6 % of 21 settled buys against 29.4 % declared.
+  Half the buys stop out within ten sessions, and nothing sells at a gain.
+
+**Decided (planner, delegated):**
+
+1. **Declared per arm.** A manifest arm may carry `exits`; absent means stops only. An unknown key or
+   a bad value is refused. EXP-014's manifest is not touched, and a stops-only arm calls the runner and
+   writes `arm.json` exactly as before.
+2. **Take-profit.** A resting sell at entry × (1 + the PM's `target_pct`), rounded up to the cent,
+   active with the stop and cancelled by it. On each bar: an open at or above the target fills it at
+   the open; a low at or below the stop fills the stop at min(open, stop), so a bar touching both is
+   the stop (EXP-011's and S241's rule); a high at or above the target fills it at the target. A buy
+   with no target gets no take-profit and is counted (`buy_without_target`; PM-TYP-02 says it never
+   happens).
+3. **Time exit after N sessions.** A position that has closed N sessions in the book (its fill session
+   is the first) is sold at the next session by a DAY limit placed as the PM's sells are (the close as
+   the price, the sell tolerance), reason `time_exit`. Unfilled, it is placed again at the next run.
+   None is placed while a sell for the line is already waiting, on a session the line has no bar, or on
+   the window's last session.
+4. **Trailing stop.** After each session settles, an active stop rises to the stop price of that
+   session's high at the position's own stop percent, and never falls. It applies from the next
+   session, so the bar that set it cannot fill it.
+5. **Re-entry cool-down k.** A line whose stop fills in session s is left out of the offered universe
+   for the runs of s to s + k − 1. Only a stop starts it (a trailing stop included); a target or a time
+   exit does not.
+6. **A sell of a line no longer held sells nothing.** It is dropped and counted
+   (`sell_without_position`, always in `absent_inputs`). This changes no measured run.
+7. **Outputs.** Fill rows name the exit (`target`, `time_exit`); the summary and `arm.json` carry an
+   `exits` section only when the arm declares one.
+8. **No version bump.** Scripts and tests only; no file under `kernel`, `contracts`, `agents`,
+   `orchestration` or `surfaces` changes (S271's precedent). No law governs the replay scripts.
+9. `equity_cents` goes, to keep `replay_ledger.py` under 200 lines.
+
+**Ruled out:**
+
+- **The test bed's rule without the open** (touching both always counts as the stop). Rejected: when
+  the session opens beyond a barrier, the open decides which filled; the test bed scores probabilities,
+  the replay prices fills.
+- **A time exit at market on the open.** Rejected: the fleet's sells are DAY limits with a tolerance;
+  a market fill would flatter the arm on gap-down days.
+- **A trailing stop on the close.** Rejected: the broker's trailing order follows the high-water mark.
+  The high is read only after its session, so there is no look-ahead.
+- **A cool-down that drops the approved buy.** Rejected: it leaves the capital idle, where a real rule
+  would let the PM buy the next candidate.
+- **A weekend hold in this sprint.** It is an entry profile (which buys are held over a weekend), the
+  holding profiles of DL-240 step 5. A one-session time exit is available to any arm.
+- **The experiment's own manifest here.** It is the pre-registration: the planner's, written after the
+  fidelity verdict.
+
+**Discovered, left as is:** `replay_series.held_stops` passes stop ÷ entry (about 0.95) as a
+`stop_pct`. Unreachable: every replay position's ref is in `active_broker_stop_refs`, so the analyst
+never reads it, with or without a trailing stop.
+
+**Fidelity read the same day** (OneDrive `fidelity/2026-10-16/`, replayed from `../ta-pin-s276` at
+`v0.127.00`): six clean sessions (10-08 to 10-15), 100 % agreement at every stage, 0 unexplained, but
+**9 of 10** judged PM recommendations: INSUFFICIENT. The `s279` retag changed `contracts/`, so the count
+restarts at `sched-2026-10-16` on `s280`. S281 touches no decision path and resets nothing.
+
 ## DL-303 - an order the broker ends after filling part of it is a fill of that part, never a dropped decision; every reader of an executed size reads the filled quantity - status: MEASURED and DECIDED (planner, 2026-10-16 12:00 AEDT); specced as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md), merged as `0.128.03` (`85752f1a`) 2026-10-16, F1 passed, deployed as `s280` 2026-10-16; work-queue 135 (the operator, 2026-10-16: *"deploy them first, then fix UNH as the next sprint"*)
 
 **Why.** `sched-2026-10-14`'s UNH buy filled one share of two and expired; `sched-2026-10-15`'s drop sweep recorded the whole decision as dropped unfilled. The broker holds the share; the graph says it was never bought. Reconciliation adopted it with no lineage, so it is managed on the monitor's defaults, not the PM's decision.

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from scripts.replay_cache import load_replay_cache
 from scripts.replay_counters import initial_absent_inputs
 from scripts.replay_day import run_replay_day
+from scripts.replay_exits import STOPS_ONLY
 from scripts.replay_outputs import (
     performance_summary,
     refuse_worktree_out,
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from datetime import date
     from pathlib import Path
 
+    from scripts.replay_exits import ExitPolicy
+
 DEFAULT_SLIPPAGE_BPS = 10
 DEFAULT_PROGRESS_EVERY = 20
 
@@ -46,6 +49,7 @@ def run(
     universe_file: Path | None = None,
     progress_every: int = DEFAULT_PROGRESS_EVERY,
     require_history: bool = False,
+    exits: ExitPolicy = STOPS_ONLY,
 ) -> dict[str, Any]:
     """Run a deterministic replay and write artifacts under the cache directory."""
     context = load_replay_cache(cache_dir)
@@ -71,12 +75,15 @@ def run(
         day_runner=run_replay_day,
         progress_every=progress_every,
         require_history=require_history,
+        exits=exits,
     )
-    summary = {
+    summary: dict[str, Any] = {
         "performance": performance_summary(loop.equity, context.spy_closes),
         "non_default_settings": settings.non_defaults,
         "absent_inputs": loop.absent,
     }
+    if loop.exits is not None:  # only an arm that declares exits (S281)
+        summary["exits"] = loop.exits
     write_replay_outputs(
         refuse_worktree_out(out or cache_dir / "pipeline-replay"),
         loop.equity,

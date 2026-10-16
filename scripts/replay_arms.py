@@ -29,6 +29,7 @@ from scripts.replay_arms_record import (  # noqa: E402
     read_repo_state,
     write_benchmark,
 )
+from scripts.replay_exits import STOPS_ONLY, ExitPolicy, exit_policy_from  # noqa: E402
 from scripts.replay_outputs import refuse_worktree_out  # noqa: E402
 from scripts.replay_runner import DEFAULT_PROGRESS_EVERY, run  # noqa: E402
 
@@ -41,11 +42,12 @@ ALL = "all"
 
 @dataclass(frozen=True)
 class ArmSpec:
-    """One arm of the manifest: its name, slippage a side and setting overrides."""
+    """One arm of the manifest: name, slippage a side, overrides, exit policy."""
 
     name: str
     slippage_bps: int
     overrides: tuple[str, ...]
+    exits: ExitPolicy = STOPS_ONLY
 
 
 @dataclass(frozen=True)
@@ -66,7 +68,12 @@ def load_manifest(path: Path = MANIFEST) -> Manifest:
         start=date.fromisoformat(data["start"]),
         require_history=bool(data["require_history"]),
         arms=tuple(
-            ArmSpec(arm["name"], int(arm["slippage_bps"]), tuple(arm["overrides"]))
+            ArmSpec(
+                arm["name"],
+                int(arm["slippage_bps"]),
+                tuple(arm["overrides"]),
+                exit_policy_from(arm.get("exits")),
+            )
             for arm in data["arms"]
         ),
     )
@@ -107,6 +114,7 @@ def run_arm(
         slippage_bps=spec.slippage_bps,
         progress_every=progress_every,
         require_history=manifest.require_history,
+        **({"exits": spec.exits} if spec.exits.declared else {}),
     )
     sessions = equity_dates(out / "equity.csv")
     write_benchmark(cache_dir, sessions, out / "benchmark.csv")
@@ -124,6 +132,8 @@ def run_arm(
         "slippage_bps": spec.slippage_bps,
         "start": manifest.start.isoformat(),
     }
+    if spec.exits.declared:  # a stops-only arm's record is unchanged (S281)
+        record["exits"] = spec.exits.as_dict()
     (out / "arm.json").write_text(
         json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

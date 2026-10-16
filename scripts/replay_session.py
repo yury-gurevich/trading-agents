@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, Any
 
 from scripts.replay_counters import replay_day_counts, zero_absent_reasons
 from scripts.replay_day import ReplayDayInputs
+from scripts.replay_exits import STOPS_ONLY, ExitPolicy, ExitState
 from scripts.replay_history import offer_lines, visible_window
 from scripts.replay_ledger import (
     next_session,
-    queue_orders,
     settle_pending,
     settle_stops,
 )
@@ -56,6 +56,7 @@ class ReplayLoopResult:
     equity: tuple[EquityPoint, ...]
     fills: tuple[dict[str, Any], ...]
     session_rows: tuple[dict[str, Any], ...]
+    exits: dict[str, Any] | None = None
 
 
 _CENTS = Decimal("100")
@@ -75,8 +76,10 @@ def run_replay_sessions(
     day_runner: Callable[[ReplayDayInputs, ReplaySettings], ReplayDayResult],
     progress_every: int,
     require_history: bool = False,
+    exits: ExitPolicy = STOPS_ONLY,
 ) -> ReplayLoopResult:
     """Run the replay sessions and return byte-stable output rows."""
+    state = ExitState(exits)
     pending: list[PendingOrder] = []
     positions: dict[str, ReplayPosition] = {}
     cash_cents = int(settings.portfolio.starting_cash * _CENTS)
@@ -89,9 +92,11 @@ def run_replay_sessions(
         day_bars = date_bars.get(session, {})
         rebased = apply_adjustment_rebases(session, positions, line_bars, known_moves)
         absent["adjustment_error_rebases"] += rebased.count
+        settled = len(fills)
         cash_cents += settle_stops(
             day_bars, positions, fills, slippage_bps, skip_lines=rebased.lines
         )
+        state.note_stops(fills[settled:])
         pending_result = settle_pending(
             session,
             next_session(sessions, index),
@@ -103,14 +108,16 @@ def run_replay_sessions(
         )
         cash_cents += pending_result.cash_delta_cents
         absent["expired_no_bar"] += pending_result.no_bar
+        absent["sell_without_position"] += pending_result.sell_without_position
         pending = [order for order in pending if order.target_session > session]
-        exits = exit_ended_positions(
+        ended = exit_ended_positions(
             session, positions, line_bars, context.universe.episodes, fills
         )
-        cash_cents += exits.cash_delta_cents
-        absent["data_end_exits"] += exits.data_end_exits
-        absent["membership_end_exits"] += exits.membership_end_exits
-        members = fixed_lines or members_on(context.universe, session)
+        cash_cents += ended.cash_delta_cents
+        absent["data_end_exits"] += ended.data_end_exits
+        absent["membership_end_exits"] += ended.membership_end_exits
+        state.raise_stops(session, positions, day_bars)
+        members = state.cool(fixed_lines or members_on(context.universe, session))
         visible_bars = visible_window(settings, line_bars, members, session)
         if fixed_lines is not None:
             members = tuple(
@@ -150,11 +157,13 @@ def run_replay_sessions(
         )
         for key, value in result.absent_inputs.items():
             absent[key] = int(absent.get(key, 0)) + value
-        absent["buy_without_stop"] += queue_orders(
-            result.approved,
-            sessions,
+        absent["buy_without_stop"] += state.queue_orders(
             index,
+            sessions,
+            positions,
             pending,
+            day_bars,
+            result.approved,
             OrderToleranceConfig.from_settings(settings.execution),
         )
         equity.append(EquityPoint(session, marked.equity_cents, marked.long_cents))
@@ -176,5 +185,9 @@ def run_replay_sessions(
             progress_every,
         )
     return ReplayLoopResult(
-        absent, tuple(equity), tuple(fills), zero_absent_reasons(session_rows)
+        absent,
+        tuple(equity),
+        tuple(fills),
+        zero_absent_reasons(session_rows),
+        state.summary(),
     )

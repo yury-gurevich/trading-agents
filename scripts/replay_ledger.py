@@ -17,8 +17,8 @@ from scripts.replay_broker import (
     ReplayPosition,
     simulate_limit_fill,
     simulate_stop_fill,
+    target_price_cents,
 )
-from scripts.replay_marks import mark_positions
 
 from agents.execution.order_tolerance import (
     OrderToleranceConfig,
@@ -40,6 +40,7 @@ class PendingSettlement(NamedTuple):
     expired: int
     cash_delta_cents: int
     no_bar: int
+    sell_without_position: int = 0
 
 
 def queue_orders(
@@ -48,7 +49,14 @@ def queue_orders(
     index: int,
     pending: list[PendingOrder],
     config: OrderToleranceConfig,
+    *,
+    take_profit: bool = False,
+    reason: str = "limit",
 ) -> int:
+    """Queue each intent as a DAY limit for the next session; count stopless buys.
+
+    With `take_profit`, a buy carries its intent's `target_pct` to the position.
+    """
     if index + 1 >= len(sessions):
         return 0
     buy_without_stop = 0
@@ -66,6 +74,8 @@ def queue_orders(
                 money_cents(evidence.applied_limit_price),
                 sessions[index + 1],
                 intent.stop_pct if intent.stop_pct is not None else 0.0,
+                intent.target_pct if take_profit and side == "buy" else None,
+                reason,
             )
         )
     return buy_without_stop
@@ -108,7 +118,7 @@ def settle_pending(
     fills: list[dict[str, Any]],
     slippage_bps: int,
 ) -> PendingSettlement:
-    expired = no_bar = cash = 0
+    expired = no_bar = cash = unheld = 0
     for order in tuple(pending):
         row = bars.get(order.line)
         if order.target_session != session:
@@ -132,18 +142,20 @@ def settle_pending(
                 session,
                 next_session,
                 f"{fill.line}-{session.isoformat()}",
+                target_price_cents=target_price_cents(
+                    fill.price_cents, order.target_pct
+                ),
+                stop_pct=order.stop_pct,
             )
         else:
-            position = positions.get(fill.line)
-            price_cents = (
-                fill.price_cents
-                if position is None
-                else _position_price_cents(position, fill.price_cents)
-            )
+            position = positions.pop(fill.line, None)
+            if position is None:  # its stop or target filled first
+                unheld += 1
+                continue
+            price_cents = _position_price_cents(position, fill.price_cents)
             fills.append(_fill_row(fill, price_cents=price_cents))
             cash += fill.quantity * price_cents
-            positions.pop(fill.line, None)
-    return PendingSettlement(expired, cash, no_bar)
+    return PendingSettlement(expired, cash, no_bar, unheld)
 
 
 def replay_bar(row: BarRow) -> ReplayBar:
@@ -156,15 +168,6 @@ def replay_bar(row: BarRow) -> ReplayBar:
         round(row.close * 100),
         row.volume,
     )
-
-
-def equity_cents(
-    cash_cents: int,
-    positions: dict[str, ReplayPosition],
-    line_bars: dict[str, tuple[BarRow, ...]],
-    session: date,
-) -> int:
-    return mark_positions(cash_cents, positions, line_bars, session).equity_cents
 
 
 def next_session(sessions: tuple[date, ...], index: int) -> date:

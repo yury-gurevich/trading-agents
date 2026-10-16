@@ -28,6 +28,7 @@ def initial_absent_inputs() -> dict[str, Any]:
         "membership_end_exits": 0,
         "expired_no_bar": 0,
         "buy_without_stop": 0,
+        "sell_without_position": 0,
     }
 
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-281-a-replay-arm-declares-how-its-positions-exit`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** M
 **Decisions:** [DL-304](../design-log.md) (this sprint, ten decisions) · [DL-240](../design-log.md) step 3 (the exit experiment it serves) · work-queue 92
@@ -208,10 +208,10 @@ helper `tests/replay_exit_fixtures.py` (a four-session, one-line cache written w
       `sessions.csv` byte-identical to `main` on the window, `summary.json` differing only by
       `sell_without_position: 0`.
 - [ ] Each exit runs on the real cache and equals the prototype: F1b (planner).
-- [ ] A1–A20 pass, each docstring citing its ID.
-- [ ] B01–B32 each turn at least one of the builder's tests red (planner re-runs `s281_breaks.py`).
-- [ ] The Appendix applied exactly: every production blob equals the prototype's.
-- [ ] No existing test changed; every touched module under 200 lines.
+- [x] A1–A20 pass, each docstring citing its ID.
+- [x] B01–B32 each turn at least one of the builder's tests red (planner re-runs `s281_breaks.py`).
+- [x] The Appendix applied exactly: every production blob equals the prototype's.
+- [x] No existing test changed; every touched module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -361,15 +361,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| Broker and ledger | `agents/portfolio_manager/laws/laws.md` (whole, v1.12), `test-plan.md` (whole); `docs/laws/conventions.md` (whole) | PM-OUT-02 and PM-TYP-02 (both already green): approved buys carry the PM's stop/target percentages | Yes: test the PM's target unchanged, buy-only opt-in propagation, and exact cent rounding; no agent guarantee changes |
+| Exit policy and session loop | Same PM files; `agents/execution/laws/laws.md` (whole, v1.15) | Execution's approved-intent boundary and DAY-limit tolerance evidence (EXEC-NEV-01/02, EXEC-OUT-08); replay scripts have no governing clause | Yes: fixtures place next-session DAY limits with the existing sell tolerance; no live exit is added |
+| Arms, runner and counters | `docs/research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md`, Appendix P; `docs/laws/drift-register.md` (whole); `docs/design-log.md`, DL-304 | Frozen EXP-014 arguments and records; DL-304 D1-D9 and its ruled-out options | Yes: assert literal runner keyword sets and stops-only output bytes; leave EXP-014 and existing tests untouched |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Scripts/tests only; no agent guarantee, contract, law, test-plan, ledger or INDEX changes.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None found in the required reading. Recorded before the first code edit on 2026-10-16, in `../ta-s281`, branch `sprint-281-a-replay-arm-declares-how-its-positions-exit`, clean starting HEAD `05e650f4407205425bd9e740747fd17e5d4f1f98` (also local `origin/main`); `.env` absent. The sprint record holds intent/evidence; the operator forbids editing the live trackers.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** No new undecided silence. Replay scripts are outside agent law scope; DL-304 already decides these harness rules. No drift row is owed for an agent guarantee.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** None; this build changes no agent-law proof status. PM-OUT-02 and PM-TYP-02 are already green in the PM test plan.
 
 ---
 
@@ -377,37 +379,228 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *to fill* | | | | |
+| A1 | `test_a1_defaults_are_stops_only_and_bad_policy_values_are_refused` | `tests/test_replay_exit_policy.py` | PASS | S281-A1 |
+| A2 | `test_a2_the_open_then_stop_then_target_decides_the_fill` | `tests/test_replay_exit_fills.py` | PASS | S281-A2 |
+| A3 | `test_a3_a_position_without_a_target_keeps_the_stop_rule` | `tests/test_replay_exit_fills.py` | PASS | S281-A3 |
+| A4 | `test_a4_the_target_rounds_up_and_rebases_with_the_stop` | `tests/test_replay_exit_fills.py` | PASS | S281-A4 |
+| A5 | `test_a5_a_limit_fill_retains_its_orders_reason` | `tests/test_replay_exit_fills.py` | PASS | S281-A5 |
+| A6 | `test_a6_only_an_opted_in_buy_carries_a_target` | `tests/test_replay_exit_fills.py` | PASS | S281-A6 |
+| A7 | `test_a7_a_buy_opens_its_barriers_and_an_unheld_sell_credits_nothing` | `tests/test_replay_exit_fills.py` | PASS | S281-A7 |
+| A8 | `test_a8_a_trailing_stop_rises_from_the_active_high_and_never_falls` | `tests/test_replay_exit_policy.py` | PASS | S281-A8 |
+| A9 | `test_a9_only_a_stop_excludes_its_line_for_exactly_k_runs` | `tests/test_replay_exit_policy.py` | PASS | S281-A9 |
+| A10 | `test_a10_the_fill_session_is_the_first_held_session` | `tests/test_replay_exit_policy.py` | PASS | S281-A10 |
+| A11 | `test_a11_time_exits_respect_age_waiting_sells_bars_and_the_last_session` | `tests/test_replay_exit_policy.py` | PASS | S281-A11 |
+| A12 | `test_a12_a_targetless_stopped_buy_is_counted_only_under_take_profit` | `tests/test_replay_exit_policy.py` | PASS | S281-A12 |
+| A13 | `test_a13_summary_is_absent_unless_declared_and_names_every_count` | `tests/test_replay_exit_policy.py` | PASS | S281-A13 |
+| A14 | `test_a14_stops_only_and_an_absent_policy_write_the_same_bytes` | `tests/test_replay_exit_runs.py` | PASS | S281-A14 |
+| A15 | `test_a15_a_take_profit_sells_on_s2_at_the_target` | `tests/test_replay_exit_runs.py` | PASS | S281-A15 |
+| A16 | `test_a16_a_one_session_time_exit_sells_at_the_next_open` | `tests/test_replay_exit_runs.py` | PASS | S281-A16 |
+| A17 | `test_a17_only_an_arm_that_declares_exits_passes_and_records_them` | `tests/test_replay_exit_arms.py` | PASS | S281-A17 |
+| A18 | `test_a18_a_target_beats_the_waiting_time_exit_without_creating_cash` | `tests/test_replay_exit_runs.py` | PASS | S281-A18 |
+| A19 | `test_a19_the_high_raises_a_trailing_stop_on_s2_then_it_sells_on_s3` | `tests/test_replay_exit_runs.py` | PASS | S281-A19 |
+| A20 | `test_a20_a_stop_excludes_the_line_starting_on_its_own_run` | `tests/test_replay_exit_runs.py` | PASS | S281-A20 |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** None (20 test functions). A14 additionally pins literal fixture CSV bytes and summary values captured on the unchanged runner before the Appendix; A11 also verifies re-queueing after an unfilled order expires.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT (local fixture proof; overall CI verified failing at the offline dependency audit).
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s281`, branch `sprint-281-a-replay-arm-declares-how-its-positions-exit`, base `05e650f4407205425bd9e740747fd17e5d4f1f98`. `.env`: absent (also absent in its parent search directories). Replay artifacts, guard driver and logs are outside the worktree under `C:/Users/yury_/AppData/Local/Temp/s281-build-20261016/`; pytest uses its external temporary directories.
 
-**Result:** *to fill*
+**Result:** BUILT on the requested branch. A1-A20 pass; B01-B32 each turn at least one new test red and are restored; all seven production blobs equal the Appendix and pinned prototype `af3d5b27`; no existing test changed; every touched Python module is below 200 lines. Final full pytest: 5,154 passed, 9 skipped, 100.00 % coverage. `make ci` is verified failing only at the dependency audit for lack of network; both following security checks pass separately. No green overall-CI, remote, merge, deploy or real-cache proof is claimed.
 
-**Files changed:** *to fill*
+**Files changed:** The seven Appendix files under `scripts/`; new `tests/replay_exit_fixtures.py` and `test_replay_exit_{fills,policy,runs,arms}.py`; this spec and the sprint 281 row of `docs/sprints/README.md` at handback. No existing test, package, frozen manifest, version, lockfile or live tracker changes. Scope check output:
+
+```text
+SCOPE_BOUNDARY=PASS
+EXISTING_TESTS_CHANGED=0
+EXCLUDED_PATHS_DIFF_EXIT=0
+ENV_PRESENT=False
+BRANCH=sprint-281-a-replay-arm-declares-how-its-positions-exit
+```
 
 **Design decisions:** recorded as [`DL-304`](../design-log.md) by the planner.
 
-**Proof — the red run first:** *to fill*
+**Proof — the red run first:** Before any Appendix change, the four new modules containing A1-A20 failed collection by their required missing imports. No script was changed. Command: `.venv/Scripts/python.exe -m pytest --no-cov -q tests/test_replay_exit_fills.py tests/test_replay_exit_policy.py tests/test_replay_exit_runs.py tests/test_replay_exit_arms.py`. Exit 2. Pasted output:
 
-**Proof — the green run:** *to fill*
+```text
 
-**Guards planted:** *to fill*
+=================================== ERRORS ====================================
+______________ ERROR collecting tests/test_replay_exit_fills.py _______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s281\tests\test_replay_exit_fills.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_replay_exit_fills.py:12: in <module>
+    from scripts.replay_broker import (
+E   ImportError: cannot import name 'target_price_cents' from 'scripts.replay_broker' (C:\Users\yury_\Downloads\project\ta-s281\scripts\replay_broker.py)
+______________ ERROR collecting tests/test_replay_exit_policy.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s281\tests\test_replay_exit_policy.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_replay_exit_policy.py:12: in <module>
+    from scripts.replay_exits import (
+E   ModuleNotFoundError: No module named 'scripts.replay_exits'
+_______________ ERROR collecting tests/test_replay_exit_runs.py _______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s281\tests\test_replay_exit_runs.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_replay_exit_runs.py:10: in <module>
+    from scripts.replay_exits import STOPS_ONLY, ExitPolicy
+E   ModuleNotFoundError: No module named 'scripts.replay_exits'
+_______________ ERROR collecting tests/test_replay_exit_arms.py _______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s281\tests\test_replay_exit_arms.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_replay_exit_arms.py:14: in <module>
+    from scripts.replay_exits import STOPS_ONLY, ExitPolicy
+E   ModuleNotFoundError: No module named 'scripts.replay_exits'
+=========================== short test summary info ===========================
+ERROR tests/test_replay_exit_fills.py
+ERROR tests/test_replay_exit_policy.py
+ERROR tests/test_replay_exit_runs.py
+ERROR tests/test_replay_exit_arms.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!
+4 errors in 2.92s
+```
 
-**Module line counts:** *to fill*
+**Proof — the green run:** Final test source, including A14's literal pre-Appendix CSV bytes and summary values; same four modules and pytest command as the red run; exit 0.
 
-**`make ci`:** *to fill*
+```text
+....................                                                     [100%]
+20 passed in 2.85s
+```
 
-**`make gate-ran`:** the planner's.
+**Guards planted:** One at a time with the external driver and the four new test modules alone (`python -B -m pytest --no-cov -q` plus the same four paths). Each child returned pytest exit 1 with an assertion failure. Each plant was compiled first and restored in `finally`, with all seven files checked after every plant. B07 and B23 were additionally re-proven after A14 switched to literal outputs; the other breaks retain failures in unchanged tests. Per-break output parsed from the saved pytest logs:
 
-**Not met / verified failing:** *to fill*
+```text
+B01: exit=1; 1 failed, 19 passed in 4.40s; A2
+B02: exit=1; 1 failed, 19 passed in 3.10s; A2
+B03: exit=1; 3 failed, 17 passed in 3.15s; A2, A15, A18
+B04: exit=1; 1 failed, 19 passed in 3.14s; A4
+B05: exit=1; 1 failed, 19 passed in 3.11s; A4
+B06: exit=1; 2 failed, 18 passed in 3.12s; A5, A16
+B07: exit=1; 4 failed, 16 passed in 3.15s; A6, A14, A16, A19
+B08: exit=1; 1 failed, 19 passed in 3.07s; A6
+B09: exit=1; 2 failed, 18 passed in 3.05s; A7, A18
+B10: exit=1; 2 failed, 18 passed in 3.16s; A7, A19
+B11: exit=1; 1 failed, 19 passed in 3.15s; A8
+B12: exit=1; 2 failed, 18 passed in 3.15s; A8, A19
+B13: exit=1; 2 failed, 18 passed in 3.71s; A8, A19
+B14: exit=1; 2 failed, 18 passed in 3.15s; A9, A20
+B15: exit=1; 1 failed, 19 passed in 3.15s; A9
+B16: exit=1; 4 failed, 16 passed in 3.10s; A10, A11, A16, A18
+B17: exit=1; 1 failed, 19 passed in 3.13s; A11
+B18: exit=1; 1 failed, 19 passed in 3.14s; A11
+B19: exit=1; 2 failed, 18 passed in 3.16s; A11, A16
+B20: exit=1; 1 failed, 19 passed in 3.09s; A1
+B21: exit=1; 1 failed, 19 passed in 3.17s; A1
+B22: exit=1; 1 failed, 19 passed in 3.19s; A1
+B23: exit=1; 2 failed, 18 passed in 4.34s; A13, A14
+B24: exit=1; 1 failed, 19 passed in 3.11s; A17
+B25: exit=1; 1 failed, 19 passed in 3.24s; A17
+B26: exit=1; 1 failed, 19 passed in 3.10s; A17
+B27: exit=1; 5 failed, 15 passed in 3.20s; A15, A16, A18, A19, A20
+B28: exit=1; 1 failed, 19 passed in 3.13s; A20
+B29: exit=1; 1 failed, 19 passed in 3.15s; A20
+B30: exit=1; 1 failed, 19 passed in 3.12s; A19
+B31: exit=1; 3 failed, 17 passed in 3.15s; A12, A15, A18
+B32: exit=1; 1 failed, 19 passed in 3.16s; A18
+GUARDS_PROVEN=32/32; each plant restored before the next; all seven files restored byte-for-byte
+```
+
+**Module line counts:** Measured after Ruff formatting the new tests; the seven Appendix files already pass `ruff format --check` unchanged.
+
+```text
+scripts/replay_arms.py: 166
+scripts/replay_broker.py: 160
+scripts/replay_counters.py: 63
+scripts/replay_exits.py: 196
+scripts/replay_ledger.py: 189
+scripts/replay_runner.py: 94
+scripts/replay_session.py: 193
+tests/replay_exit_fixtures.py: 135
+tests/test_replay_exit_arms.py: 91
+tests/test_replay_exit_fills.py: 147
+tests/test_replay_exit_policy.py: 161
+tests/test_replay_exit_runs.py: 164
+scripts/replay_arms.py: b7701c7f056b18b3e76242ace1e0086a56a670be
+scripts/replay_broker.py: 6484cdffbbd6346325c1519d4380e77859026865
+scripts/replay_counters.py: 8ddd021388165c6ef259cd2fbe20b425a4b61175
+scripts/replay_exits.py: 74202b795f54b3635c46c7890bfe3568427c255c
+scripts/replay_ledger.py: 78aeddf46c58ad6cf4c18120b427e45f31716f46
+scripts/replay_runner.py: f0306508fad94e38be26718be99efacdd14fd2f6
+scripts/replay_session.py: e96390c33c8490303a8c3a78c14377f8851c02c6
+APPENDIX_BLOBS=7/7
+PROTOTYPE_SEVEN_FILE_DIFF_EXIT=0 (git diff --exit-code af3d5b27 -- the seven paths)
+```
+
+**`make ci`:** Run twice, each redirected directly to an external file. The final run is `make ci > <external-evidence>/make-ci-final.txt 2>&1`; exit 2. It reads all 16 recipe steps: steps 1-13 passed; step 14 is verified failing because the audit cannot query PyPI offline. Steps 15-16 were NOT RUN inside Make because it stops at step 14; both ran separately and passed. Overall CI is not green. `UV_OFFLINE=1`, `UV_NO_SYNC=1` and `UV_PYTHON_DOWNLOADS=never`; HTTP/HTTPS/ALL proxies point to `127.0.0.1:1` with loopback excluded, and inherited API credentials were cleared for these command processes. No external service was reached. The entire final log was read; current-run output follows (historical sprint-status rows omitted):
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1264 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+collected 5163 items
+TOTAL                                                           21430      0   4582      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5154 passed, 9 skipped, 2470 warnings in 433.38s (0:07:13) ==========
+uv run python scripts/check_dependency_audit.py
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=1): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:60: ci] Error 1
+FINAL_CI_EXIT=2
+```
+
+Separate remaining-step output:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+FINAL_DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+Final handback-document checks (after both status changes):
+
+```text
+SPRINT_STATUS_EXIT=0
+docs_seen=286 SPEC=10 BUILT=1 MERGED=275 UNMAPPED=0 MISSING=0
+TRACKER_SIZE_EXIT=0
+MARKDOWN_LINKS_EXIT=0
+FINAL_UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** the planner's; not done here.
+
+**Not met / verified failing:** The network-dependent dependency audit is verified failing offline; its online result and a green overall CI are not done (planner). F1a/F1b on the real cache, the planner's independent review and CodeQL comparison, `make gate-ran`, push, merge and deploy are not done. Local fixture proof is not any of those stages.
 
 ### The planner's prototype (measured 2026-10-16, before handover)
 
@@ -440,7 +633,14 @@ OneDrive `trading-agents-data/wq92-2026-10-16/`.
 
 ## Return notes
 
-- *to fill*
+- The commit hook found one extra blank line between the red/green evidence blocks (MD012); it was removed in this spec. No Python change.
+- The first all-files secret check rejected four new hexadecimal fixture-hash constants in A14. They were replaced with literal pre-Appendix CSV bytes and summary values. No allowlist or `.secrets.baseline` change. Final all-files detect-secrets passes; the run test module is 164 lines after formatting. B07/B23 and all 20 tests were re-proven, then the full `make ci` was re-run on the final test source (5,154 passed, 9 skipped, 100.00 %, only the offline audit failing). The 2,470 warnings are NumPy timedelta deprecations in the unchanged `tests/test_barrier_testbed.py`; left out of scope.
+- The handover narrows the standing workflow: the sprint spec is the intent/evidence record; no `docs/STATE.md`, `docs/design-log.md` or `docs/work-queue.md` edit. No network, push, remote gate, merge, deploy or real-cache run is authorised here. Those planner steps are not done.
+- A14 first captured the unchanged runner's fixture outputs before the Appendix. The three CSV hashes reproduce unchanged. The first additional summary-hash assertion compared Windows CRLF bytes with canonical LF bytes; it failed in the new test only. The baseline has 43 CRLFs, and normalising that baseline reproduces `27ad78c66c0edb1a6c6e61de2393e6bf4f474e7ff89e7f8d561cb10a065e75f1`, the built summary after removing `sell_without_position: 0`. The hash oracle was corrected, then replaced by literal expected outputs after the secret check; no production code changed.
+- Read-only lookup corrections: `tests/test_replay_sessions.py` does not exist; the existing runner, ledger and session-helper tests supply the context. PowerShell `rg tests/replay*` path arguments were corrected to `rg --files` / `-g` selection. No existing test was edited.
+- Guard automation stopped before planting B20 because its Python tuple had a quoting error. Its definition was corrected to discard unknown keys, then B20-B32 ran. B01-B19 were already red and restored. The reporting regex was also corrected to stop at whitespace; final per-break counts above are parsed from each saved pytest log. No plant survived.
+- A12 includes a normal targeted buy beside the three exceptional intents to prove B31's take-profit wiring. This adds a case inside A12, not an extra test or a change to the policy.
+- The full raw evidence, pre-Appendix fixture outputs, Appendix patch and external guard definitions remain in the external evidence directory named above. The planner's F1a/F1b, independent review and CodeQL comparison and exact-HEAD remote gate are not done by this build.
 
 ---
 

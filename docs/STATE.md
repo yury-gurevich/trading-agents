@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-16 13:52 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
+**Last updated:** 2026-10-16 14:25 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; work-queue 135 (a partly filled order recorded as unfilled) is merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); its F2 is owed the same night.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -50,7 +50,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   subscription reverts to one minute.
 - **The fidelity count restarted at `sched-2026-10-08`.** Four clean sessions and ten judged PM
   recommendations are needed before EXP-014 may start ([DL-237](design-log.md)). A deploy that changes a
-  decision path restarts it; the retag to `s262` changed none.
+  decision path restarts it; the retag to `s262` changed none. **It closed at `sched-2026-10-15`:**
+  `s279` (2026-10-16) changed `contracts/` and the analyst's law book, so six sessions (10-08 to 10-15)
+  ran on decision code equal to `v0.123.04`; whether they hold ten judged PM recommendations is unread.
 - **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
   the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
   nightly window. The pack says 1, so a full `up` puts 1 back on all three. F2 is owed on the first
@@ -133,8 +135,9 @@ second ranking.
    figures), the debaters' typed turn, the judge's typed ruling, the loop in shadow.
    [DL-280](design-log.md) proposes the judge's contract before the typed turn: every ruling since
    2026-09-17 is `revise`, and `revise` changes no order (work-queue 118).
-6. **From about 2026-10-12:** S241's F4, the first barrier claims settling
-   ([S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md)).
+6. **Done 2026-10-16:** S241's F4 passed: 21 barrier claims settled, skill +5.69 % [+1.74, +19.13] on
+   4 decision dates; the stop came first in 47.6 % against 29.4 % declared
+   ([S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md); work-queue 92, 99).
 7. **Not while the fidelity count runs** (each touches a decision path): work-queue 105 and 108.
    Work-queue 103 part two left this list on 2026-10-11: measured, its one live read is the
    barrier history's, a side branch no decision reads ([DL-287](design-log.md)).

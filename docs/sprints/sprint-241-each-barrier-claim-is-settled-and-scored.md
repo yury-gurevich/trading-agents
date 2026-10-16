@@ -244,8 +244,11 @@ exists. The first claims become settleable ten sessions later, about **2026-10-1
     EXP-011's 47,485 decisions, outcome for outcome.
   - **F3, the script**: `scripts/barrier_ledger.py` runs against the live graph and prints an empty ledger (0 settled)
     without error.
-- [ ] **Owed after the operator's full `up` (F4)**, from about 2026-10-12: the first claims settle on the run that
-      covers their tenth session, and the scorecard reports them.
+- [x] **Owed after the operator's full `up` (F4)**, from about 2026-10-12: the first claims settle on the run that
+      covers their tenth session, and the scorecard reports them. **PASSED 2026-10-16** (`scripts/barrier_ledger.py`,
+      read-only, from `main` `ac21cbd1`): 21 settled, 0 void, 13 open; the 2026-09-28 claims settled on
+      `sched-2026-10-12`, their tenth session; Brier 0.6671 against climatology 0.7073, skill +5.69 %
+      [+1.74, +19.13] over 4 decision dates (12 of the 21 claims are from 2026-09-28).
 
 ---
 

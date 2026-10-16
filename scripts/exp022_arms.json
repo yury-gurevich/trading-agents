@@ -1,0 +1,99 @@
+{
+  "arms": [
+    {
+      "name": "stops-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "exits": {
+        "take_profit": true
+      },
+      "name": "target-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "exits": {
+        "time_exit_sessions": 10
+      },
+      "name": "time10-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "exits": {
+        "trailing_stop": true
+      },
+      "name": "trail-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "exits": {
+        "take_profit": true,
+        "time_exit_sessions": 10
+      },
+      "name": "target-time10-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "exits": {
+        "reentry_cooldown_sessions": 5
+      },
+      "name": "cool5-25",
+      "overrides": [],
+      "slippage_bps": 25
+    },
+    {
+      "name": "stops-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "exits": {
+        "take_profit": true
+      },
+      "name": "target-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "exits": {
+        "time_exit_sessions": 10
+      },
+      "name": "time10-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "exits": {
+        "trailing_stop": true
+      },
+      "name": "trail-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "exits": {
+        "take_profit": true,
+        "time_exit_sessions": 10
+      },
+      "name": "target-time10-10",
+      "overrides": [],
+      "slippage_bps": 10
+    },
+    {
+      "exits": {
+        "reentry_cooldown_sessions": 5
+      },
+      "name": "cool5-10",
+      "overrides": [],
+      "slippage_bps": 10
+    }
+  ],
+  "experiment": "EXP-022",
+  "require_history": true,
+  "start": "2017-01-03"
+}

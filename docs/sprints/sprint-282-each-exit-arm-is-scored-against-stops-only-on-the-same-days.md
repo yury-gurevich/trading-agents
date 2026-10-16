@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** M
 **Decisions:** [DL-305](../design-log.md) (this sprint and the experiment, ten decisions) ·
@@ -203,7 +203,7 @@ red on the unchanged tree.
 | A13 | 🎯 a sell closes the oldest open buy of its line | ten fill rows | 5 buys, 4 trips, 1 stray sell, 1 open; stop −10 % held 2; target ×2 +10 % median 9; time exit held 10; buys a year 5 |
 | A14 | the profile reads `fills.csv` | the rows as a file; a date outside the sessions | the same profile; `KeyError` |
 | A15 | a manifest that is not Appendix P's is refused by arm | other slippage, overrides, exits; one missing; one extra | five refusals in Appendix P's order, extra last, with the reasons |
-| A16 | twelve folders score and write one page | 121 sessions, `target-25` +0.001, 40 resamples | exit 0; EXIT WINS; `appendix_p` false; the title line; five sections; the stop trip row; `2017, partial`; profiles; provenance start |
+| A16 | twelve folders score and write one page | 121 sessions, `target-25` +0.001, 40 resamples | exit 0; EXIT WINS; `appendix_p` false; the title line; six sections; the stop trip row; `2017, partial`; profiles; provenance start |
 | A17 | scoring twice writes the same bytes | 61 sessions | `verdict.json` and `verdict.md` byte-identical |
 | A18 | a folder that misfits gives no verdict | missing `fills.csv`; exits dropped; exits on `stops-25`; an arm missing | exit 2; refused by name with the reason; `NO VERDICT` page lists it |
 | A19 | a wrong manifest is not loaded; output stays out of the repo | the last arm removed; an out-root in the worktree | one refusal, no arms; `ValueError` |
@@ -216,10 +216,10 @@ red on the unchanged tree.
 
 - [ ] On the F1 pilot's twelve real arm folders the built scorer writes `verdict.json` and
       `verdict.md` byte for byte the prototype's (planner, `s282_f1_score.py`).
-- [ ] A1–A21 pass, each docstring citing its ID.
-- [ ] B01–B34 each turn at least one of the builder's tests red (planner re-runs `s282_breaks.py`).
-- [ ] The Appendix applied exactly: every production blob equals the prototype's.
-- [ ] No existing file changed; every new module under 200 lines.
+- [x] A1–A21 pass, each docstring citing its ID.
+- [x] B01–B34 each turn at least one of the builder's tests red (planner re-runs `s282_breaks.py`).
+- [x] The Appendix applied exactly: every production blob equals the prototype's.
+- [x] No existing production or test file changed; every new module under 200 lines.
 - [ ] `make ci` exit 0, 100.00 % coverage (the remote gate).
 
 ---
@@ -373,17 +373,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| Statistic and scoring | *fill at handback* | *fill* | *fill* |
-| Rule, manifest and loader | *fill at handback* | *fill* | *fill* |
-| Trips, document and command | *fill at handback* | *fill* | *fill* |
+| Statistic and scoring | `agents/reporter/laws/laws.md` and `test-plan.md` (whole); `docs/laws/conventions.md` and `drift-register.md` (whole) | RPT-OUT-07 is already 🟩; EXP-022 sections 2, 5 and Appendix P | Keep S250's reporter calculation unchanged; prove shared draws, same-cost pairing, both R and A in the control, and return-only dR separately. |
+| Rule, manifest and loader | EXP-022 (whole); DL-305 (whole) | EXP-022 Appendix P; no script-owned agent clause | Literal expected arms and exit settings, strict boundary cases, and named refusals will be independent test expectations. |
+| Trips, document and command | The same; EXP-014 Appendix P (whole) | EXP-022 Appendix P; EXP-014 is frozen and reused unchanged | Prove FIFO, session-pair annualisation, sorted reasons, stable output and Appendix P labelling; outputs go outside the worktree. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No.
 
-**Contradictions found between a law and this spec:** *fill*
+**Contradictions found between a law and this spec:** None found in the required reading.
 
-**Laws found silent where a decision was needed:** *fill*
+**Laws found silent where a decision was needed:** None newly found. These scripts are governed by
+EXP-022 Appendix P and DL-305; they add no agent guarantee and require no law amendment or drift row.
 
-**Clauses that were ⬜ and are now proven:** *fill*
+**Clauses that were ⬜ and are now proven:** None. RPT-OUT-07 is already 🟩 (reporter rollup 26 / 43);
+no gray clause is relied upon or claimed proven. Reading completed on 2026-10-16 before any code
+change, in `../ta-s282` on the required sprint branch; the initial worktree was clean and `.env`
+was absent.
 
 ---
 
@@ -391,20 +395,397 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1–A21 | *fill, one row each* | | | |
+| A1 | `test_a1_committed_manifest_is_appendix_p` | `tests/test_exit_verdict_rule.py` | PASS | S282-A1 |
+| A2 | `test_a2_reading_obeys_strict_bounds_and_both_halves` | `tests/test_exit_verdict_rule.py` | PASS | S282-A2 |
+| A3 | `test_a3_bar_family_largest_leader_and_first_tie` | `tests/test_exit_verdict_rule.py` | PASS | S282-A3 |
+| A4 | `test_a4_r_is_annualised_portfolio_return` | `tests/test_exit_verdict_stats.py` | PASS | S282-A4 / RPT-OUT-07 |
+| A5 | `test_a5_family_interval_uses_five_integer_tails` | `tests/test_exit_verdict_stats.py` | PASS | S282-A5 |
+| A6 | `test_a6_gain_wins_and_family_copy_is_exactly_zero` | `tests/test_exit_verdict_score.py` | PASS | S282-A6 / RPT-OUT-07 |
+| A7 | `test_a7_loss_is_behind_and_champion_holds` | `tests/test_exit_verdict_score.py` | PASS | S282-A7 |
+| A8 | `test_a8_whole_gain_with_losing_half_is_split` | `tests/test_exit_verdict_score.py` | PASS | S282-A8 |
+| A9 | `test_a9_only_low_cost_gain_wins_at_low_cost` | `tests/test_exit_verdict_score.py` | PASS | S282-A9 |
+| A10 | `test_a10_control_checks_both_r_and_a_and_refuses` | `tests/test_exit_verdict_score.py` | PASS | S282-A10 / RPT-OUT-07 |
+| A11 | `test_a11_gap_and_unequal_pairs_refuse` | `tests/test_exit_verdict_score.py` | PASS | S282-A11 |
+| A12 | `test_a12_seed_repeats_draws_and_changes_only_interval` | `tests/test_exit_verdict_score.py` | PASS | S282-A12 |
+| A13 | `test_a13_sells_close_oldest_buy_of_their_line` | `tests/test_exit_verdict_trips.py` | PASS | S282-A13 |
+| A14 | `test_a14_csv_profile_matches_rows_and_unknown_date_raises` | `tests/test_exit_verdict_trips.py` | PASS | S282-A14 |
+| A15 | `test_a15_wrong_manifest_refuses_in_appendix_order` | `tests/test_exit_verdict_cli.py` | PASS | S282-A15 |
+| A16 | `test_a16_twelve_folders_write_a_complete_verdict` | `tests/test_exit_verdict_cli.py` | PASS | S282-A16 |
+| A17 | `test_a17_scoring_twice_writes_identical_bytes` | `tests/test_exit_verdict_cli.py` | PASS | S282-A17 |
+| A18 | `test_a18_misfitting_folder_refuses_by_name` | `tests/test_exit_verdict_cli.py` | PASS (4 cases) | S282-A18 |
+| A19 | `test_a19_wrong_manifest_is_never_loaded_and_output_stays_out` | `tests/test_exit_verdict_cli.py` | PASS | S282-A19 |
+| A20 | `test_a20_only_frozen_manifest_and_bootstrap_are_appendix_p` | `tests/test_exit_verdict_cli.py` | PASS | S282-A20 |
+| A21 | `test_a21_dr_reads_equity_return_not_exposure_excess` | `tests/test_exit_verdict_stats.py` | PASS | S282-A21 / RPT-OUT-07 |
 
 ---
 
 ## Closeout — evidence
 
-*Fill at handback: the tree the proofs ran in and whether a `.env` was present; the unchanged tree's
-red run; the Appendix applied (blob ids); each break's result; `make ci`'s file and exit code.*
+Proof tree: `../ta-s282`, branch `sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days`, starting HEAD `0b023ac37f8aad0c02834dd7d7b380b79895eaae`.
+`.env` absent. No replay cache or real market data used. Logs, generated output and
+tool caches are under `C:/Users/yury_/AppData/Local/Temp/ta-s282-evidence-20261016/`.
+
+### Unchanged-tree red proof
+
+All A1–A21 were defined (24 cases after parametrization), but none could collect:
+each of the five files failed importing the not-yet-created scorer modules.
+
+```text
+uv run pytest tests/test_exit_verdict_rule.py tests/test_exit_verdict_stats.py tests/test_exit_verdict_score.py tests/test_exit_verdict_trips.py tests/test_exit_verdict_cli.py --no-cov
+============================= test session starts =============================
+collected 0 items / 5 errors
+
+=================================== ERRORS ====================================
+______________ ERROR collecting tests/test_exit_verdict_rule.py _______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s282\tests\test_exit_verdict_rule.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exit_verdict_rule.py:11: in <module>
+    from scripts.exit_verdict_load import manifest_refusals
+E   ModuleNotFoundError: No module named 'scripts.exit_verdict_load'
+______________ ERROR collecting tests/test_exit_verdict_stats.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s282\tests\test_exit_verdict_stats.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exit_verdict_stats.py:11: in <module>
+    from scripts.exit_verdict_score import score_exit_arms
+E   ModuleNotFoundError: No module named 'scripts.exit_verdict_score'
+______________ ERROR collecting tests/test_exit_verdict_score.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s282\tests\test_exit_verdict_score.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exit_verdict_score.py:11: in <module>
+    from scripts import exit_verdict_score as scorer
+E   ImportError: cannot import name 'exit_verdict_score' from 'scripts' (unknown location)
+______________ ERROR collecting tests/test_exit_verdict_trips.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s282\tests\test_exit_verdict_trips.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exit_verdict_trips.py:12: in <module>
+    from scripts.exit_verdict_trips import exit_profile, profile_of
+E   ModuleNotFoundError: No module named 'scripts.exit_verdict_trips'
+_______________ ERROR collecting tests/test_exit_verdict_cli.py _______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s282\tests\test_exit_verdict_cli.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exit_verdict_cli.py:15: in <module>
+    from scripts import exit_verdict_report as report
+E   ImportError: cannot import name 'exit_verdict_report' from 'scripts' (unknown location)
+=========================== short test summary info ===========================
+ERROR tests/test_exit_verdict_rule.py
+ERROR tests/test_exit_verdict_stats.py
+ERROR tests/test_exit_verdict_score.py
+ERROR tests/test_exit_verdict_trips.py
+ERROR tests/test_exit_verdict_cli.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!
+============================== 5 errors in 1.20s ==============================
+EXIT=2
+```
+
+### Appendix and focused green proof
+
+```text
+scripts/exit_verdict.py 00ace3695ba96024302dc423f2169e9d49e7d842 MATCH
+scripts/exit_verdict_load.py 11c3255177d77ac0ac83d5c833d715bef9b8b13b MATCH
+scripts/exit_verdict_markdown.py 4cf1f88f3e005229a8dc8765d29761bdcc7d3fe2 MATCH
+scripts/exit_verdict_report.py f9057e23c2a7580e709e5e51c5147eca29e41976 MATCH
+scripts/exit_verdict_rule.py 3c4aed3641afd869c9fbc73d0d0320e71183bca1 MATCH
+scripts/exit_verdict_score.py cbf989951fb7f9c132195e8b6c0712ffd24c9caa MATCH
+scripts/exit_verdict_stats.py 22c3c4c628b68751bca99d919b7a62dc621e4333 MATCH
+scripts/exit_verdict_trips.py 6b759e0b7e9e41aae34b33aeb460b2d103ff3b91 MATCH
+scripts/exp022_arms.json da8a33be23262ff6e0bd913dfeb513e2b6d06ca9 MATCH
+APPENDIX_BLOBS=9/9
+```
+
+```text
+============================= test session starts =============================
+collected 24 items
+
+tests\test_exit_verdict_rule.py ...                                      [ 12%]
+tests\test_exit_verdict_stats.py ...                                     [ 25%]
+tests\test_exit_verdict_score.py .......                                 [ 54%]
+tests\test_exit_verdict_trips.py ..                                      [ 62%]
+tests\test_exit_verdict_cli.py .........                                 [100%]
+
+============================= 24 passed in 8.98s ==============================
+EXIT=0
+```
+
+### Individual break proof
+
+Each command was `python -m pytest <named test file> -k <A id> --no-cov -q`.
+Each break was compiled or JSON-parsed, planted alone, run to an observed test failure,
+then restored byte for byte in a `finally` block before the next. Full per-break output
+is preserved beside `breaks.txt` as `B01.txt` through `B34.txt`.
+
+```text
+B01 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a2_reading_obeys_strict_bounds_and_both_halves RESTORED=exact
+B02 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a2_reading_obeys_strict_bounds_and_both_halves RESTORED=exact
+B03 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a2_reading_obeys_strict_bounds_and_both_halves RESTORED=exact
+B04 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a2_reading_obeys_strict_bounds_and_both_halves RESTORED=exact
+B05 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a3_bar_family_largest_leader_and_first_tie RESTORED=exact
+B06 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a3_bar_family_largest_leader_and_first_tie RESTORED=exact
+B07 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a3_bar_family_largest_leader_and_first_tie RESTORED=exact
+B08 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a1_committed_manifest_is_appendix_p RESTORED=exact
+B09 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a1_committed_manifest_is_appendix_p RESTORED=exact
+B10 EXIT=1 RED: tests/test_exit_verdict_stats.py::test_a4_r_is_annualised_portfolio_return RESTORED=exact
+B11 EXIT=1 RED: tests/test_exit_verdict_stats.py::test_a4_r_is_annualised_portfolio_return RESTORED=exact
+B12 EXIT=1 RED: tests/test_exit_verdict_stats.py::test_a5_family_interval_uses_five_integer_tails RESTORED=exact
+B13 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a8_whole_gain_with_losing_half_is_split RESTORED=exact
+B14 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a6_gain_wins_and_family_copy_is_exactly_zero RESTORED=exact
+B15 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a6_gain_wins_and_family_copy_is_exactly_zero RESTORED=exact
+B16 EXIT=1 RED: tests/test_exit_verdict_stats.py::test_a21_dr_reads_equity_return_not_exposure_excess RESTORED=exact
+B17 EXIT=1 RED: tests/test_exit_verdict_stats.py::test_a21_dr_reads_equity_return_not_exposure_excess RESTORED=exact
+B18 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a10_control_checks_both_r_and_a_and_refuses RESTORED=exact
+B19 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a11_gap_and_unequal_pairs_refuse RESTORED=exact
+B20 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a11_gap_and_unequal_pairs_refuse RESTORED=exact
+B21 EXIT=1 RED: tests/test_exit_verdict_score.py::test_a10_control_checks_both_r_and_a_and_refuses RESTORED=exact
+B22 EXIT=1 RED: tests/test_exit_verdict_trips.py::test_a13_sells_close_oldest_buy_of_their_line RESTORED=exact
+B23 EXIT=1 RED: tests/test_exit_verdict_trips.py::test_a13_sells_close_oldest_buy_of_their_line RESTORED=exact
+B24 EXIT=1 RED: tests/test_exit_verdict_trips.py::test_a13_sells_close_oldest_buy_of_their_line RESTORED=exact
+B25 EXIT=1 RED: tests/test_exit_verdict_trips.py::test_a13_sells_close_oldest_buy_of_their_line RESTORED=exact
+B26 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a15_wrong_manifest_refuses_in_appendix_order RESTORED=exact
+B27 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[fills] RESTORED=exact
+B28 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[dropped]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[stops] RESTORED=exact
+B29 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a16_twelve_folders_write_a_complete_verdict RESTORED=exact
+B30 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a20_only_frozen_manifest_and_bootstrap_are_appendix_p RESTORED=exact
+B31 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a16_twelve_folders_write_a_complete_verdict RESTORED=exact
+B32 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[fills]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[dropped]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[stops]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[arm] RESTORED=exact
+B33 EXIT=1 RED: tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[fills]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[dropped]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[stops]; tests/test_exit_verdict_cli.py::test_a18_misfitting_folder_refuses_by_name[arm] RESTORED=exact
+B34 EXIT=1 RED: tests/test_exit_verdict_rule.py::test_a1_committed_manifest_is_appendix_p RESTORED=exact
+GUARDS_PROVEN=34/34; ALL_PRODUCTION_BYTES_RESTORED=yes
+```
+
+### Size after formatting
+
+```text
+scripts/exit_verdict.py: 79 lines
+scripts/exit_verdict_load.py: 70 lines
+scripts/exit_verdict_markdown.py: 146 lines
+scripts/exit_verdict_report.py: 96 lines
+scripts/exit_verdict_rule.py: 88 lines
+scripts/exit_verdict_score.py: 138 lines
+scripts/exit_verdict_stats.py: 81 lines
+scripts/exit_verdict_trips.py: 86 lines
+tests/exit_verdict_fixtures.py: 137 lines
+tests/test_exit_verdict_cli.py: 174 lines
+tests/test_exit_verdict_rule.py: 88 lines
+tests/test_exit_verdict_score.py: 136 lines
+tests/test_exit_verdict_stats.py: 52 lines
+tests/test_exit_verdict_trips.py: 65 lines
+ALL_NEW_MODULES_UNDER_200=yes
+```
+
+### Full gate
+
+`make ci > C:/Users/yury_/AppData/Local/Temp/ta-s282-evidence-20261016/ci.txt 2>&1`
+was run without a pipe. Its actual exit code was **2**. The full 2,378-line file was read;
+619 coverage source rows were checked, all at 100.00 %. The only failed step was the
+dependency audit's fresh PyPI query under the offline guard. Overall CI is **verified failing**;
+a green local/remote CI gate is **not done**. The planner owes the networked audit.
+
+| Gate step | Observed result |
+| --- | --- |
+| 1 ruff | PASS |
+| 2 format | PASS, 1,787 files already formatted |
+| 3 mypy | PASS, 1,264 source files |
+| 4 import-linter | PASS, 5 kept / 0 broken |
+| 5 module size | PASS; all 14 new Python files below 200 lines |
+| 6 module header | PASS |
+| 7 law coverage | PASS |
+| 8 PARAM/settings sync | PASS |
+| 9 sprint status | PASS, BUILT agrees with README |
+| 10 tracker size | PASS, existing warnings retained |
+| 11 Markdown links | PASS |
+| 12 version scheme | PASS; package/lock unchanged |
+| 13 pytest | PASS, 5,178 passed / 9 skipped / 100.00 % coverage |
+| 14 dependency audit | VERIFIED FAILING: offline PyPI refresh, not a vulnerability verdict |
+| 15 detect-secrets | PASS, run separately after make stopped at step 14 |
+| 16 untracked secrets | PASS, run separately; all 15 new code/data files scanned |
+
+Actual output excerpts (coverage rows and ordinary test progress omitted):
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1264 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           21430      0   4582      0  100.00%
+Coverage HTML written to dir C:/Users/yury_/AppData/Local/Temp/ta-s282-evidence-20261016/htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5178 passed, 9 skipped, 2470 warnings in 459.45s (0:07:39) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+WARNING:pip_audit._cli:Consider using a tool like `pip-compile`: https://pip-tools.readthedocs.io/en/latest/#using-hashes
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connection.py", line 239, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connectionpool.py", line 779, in urlopen
+    self._prepare_proxy(conn)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1074, in _prepare_proxy
+    conn.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connection.py", line 827, in connect
+    self.sock = sock = self._new_conn()
+                       ~~~~~~~~~~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connection.py", line 254, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+urllib3.exceptions.ProxyError: ('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\urllib3\util\retry.py", line 555, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Scripts\pip-audit.exe\__main__.py", line 10, in <module>
+    sys.exit(audit())
+             ~~~~~^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\pip_audit\_cli.py", line 554, in audit
+    for spec, vulns in auditor.audit(source):
+                       ~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\pip_audit\_audit.py", line 68, in audit
+    for dep, vulns in self._service.query_all(specs):
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\pip_audit\_service\interface.py", line 180, in query_all
+    yield self.query(spec)
+          ~~~~~~~~~~^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\pip_audit\_service\pypi.py", line 64, in query
+    response: requests.Response = self.session.get(url=url, timeout=self.timeout)
+                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\cachecontrol\adapter.py", line 76, in send
+    resp = super().send(request, stream, timeout, verify, cert, proxies)
+  File "C:\Users\yury_\Downloads\project\ta-s282\.venv\Lib\site-packages\requests\adapters.py", line 723, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+The last two commands, which `make` did not reach, were run separately:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+EXIT=0
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 15 new file(s)
+EXIT=0
+```
 
 ---
 
 ## Return notes
 
-*Fill at handback.*
+- A16's "five sections" is a count typo: the exact Appendix renders six level-two
+  sections, including Provenance. Corrected the plan's count and tested all six.
+- Read-command corrections: `tests/test_replay_verdict_cli.py` does not exist; the reused
+  folder helper and refusal tests are `tests/replay_arm_folders.py` and
+  `tests/test_replay_verdict_refusals.py`. Windows `rg` does not expand a path glob such as
+  `tests/replay*fixtures*.py`; used `rg --files` and exact paths instead.
+- The initial login-shell read stalled; subsequent commands use PowerShell without profiles.
+- All production files are exactly the Appendix. Only the new tests implement the proof;
+  S250 and S281 are reused unchanged. No version bump or `uv.lock` change.
+- No network or real arm replay was run. `UV_OFFLINE=true` and `UV_NO_SYNC=true` use the ready
+  venv. An external Python audit hook refuses external DNS/connections; loopback remains
+  available for existing local-server tests. Tool/pytest/coverage caches and logs are
+  redirected outside the worktree. Import-linter receives only an external cache directory.
+- F1 on the pilot folders, the planner's independent tests/breaks/CodeQL comparison,
+  remote gates, push, merge, deployment and running EXP-022: not done. The planner owns
+  the downstream sequence. The dependency audit is verified failing for lack of network;
+  green CI is not done. All other fifteen checks passed (the last two separately).
+- The only existing files changed are this handback and its README row, as requested.
+  No file in the protected packages, no existing script/test, no `.secrets.baseline`,
+  `pyproject.toml`, `uv.lock`, STATE, design log, work queue or EXP-022 was changed.
+- Pre-existing process-document mismatch: AGENTS says merge requires being told, while
+  CLAUDE permits a judged merge without confirmation. This handover forbids main/network
+  work, so no merge was attempted and neither document was edited.
+- The first commit hook run rejected two added blank lines (MD012, then lines 500 and
+  788). Removed them; no Python changed. The normal hooks run again on the commit retry;
+  the first output is `commit.txt` in the external evidence directory.
+- The final commit and worktree cleanliness are reported with the builder's chat return.
+  F1 and all remote proof remain not done; BUILT does not assert either.
 
 ---
 

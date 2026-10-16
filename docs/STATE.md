@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-16 11:44 AEDT · **Version:** **0.128.02 on `main`** (`eae68f28`, tag `v0.128.02`, GATE PROVEN) · **the fleet on `s279` = 0.128.02, deployed 2026-10-16** (S277, S278 and S279 in one deploy; rollback `s276`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; the next sprint is work-queue 135, a partly filled order recorded as unfilled (the operator, 2026-10-16).**
+**Last updated:** 2026-10-16 12:37 AEDT · **Version:** **0.128.02 on `main`** (`eae68f28`, tag `v0.128.02`, GATE PROVEN) · **the fleet on `s279` = 0.128.02, deployed 2026-10-16** (S277, S278 and S279 in one deploy; rollback `s276`) · **S276's F2 passed on `sched-2026-10-15`; the F2s of S277, S278 and S279 are owed at the next weekday fire; the next sprint, work-queue 135 (a partly filled order recorded as unfilled), is specced as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…20.md` + git). **LAW-02:** an item is "shipped" only when
@@ -110,7 +110,8 @@ second ranking.
    refused request switches, with its brief line; S278's fires read `outcome: read` with no error line;
    S279's execution reads under 5 MB in its first five minutes and 40.3 MB in the night, the monitor under
    14.3 MB. Then work-queue 101, 123 and 133 close. **The next sprint, by the operator's order
-   (2026-10-16): work-queue 135**, a partly filled order recorded as unfilled; measured, not decided.
+   (2026-10-16): work-queue 135**, a partly filled order recorded as unfilled: decided ([DL-303](design-log.md))
+   and specced as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md); the worktree `../ta-s280` is ready; not handed over.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2), on the first
    scheduled night with more than one debated buy; then the pack edit, once the fidelity count allows it.
 3. **[S279](sprints/sprint-279-a-pass-reads-each-label-once.md) is deployed as `s279`** (work-queue 101,

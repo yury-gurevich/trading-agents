@@ -36,8 +36,9 @@ were given.
 
 6. **Branch per sprint or chore** — `sprint-NN-<slug>` or `chore-<slug>`, created *before* coding.
    Never commit sprint work directly to `main`. Push the branch and see it green on the remote
-   before anyone merges. Do not merge to `main` yourself unless told to — merge is the deploy
-   trigger.
+   before anyone merges. A builder (Codex, or any agent handed a sprint) does not merge to `main`
+   unless told to — merge is the deploy trigger. The planner merges on evidence without asking
+   (`CLAUDE.md`, *Branch convention*); the two rules bind different roles and do not conflict.
 
 7. **Secrets never enter the worktree**, not even as untracked scratch files. Use the gitignored
    `.env` / `infra/*.local.json`, or receive them via chat. detect-secrets is the last line of

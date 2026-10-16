@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *no bump*
 **Effort:** M
 **Decisions:** [DL-305](../design-log.md) (this sprint and the experiment, ten decisions) ·
@@ -214,13 +214,13 @@ red on the unchanged tree.
 
 ## Success factors
 
-- [ ] On the F1 pilot's twelve real arm folders the built scorer writes `verdict.json` and
+- [x] On the F1 pilot's twelve real arm folders the built scorer writes `verdict.json` and
       `verdict.md` byte for byte the prototype's (planner, `s282_f1_score.py`).
 - [x] A1–A21 pass, each docstring citing its ID.
 - [x] B01–B34 each turn at least one of the builder's tests red (planner re-runs `s282_breaks.py`).
 - [x] The Appendix applied exactly: every production blob equals the prototype's.
 - [x] No existing production or test file changed; every new module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage (the remote gate).
+- [x] `make ci` exit 0, 100.00 % coverage (the remote gate).
 
 ---
 
@@ -753,6 +753,31 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 15 new file(s)
 EXIT=0
 ```
+
+### The planner's review and merge (2026-10-16)
+
+Kit and outputs in OneDrive `trading-agents-data/wq92s282-2026-10-16/`.
+
+- **Scope:** the 17 changed files are the spec's: nine new under `scripts/`, six new under `tests/`,
+  this spec and its README row; no existing script or test changed.
+- **Production blobs:** 9 of 9 equal `prototype_blobs.txt`.
+- **Breaks:** 34 of 34 red against the builder's five test files alone, tree restored clean
+  (`s282_breaks_on_built_builder_tests.txt`).
+- **The planner's tests on the built tree** (swapped in at the same paths, restored with
+  `git checkout`): 24 passed (`s282_planner_tests_on_built_50d29eee.txt`).
+- **CodeQL** set-diff against the S281 branch: the same 133 open alerts, 0 errors
+  (`codeql_sprint-282.tsv` against `codeql_sprint-281.tsv`).
+- **`make gate-ran`** from `../ta-s282`: GATE PROVEN for `50d29eee` (CI, which runs the dependency
+  audit the builder could not reach, CodeQL, Security Findings; `s282-gate-ran-branch.txt`).
+- **F1 passed:** `s282_f1_score.py built` on the pilot's twelve real arm folders writes `verdict.json`
+  (`7e3a1b6ab9a623b2`) and `verdict.md` (`beed2fc4e8bc0121`) byte for byte as the prototype did
+  (`f1_built.txt`, `f1_built/` against `f1_proto/`); the pilot reads CHAMPION HOLDS, NOT Appendix P,
+  which is no evidence about exits (2016, outside the scored window).
+- **The builder's return notes, answered:** the A16 count (six sections) and the read-command paths
+  are tier-one corrections, accepted. The AGENTS.md and CLAUDE.md merge wording is no contradiction:
+  AGENTS.md binds the builder, CLAUDE.md the planner who merges; AGENTS.md now says so.
+- **Merged:** `main` fast-forwarded `0b023ac3` → `50d29eee`; no tag (no bump); no deploy (scripts
+  ship in no image). EXP-022 waits for the fidelity PASS.
 
 ---
 

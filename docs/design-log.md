@@ -12,6 +12,73 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-305 - EXP-022 is pre-registered before the fidelity verdict, and its scorer pairs each exit arm with stops-only at the same slippage on the same resampled days - status: DECIDED (planner, 2026-10-16 18:05 AEDT); specced as [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"create next sprint for 92"*)
+
+**Question.** S281 gave the replay its exits. DL-240's next step is the pre-registered exit
+experiment. What does it measure, against what bar, and what must be built before it can be scored?
+
+**Measured, 2026-10-16:**
+
+- **EXP-014's scorer cannot score it.** Its arms are fixed in code (`base-25` and two ablations,
+  `scripts/replay_verdict_rule.py`), its statistic is each arm's excess over exposure-matched SPY, and
+  its loader never compares an arm's recorded `exits` with the manifest's (`replay_verdict_load.py`
+  `_own_reasons`).
+- **Running the arms needs nothing new:** `replay_arms.py run --manifest <file>` runs any manifest's
+  arms with their exits since S281.
+- **Exits multiply turnover.** S281's proof window (2024-01-02 to 2024-06-28, 10 bps): buys 91
+  stops-only, 376 take-profit, 353 time exit, 290 trailing, 500 all four (`wq92-2026-10-16/f1_proto.txt`,
+  OneDrive). Every exit arm ended below stops-only there except a 3-run cool-down; six months, one cost,
+  no interval. The cost a side can decide the answer, and the fleet's own slippage has never been
+  measured.
+- **The decision code the arms would run is the fidelity count's.** `git diff --name-only v0.128.03
+  origin/main` touches docs, `scripts/replay_*` and tests only: no path in `DECISION_PATHS`.
+- **The cache is EXP-014's:** the six SHA-256 prefixes re-measured identical; `sp500_coverage.json`
+  `0ba083a797d2`, 19,041 bytes.
+
+**Decided (planner, delegated):**
+
+1. **Pre-register now, run on PASS.** DL-304 put the pre-registration after the fidelity verdict.
+   Reversed: nothing in the exit design depends on that verdict, and freezing the design before the
+   verdict is known removes the chance to shape one on the other. The arms still start only on PASS.
+2. **The statistic is the paired difference in annualised return**, `dR = R(X) − R(stops)` at the
+   same slippage, `R = ((1 + P/100)^(252/n) − 1) × 100` from `calculate_performance`. `dA` (EXP-014's
+   statistic, differenced) is reported beside it.
+3. **Twelve arms:** `stops`, `target`, `time10`, `trail`, `target-time10`, `cool5`, each at 25 and at
+   10 bps; start 2017-01-03, history rule on, no overrides (`scripts/exp022_arms.json`).
+4. **Interval:** EXP-014's stationary bootstrap (mean block 20, 10,000 resamples, seed 0), one set of
+   draws for all twelve arms; each challenger's paired difference at 95 % over its family's five
+   (Bonferroni: `k = B × 25 // 5000`, the 0.5th and 99.5th percentiles).
+5. **Verdict:** a challenger wins when its lower bound is above 0 and `dR` is above 0 in each half.
+   EXIT WINS at 25 bps; else EXIT WINS AT LOW COST at 10 bps; else CHAMPION HOLDS. The leader is the
+   largest winning `dR`, the first in arm order on a tie. Readings: wins, split, behind,
+   indistinguishable.
+6. **Control:** each arm rebuilt from its own pairs in order scores its own `R` and `A` within 1e-6.
+7. **Reported, not barred:** `dA`, drawdown, exposure, buys a year, round trips by exit reason (count,
+   share with a gain, mean return, median sessions held), `dR` by year.
+8. **The scorer is new code beside S250's.** No EXP-014 file changes; S250's loader, statistics,
+   windows and `stable` are reused as they are.
+9. **No version bump:** scripts and tests only (S271's and S281's precedent).
+10. **The functionality check runs the twelve arms over 2016-03-01 to 2016-12-30**, history rule off,
+    outside the scored window. It proves the scorer on real arm folders and is not evidence.
+
+**Ruled out:**
+
+- **Excess over exposure-matched SPY as the bar.** An exit that sells winners and sits in cash can
+  score well per unit invested while the book earns less; the decision is about the book's money.
+- **25 bps only.** With turnover three to five times higher, the cost assumption alone could reject an
+  exit. A win only at 10 bps builds nothing; it makes measuring live slippage the next step.
+- **Bonferroni over all ten comparisons.** The 10 bps family leads to a measurement, not a build.
+- **A Friday-to-Monday hold.** It chooses which buys to hold briefly: an entry profile the replay
+  cannot express, and not an exit. Its own experiment once a holding profile rides on the intent.
+- **Generalising EXP-014's scorer.** Its tooling backs a frozen pre-registration; a new scorer beside it
+  touches none of it.
+- **A pilot inside the scored window.** It would show results before the fidelity gate opens.
+- **Testing the leader against the other winners.** The build order is the planner's to sequence
+  anyway; the pre-registered leader is the largest point.
+
+**Stays the operator's:** the mix of holding profiles and any cap on it (DL-240), and anything that
+sizes on the result.
+
 ## DL-304 - a replay arm declares how its positions exit besides the stop: a take-profit at the PM's target, a time exit, a trailing stop and a re-entry cool-down - status: MEASURED and DECIDED (planner, 2026-10-16 15:15 AEDT); specced as [S281](sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md), MERGED 2026-10-16 (`f4e621af`, GATE PROVEN, F1 passed); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"let's start putting something for Codex to do"*)
 
 **Question.** DL-240's sequence runs an exit experiment on the replay cache before anything sells at a

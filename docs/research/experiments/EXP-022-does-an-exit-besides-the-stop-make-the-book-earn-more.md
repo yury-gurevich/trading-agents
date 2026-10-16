@@ -1,0 +1,214 @@
+# EXP-022 — Does an exit besides the stop make the book earn more than stops alone, at the same cost?
+
+**Status:** PRE-REGISTERED 2026-10-16 (planner). **No scored run exists under this design.** Sections
+1–5 and Appendix P are fixed before the first one; a change of design after it is a new experiment.
+**Decision / origin:** work-queue **92** · direction [DL-240](../../design-log.md) step 3 (the operator,
+2026-09-28: *"we need to sell at profit"*) · the replay's exits [DL-304](../../design-log.md),
+[S281](../../sprints/sprint-281-a-replay-arm-declares-how-its-positions-exit.md) · this design
+[DL-305](../../design-log.md) · scorer
+[S282](../../sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md) ·
+fidelity gate [DL-237](../../design-log.md) · **Cost:** $0 of LLM spend; about 17 hours of local compute
+(twelve arms of about 84 minutes each, two or three at a time).
+
+## 1. Why we needed this experiment
+
+**The decision that waits.** Which exit, if any, the fleet builds first (DL-240 step 4). Today the only
+exit that fires is the protective stop: losses are realised automatically and gains never are. The
+planner's estimate for building exits live is one to two sprints for a take-profit, one for a time
+exit, and more for trimming and adding; none should start on an exit that loses money.
+
+**What building without it would risk.** Selling winners early. An exit that cuts a winner at its
+target gives up the rest of its move, and every extra round trip pays the spread twice. Whether the
+recycled capital earns that back is an empirical question the replay can answer at no LLM cost.
+
+**What earlier evidence says.**
+
+- **Live** (S241's F4, 2026-10-16): on 21 settled buys the stop came first **47.6 %** of the time
+  against **29.4 %** declared; skill over climatology +5.69 % [+1.74, +19.13] on 4 dates. Thin, and it
+  scores probabilities, not exits.
+- **EXP-011** (on today's survivors): the median target is reached within 10 sessions about half the
+  time (50.2 %).
+- **S281's proof window, seen by the planner before this design** (2024-01-02 → 2024-06-28, 124
+  sessions, 10 bps, history rule on; `wq92-2026-10-16/f1_proto.txt`, OneDrive): from $100,000 the
+  stops-only replay ended at **$104,840.51**; take-profit $103,651.45, time exit at 10 sessions
+  $103,374.25, trailing stop $102,805.34, cool-down 3 $104,887.51, all four together $101,481.50.
+  Exits multiplied the buys: 91 stops-only, 376 take-profit, 353 time exit, 290 trailing, 500 all
+  four. Six months, one cost and no interval: not evidence, but it is why this design scores at two
+  costs (section 2).
+
+## 2. Hypothesis
+
+**The statistic.** *The paired difference in annualised return*, in percentage points a year:
+
+`dR(X) = R(X) − R(stops at X's slippage)`, with `R = ((1 + P/100)^(252/n) − 1) × 100`
+
+where `P` is `portfolio_return_pct` and `n` is `performance_sessions`, both as returned by
+`agents/reporter/domain/performance.calculate_performance`, the function the live `Snapshot` uses.
+Cash earns 0 %, as it does in the paper account.
+
+**The arms.** One champion and five challengers, each at **25** and at **10** bps of slippage a side
+(twelve arms): `stops` (the fleet today), `target` (a take-profit at the PM's `target_pct`), `time10`
+(a time exit after 10 sessions), `trail` (a trailing stop), `target-time10` (both of those), `cool5`
+(a stopped line sits out 5 runs). Each exit is simulated by DL-304's rules.
+
+- **H1 — an exit wins.** For a challenger `X` at 25 bps, the lower bound of `dR(X)`'s interval is above
+  0 **and** `dR(X)` is above 0 in each half of the window.
+- **H2 — an exit wins at low cost.** H1 fails for every challenger, and it holds for one at 10 bps.
+- **H0 — the champion holds.** Neither. Each challenger is read *behind* (upper bound below 0),
+  *split* (lower bound above 0, a half at or below 0) or *indistinguishable*.
+
+**The verdict** is EXIT WINS (H1), EXIT WINS AT LOW COST (H2) or CHAMPION HOLDS (H0). Under H1 or H2
+the **leader** is the winning challenger with the largest `dR`, the first in the order above on a tie.
+
+**Why this bar.**
+
+- *Return, not excess over exposure-matched SPY.* The question is whether an exit makes the book more
+  money. An exit changes how much of the book is invested; excess over exposure-matched SPY scores
+  return per unit invested, so an exit that sells winners and sits in cash could score well while
+  earning less. `dA`, the same difference in EXP-014's statistic, is reported beside it.
+- *Paired, on the same days.* Every arm sees the same market; only the exit differs. Pairing removes
+  the market's variance from the comparison, which a separate interval per arm would not.
+- *95 % over the family.* Five challengers are five chances to pass by luck, so each interval is the
+  Bonferroni one for five: the 0.5th and 99.5th percentiles.
+- *Both halves.* An exit can earn its whole lead in one regime. Requiring the lead in each half of the
+  decade rules out building on one stretch.
+- *Two costs.* 25 bps a side is EXP-014's bar and the plan's; the fleet's real slippage has never been
+  measured. Exits multiply turnover three to five times (section 1), so the cost alone could decide the
+  answer. A win only at 10 bps builds nothing: it makes measuring the live slippage the next step.
+
+## 3. Data
+
+**Source.** The S235 cache in OneDrive `trading-agents-data`, exactly as EXP-014 froze it (never the
+repo: the repo is public and SIP bars are licensed). Alpaca SIP daily bars, `adjustment=all`, for the
+stocks and SPY alike.
+
+**Universe.** The S&P 500 as it stood each day (S231, S233): **732** membership episodes, **721** lines
+with bars, **1,360,156** bars, 2016-01-04 → 2026-09-25, **2,698** sessions *[measured 2026-10-01, EXP-014
+§3]*.
+
+**Files, frozen for this experiment** (SHA-256 prefix, bytes), re-measured 2026-10-16, identical to
+EXP-014's:
+
+| File | SHA-256 prefix | Bytes |
+| --- | --- | --- |
+| `sp500_bars.csv.gz` | `198cffbb3542` | 22,675,629 |
+| `sp500_benchmark.csv.gz` | `f40b8b60506a` | 50,036 |
+| `sp500_coverage.json` | `0ba083a797d2` | 19,041 |
+| `sp500_membership.csv.gz` | `db971f1b3b95` | 5,474 |
+| `sp500_sessions.csv.gz` | `15ba1326e091` | 5,417 |
+| `sp500_vix.csv.gz` | `f80fa60b3ed9` | 12,567 |
+| `sp500_sectors.csv.gz` | `7a6801c55f21` | 4,638 |
+
+**The scored window.** 2017-01-03 → 2026-09-25: **2,446** sessions. 2016 is history only.
+
+**Known defects**, each as EXP-014 §3 lists them and counted in every arm's summary: no bars before a
+line joins the index or after it leaves; no fundamentals, sentiment, news, earnings dates or
+deliberator (the replay is price-only); today's sectors; four Alpaca adjustment errors rebased.
+
+## 4. Tools and setup
+
+- **Machine.** Intel Core (family 6, model 142), 4 logical cores, 16 GB RAM, Windows 10 Pro.
+- **Software.** Python 3.13.2, uv 0.8.14; the scoring uses the standard library and the reporter's
+  `calculate_performance`.
+- **Repo commit.** One commit for all twelve arms, at or after S282's merge, whose decision paths
+  (`scripts/replay_fidelity_git.py::DECISION_PATHS`) are identical to those of the commit the fidelity
+  PASS was read on. Each arm writes its commit to `arm.json`, and the scorer refuses a mix.
+- **Random seed.** 0, for the bootstrap. The replay has no randomness.
+- **External services.** None. No network, no LLM call, no broker.
+- **Cost cap.** $0.
+
+## 5. How it was conducted
+
+1. **Gate.** The first arm starts only when the fidelity verdict reads **PASS** (DL-237), as for
+   EXP-014. On FAIL this experiment does not run.
+2. **Arms.** `uv run python scripts/replay_arms.py run --arm <name> --manifest scripts/exp022_arms.json
+   --out-root <OUT> --cache <CACHE>` for each of the twelve arms of Appendix P, from one clean
+   checkout. Each replays the point-in-time index from 2017-01-03 to the cache's last session with the
+   history rule on, the fleet's committed pack settings and no override.
+3. **What each arm receives.** As EXP-014 §5.3: the fleet's scanner, analyst and PM functions decide
+   each session; the harness fills DAY limits on the next session, stops when touched, and moves every
+   fill against the trader by the arm's slippage. An arm's exits are DL-304's: a take-profit rests at
+   entry × (1 + `target_pct`) beside the stop (a bar touching both is the stop); a time exit sells by a
+   DAY limit what has closed 10 sessions in the book; a trailing stop rises to the stop price of each
+   session's high; a stopped line is left out of the next 5 runs.
+4. **Scoring.** `uv run python scripts/exit_verdict.py score --out-root <OUT>`. Each arm's daily equity
+   and invested value go through `calculate_performance` with the cached SPY closes, over the whole
+   window, each calendar year and each half (the halves share their middle session).
+5. **Interval.** EXP-014's stationary block bootstrap over session pairs: mean block 20, 10,000
+   resamples, seed 0, wrapping. **One set of index draws for all twelve arms.** For each challenger the
+   paired difference is taken draw by draw; its interval is the 0.5th and 99.5th percentiles,
+   `v[k]` and `v[B − 1 − k]` with `k = B × 25 // (1000 × 5)`.
+6. **Verdict.** Section 2's rule, applied by code (`scripts/exit_verdict_rule.py`).
+7. **Controls.** (a) Every arm, rebuilt from its own session pairs in their own order, scores its own
+   `R` and `A` within 1e-6 points. (b) Scoring twice gives byte-identical output.
+8. **Failure handling.** No verdict, and the reason named, when: the manifest is not Appendix P's
+   twelve arms; an arm is missing or lacks a file; arms differ in commit, cache checksums, sessions or
+   SPY closes; an arm's recorded exits differ from the manifest's; an arm ran from a dirty worktree;
+   an arm has a gap session; or a control fails. A failed or interrupted replay is re-run whole.
+9. **Reported, not barred.** `dA` with its interval; each arm's `R`, `A`, portfolio return, average
+   exposure, maximum drawdown and buys a year; round trips by the reason that closed them (count,
+   share with a gain, mean return, median sessions held); `dR` by year; every absent-input counter.
+10. **Pilot.** S282's functionality check runs the twelve arms over 2016-03-01 → 2016-12-30 with the
+    history rule off (`s282_pilot_arms.py`), outside the scored window, to prove the scorer on real
+    arm folders. It is not evidence (2016 decisions run on short history).
+
+**What this experiment cannot claim, stated before the result.**
+
+- **It speaks for the price-only pipeline**, as EXP-014 does.
+- **The replay recycles capital faster than the fleet.** The replayed book trades the S&P 500 and is
+  about 78 % invested; the live book trades a 99-name list and is about 22 % invested. Capital an exit
+  frees is re-spent sooner in the replay, which favours the exits: a win is weaker evidence than a
+  loss.
+- **Daily bars.** A bar that touches both stop and target is counted as the stop, which favours the
+  champion; an open beyond a barrier fills at the open.
+- **One target per buy, the PM's.** It does not test another target, a partial sale, or adding.
+- **No weekend profile.** A Friday-to-Monday hold is a choice of which buys to hold briefly, an entry
+  profile the replay cannot express (DL-305); it is not tested here.
+- **The interval assumes the future resembles the decade resampled.**
+
+## 6. Results
+
+*Pending — written from the recorded run.*
+
+## 7. Conclusions
+
+*Pending.*
+
+## 8. Recommended code changes, and how to implement them
+
+*Pending. A winning exit is built live in increments (DL-240 step 4), the leader first.*
+
+## Appendix P — Pre-registration (frozen)
+
+Frozen at the commit that adds this file (`git log --diff-filter=A` on this path). Never edited.
+
+- **Statistic.** `dR(X) = R(X) − R(stops-<bps>)`, `R = ((1 + P/100)^(252/n) − 1) × 100`, `P` and `n`
+  from `calculate_performance` over the scored window.
+- **Scored window.** 2017-01-03 → 2026-09-25, 2,446 sessions, on the cache files and checksums of
+  section 3.
+- **Arms.** `scripts/exp022_arms.json`, as merged by S282: experiment `EXP-022`, start `2017-01-03`,
+  history rule on, no overrides; at 25 and at 10 bps a side: `stops` (no exits), `target`
+  (`take_profit`), `time10` (`time_exit_sessions` 10), `trail` (`trailing_stop`), `target-time10`
+  (`take_profit`, `time_exit_sessions` 10), `cool5` (`reentry_cooldown_sessions` 5).
+- **Interval.** Stationary block bootstrap over session pairs, mean block 20, 10,000 resamples, seed
+  0, one set of draws for all twelve arms; each challenger's paired difference at percentiles 0.5 /
+  99.5 (`k = B × 25 // 5000`).
+- **Verdict.** A challenger wins when its lower bound > 0 and `dR` > 0 in each half. EXIT WINS when one
+  wins at 25 bps; else EXIT WINS AT LOW COST when one wins at 10 bps; else CHAMPION HOLDS. Leader: the
+  winner with the largest `dR`, the first in the arm order on a tie.
+- **Gate.** The fidelity verdict reads PASS before the first arm starts; all arms run from one commit
+  whose decision paths equal those of the commit that PASS was read on.
+- **Controls.** Each arm's in-order rebuild scores its own `R` and `A` within 1e-6; scoring is
+  byte-stable.
+- **No verdict** when the manifest differs from these arms, an arm or a file is missing, the arms differ
+  in commit, cache, sessions or SPY closes, an arm's exits differ from the manifest's, an arm ran dirty,
+  an arm has a gap session, or a control fails.
+
+## Appendix R — Run record
+
+*Pending.*
+
+## Appendix S — Scripts
+
+*Pending. The scripts are S281's and S282's, in `scripts/`; the commands used are recorded here at the
+run.*

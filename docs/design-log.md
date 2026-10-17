@@ -39,7 +39,7 @@ and is marked CLOSED here.
 
 **Next.** The operator creates the second paper account (only they can: their login), then A is a planner-sized sprint; B is decided after A has been used.
 
-## DL-306 - no broker read is cut at a page: run-start reconciliation reads every order the graph waits on, by id where no listing shows it; the sweep and the realign read the open and the recent orders - status: MEASURED and DECIDED (planner, 2026-10-17 11:55 AEDT); specced as [S283](sprints/sprint-283-no-broker-read-is-cut-at-a-page.md); work-queue 134; follows [DL-302](design-log.md) (which found it)
+## DL-306 - no broker read is cut at a page: run-start reconciliation reads every order the graph waits on, by id where no listing shows it; the sweep and the realign read the open and the recent orders - status: MEASURED and DECIDED (planner, 2026-10-17 11:55 AEDT); built as [S283](sprints/sprint-283-no-broker-read-is-cut-at-a-page.md), MERGED 2026-10-17 (`0.128.04`, `b8ba4b32`); work-queue 134; follows [DL-302](design-log.md) (which found it)
 
 **Why.** Execution reads the broker's orders as one page, `GET /v2/orders?status=all&limit=500`, the newest 500. Past 500 the oldest orders fall off it, and among the oldest are the resting stops: a stop that triggers or expires after it has fallen off is never read, so its `Fill` never settles, its fact stays live, and no stop is placed again (work-queue 134, found while measuring 101). The operator, 2026-10-17: *"can you write a plan/sprint for Codex"*; 134 is the top buildable row (STATE Next item 3) and a fix.
 

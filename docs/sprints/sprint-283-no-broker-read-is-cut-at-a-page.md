@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-283-no-broker-read-is-cut-at-a-page`
-**Status:** BUILT
-**Version:** *next available PATCH at merge*
+**Status:** MERGED
+**Version:** `0.128.04` (tag `v0.128.04`, `main` fast-forwarded to `b8ba4b32`)
 **Effort:** M
 **Decisions:** [DL-306](../design-log.md) (measured and decided, planner, 2026-10-17) · [work-queue 134](../work-queue.md) · new `EXEC-OBS-08`, `EXEC-PERF-03`, PARAM `broker_recent_order_days`
 
@@ -739,6 +739,40 @@ MARKDOWN_LINKS_EXIT=0
 **`make gate-ran`:** the planner's, at review.
 
 **Not met / verified failing:** Fresh dependency audit verified failing offline, so overall `make ci` is not green. The nine environment-dependent pytest skips listed above are not run. `make gate-ran`, remote CI/security/CodeQL review, planner F1, deployment and F2 are not done. No push, merge or deployment attempted.
+
+### The planner's review and merge (2026-10-17)
+
+Kit and outputs in OneDrive `trading-agents-data/wq134-2026-10-17/`.
+
+- **Scope:** the 22 changed files are the spec's: nine production files under `agents/execution/`,
+  the four law files, three new test files and two new support modules, `pyproject.toml`, `uv.lock`
+  (one line), this spec and its README row; no existing test changed.
+- **Blobs:** 13 of 13 production and law blobs equal `prototype_blobs.txt`.
+- **Breaks:** 24 of 24 red against the builder's three test files alone, tree restored clean
+  (`s283_breaks_on_built_builder_tests.txt`).
+- **The planner's tests on the built tree** (swapped in at the same paths, restored with
+  `git checkout`): 17 passed (`s283_planner_tests_on_built_71396ec3.txt`).
+- **CodeQL** set-diff against the S282 branch: nothing new, 0 errors (`codeql_sprint-283-….tsv`
+  against `codeql_sprint-282-….tsv`). The branch lists 78 open alerts where S282's lists 133: the 55
+  gone are `py/ineffectual-statement` and `py/multiple-definition` notes in files this sprint does not
+  touch (kernel, orchestration, surfaces, other agents), so CodeQL's queries changed, not the code.
+- **F1 passed** (`wq134_f1.py`, `main` `81bc65e3` then the built `71396ec3` minutes apart, the live
+  account with every non-GET refused and graph writes suppressed): writes digest `ffee9c076cad2508` on
+  both (70 writes), the same two faults (the sweep's refused cancels of the pending CAT and MDLZ buys);
+  the built tree's head-of-run listings are `status=open` and `status=all&after=<10 days>`, one page
+  each; broker answers 693,294 → 103,694 bytes (under a sixth); CAT 1 and MDLZ 15 still `accepted`
+  after (`f1_main_81bc65e3.txt`, `f1_built_71396ec3.txt`, `f1_pending_buys_untouched_after_built.txt`).
+- **`make gate-ran`** from `../ta-s283`: GATE PROVEN for `71396ec3` (CI, which ran the dependency
+  audit the builder could not reach, CodeQL, Security Findings; `s283-gate-ran-branch.txt`); `main`
+  had moved by one docs commit (`81bc65e3`), merged into the branch as `b8ba4b32` (docs only) and
+  GATE PROVEN again for `b8ba4b32` (`s283-gate-ran-merge.txt`).
+- **Deploy check:** `git diff v0.128.03..v0.128.04` touches none of
+  `scripts/replay_fidelity_git.py::DECISION_PATHS` (the fidelity count does not restart) and nothing
+  under `kernel/`, `orchestration/`, `infra/` or a Dockerfile (an image-only retag).
+- **The builder's return notes, answered:** the blast-radius row's "four new test files" is the
+  planner's count error (three test files and two support modules, as the Test plan names); accepted.
+- **Merged:** `main` fast-forwarded `81bc65e3` → `b8ba4b32`; tag `v0.128.04`. **Not deployed**: the
+  image-only retag waits for the operator's word; rollback `s280`. F2 after it.
 
 ---
 

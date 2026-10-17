@@ -12,6 +12,33 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-307 - a test lane beside the fleet: a run that cannot touch the live account, graph or bus - status: MEASURED, OPEN (planner, 2026-10-17 12:40 AEDT); work-queue 136; the operator, 2026-10-17: *"why can't we have a test db on existing infrastructure and use it for testing?"*, then *"yes write it up"*
+
+**Why.** A test run today is a run of the live fleet: the planner widens the KEDA window and fires a `RunRequest` (the work queue's standing operational notes). It was declined twice in two days (2026-10-16 and 2026-10-17) because the run's first step, the drop sweep, cancels any order still pending from an earlier run (JNJ, then CAT and MDLZ, each waiting for the open). The operator asks why a test database is not enough.
+
+**Discovered constraint: the database is the smallest of three shared things.** *[read from the code, 2026-10-17]*
+
+- *The broker account.* A run on a separate graph still reads the live Alpaca paper account. With no `Fill` for CAT or MDLZ, the sweep treats each as an untracked pipeline order (`drop_sweep.py::_skip_order` skips an untracked order only once acked) and cancels it; reconciliation finds 32 holdings the graph does not know and the stop pass would try to place a second stop on each (a wash-trade refusal at best). **A test lane needs its own broker account first.**
+- *The bus.* The agents talk through 22 topics on one Standard namespace (`trading-agents-bus`, measured 2026-10-17); topic names come from the contracts, with no environment prefix (`kernel/bus_azure_config.py` has none). A second set of agents on the same topics takes the fleet's messages.
+- *The fleet's settings.* The 16 apps read one `POSTGRES_DSN`; repointing them makes the scheduled run write to the test graph.
+
+**Measured, 2026-10-17, read-only, no cost.**
+
+- *Neon* (its API, `NEON_API_KEY`): project `trading-agent`, `aws-ap-southeast-2`, Postgres 18, **plan `launch`** (the paid plan, not the free one the planner's notes said), **one branch** (`production`, 150 MB logical), history retention 6 h. The Launch plan includes 10 branches a project, more at $1.50 a branch-month (neon.com/pricing, checked by search 2026-10-17); a branch is a copy-on-write copy of the live graph, billed for the data it changes and the compute it runs, which scales to zero.
+- *Alpaca*: an owner may hold up to three paper accounts, added from the dashboard's account selector (*Select New Paper Account*), each with its own keys and capital *[from Alpaca staff and community replies on its forum, not its documentation; the operator can see it in the dashboard]*.
+- *An in-process bus exists*: `kernel/bus.py::InProcessBus`, used by the tests and local probes.
+- *What tests the fleet's choreography today*: S260's harness on disposable topics of the live namespace (debates only); unit tests on the in-memory graph; the offline replay; read-only checks against the live account with writes suppressed (S279, S283's F1).
+
+**Options, not decided.**
+
+- **A. One process, no fleet.** A second paper account, a Neon branch of the graph, the fake LLM, `InProcessBus`, every agent in one process on the planner's machine, a run started by hand. Cost: the branch's compute while it runs. Tests the agents' logic end to end on real data, not the containers, KEDA or Service Bus.
+- **B. A second, scale-to-zero fleet.** A, plus a second set of container apps and either a second Service Bus namespace (a Standard namespace carries a monthly base charge, not measured) or an environment prefix on every topic (a kernel change, so a sprint). Tests what the fleet does, at a standing cost and a second deploy to keep in step.
+- **C. Keep testing on the live fleet**, only when no order is pending. Rejected as the answer to the ask: it is what declined both test runs.
+
+**Ruled out.** *A test database alone*: the broker and the bus are still shared (above). *Pointing the live fleet at a branch for a test*: the nightly run would write there.
+
+**Next.** The operator creates the second paper account (only they can: their login), then A is a planner-sized sprint; B is decided after A has been used.
+
 ## DL-306 - no broker read is cut at a page: run-start reconciliation reads every order the graph waits on, by id where no listing shows it; the sweep and the realign read the open and the recent orders - status: MEASURED and DECIDED (planner, 2026-10-17 11:55 AEDT); specced as [S283](sprints/sprint-283-no-broker-read-is-cut-at-a-page.md); work-queue 134; follows [DL-302](design-log.md) (which found it)
 
 **Why.** Execution reads the broker's orders as one page, `GET /v2/orders?status=all&limit=500`, the newest 500. Past 500 the oldest orders fall off it, and among the oldest are the resting stops: a stop that triggers or expires after it has fallen off is never read, so its `Fill` never settles, its fact stays live, and no stop is placed again (work-queue 134, found while measuring 101). The operator, 2026-10-17: *"can you write a plan/sprint for Codex"*; 134 is the top buildable row (STATE Next item 3) and a fix.

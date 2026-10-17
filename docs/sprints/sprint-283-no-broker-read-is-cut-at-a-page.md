@@ -771,8 +771,13 @@ Kit and outputs in OneDrive `trading-agents-data/wq134-2026-10-17/`.
   under `kernel/`, `orchestration/`, `infra/` or a Dockerfile (an image-only retag).
 - **The builder's return notes, answered:** the blast-radius row's "four new test files" is the
   planner's count error (three test files and two support modules, as the Test plan names); accepted.
-- **Merged:** `main` fast-forwarded `81bc65e3` → `b8ba4b32`; tag `v0.128.04`. **Not deployed**: the
-  image-only retag waits for the operator's word; rollback `s280`. F2 after it.
+- **Merged:** `main` fast-forwarded `81bc65e3` → `b8ba4b32`; tag `v0.128.04`.
+- **Deployed as `s283`** 2026-10-17 on the operator's word (OneDrive `deploy-s283-2026-10-17/`):
+  every injected pack decoded equal to the repo's before the retag (`packs_before.txt`); build
+  `38993924927` from `v0.128.04`, 15 of 15; 17 of 17 targets `Succeeded`, each differing from its
+  pre-retag snapshot only by its image (`s283-compare.txt`); `DeployRecord` `s283:b8ba4b32`; read at
+  the retag: 15 of 15 agent types activated, 2 fleet checks passed, 0 faults, escalations or flags
+  (`s283-read-at-retag.txt`). Rollback `s280`. F2 on the first weekday night.
 
 ---
 

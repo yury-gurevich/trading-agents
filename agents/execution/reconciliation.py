@@ -15,6 +15,7 @@ from agents.execution.reconciliation_store import (
     refresh_pending_fills,
     write_snapshot,
 )
+from agents.execution.run_start_orders import run_start_orders, waiting_order_refs
 from kernel import fault_boundary
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
         BrokerFill,
         BrokerPosition,
     )
+    from agents.execution.run_start_orders import OrderRef
     from kernel import FaultSink, GraphStore, Node
 
 
@@ -39,9 +41,10 @@ def reconcile_run_start(
     graph: GraphStore, broker: Broker, sink: FaultSink, *, run_id: str
 ) -> Node | None:
     """Run fail-open broker reconciliation before execution submits new intents."""
-    broker_fills = _read_fills(broker, sink)
+    fills = graph.list_nodes("Fill")
+    broker_fills = _read_fills(broker, sink, waiting_order_refs(fills))
     if broker_fills is not None:
-        refresh_pending_fills(graph, broker_fills, sink)
+        refresh_pending_fills(graph, broker_fills, sink, fills=fills)
     positions, stale_reason = _read_positions(broker, sink)
     if positions is None:
         return write_snapshot(
@@ -75,9 +78,11 @@ def reconcile_run_start(
     return snapshot
 
 
-def _read_fills(broker: Broker, sink: FaultSink) -> tuple[BrokerFill, ...] | None:
+def _read_fills(
+    broker: Broker, sink: FaultSink, waiting: tuple[OrderRef, ...]
+) -> tuple[BrokerFill, ...] | None:
     try:
-        return broker.fills()
+        return run_start_orders(broker, waiting)
     except Exception as exc:
         _record_fault(sink, f"broker fills read failed: {type(exc).__name__}")
         return None

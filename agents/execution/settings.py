@@ -120,6 +120,16 @@ class ExecutionSettings(AgentSettings):
         le=60,
         unit="seconds",
     )
+    broker_recent_order_days: int = tunable(
+        10,
+        why=(
+            "How far back a run start lists orders by submission (DL-306): longer "
+            "than the longest gap between two runs, so no order ends unseen."
+        ),
+        ge=4,
+        le=60,
+        unit="days",
+    )
     deliberation_grace_seconds: int = tunable(
         default=900,
         ge=0,

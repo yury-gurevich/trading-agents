@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.15 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.16 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -332,6 +332,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   whatever that ticker's history. A live divergence always has exactly one unresolved Flag, and an
   absent one has none. *(Declares the behaviour S178 built and never declared; repaired by S248 /
   DL-254 after DL-253 measured each ticker's keys spent once, for ever.)*
+- **EXEC-OBS-08** — No broker read is cut at a page limit. Run-start reconciliation reads the
+  broker's account of every order the graph still waits on — each `Fill` not yet settled
+  (`EXEC-STA-05`) — whatever the number of orders the account holds: an order no listing shows is
+  read by its broker id, or by its idempotency key when the `Fill` has no broker id, and an order
+  the broker answers it does not hold is left out. The drop sweep and the stop realignment read
+  every open order and every order submitted within `broker_recent_order_days`, the realignment
+  also the stops it would move. The on-demand `reconcile` reads every order the broker knows, a
+  page at a time. A broker that cannot narrow its read lists every order. *(Declares the fix
+  decided in DL-306; work-queue 134: the newest-500 listing passes 500 orders around early
+  December 2026, after which an old resting stop that triggered or expired was never read.)*
 
 ---
 
@@ -347,6 +357,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   once for every active position's decided width, and not at all when no position is
   broker-adopted. A failed read in the sweep is one contained fault and no order is touched.
   *(Declares the bound decided in DL-302; measured 126.3 MB of 136 MB per run start before it.)*
+- **EXEC-PERF-03** — A run-start broker read is bounded by the book, not by the account's history:
+  one listing of open orders, one of the orders submitted within `broker_recent_order_days`, and
+  one order read for each waiting `Fill` neither listing shows; an order is returned once however
+  many of those name it. Run-start reconciliation reads `Fill` once for both its waiting orders and
+  its refresh. *(Declares the bound decided in DL-306; measured 313 KB for 353 orders per read,
+  up to four reads a night, before it.)*
 
 ---
 
@@ -414,6 +430,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `alpaca_secret_key` | — | `SecretStr` | NO (secret) | Alpaca paper secret key; never logged or returned |
 | `alpaca_base_url` | `"https://paper-api.alpaca.markets"` | `str` | YES (environment) | Alpaca base URL; switch to live URL only when stage=live* and operator-approved |
 | `alpaca_timeout` | `15` | `int ≥ 1, ≤ 60` (seconds) | YES | Per-order broker call timeout; bounded latency budget per submission |
+| `broker_recent_order_days` | `10` | `int ≥ 4, ≤ 60` (days) | YES | How far back a run start lists orders by submission (`EXEC-OBS-08`, `EXEC-PERF-03`). Longer than the longest gap between two weekday runs (four days over a holiday weekend), so an order with no `Fill` that ended between runs is still seen; a waiting `Fill`'s order is read by id whatever its age |
 | `order_price_tolerance_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — switching it changes which formula runs, not a value within one |
 | `order_price_tolerance_bps` | `50` | `int ≥ 0, ≤ 500` (bps) | YES | Bounds entry and discretionary-exit orders near the PM's decided price so after-close decisions do not trade at an unevaluated open (ADR-0018) |
 | `scaled_order_price_tolerance_atr_multiplier` | `0.50` | `float ≥ 0.0, ≤ 2.0` (ratio) | YES | Challenger band near half of decision-time daily ATR; observed overnight gaps cluster at 0.3–0.6× ATR |
@@ -549,3 +566,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   reader of an executed size reads it. `EXEC-OBS-06` matches an adopted position on the quantity
   the broker filled. Why: UNH's 1 of 2 on 2026-10-15 was written dropped and its share adopted
   on the fallback stop. 41 / 67 -> 43 / 68.
+- **v1.16 — S283 / DL-306 (2026-10-17).** New `EXEC-OBS-08`: no broker read is cut at a page
+  limit; run-start reconciliation reads every order the graph waits on, by id where no listing
+  shows it. New `EXEC-PERF-03`: a run-start broker read is bounded by the book (open orders, the
+  recent window, the waiting Fills). New PARAM row `broker_recent_order_days`. Why: the listing
+  was the newest 500 of an account at 353 orders and three more a day. No drop, cancel, stop or
+  reconciliation decision changes; 43 / 68 -> 45 / 70.

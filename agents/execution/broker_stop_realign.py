@@ -22,6 +22,7 @@ from agents.execution.broker_stop_writes import (
     write_stop_fill,
     write_stop_order,
 )
+from agents.execution.run_start_orders import OrderRef, run_start_orders
 from contracts.broker_stops import active_broker_stop_orders, free_broker_stop_order_key
 from contracts.stop_rule import stop_price_cents
 from kernel import AgentFault
@@ -87,8 +88,9 @@ def _mismatched(
 def _order_statuses(
     broker: Broker, sink: FaultSink, targets: list[_Target]
 ) -> dict[str, str | None] | None:
+    waiting = tuple(OrderRef(stop.broker_order_id, stop.key) for _, stop, _ in targets)
     try:
-        orders = broker.fills()
+        orders = run_start_orders(broker, waiting)
     except Exception as exc:
         for target in targets:
             _record(

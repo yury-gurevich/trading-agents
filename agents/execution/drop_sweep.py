@@ -18,6 +18,7 @@ from agents.execution.drop_sweep_records import (
     record_stop_mismatch,
     remember_execution_run,
 )
+from agents.execution.run_start_orders import run_start_orders
 from contracts.broker_lifecycle import (
     is_broker_stop_order,
     is_resolved_drop_status,
@@ -95,7 +96,7 @@ def _read_broker_orders(broker: Broker, sink: FaultSink) -> tuple[BrokerFill, ..
         capability="drop_unfilled_orders",
         reraise=False,
     ) as capture:
-        orders = broker.fills()
+        orders = run_start_orders(broker)
     return () if capture.fault is not None else orders
 
 

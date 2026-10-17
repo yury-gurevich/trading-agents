@@ -12,11 +12,11 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution import alpaca_orders, alpaca_replace
 from agents.execution.alpaca_account import account_from_payload
+from agents.execution.alpaca_order_reads import current_orders, list_orders, order_fills
 from agents.execution.alpaca_positions import positions_from_payload
 from agents.execution.broker import (
     BrokerAccount,
@@ -24,10 +24,12 @@ from agents.execution.broker import (
     BrokerPosition,
     BrokerRejectedError,
 )
-from contracts.common import Money
 
 if TYPE_CHECKING:
-    from contracts.common import Ticker
+    from collections.abc import Sequence
+
+    from agents.execution.run_start_orders import OrderRef
+    from contracts.common import Money, Ticker
 
 _ORDERS_PATH = "/v2/orders"
 _BY_CLIENT_PATH = "/v2/orders:by_client_order_id"
@@ -55,6 +57,7 @@ class AlpacaBroker:
         base_url: str,
         timeout: int,
         order_price_tolerance_bps: int = 0,
+        recent_order_days: int = 10,
     ) -> None:
         """Create an Alpaca broker from injected settings."""
         self._api_key = api_key
@@ -62,6 +65,7 @@ class AlpacaBroker:
         self._base_url = base_url
         self._timeout = timeout
         self._order_price_tolerance_bps = order_price_tolerance_bps
+        self._recent_order_days = recent_order_days
 
     def submit(
         self,
@@ -118,13 +122,15 @@ class AlpacaBroker:
         )
 
     def fills(self) -> tuple[BrokerFill, ...]:
-        """Return broker-known order outcomes for reconciliation."""
-        zero = Money(amount=Decimal("0"))
-        return tuple(
-            _fill_from_order(order, str(order["client_order_id"]), zero)
-            for order in self._list_orders()
-            if isinstance(order, dict) and order.get("client_order_id")
-        )
+        """Return every order the broker knows, for on-demand reconciliation."""
+        return order_fills(self._list_orders())
+
+    def current_orders(
+        self, waiting: Sequence[OrderRef] = ()
+    ) -> tuple[BrokerFill, ...]:
+        """Return a run start's orders: the open, the recent and each waiting one."""
+        orders = current_orders(self._request, waiting, days=self._recent_order_days)
+        return order_fills(orders)
 
     def positions(self) -> tuple[BrokerPosition, ...]:
         """Return read-only Alpaca paper holdings for reconciliation."""
@@ -161,10 +167,8 @@ class AlpacaBroker:
             )
             return self._request("GET", f"{_BY_CLIENT_PATH}?{query}", None)
 
-    def _list_orders(self) -> list[object]:  # pragma: no cover - real HTTPS
-        query = urllib.parse.urlencode({"status": "all", "limit": 500})
-        payload = self._request("GET", f"{_ORDERS_PATH}?{query}", None)
-        return payload if isinstance(payload, list) else []
+    def _list_orders(self) -> list[object]:
+        return list(list_orders(self._request, "all"))
 
     def _request(  # pragma: no cover - real HTTPS
         self, method: str, path: str, body: dict[str, object] | None

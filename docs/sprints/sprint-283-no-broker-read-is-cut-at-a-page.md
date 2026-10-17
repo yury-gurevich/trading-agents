@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-283-no-broker-read-is-cut-at-a-page`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-306](../design-log.md) (measured and decided, planner, 2026-10-17) · [work-queue 134](../work-queue.md) · new `EXEC-OBS-08`, `EXEC-PERF-03`, PARAM `broker_recent_order_days`
@@ -261,14 +261,14 @@ output.
 
 ## Success factors
 
-- [ ] A1 to A17 exist under the names above, each citing its clauses; the red/green split on the
+- [x] A1 to A17 exist under the names above, each citing its clauses; the red/green split on the
       unchanged tree is the Test plan's; all green after.
-- [ ] Appendix sections 1 and 2 applied exactly: every file equals the prototype's blob
+- [x] Appendix sections 1 and 2 applied exactly: every file equals the prototype's blob
       (`prototype_blobs.txt`, OneDrive `trading-agents-data/wq134-2026-10-17/`).
-- [ ] No existing test changed; every existing test passes.
-- [ ] B1 to B24 each red against your tests, each restored.
-- [ ] Every touched module, test files included, under 200 lines after `ruff format`.
-- [ ] Version PATCH, `uv.lock` one line changed.
+- [x] No existing test changed; every existing test passes.
+- [x] B1 to B24 each red against your tests, each restored.
+- [x] Every touched module, test files included, under 200 lines after `ruff format`.
+- [x] Version PATCH, `uv.lock` one line changed.
 - [ ] `make ci` exit 0, 100.00 % coverage (the dependency audit may be the only step that cannot
       reach its network; say so if it is).
 - [ ] **F1 (the planner's, at review, no cost):** `wq134_f1.py` on the built tree and on `main`,
@@ -434,15 +434,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| Alpaca adapter and paged reads | `agents/execution/laws/laws.md` and `test-plan.md` (whole) | `EXEC-DEP-03`, `EXEC-OBS-02`, `EXEC-TRG-04`, proposed `EXEC-OBS-08` | Preserve on-demand full-history reads and refused-read messages; keep the broker protocol unchanged. |
+| Run-start reconciliation and refresh | Same execution book and plan (whole) | `EXEC-STA-05`, `EXEC-TRG-07`, `EXEC-PERF-02`, proposed `EXEC-PERF-03` | Read Fill once, share it with refresh, exclude terminal fills and retain fallback brokers. |
+| Drop sweep, stop realignment, expiry tests | Same execution book and plan (whole) | `EXEC-OBS-03`, `EXEC-OBS-05`, `EXEC-OBS-06`, `EXEC-PERF-02`, proposed `EXEC-OBS-08` / `EXEC-PERF-03` | Keep the sweep broker-first; prove beyond-page expiry fails on behaviour and on-page expiry already passes. |
+| Settings and factory | Same execution book and plan (whole), PARAM | `EXEC-DEP-03`, proposed `EXEC-PERF-03`, PARAM | Apply only the prescribed bounded 10-day default and factory forwarding. |
+| Law amendment and evidence | `docs/laws/conventions.md` and `docs/laws/drift-register.md` (whole), via INDEX | conventions sections 2, 3, 4, 7, 7a, 9; LAW-02 / LAW-06 | Appendix 2 is the sole authorised law amendment. Test names and citations follow its rows; report unproved stages plainly. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No contracts change; yes, two new guarantees. Apply Appendix 2 exactly: execution v1.16, new `EXEC-OBS-08` and `EXEC-PERF-03`, the PARAM row, and rollup 45 / 70 after functional proof.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None found. `EXEC-TRG-04` and `EXEC-OBS-02` are gray today and remain gray; A8 covers the refused-read limb only. Appendix 2 supplies the new guarantees before their final proof.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** The paging and bounded run-start guarantees identified and decided by DL-306 are supplied by Appendix 2; no additional undecided silence found. DL-306 D1-D7 read before code.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** Pre-code record: not done at law-reading time. Final functional proof: new `EXEC-OBS-08` and `EXEC-PERF-03` are proven by the 17 passing tests; `EXEC-TRG-04` and `EXEC-OBS-02` remain gray as prescribed by Appendix 2.
 
 ---
 
@@ -450,51 +454,304 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to fill* | | | |
+| A1 | `test_a_listing_past_one_page_reads_every_order` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-08` |
+| A2 | `test_fills_reads_every_order_the_broker_knows` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-08` |
+| A3 | `test_the_run_start_read_holds_open_recent_and_waiting_orders` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-08 / EXEC-PERF-03` |
+| A4 | `test_the_recent_window_starts_the_configured_days_ago` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-PERF-03` |
+| A5 | `test_an_order_already_listed_is_read_once` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-PERF-03` |
+| A6 | `test_a_waiting_order_with_no_broker_id_is_read_by_its_client_order_id` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-08` |
+| A7 | `test_a_waiting_order_the_broker_does_not_know_is_left_out` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-08` |
+| A8 | `test_any_other_refusal_of_an_order_read_is_raised` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-OBS-02` |
+| A9 | `test_the_window_is_a_bounded_setting_the_factory_hands_on` | `agents/execution/tests/test_alpaca_order_reads.py` | PASSED | `EXEC-PERF-03` |
+| A10 | `test_waiting_refs_name_every_unsettled_fill_and_no_settled_one` | `agents/execution/tests/test_run_start_orders.py` | PASSED | `EXEC-STA-05 / EXEC-OBS-08` |
+| A11 | `test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders` | `agents/execution/tests/test_run_start_orders.py` | PASSED | `EXEC-PERF-03 / EXEC-OBS-08` |
+| A12 | `test_the_sweep_and_the_realign_take_the_narrow_read` | `agents/execution/tests/test_run_start_orders.py` | PASSED | `EXEC-PERF-03` |
+| A13 | `test_a_broker_without_a_narrow_read_lists_everything` | `agents/execution/tests/test_run_start_orders.py` | PASSED | `EXEC-OBS-08` |
+| A14 | `test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows` | `agents/execution/tests/test_stop_expiry_beyond_page.py` | PASSED | `EXEC-OBS-08 / EXEC-STA-05` |
+| A15 | `test_a_stop_the_broker_expires_beyond_the_page_is_placed_again` | `agents/execution/tests/test_stop_expiry_beyond_page.py` | PASSED | `EXEC-OBS-08 / EXEC-OBS-05 / EXEC-OBS-03` |
+| A16 | `test_a_stop_the_broker_expires_is_placed_again_while_the_listing_shows_it` | `agents/execution/tests/test_stop_expiry_beyond_page.py` | PASSED | `EXEC-OBS-05 / EXEC-OBS-03` |
+| A17 | `test_a_listing_answer_that_is_not_a_list_reads_as_no_orders` | `agents/execution/tests/test_run_start_orders.py` | PASSED | `EXEC-OBS-08` |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** None. A7 also checks malformed individual answers and A17 checks repeated-page termination within their existing planned tests; 17 test functions in three files, plus the two planned helper modules.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill (BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s283`, branch `sprint-283-no-broker-read-is-cut-at-a-page`, base `e1cab2b3d5ae303c1e1995f306c5b6e9a74015c1`. `.env` absent. Ready venv used; no bare `uv sync`. Full CI ran with `UV_OFFLINE=1`, `UV_NO_SYNC=1`, inherited model credentials removed and HTTP/HTTPS/ALL proxies at `127.0.0.1:9` (loopback retained for local tests). No network or live broker reached.
 
-**Result:** *to fill*
+**Result:** Built the exact Appendix fix and law amendment. The required unchanged-tree split reproduced; 17 / 17 new tests passed after the change; all 24 planted breaks turned those tests red and were restored. Full pytest: 5,195 passed, 9 skipped, 100.00% coverage. `make ci` is verified failing (exit 2) only at its network-dependent dependency audit; both subsequent security steps passed separately. Remote gates, F1, F2, merge and deploy are not done.
 
-**Files changed:** *to fill*
+**Files changed:** 22 explicit paths: Appendix 1's nine production files; Appendix 2's four law/ledger/index files; the three named test files and two named support modules; `pyproject.toml`, `uv.lock`, this spec and the S283 row of `docs/sprints/README.md`. No existing test or helper changed.
+
+**Scope and Appendix proof (after restoring all breaks):**
+
+```text
+agents/execution/alpaca.py: bebae65006f49b38f5d229202efd32d9581453b3 appendix=bebae650 match=True
+agents/execution/alpaca_order_reads.py: 9fea8042765f3d0d4991d0bbccd130233ead8cce appendix=9fea8042 match=True
+agents/execution/broker_factory.py: f3870acfee71ab4161a1ca9f48f93a2f8ed6a3da appendix=f3870acf match=True
+agents/execution/broker_stop_realign.py: 187604d11fecdf265c2bb00196de5a5354d319f3 appendix=187604d1 match=True
+agents/execution/drop_sweep.py: 97a2ba72f636e586644cb177db8c971e980ea76b appendix=97a2ba72 match=True
+agents/execution/reconciliation.py: e0cf5cc90b1438cf38608145508c557f5631030e appendix=e0cf5cc9 match=True
+agents/execution/reconciliation_store.py: 218b8a88cdfe0cafe55dfd702f9c2ac328df8bb3 appendix=218b8a88 match=True
+agents/execution/run_start_orders.py: dfb5148dd1392ed13687e92524df9fb9ce4309fd appendix=dfb5148d match=True
+agents/execution/settings.py: eb8974ed89e12313aebd22cf4e4222c29b915d19 appendix=eb8974ed match=True
+agents/execution/laws/laws.md: b6456dce56263385744be6b81c1d4236c9a28559 appendix=b6456dce match=True
+agents/execution/laws/test-plan.md: 9079feb24a3b5335c4f5de67f04fd9c0b7388c1a appendix=9079feb2 match=True
+docs/laws/INDEX.md: 91244040712acc738230f974372fbe25dc2910e3 appendix=91244040 match=True
+docs/laws/ledger.md: a91046c5b3dbc84a14b539aba61b84266b58363d appendix=a91046c5 match=True
+APPENDIX_BLOBS_MATCH=13/13
+EXACT_NAMED_TESTS_WITH_LAW_CITATIONS=17/17
+EXISTING_TESTS_AND_HELPERS_CHANGED=0
+OUT_OF_SCOPE_PATHS_CHANGED=0
+WORKTREE_ENV_PRESENT=NO
+```
 
 **Design decisions:** recorded as [`DL-306`](../design-log.md) by the planner.
 
 **Proof — the red run first:**
 
+Command: `.venv/Scripts/python.exe -m pytest --no-cov --continue-on-collection-errors -v`
+with the three planned test files, on unchanged production at `e1cab2b3`. Exit 1.
+
 ```text
-to fill
+============================= test session starts =============================
+collecting ... collected 3 items / 2 errors
+
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows FAILED [ 33%]
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_a_stop_the_broker_expires_beyond_the_page_is_placed_again FAILED [ 66%]
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_a_stop_the_broker_expires_is_placed_again_while_the_listing_shows_it PASSED [100%]
+
+=================================== ERRORS ====================================
+_____ ERROR collecting agents/execution/tests/test_alpaca_order_reads.py ______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s283\agents\execution\tests\test_alpaca_order_reads.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\execution\tests\test_alpaca_order_reads.py:18: in <module>
+    from agents.execution.alpaca_order_reads import current_orders, list_orders, order_for
+E   ModuleNotFoundError: No module named 'agents.execution.alpaca_order_reads'
+______ ERROR collecting agents/execution/tests/test_run_start_orders.py _______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s283\agents\execution\tests\test_run_start_orders.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\execution\tests\test_run_start_orders.py:17: in <module>
+    from agents.execution.alpaca_order_reads import list_orders
+E   ModuleNotFoundError: No module named 'agents.execution.alpaca_order_reads'
+================================== FAILURES ===================================
+______ test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows _______
+agents\execution\tests\test_stop_expiry_beyond_page.py:40: in test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows
+    assert fill.props["broker_status"] == "rejected"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'broker_status'
+_______ test_a_stop_the_broker_expires_beyond_the_page_is_placed_again ________
+agents\execution\tests\test_stop_expiry_beyond_page.py:49: in test_a_stop_the_broker_expires_beyond_the_page_is_placed_again
+    (stop,) = broker.live_stops()
+    ^^^^^^^
+E   ValueError: not enough values to unpack (expected 1, got 0)
+=========================== short test summary info ===========================
+ERROR agents/execution/tests/test_alpaca_order_reads.py
+ERROR agents/execution/tests/test_run_start_orders.py
+FAILED agents/execution/tests/test_stop_expiry_beyond_page.py::test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows
+FAILED agents/execution/tests/test_stop_expiry_beyond_page.py::test_a_stop_the_broker_expires_beyond_the_page_is_placed_again
+==================== 2 failed, 1 passed, 2 errors in 4.15s ====================
 ```
 
 **Proof — the green run:**
 
+After Appendix sections 1 and 2, the same three files, `--no-cov -v`, exit 0.
+All 13 Appendix blob prefixes match their prescribed Git hashes.
+
 ```text
-to fill
+============================= test session starts =============================
+collecting ... collected 17 items
+
+agents/execution/tests/test_alpaca_order_reads.py::test_a_listing_past_one_page_reads_every_order PASSED [  5%]
+agents/execution/tests/test_alpaca_order_reads.py::test_fills_reads_every_order_the_broker_knows PASSED [ 11%]
+agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders PASSED [ 17%]
+agents/execution/tests/test_alpaca_order_reads.py::test_the_recent_window_starts_the_configured_days_ago PASSED [ 23%]
+agents/execution/tests/test_alpaca_order_reads.py::test_an_order_already_listed_is_read_once PASSED [ 29%]
+agents/execution/tests/test_alpaca_order_reads.py::test_a_waiting_order_with_no_broker_id_is_read_by_its_client_order_id PASSED [ 35%]
+agents/execution/tests/test_alpaca_order_reads.py::test_a_waiting_order_the_broker_does_not_know_is_left_out PASSED [ 41%]
+agents/execution/tests/test_alpaca_order_reads.py::test_any_other_refusal_of_an_order_read_is_raised PASSED [ 47%]
+agents/execution/tests/test_alpaca_order_reads.py::test_the_window_is_a_bounded_setting_the_factory_hands_on PASSED [ 52%]
+agents/execution/tests/test_run_start_orders.py::test_waiting_refs_name_every_unsettled_fill_and_no_settled_one PASSED [ 58%]
+agents/execution/tests/test_run_start_orders.py::test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders PASSED [ 64%]
+agents/execution/tests/test_run_start_orders.py::test_the_sweep_and_the_realign_take_the_narrow_read PASSED [ 70%]
+agents/execution/tests/test_run_start_orders.py::test_a_broker_without_a_narrow_read_lists_everything PASSED [ 76%]
+agents/execution/tests/test_run_start_orders.py::test_a_listing_answer_that_is_not_a_list_reads_as_no_orders PASSED [ 82%]
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_the_refresh_settles_an_old_stop_the_listing_no_longer_shows PASSED [ 88%]
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_a_stop_the_broker_expires_beyond_the_page_is_placed_again PASSED [ 94%]
+agents/execution/tests/test_stop_expiry_beyond_page.py::test_a_stop_the_broker_expires_is_placed_again_while_the_listing_shows_it PASSED [100%]
+
+============================= 17 passed in 1.52s ==============================
 ```
 
-**Guards planted:** *to fill (B1 to B24)*
+**Guards planted:** all 24 independently red against the three new test files only; each restored before the next. The runner required pytest exit 1 and a FAILED test, and checked restored bytes after each plant.
 
-**Module line counts:** *to fill*
+```text
+B1 exit=1 3 failed, 14 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_a_listing_past_one_page_reads_every_order
+B2 exit=1 1 failed, 16 passed in 2.62s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_a_listing_past_one_page_reads_every_order
+B3 exit=1 2 failed, 15 passed in 1.62s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_a_listing_past_one_page_reads_every_order
+B4 exit=1 6 failed, 11 passed in 1.69s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders
+B5 exit=1 6 failed, 11 passed in 1.70s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders
+B6 exit=1 4 failed, 13 passed in 1.68s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders
+B7 exit=1 2 failed, 15 passed in 1.69s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_recent_window_starts_the_configured_days_ago
+B8 exit=1 1 failed, 16 passed in 1.66s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_a_waiting_order_the_broker_does_not_know_is_left_out
+B9 exit=1 1 failed, 16 passed in 1.69s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_any_other_refusal_of_an_order_read_is_raised
+B10 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders
+B11 exit=1 2 failed, 15 passed in 1.69s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_an_order_already_listed_is_read_once
+B12 exit=1 1 failed, 16 passed in 1.95s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_run_start_read_holds_open_recent_and_waiting_orders
+B13 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_fills_reads_every_order_the_broker_knows
+B14 exit=1 1 failed, 16 passed in 1.65s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_window_is_a_bounded_setting_the_factory_hands_on
+B15 exit=1 1 failed, 16 passed in 1.71s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_window_is_a_bounded_setting_the_factory_hands_on
+B16 exit=1 1 failed, 16 passed in 1.65s RESTORED=YES
+FAILED agents/execution/tests/test_alpaca_order_reads.py::test_the_window_is_a_bounded_setting_the_factory_hands_on
+B17 exit=1 4 failed, 13 passed in 1.68s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders
+B18 exit=1 5 failed, 12 passed in 1.70s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_waiting_refs_name_every_unsettled_fill_and_no_settled_one
+B19 exit=1 4 failed, 13 passed in 2.03s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders
+B20 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders
+B21 exit=1 1 failed, 16 passed in 1.65s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_run_start_reconciliation_reads_fill_once_and_names_its_waiting_orders
+B22 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_the_sweep_and_the_realign_take_the_narrow_read
+B23 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_the_sweep_and_the_realign_take_the_narrow_read
+B24 exit=1 1 failed, 16 passed in 1.67s RESTORED=YES
+FAILED agents/execution/tests/test_run_start_orders.py::test_the_sweep_and_the_realign_take_the_narrow_read
+GUARDS_PROVEN=24/24; all source bytes restored
+```
 
-**`make ci`:** *to fill*
+**Module line counts:** after `ruff format` on the five new modules (Appendix production left exact).
+
+```text
+agents/execution/alpaca.py: 188
+agents/execution/alpaca_order_reads.py: 129
+agents/execution/broker_factory.py: 35
+agents/execution/broker_stop_realign.py: 182
+agents/execution/drop_sweep.py: 184
+agents/execution/reconciliation.py: 121
+agents/execution/reconciliation_store.py: 169
+agents/execution/run_start_orders.py: 65
+agents/execution/settings.py: 162
+agents/execution/tests/order_read_helpers.py: 193
+agents/execution/tests/stop_pass_helpers.py: 59
+agents/execution/tests/test_alpaca_order_reads.py: 166
+agents/execution/tests/test_run_start_orders.py: 172
+agents/execution/tests/test_stop_expiry_beyond_page.py: 69
+```
+
+**`make ci`:** redirected to `C:/Users/yury_/AppData/Local/Temp/s283-ci.txt` and the complete 2,387-line file read. Actual `make` exit 2; no pipe. Steps 1-13 passed, step 14 (fresh dependency audit) verified failing because the offline proxy refuses its PyPI request. Steps 15-16 were not reached by `make` and were run separately, both exit 0. Overall CI is not green; the planner owes the fresh audit.
+
+Selected actual gate output (the complete log remains at the path above):
+
+```text
+make ci > $env:TEMP/s283-ci.txt 2>&1
+MAKE_CI_EXIT=2
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1794 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1271 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           21520      0   4602      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5195 passed, 9 skipped, 2470 warnings in 502.36s (0:08:22) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:60: ci] Error 1
+```
+
+The two remaining commands, run separately:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+uv run python scripts/check_untracked_secrets.py
+DETECT_SECRETS_EXIT=0
+Detect secrets...........................................................Passed
+UNTRACKED_SECRETS_EXIT=0
+detect-secrets (untracked): no untracked files to scan
+```
+
+PATCH and offline-lock evidence:
+
+```text
+LOCK_EXIT=0
+Resolved 180 packages in 329ms
+Updated trading-agents v0.128.3 -> v0.128.4
+uv.lock: 1 insertion, 1 deletion; only the project version changed (0.128.3 -> 0.128.4).
+```
+
+**Final documentation checks:** after the BUILT status and handback were filled, sprint status, tracker size and markdown links each exited 0. The sprint-status output was:
+
+```text
+SPRINT_STATUS_EXIT=0
+docs_seen=288 SPEC=10 BUILT=1 MERGED=277 UNMAPPED=0 MISSING=0
+MARKDOWN_LINKS_EXIT=0
+```
 
 **`make gate-ran`:** the planner's, at review.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:** Fresh dependency audit verified failing offline, so overall `make ci` is not green. The nine environment-dependent pytest skips listed above are not run. `make gate-ran`, remote CI/security/CodeQL review, planner F1, deployment and F2 are not done. No push, merge or deployment attempted.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- Pre-code: worktree `C:/Users/yury_/Downloads/project/ta-s283`, branch `sprint-283-no-broker-read-is-cut-at-a-page`, clean base `e1cab2b3d5ae303c1e1995f306c5b6e9a74015c1`; no `.env`, ready venv. No network, pushes, merge, deploy or live reads authorised. The sprint overrides the local skill's tracker/push steps: the three excluded trackers remain untouched.
+- Count correction: the Test plan names three new test files plus two new helper modules, not the blast-radius row's four test files. Follow the exact listed names.
+- PATCH is `0.128.04`; `uv lock --offline` succeeded, and `uv.lock` was staged with the one-line version change. All production and law blobs match the Appendix; source stayed exact through formatting and mutation restoration.
+- The first commit attempt was refused by markdownlint MD012 for one extra blank line in the newly added Closeout evidence; that blank line was removed. All other hooks in that attempt passed.
+- Command/path corrections: exploratory reads of nonexistent `sweep_read_helpers.py` and `dependency_audit_run.py` were replaced by the actual label-read/drop-sweep helpers and `scripts/check_dependency_audit.py`. A CI-log display hit Windows cp1252; it was re-read with UTF-8 output. These were tooling corrections, not production changes.
+- Existing warnings left unchanged: two PM default/envelope warnings and 2,470 NumPy timedelta deprecation warnings from unchanged `tests/test_barrier_testbed.py`. No existing test failed. The nine skips are named in Closeout, not claimed as proof.
+- The network-dependent audit and all remote/live checks remain the planner's: fresh audit, exact-HEAD `make gate-ran`, CodeQL review, F1 and F2. No broader law, broker protocol, paper broker, contract, kernel, pack, Dockerfile or infra change was made. F1's write/byte measurements were not re-run here.
+- Temporary raw logs and mutation results are outside the worktree under `C:/Users/yury_/AppData/Local/Temp/s283-*`; red, green, guard, scope, lock and CI evidence is pasted into this handback. No separate repository report was added.
 
 ---
 

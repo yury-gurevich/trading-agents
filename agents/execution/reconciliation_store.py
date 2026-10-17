@@ -19,11 +19,13 @@ from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
 from agents.execution.partial_fill import report_unfilled_remainder
 from agents.execution.realized_pnl import realized_pnl_props
+from agents.execution.run_start_orders import awaits_broker
 from agents.execution.snapshot_account import account_snapshot_props
-from contracts.broker_lifecycle import is_terminal_fill_broker_status
 from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from agents.execution.broker import BrokerAccount, BrokerFill, BrokerPosition
     from kernel import FaultSink, GraphStore, Node
 
@@ -31,17 +33,22 @@ SnapshotStatus = Literal["fresh", "stale"]
 
 
 def refresh_pending_fills(
-    graph: GraphStore, broker_fills: tuple[BrokerFill, ...], sink: FaultSink
+    graph: GraphStore,
+    broker_fills: tuple[BrokerFill, ...],
+    sink: FaultSink,
+    *,
+    fills: Iterable[Node] | None = None,
 ) -> None:
-    """Append broker terminal-status evidence to pending Fill nodes."""
+    """Append broker terminal-status evidence to pending Fill nodes.
+
+    `fills` is the `Fill` label when the caller has read it already (EXEC-PERF-02).
+    """
     by_key = {fill.idempotency_key: fill for fill in broker_fills}
     by_order_id = {
         fill.broker_order_id: fill for fill in broker_fills if fill.broker_order_id
     }
-    for node in graph.list_nodes("Fill"):
-        if node.props.get("status") != "pending":
-            continue
-        if is_terminal_fill_broker_status(node.props.get("broker_status")):
+    for node in graph.list_nodes("Fill") if fills is None else fills:
+        if not awaits_broker(node):
             continue
         broker_fill = by_key.get(broker_idempotency_key(node)) or by_order_id.get(
             str(node.props.get("broker_order_id", ""))

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-17 10:45 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN; S281 and S282 on top, scripts only, no bump: `50d29eee`) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **the F2s of S277, S278, S279 and S280 PASSED on `sched-2026-10-16` (work-queue 101, 123, 133 and 135 closed); work-queue 113's F2 is NOT met: the debaters have run one replica, not three, since 2026-10-11; work-queue 92's exit experiment is pre-registered as [EXP-022](research/experiments/EXP-022-does-an-exit-besides-the-stop-make-the-book-earn-more.md) and its scorer [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md) is merged; the run waits for the fidelity PASS.**
+**Last updated:** 2026-10-17 10:45 AEDT · **Version:** **0.128.03 on `main`** (`85752f1a`, tag `v0.128.03`, GATE PROVEN; S281 and S282 on top, scripts only, no bump: `50d29eee`) · **the fleet on `s280` = 0.128.03, deployed 2026-10-16** (S280, on top of `s279`'s S277–S279; rollback `s279`) · **the F2s of S277, S278, S279 and S280 PASSED on `sched-2026-10-16` (work-queue 101, 123, 133 and 135 closed); work-queue 113's F2 is NOT met (the debaters ran one replica from 2026-10-11; three restored 2026-10-17) and is owed again; work-queue 92's exit experiment is pre-registered as [EXP-022](research/experiments/EXP-022-does-an-exit-besides-the-stop-make-the-book-earn-more.md) and its scorer [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md) is merged; the run waits for the fidelity PASS.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…21.md` + git). **LAW-02:** an item is "shipped" only when
@@ -54,10 +54,10 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   it. The 10-08 to 10-15 window read **INSUFFICIENT on 9 of 10** PM recommendations, 100 % agreement,
   0 unexplained ([DL-304](design-log.md)); `s279` had changed `contracts/`.
 - **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
-  the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3. 🔴 **Each debater has run ONE replica since
-  2026-10-11**, not three: the wake-window change rewrote both debaters' rules with `desiredReplicas` 1
-  (measured 2026-10-17, amendment 3); restoring 3 waits for the operator. The pack says 1, so a full `up`
-  puts 1 back on the manager too. Work-queue 113's F2 is owed again after the restore.
+  the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
+  nightly window, **restored 2026-10-17 11:01 AEDT** on the operator's word after one replica a night since
+  the 2026-10-11 wake-window change (amendment 3). The pack says 1, so a full `up` puts 1 back on all
+  three. Work-queue 113's F2 is owed again on the next night with more than one debated buy.
 - **[EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md) is
   interrupted** at 31 of 52 calls; $2.80 is approved for the rest, on Opus, after 2026-10-11.
 
@@ -112,8 +112,9 @@ second ranking.
    (2026-10-16): work-queue 135**, a partly filled order recorded as unfilled: decided ([DL-303](design-log.md))
    and merged and deployed as [S280](sprints/sprint-280-a-partly-filled-order-is-a-fill-of-its-part.md) `s280` (rollback `s279`); its F2 is read the same night: JNJ's buy, if it fills, settles carrying `broker_filled_quantity`. S280 adds no graph read, so S279's read thresholds still hold on `s280`.
 2. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2): **read 2026-10-17, NOT met** —
-   two buys debated clean, but each debater ran one replica (amendment 3). Restoring `desiredReplicas` 3 on the
-   two debaters' rules waits for the operator; then the F2 again, and the pack edit once the fidelity count allows it.
+   two buys debated clean, but each debater ran one replica (amendment 3). `desiredReplicas` 3 restored on the
+   two debaters' rules 2026-10-17 on the operator's word, only that field changed; the F2 again on the next
+   such night, and the pack edit once the fidelity count allows it.
 3. **Work-queue 134**, found with [S279](sprints/sprint-279-a-pass-reads-each-label-once.md): the broker's order list is the
    newest 500 and passes 500 around early December (measured, not decided).
 4. **The fidelity count:** four clean sessions and ten judged PM recommendations from

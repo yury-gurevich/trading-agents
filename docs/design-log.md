@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 13:10 AEDT); work-queue 108; the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
+## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 12:35 AEDT); work-queue 108; specced as [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md); the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
 
 **Why.** Work-queue 108: on `sched-2026-10-05` MRK cleared its confidence floor only on its sentiment score, and 7 of its 20 headlines were about Vaxcyte's vaccine trial ([DL-264](design-log.md) amendment 3). The analyst scores every headline Finnhub's `/company-news` serves for a ticker; that endpoint's `related` field only echoes the symbol asked for, so the feed itself says nothing about whose news a headline is.
 

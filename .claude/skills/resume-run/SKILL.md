@@ -15,10 +15,15 @@ soon as the stalled agent runs again — no artifact surgery needed.
    `/deploy-fleet` first — the old images would just stall again).
 2. Wake the fleet inside or outside the window:
    - **Wait for tonight's window** (default; zero risk), or
-   - **Manual wake now:** `az containerapp job start -n dispatcher-cron -g trading-agents` —
-     safe: the day-keyed `RunRequest` (`sched-YYYY-MM-DD`) **merge-dedupes** (proven S103:
-     double-fire → `run_request_count=1`), and completed stages are not redone because their
-     consumption edges exist. Note: as_of = **UTC today**, so a manual fire on a later UTC day
+   - **Manual wake now:** starting the dispatcher job (`az containerapp job start -n
+     dispatcher-cron -g trading-agents`) wakes **no agent**: each app wakes on its own cron scale
+     rule (weekdays 22:30 to 23:30 UTC), and the job places a run only from the 22:30 fire to the
+     23:10 fire ([DL-309](../../../docs/design-log.md)). Outside that window a wake means widening
+     each app's scale rule and putting it back after (`docs/deployment.md`; never leave a widened
+     rule in place). The fire is safe: once the day-keyed `RunRequest` (`sched-YYYY-MM-DD`) exists
+     a fire writes nothing and prints `already-placed` (S285; before it, the fire merged the same
+     node again: proven S103, `run_request_count=1`), and completed stages are not redone because
+     their consumption edges exist. Note: as_of = **UTC today**, so a manual fire on a later UTC day
      creates a *new* run rather than resuming yesterday's — resuming yesterday's stall next
      UTC day means the stalled agents will still pick up their pending artifacts, but any
      *new* RunRequest is a separate run. Say which of the two you expect to happen.

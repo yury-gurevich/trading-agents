@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-20 18:20 AEDT · **Version:** **0.128.06 on `main`** (`f7e7ac21`, tag `v0.128.06`, GATE PROVEN: [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md) (work-queue 108, [DL-308](design-log.md)), the sentiment pillar scores only headlines that name the ticker's company; before it `0.128.05`, `aiohttp` 3.14.3 → 3.14.5) · **the fleet on `s284` = 0.128.06, deployed 2026-10-20** (image-only retag; rollback `s283`) · **S284 deployed on the operator's word before the fidelity verdict: the analyst is a decision path, so the fidelity count restarts at `sched-2026-10-20`, pinned `v0.128.06`; F2 owed on that night. S283's stop limb is owed by 2026-11-10; work-queue 113's F2 is owed on a night with more than one debated buy; EXP-022 waits for the fidelity PASS.**
+**Last updated:** 2026-10-20 19:55 AEDT · **Version:** **0.128.06 on `main`** (`f7e7ac21`, tag `v0.128.06`, GATE PROVEN: [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md) (work-queue 108, [DL-308](design-log.md)), the sentiment pillar scores only headlines that name the ticker's company; before it `0.128.05`, `aiohttp` 3.14.3 → 3.14.5) · **the fleet on `s284` = 0.128.06, deployed 2026-10-20** (image-only retag; rollback `s283`) · **[S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md) specced for Codex (work-queue 131 b and d, [DL-309](design-log.md)): the dispatcher keeps the deadline it tells (23:10, not 23:20) and never holds a run it already placed. Owed: S284's F2 on `sched-2026-10-20` (the fidelity count restarts there, pinned `v0.128.06`); S283's stop limb by 2026-11-10; work-queue 113's F2 on a night with more than one debated buy; EXP-022 waits for the fidelity PASS.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…21.md` + git). **LAW-02:** an item is "shipped" only when
@@ -140,6 +140,7 @@ second ranking.
 7. **Not while the fidelity count runs** (each touches a decision path): work-queue 105 (108 was deployed 2026-10-20 on the operator's word, restarting the count).
    Work-queue 103 part two left this list on 2026-10-11: measured, its one live read is the
    barrier history's, a side branch no decision reads ([DL-287](design-log.md)).
+8. **Work-queue 131 (b) and (d): SPECCED 2026-10-20 as [S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md)** ([DL-309](design-log.md)), for Codex in `../ta-s285`: the last placing fire is 23:10 and the notice says so, a placed run is never held again, each fire's line says what it did. No decision path: an image-only retag after the merge, the count holds.
 
 ## Pointers
 

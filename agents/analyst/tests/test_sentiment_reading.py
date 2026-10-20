@@ -22,6 +22,7 @@ from agents.analyst.domain.sentiment_reading import (
 )
 from agents.analyst.store import write_analysis
 from agents.analyst.tests.helpers import (
+    APPLE_NEWS,
     analyze_message,
     bars,
     candidate,
@@ -126,7 +127,7 @@ def test_analyze_persists_sentiment_reading_node() -> None:
     scan = candidate_set(candidate())
     bus, graph, sink = wire_analyst(
         source_bars=bars(),
-        news={"AAPL": ("Profit surges to record as sales beat",)},
+        news={"AAPL": APPLE_NEWS},
     )
 
     response = bus.request(analyze_message(scan))
@@ -167,7 +168,7 @@ def test_analyze_aligns_both_scorer_readings_for_one_run() -> None:
     scan = candidate_set(candidate())
     bus, graph, sink = wire_analyst(
         source_bars=bars(),
-        news={"AAPL": ("Profit surges to record as sales beat",)},
+        news={"AAPL": APPLE_NEWS},
         sentiment={"AAPL": 0.58},
     )
 

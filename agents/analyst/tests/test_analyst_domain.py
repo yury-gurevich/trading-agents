@@ -153,7 +153,7 @@ def test_zero_confidence_span_floors_confidence() -> None:
 def test_sentiment_blends_three_pillars_into_confidence() -> None:
     # Same 40-bar technical (450/11/100) + fundamentals -> 0.80 + an all-positive
     # headline -> 1.0. composite renormalises over the 0.50/0.30/0.20 weights.
-    settings = AnalystSettings()
+    settings = AnalystSettings(sentiment_min_own_headlines=1)
     fundamentals = {"peTTM": 8.0, "roeTTM": 20.0}
     news = ("Apple beats estimates and profit surges to record",)
     technical = (450.0 / 11.0) / 100.0
@@ -190,8 +190,8 @@ def test_sentiment_blends_three_pillars_into_confidence() -> None:
 
 def test_sentiment_without_fundamentals_two_pillar_blend() -> None:
     """Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_54."""
-    settings = AnalystSettings()
-    news = ("Shares report profit and loss",)
+    settings = AnalystSettings(sentiment_min_own_headlines=1)
+    news = ("Apple shares report profit and loss",)
     score = score_candidate(candidate(), _rising_bars(40), {}, (), news, settings)
 
     assert score.sentiment_score == pytest.approx(0.5, abs=1e-9)

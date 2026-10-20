@@ -189,3 +189,10 @@ def wire_analyst(
         ).bind()
     AnalystAgent(bus, graph=graph, settings=settings, sink=sink).bind()
     return bus, graph, sink
+
+
+# Two headlines that name Apple, both all-positive (ANLZ-OUT-11 needs two own ones).
+APPLE_NEWS = (
+    "Apple profit surges to record as sales beat",
+    "Apple shares rally on record profit",
+)

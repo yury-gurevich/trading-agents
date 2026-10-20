@@ -88,6 +88,15 @@ class AnalystSettings(_StopTargetSettings):
         ge=0.0,
         le=1.0,
     )
+    sentiment_min_own_headlines: int = tunable(
+        2,
+        why=(
+            "Fewest own-company headlines carrying a lexicon word that make a "
+            "sentiment pillar; one headline alone swings it to 0 or 1 (DL-308)."
+        ),
+        ge=1,
+        le=10,
+    )
     benchmark_ticker: str = tunable(
         "SPY",
         why="Relative-strength benchmark; SPY tracks the scanner's S&P 500 universe.",

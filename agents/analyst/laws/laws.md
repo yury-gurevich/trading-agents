@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -111,6 +111,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **ANLZ-OUT-10** — Each recommendation that carries quant metrics also records the constants its
   confidence was computed with (the pillar weights, the relative-strength weight, the confidence
   floor and span) and the names of the sub-scores averaged into its technical and fundamental scores.
+
+- **ANLZ-OUT-11** — The lexicon sentiment pillar scores only the served headlines that name the
+  ticker's company: a name from the bundled company table (`domain/data/company_names.json`),
+  matched case-sensitively, not inside a longer word and not right after *Price* or *price*; or a
+  ticker mark (`$T`, `(T)`, an exchange prefix such as `NYSE:T`). Fewer such headlines carrying a
+  lexicon word than `sentiment_min_own_headlines` → no sentiment pillar for that name, and the
+  blend renormalises over the pillars present. A ticker the table does not list is scored on every
+  served headline. Each name with served news records `sentiment_served_headlines`,
+  `sentiment_own_headlines` and `sentiment_subject_filtered`. Every ticker of the fleet's universe
+  has a table entry. `MarketData.news` is unchanged. *(Work-queue 108, DL-308.)*
 
 ---
 
@@ -317,6 +327,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `technical_weight` | `0.50` | `float ≥ 0.0, ≤ 1.0` | YES | Reference composite weight for the technical pillar |
 | `fundamental_weight` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Reference weight for the fundamental pillar; renormalised over present pillars |
 | `sentiment_weight` | `0.20` | `float ≥ 0.0, ≤ 1.0` | YES | Reference weight for the sentiment pillar; renormalised over present pillars |
+| `sentiment_min_own_headlines` | `2` | `int ≥ 1, ≤ 10` (headlines) | YES | Fewest own-company headlines carrying a lexicon word that make a sentiment pillar (`ANLZ-OUT-11`); one headline alone swings the pillar to 0 or 1; at 2, 15 % of names had no pillar over nine nights against 38 % at 3 (DL-308) |
 | `alpha158_pillar_weight` | `0.00` | `float ≥ 0.0, ≤ 1.0` | YES | Alpha158 fifth pillar; 0.00 = off; enable after 20-day IC comparison (ΔIC ≥ 0.02) |
 | `benchmark_ticker` | `"SPY"` | `str` | YES | Relative-strength benchmark; matches the scanner's universe |
 | `rs_window` | `20` | `int ≥ 2, ≤ 120` (bars) | YES | Relative-strength lookback (~one trading month) |
@@ -439,3 +450,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.11 — amendment (S279 / DL-302, 2026-10-15). Adds and proves `ANLZ-PERF-02`: the held-stop
   read shares one `Fill` read across the book, where it read the label once per position. No
   threshold, stop check or recommendation changes; 29 / 52 → 30 / 53.
+
+- v1.12 — amendment (S284 / DL-308, 2026-10-20). Adds and proves `ANLZ-OUT-11`: the lexicon
+  sentiment pillar scores only the headlines that name the ticker's company, with no pillar below
+  `sentiment_min_own_headlines` (new PARAM row, default 2). Decisions change: over nine nights,
+  2 of 303 replayed. 30 / 53 → 31 / 54.

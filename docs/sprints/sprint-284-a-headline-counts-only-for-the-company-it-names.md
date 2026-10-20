@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-284-a-headline-counts-only-for-the-company-it-names`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.128.06` (PATCH after local `main` at `0.128.05`)
 **Effort:** M
 **Decisions:** [DL-308](../design-log.md) (decided, nine decisions with the roads not taken) · work-queue 108 · [DL-264](../design-log.md) amendment 3 (where it was found)
 
@@ -153,11 +153,11 @@ On the unchanged tree the whole file fails at import. After Appendix section 1 a
 ## Success factors
 
 - [ ] On the built tree, `s284_f1.py` over the nine nights (planner's F1) prints exactly the prototype's output (`f1_proto.txt`): the same two decisions change (CL, 10-12 and 10-19) and nothing else.
-- [ ] `MarketData`, `contracts/`, the provider and the debaters unchanged; no existing test changed beyond Appendix section 2's four files.
-- [ ] Design decisions recorded with rejected alternatives: DL-308, already on `main`.
-- [ ] Law cycle done as Appendix section 2: `ANLZ-OUT-11` 🟩, rollup 31 / 54 in both rollups.
-- [ ] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
-- [ ] Every touched module < 200 lines, test files included (four sit at 192 to 199: add nothing to them).
+- [x] `MarketData`, `contracts/`, the provider and the debaters unchanged; no existing test changed beyond Appendix section 2's four files.
+- [x] Design decisions recorded with rejected alternatives: DL-308, already on `main`.
+- [x] Law cycle done as Appendix section 2: `ANLZ-OUT-11` 🟩, rollup 31 / 54 in both rollups.
+- [x] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
+- [x] Every touched module < 200 lines, test files included (four sit at 192 to 199: add nothing to them).
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -284,15 +284,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(to fill)* | | | |
+| Subject filter and bundled company table | `agents/analyst/laws/laws.md` and `test-plan.md` (whole); `docs/laws/conventions.md` and `drift-register.md` (whole), 2026-10-20, before code | New `ANLZ-OUT-11`; `ANLZ-NEV-02`, `ANLZ-SEC-01`; conventions sections 2, 3, 4, 7, 7a, 9, 10 | No: apply the decided Appendix exactly; company names and ticker marks determine inclusion, not the main subject. |
+| Scoring and settings | Same four files, whole | `ANLZ-OUT-02`, `ANLZ-OUT-06`, `ANLZ-OUT-10`, `ANLZ-OBS-04`, `ANLZ-IDM-01`, `ANLZ-FAIL-04`, `PARAM`; new `ANLZ-OUT-11` | Preserve optional pillars, batch weights and existing fault boundary. `ANLZ-FAIL-04` is gray and remains unproven by this sprint. |
+| Four existing fixture files and new A1-A9 tests | Same four files, whole | `ANLZ-OUT-02`, `ANLZ-OUT-06`, `ANLZ-OBS-04`; new `ANLZ-OUT-11` | Use the fixed names and clause docstrings; A3 counts scored headlines and A5 uses minimum 3. Only the four Appendix fixture files may change. |
+| Law amendment, test-plan and both rollups | Same four files, whole; `docs/laws/INDEX.md` read first | conventions sections 2, 3, 4, 7, 7a; `ANLZ-OUT-11`, `PARAM` | The handover authorizes exactly Appendix section 2, including v1.12 and 31 / 54; no additional law wording. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(to fill)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: the new own-company headline guarantee, with no contract change. Apply Appendix section 2's `ANLZ-OUT-11`, PARAM row, v1.12 Changelog, cited test-plan row and both rollups after the required missing-module red run.
 
-**Contradictions found between a law and this spec:** *(to fill)*
+**Contradictions found between a law and this spec:** None found. The explicit handover authorizes the locked-law amendment and the tests-before-Appendix sequence.
 
-**Laws found silent where a decision was needed:** *(to fill)*
+**Laws found silent where a decision was needed:** The current book does not yet declare whose news is scored; the spec already resolves that gap with the exact `ANLZ-OUT-11` amendment. No additional undecided silence found.
 
-**Clauses that were ⬜ and are now proven:** *(to fill)*
+**Clauses that were ⬜ and are now proven:** At the pre-code record none were claimed proven. At closeout, new `ANLZ-OUT-11` is proven by all A1-A9 (28 cases); the exact Appendix rollup is 31 / 54. Existing `ANLZ-FAIL-04` remains gray and is not claimed proven.
 
 ---
 
@@ -300,51 +303,261 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(to fill)* | | | |
+| A1 | `test_a_headline_is_own_only_when_it_names_the_company` | `agents/analyst/tests/test_sentiment_subject.py` | PASS (20 parameters) | `ANLZ-OUT-11` |
+| A2 | `test_another_companys_news_does_not_move_the_score` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A3 | `test_fewer_own_scored_headlines_than_the_minimum_is_no_pillar` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A4 | `test_the_minimum_counts_scored_headlines_with_their_weights` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11`, `ANLZ-OBS-04` |
+| A5 | `test_a_ticker_the_table_does_not_list_scores_every_headline` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A6 | `test_no_served_news_is_no_pillar_and_no_metrics` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A7 | `test_every_ticker_of_the_fleets_universe_is_in_the_company_table` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A8 | `test_the_minimum_is_a_bounded_tunable_defaulting_to_two` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
+| A9 | `test_the_scorer_reads_own_headlines_by_its_settings_and_weights` | `agents/analyst/tests/test_sentiment_subject.py` | PASS | `ANLZ-OUT-11` |
 
-**Tests added beyond the plan:** *(to fill)*
+**Tests added beyond the plan:** No additional test functions. A1 includes two further word-edge/case parameters (`merck`, `SuperMerck`), giving 20 A1 cases and 28 total; all nine fixed names match the law test-plan row.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(to fill)*
+**Status:** BUILT — local branch build; overall CI verified failing at the offline dependency audit.
 
-**Tree the proofs ran in (and `.env` present?):** *(to fill)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s284`, branch `sprint-284-a-headline-counts-only-for-the-company-it-names`, base `2ed9ed0fbc2f879a8a5d6a06a1fe9d536b89a10a`; `.env` absent. Ready venv only; `UV_OFFLINE=1`, `UV_NO_SYNC=1`, `UV_PYTHON_DOWNLOADS=never`. A temporary `sitecustomize.py` blocks external DNS/socket connections; HTTP proxies point to refused loopback port 9; inherited `OPENAI_API_KEY` removed for the gate. No external service used.
 
-**Result:** *(to fill)*
+**Result:** A1-A9 pass (28 cases); B1-B25 each fail at least one A-test and are restored; all 12 Appendix blobs match, including the four fixture files; all eight touched Python files are below 200 lines after formatting. Full pytest: 5,223 passed, 9 skipped, 100.00% coverage. Version `0.128.06` and offline lock refresh complete. `make ci` is verified failing (exit 2) at dependency audit only; its first 13 steps pass, and steps 15-16 pass separately. Fresh dependency audit, remote proof and F1/F2 are not done.
 
-**Files changed:** *(to fill)*
+**Files changed:** 17 authorized paths:
+
+- `agents/analyst/domain/data/company_names.json`
+- `agents/analyst/domain/scoring.py`
+- `agents/analyst/domain/sentiment_subject.py`
+- `agents/analyst/laws/laws.md`
+- `agents/analyst/laws/test-plan.md`
+- `agents/analyst/settings.py`
+- `agents/analyst/tests/helpers.py`
+- `agents/analyst/tests/test_analyst_agent.py`
+- `agents/analyst/tests/test_analyst_domain.py`
+- `agents/analyst/tests/test_sentiment_reading.py`
+- `agents/analyst/tests/test_sentiment_subject.py`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `docs/sprints/README.md`
+- `docs/sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md`
+- `pyproject.toml`
+- `uv.lock`
 
 **Design decisions:** recorded as [`DL-308`](../design-log.md) (planner, before the build).
 
 **Proof — the red run first:**
 
 ```text
-(to fill)
+uv run --offline --no-sync pytest agents/analyst/tests/test_sentiment_subject.py --no-cov -v
+============================= test session starts =============================
+collecting ... collected 0 items / 1 error
+
+=================================== ERRORS ====================================
+_______ ERROR collecting agents/analyst/tests/test_sentiment_subject.py _______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s284\agents\analyst\tests\test_sentiment_subject.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agents\analyst\tests\test_sentiment_subject.py:17: in <module>
+    from agents.analyst.domain.sentiment_subject import (
+E   ModuleNotFoundError: No module named 'agents.analyst.domain.sentiment_subject'
+=========================== short test summary info ===========================
+ERROR agents/analyst/tests/test_sentiment_subject.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+============================== 1 error in 1.46s ===============================
+RED_EXIT=2
 ```
 
 **Proof — the green run:**
 
 ```text
-(to fill)
+uv run --offline --no-sync pytest agents/analyst/tests/test_sentiment_subject.py --no-cov -v
+============================= test session starts =============================
+collecting ... collected 28 items
+
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Merck's profit rises-True] PASSED [  3%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Merck, shares fall-True] PASSED [  7%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Mercker profit rises-False] PASSED [ 10%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-$MRK falls-True] PASSED [ 14%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Shares (MRK) fall-True] PASSED [ 17%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-NYSE:MRK falls-True] PASSED [ 21%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-NYSE: MRK falls-True] PASSED [ 25%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Vaxcyte vaccine trial succeeds-False] PASSED [ 28%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-MRK falls-False] PASSED [ 32%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-Vaxcyte Takes Aim at Pfizer and Merck-True] PASSED [ 35%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[IBM-IBM profit rises-True] PASSED [ 39%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[GE-GE Vernova profit rises-False] PASSED [ 42%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[GE-GE Aerospace profit rises-True] PASSED [ 46%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[TGT-Target cuts outlook-True] PASSED [ 50%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[TGT-Raises Price Target On Nike-False] PASSED [ 53%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[TGT-Raises price Target for Walmart-False] PASSED [ 57%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[META-Metaverse profit rises-False] PASSED [ 60%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MMM-Company raises $3M-False] PASSED [ 64%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-merck profit rises-False] PASSED [ 67%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_headline_is_own_only_when_it_names_the_company[MRK-SuperMerck profit rises-False] PASSED [ 71%]
+agents/analyst/tests/test_sentiment_subject.py::test_another_companys_news_does_not_move_the_score PASSED [ 75%]
+agents/analyst/tests/test_sentiment_subject.py::test_fewer_own_scored_headlines_than_the_minimum_is_no_pillar PASSED [ 78%]
+agents/analyst/tests/test_sentiment_subject.py::test_the_minimum_counts_scored_headlines_with_their_weights PASSED [ 82%]
+agents/analyst/tests/test_sentiment_subject.py::test_a_ticker_the_table_does_not_list_scores_every_headline PASSED [ 85%]
+agents/analyst/tests/test_sentiment_subject.py::test_no_served_news_is_no_pillar_and_no_metrics PASSED [ 89%]
+agents/analyst/tests/test_sentiment_subject.py::test_every_ticker_of_the_fleets_universe_is_in_the_company_table PASSED [ 92%]
+agents/analyst/tests/test_sentiment_subject.py::test_the_minimum_is_a_bounded_tunable_defaulting_to_two PASSED [ 96%]
+agents/analyst/tests/test_sentiment_subject.py::test_the_scorer_reads_own_headlines_by_its_settings_and_weights PASSED [100%]
+
+============================= 28 passed in 1.34s ==============================
+GREEN_EXIT=0
+
+After every break was restored:
+............................                                             [100%]
+28 passed in 1.29s
+RESTORED_GREEN_EXIT=0
 ```
 
-**Guards planted:** *(to fill)*
+**Guards planted:** All 25, one at a time in production, against A1-A9 alone. The driver asserted pytest exit 1, named failed A-tests, and byte-for-byte restoration before the next break; the final restored suite passed. Actual output:
 
-**Module line counts:** *(to fill)*
+```text
+COMMAND=C:\Users\yury_\Downloads\project\ta-s284\.venv\Scripts\python.exe -B -m pytest agents\analyst\tests\test_sentiment_subject.py --no-cov -q
+ONE_BREAK_AT_A_TIME=True; only A1-A9 run; restore bytes after each run
+B1: exit=1; 14 failed, 14 passed in 1.73s; red=A1,A2,A3,A6,A9; restored=True
+B2: exit=1; 2 failed, 26 passed in 1.84s; red=A1; restored=True
+B3: exit=1; 2 failed, 26 passed in 1.58s; red=A1; restored=True
+B4: exit=1; 1 failed, 27 passed in 1.62s; red=A1; restored=True
+B5: exit=1; 1 failed, 27 passed in 1.60s; red=A1; restored=True
+B6: exit=1; 1 failed, 27 passed in 1.56s; red=A1; restored=True
+B7: exit=1; 2 failed, 26 passed in 1.60s; red=A1; restored=True
+B8: exit=1; 1 failed, 27 passed in 1.45s; red=A1; restored=True
+B9: exit=1; 3 failed, 25 passed in 1.45s; red=A2,A3,A4; restored=True
+B10: exit=1; 2 failed, 26 passed in 1.54s; red=A3,A9; restored=True
+B11: exit=1; 1 failed, 27 passed in 1.73s; red=A5; restored=True
+B12: exit=1; 1 failed, 27 passed in 2.99s; red=A5; restored=True
+B13: exit=1; 4 failed, 24 passed in 1.97s; red=A2,A3,A5,A6; restored=True
+B14: exit=1; 4 failed, 24 passed in 1.90s; red=A2,A3,A6,A9; restored=True
+B15: exit=1; 1 failed, 27 passed in 1.51s; red=A6; restored=True
+B16: exit=1; 2 failed, 26 passed in 1.51s; red=A4,A9; restored=True
+B17: exit=1; 2 failed, 26 passed in 1.57s; red=A3,A6; restored=True
+B18: exit=1; 1 failed, 27 passed in 1.51s; red=A9; restored=True
+B19: exit=1; 1 failed, 27 passed in 1.47s; red=A9; restored=True
+B20: exit=1; 1 failed, 27 passed in 1.48s; red=A9; restored=True
+B21: exit=1; 1 failed, 27 passed in 1.74s; red=A8; restored=True
+B22: exit=1; 1 failed, 27 passed in 1.73s; red=A8; restored=True
+B23: exit=1; 1 failed, 27 passed in 1.43s; red=A8; restored=True
+B24: exit=1; 2 failed, 26 passed in 1.49s; red=A5,A7; restored=True
+B25: exit=1; 1 failed, 27 passed in 1.49s; red=A7; restored=True
+BREAKS_PROVEN=25/25; ALL_RESTORED=True
+BREAKS_EXIT=0
+```
 
-**`make ci`:** *(to fill)*
+**Module line counts:** Measured after `ruff format`; all eight are < 200. The same verification recomputed every Appendix blob hash after the final restore:
 
-**`make gate-ran`:** *(the planner's, after push)*
+```text
+APPENDIX_MATCH agents/analyst/domain/data/company_names.json 8e895f8e85fbe19cc0d612712e937c1ceb72baa6
+APPENDIX_MATCH agents/analyst/domain/scoring.py b27a409314fe7117c924b38d372605a1ef8753f5
+LINES agents/analyst/domain/scoring.py=191
+APPENDIX_MATCH agents/analyst/domain/sentiment_subject.py 09d6a0de6d4bc001a4df43051f1baa64fd82acab
+LINES agents/analyst/domain/sentiment_subject.py=81
+APPENDIX_MATCH agents/analyst/settings.py daef8661d88b7813a11933da7791c397e6520b0a
+LINES agents/analyst/settings.py=161
+APPENDIX_MATCH agents/analyst/laws/laws.md a406fbebeaea3fda4e8a063071b5fc3697f1cfcd
+APPENDIX_MATCH agents/analyst/laws/test-plan.md 520383e7786aa1fc086ce66005f9cbe417b4300e
+APPENDIX_MATCH agents/analyst/tests/helpers.py 0a8244b0f2e3d48b9a817405442ae01535221cdf
+LINES agents/analyst/tests/helpers.py=198
+APPENDIX_MATCH agents/analyst/tests/test_analyst_agent.py bb88c3e41032ce57ddcc13939ef9916b5fbc3cfc
+LINES agents/analyst/tests/test_analyst_agent.py=199
+APPENDIX_MATCH agents/analyst/tests/test_analyst_domain.py a94f7df55971f0e863dfbaaa1fc467960a5d2897
+LINES agents/analyst/tests/test_analyst_domain.py=199
+APPENDIX_MATCH agents/analyst/tests/test_sentiment_reading.py 6d523e2c2d45548efa50e44f391c6b3b49a8c59c
+LINES agents/analyst/tests/test_sentiment_reading.py=192
+APPENDIX_MATCH docs/laws/INDEX.md 167a87e5e887991036cc0741d8a82a1e1a114811
+APPENDIX_MATCH docs/laws/ledger.md e5b3b3b53960eb6db58767916a6bbdb97fc24dee
+APPENDIX_MATCHES=12/12
+LINES agents/analyst/tests/test_sentiment_subject.py=187
+```
 
-**Not met / verified failing:** *(to fill)*
+**`make ci`:** Verified failing, exit 2; dependency audit is the only failed step. Fresh advisory data is not available offline; the planner owes that audit. Steps 1-13 passed in the target; because make stops at step 14, steps 15-16 were run separately and passed. No coverage floor or audit acceptance changed. Full log read: 2,394 lines at `C:/Users/yury_/AppData/Local/Temp/s284-proof/ci.txt`. Captured command and selected actual stdout/stderr:
+
+```text
+$proofDir = Join-Path $env:TEMP 's284-proof'
+make ci > (Join-Path $proofDir 'ci.txt') 2>&1
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1796 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1273 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           21557      0   4610      0  100.00%
+========= 5223 passed, 9 skipped, 2470 warnings in 464.73s (0:07:44) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+The two remaining steps, actual output:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+Offline lock refresh (only the root package version changed):
+
+```text
+MAIN_VERSION=0.128.05; SPRINT_VERSION=0.128.06
+uv lock --offline
+Resolved 180 packages in 341ms
+Updated trading-agents v0.128.5 -> v0.128.6
+LOCK_EXIT=0
+```
+
+Final handback checks after setting both statuses to BUILT, actual output:
+
+```text
+uv run python scripts/check_sprint_status.py
+docs_seen=289 SPEC=10 BUILT=1 MERGED=278 UNMAPPED=0 MISSING=0
+FINAL_STATUS_EXIT=0
+uv run python scripts/check_tracker_size.py
+[WARN] docs/sprints/README.md: 92,475 of 96,000 bytes (96 %)
+FINAL_TRACKER_EXIT=0
+uv run python scripts/check_markdown_links.py
+FINAL_LINKS_EXIT=0
+SCOPE=17/17 authorized files; forbidden paths unchanged; no untracked files
+TEST_NAMES=9/9 exact; CLAUSE_DOCSTRINGS=9/9 ANLZ-OUT-11; ADDED_NOQA=0
+EXISTING_TESTS_CHANGED=only the four Appendix section 2 files
+```
+
+**`make gate-ran`:** not done — the planner's after push, from this worktree and checked against its exact final HEAD. Push and remote CI/CodeQL/Security Findings are not done under the network prohibition.
+
+**Not met / verified failing:** Overall `make ci` verified failing (exit 2), fresh dependency audit not done offline. F1 nine-night prototype comparison not done (planner, needs the main checkout's `.env`); push, remote gates, CodeQL review, merge, image build, deploy and F2 not done. No live or replay-equality result is claimed.
 
 ---
 
 ## Return notes
 
-- *(to fill)*
+- A7 initially split comment text into tokens (158 distinct tokens). Corrected the test parser to the universe file's stated format: one ticker per line, ignoring blank lines and `#` comments. The measured 99 tickers and all 99 company-table entries then passed; no production measurement discrepancy.
+- First `make ci` attempt was verified failing at mypy with nine missing test annotations. Added annotations only in the new test file and reran the full target; final mypy and full pytest passed. No existing test outside Appendix section 2 failed.
+- Local `main` is `0.128.05`, so the instructed next PATCH is `0.128.06`; DL-308 D8's older `0.128.05` value was not copied. `uv lock --offline` succeeded, and `uv.lock` was staged with `pyproject.toml`.
+- The Appendix needed no code, count, path or hunk repair: all 12 hashes and all seven supplied Python line counts reproduce after formatting. The builder's new test file is 187 lines, with nine fixed names and 28 cases.
+- The audit could not retrieve fresh PyPI data under the offline guard. Overall CI remains verified failing, and a fresh dependency audit is not done; the last two security steps passed separately. No bare `uv sync`, network access, infra script, `pwsh`, Azure command, push, merge or deploy was performed.
+- `docs/STATE.md`, `docs/design-log.md`, `docs/work-queue.md`, contracts, kernel, provider, deliberator, packs and Dockerfiles are unchanged. Existing gray `ANLZ-FAIL-04` remains unproven. F1 and remote review remain the planner's; deploy remains held for the fidelity verdict (DL-308 D9).
 
 ---
 

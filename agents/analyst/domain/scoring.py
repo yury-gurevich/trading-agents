@@ -16,7 +16,7 @@ from agents.analyst.domain.relative_strength import (
     score_relative_strength,
 )
 from agents.analyst.domain.score_arithmetic import record_arithmetic
-from agents.analyst.domain.sentiment_rules import score_sentiment
+from agents.analyst.domain.sentiment_subject import subject_sentiment
 from agents.analyst.domain.signal_selection import (
     Signal,
     fundamental_signals,
@@ -51,8 +51,7 @@ class ScoreBreakdown:
 
 
 def score_candidate(
-    candidate: Candidate,  # noqa: ARG001 - kept for call-site stability; the
-    # analyst now scores on its own technical evidence, not the scanner prior.
+    candidate: Candidate,
     bars: tuple[OHLCVBar, ...],
     fundamentals: dict[str, float],
     benchmark_bars: tuple[OHLCVBar, ...],
@@ -80,7 +79,12 @@ def score_candidate(
     )
     raw_fund, fmetrics = score_fundamental(fundamentals)
     fundamental = None if raw_fund is None else _bounded(raw_fund / 100.0)
-    raw_sent, smetrics = score_sentiment(news, headline_weights=headline_weights)
+    raw_sent, smetrics = subject_sentiment(
+        candidate.ticker,
+        news,
+        settings.sentiment_min_own_headlines,
+        headline_weights=headline_weights,
+    )
     sentiment = None if raw_sent is None else _bounded(raw_sent / 100.0)
     alpha = None if alpha_score is None else _bounded(alpha_score / 100.0)
     composite = _composite(technical, fundamental, sentiment, alpha, settings)

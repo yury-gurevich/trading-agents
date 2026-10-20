@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from agents.analyst.tests.helpers import (
+    APPLE_NEWS,
     analyze_message,
     bars,
     candidate,
@@ -68,7 +69,7 @@ def test_recommendation_carries_sentiment_score_when_present() -> None:
     scan = candidate_set(candidate())
     bus, _graph, sink = wire_analyst(
         source_bars=bars(),
-        news={"AAPL": ("Profit surges to record as sales beat",)},
+        news={"AAPL": APPLE_NEWS},
     )
 
     response = bus.request(analyze_message(scan))

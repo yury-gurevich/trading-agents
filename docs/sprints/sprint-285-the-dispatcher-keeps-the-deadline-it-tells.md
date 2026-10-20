@@ -728,9 +728,11 @@ Kit and outputs in OneDrive `trading-agents-data/wq131bd-2026-10-20/`.
 - **The builder's pasted `make ci` output** (2396 lines) is trimmed above to its step lines
   and verdicts; the whole of it is in the kit (`s285_builder_make_ci.txt`, the break logs in
   `s285_builder_tools/`).
-- **Merged:** `main` fast-forwarded `d7b728aa` → `f01edfc6`; tag `v0.128.07`. **Not deployed:** an
-  image-only retag on the operator's word, rollback `s284`. F2 on the first weekday night after: the
-  job's twelve lines read 3 `skipped … before the placing window`, 1 `placed`, 8 `already-placed`;
+- **Merged:** `main` fast-forwarded `d7b728aa` → `f01edfc6`; tag `v0.128.07`. **Deployed as `s285`**
+  2026-10-21 on the operator's word (*"deploy if you need to"*), an image-only retag, rollback `s284`
+  (OneDrive `trading-agents-data/deploy-s285-2026-10-21/`): every injected pack on the 17 targets (vocabulary `aed6e10c…`, the master's credential and LLM packs, the PM's issuer map) equal to the repo at `f01edfc6` before and after; build `39430313878` from `v0.128.07`, 15 of 15 images; retag 00:27 to 00:33 AEDT, 17 of 17 `Succeeded`; `compare_snapshots.py`: only the image changed on every app and the job (KEDA rules, replicas, env intact); `DeployRecord s285:f01edfc6`; read at the retag: 15 of 15 agent types activated, 3 fleet checks passed, 0 faults, escalations or flags, no LLM call; the CVS 10 buy
+  filled at the 10-20 open during the retag (93.685), no buy order open. **F2 owed on
+  `sched-2026-10-20`:** the job's twelve lines read 3 `skipped … before the placing window`, 1 `placed`, 8 `already-placed`;
   8 / 8; no fault. Then close parts (b) and (d) of work-queue 131.
 
 ---

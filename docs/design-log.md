@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-309 - the dispatcher places the day's run once, by a deadline it keeps, and each fire's line says what it did - status: MEASURED and DECIDED (planner, 2026-10-20 19:55 AEDT); work-queue 131 parts (b) and (d); specced as [S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md), merged as `0.128.07` (`f01edfc6`) 2026-10-21, not deployed; the operator, 2026-10-20: *"are we ready for another sprint for Codex? I have no preference so go ahead"*
+## DL-309 - the dispatcher places the day's run once, by a deadline it keeps, and each fire's line says what it did - status: MEASURED and DECIDED (planner, 2026-10-20 19:55 AEDT); work-queue 131 parts (b) and (d); specced as [S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md), merged as `0.128.07` (`f01edfc6`) and deployed as `s285` 2026-10-21; the operator, 2026-10-20: *"are we ready for another sprint for Codex? I have no preference so go ahead"*
 
 **Why.** Work-queue 131 left (b), a held run's answer deadline against the window's end, and (d), the dispatcher's misleading line, named in [DL-294](design-log.md) and read in [DL-300](design-log.md). It is the top row a builder can take now: 113 and 134 wait on a night, 136 on a second paper account, and the rows below touch a fidelity decision path or need a paid run.
 

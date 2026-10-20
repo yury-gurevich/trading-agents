@@ -578,9 +578,16 @@ Kit and outputs in OneDrive `trading-agents-data/wq108-2026-10-20/`.
 - **The builder's return notes, answered:** DL-308 D8's `0.128.05` was the planner's, written before
   the aiohttp chore took that number; corrected to `0.128.06` in the design log. The A7 parser fix and
   the added annotations sit in the builder's own test file; accepted.
-- **Merged:** `main` fast-forwarded `2ed9ed0f` → `f7e7ac21`; tag `v0.128.06`. **Not deployed:** held
-  for the fidelity verdict (DL-308 D9), on the operator's word; rollback `s283`. F2 on the first
-  weekday night after the deploy, then close work-queue 108.
+- **Merged:** `main` fast-forwarded `2ed9ed0f` → `f7e7ac21`; tag `v0.128.06`. **Deployed as `s284`**
+  2026-10-20 on the operator's word (*"deploy"*), before the fidelity verdict, which DL-308 D9 had
+  recommended waiting for (OneDrive `trading-agents-data/deploy-s284-2026-10-20/`): every injected pack on the 17 targets equal to the repo at
+  `f7e7ac21` before and after; build `39384701870` from `v0.128.06`, 15 of 15 images; retag 18:11 to
+  18:17 AEDT, 17 of 17 `Succeeded`; `compare_snapshots.py`: only the image changed on every app and
+  the job (KEDA rules, replicas, env intact); `DeployRecord s284:f7e7ac21`; read at the retag: 15 of 15
+  agent types activated, 3 fleet checks passed, 0 faults, escalations or flags; the CVS 10 buy still
+  `accepted`. The fidelity count restarts at `sched-2026-10-20`, pinned `v0.128.06`. **F2 owed on
+  `sched-2026-10-20`:** 8 / 8; each scored name's metrics carry the three counts;
+  `sentiment_subject_filtered` 1 on every universe name; no fault. Then close work-queue 108.
 
 ---
 

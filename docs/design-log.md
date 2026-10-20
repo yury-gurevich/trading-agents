@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 12:35 AEDT); work-queue 108; specced as [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md), merged 2026-10-20 as `0.128.06`; the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
+## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 12:35 AEDT); work-queue 108; specced as [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md), merged 2026-10-20 as `0.128.06`, deployed as `s284` the same day on the operator's word (D9 below); the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
 
 **Why.** Work-queue 108: on `sched-2026-10-05` MRK cleared its confidence floor only on its sentiment score, and 7 of its 20 headlines were about Vaxcyte's vaccine trial ([DL-264](design-log.md) amendment 3). The analyst scores every headline Finnhub's `/company-news` serves for a ticker; that endpoint's `related` field only echoes the symbol asked for, so the feed itself says nothing about whose news a headline is.
 
@@ -42,6 +42,7 @@ and is marked CLOSED here.
 - **D7. Every scored name's metrics carry** `sentiment_served_headlines`, `sentiment_own_headlines` (headline counts) and `sentiment_subject_filtered` (1 or 0), so a debater or the operator can see what the pillar read (ANLZ-OBS-04's unit naming).
 - **D8. Law and version.** Analyst law v1.12: a new `ANLZ-OUT-11` (D2, D4, D5) and the PARAM row; PATCH `0.128.06` (written `0.128.05` before the aiohttp chore took that number; corrected 2026-10-20 at the merge).
 - **D9. Deploy.** `agents/analyst/` is a fidelity decision path, so the deploy restarts the fidelity count (session 2 since `sched-2026-10-16`, pin `v0.128.03`). The planner's recommendation: merge on evidence, deploy after the fidelity verdict; at about one changed decision in four nights, waiting costs less than restarting the count that EXP-014 and EXP-022 wait on. The deploy is the operator's word either way.
+  **Decided by the operator 2026-10-20, after the merge:** *"deploy"*, before the verdict. Deployed as `s284` (image-only retag, rollback `s283`); the fidelity count restarts at `sched-2026-10-20`, pinned `v0.128.06`. Road not taken: the planner's wait for the verdict; its cost, the sessions counted since `sched-2026-10-16`, is paid.
 
 **Named, not built.** The debaters' packet still lists every served headline; a provider sentiment shadow and the forecaster's challengers keep their own inputs; a headline about two universe companies counts for both; universe changes need a table entry (D3's test says which).
 

@@ -12,6 +12,39 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 13:10 AEDT); work-queue 108; the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
+
+**Why.** Work-queue 108: on `sched-2026-10-05` MRK cleared its confidence floor only on its sentiment score, and 7 of its 20 headlines were about Vaxcyte's vaccine trial ([DL-264](design-log.md) amendment 3). The analyst scores every headline Finnhub's `/company-news` serves for a ticker; that endpoint's `related` field only echoes the symbol asked for, so the feed itself says nothing about whose news a headline is.
+
+**Measured, 2026-10-20, read-only, no vendor or LLM call** (scripts and outputs: OneDrive `trading-agents-data/wq108-2026-10-20/`).
+
+- *Whose news is served.* Of 1,930 headlines served on `sched-2026-10-19` for 99 names, **844 (44 %) name the ticker's company**, 293 (15 %) name another universe company and none of their own, 793 (41 %) name neither (roundups such as *"Wall Street Week Ahead"*, or companies outside the universe). The share is 40 to 46 % on each of nine nights from `sched-2026-10-05` to `sched-2026-10-19`. Own means a hand alias table, a cashtag, the ticker in brackets, or the ticker as an upper-case word; it misses some own forms (*"Lillys"*), so 44 % is a floor.
+- *The replay is exact.* `score_candidates` on a run's recorded `MarketData`, `RegimeContext` and `ScanRun`, default `AnalystSettings` and today's book reproduces the recorded `AnalystRun`'s action and confidence for 39 of 39 names on `sched-2026-10-19` and for 303 of 326 over the nine nights (the 23 others are names held now and not then, MRK among them, so MRK's own case cannot be replayed).
+- *What changes, by the minimum number of own headlines that carry a lexicon word* (fewer: the pillar is absent and the blend renormalises), over those 303:
+
+  | Minimum | Names with no sentiment pillar | Decisions that change |
+  | --- | --- | --- |
+  | 1 | 11 (4 %) | 3: DOW hold → sell (10-05), CL rejected → buy (10-12, 10-19) |
+  | 2 | 44 (15 %) | 2: CL rejected → buy (10-12 at 0.637, 10-19 at 0.607) |
+  | 3 | 114 (38 %) | 1: CL (10-19) |
+  | 4 | 163 (54 %) | 1: CL (10-19) |
+
+- *Direction.* On `sched-2026-10-19`, 28 of 39 confidences move by 0.01 or more, from −0.052 (UNP) to +0.060 (MDLZ), most of them up: the off-subject headlines mostly pull a score toward neutral, so the fix buys somewhat more, not less.
+
+**Decided.**
+
+- **D1. The analyst filters, at scoring; the provider still serves and records every headline.** `MarketData.news` stays what the vendor served (the record, the replay and the debaters' packet are unchanged); the lexicon champion scores only the ticker's own headlines. *Ruled out:* dropping headlines at the provider (loses the record of what was served, and relevance is a scoring judgement, not the feed's); a relevance field from the vendor (Finnhub has none); weighting each headline by relevance (needs a relevance model we do not have; dropping is the rule that was measured); a finance-tuned sentiment model (scores tone, not subject).
+- **D2. A headline is the ticker's own when it names the company.** Either a name from the company table, matched case-sensitively and not followed by a lower-case letter (*Merck* matches *Merck's* and *Merck,* not *Mercker*), or a ticker mark: `$MRK`, `(MRK)`, or an exchange prefix (`NYSE:MRK`). The bare upper-case ticker counts only where the table lists it as a name (IBM, CVS, UPS), so *GE Vernova* is not GE's. A name right after *Price* or *price* does not count (*"Raises Price Target"* is not Target's).
+- **D3. The company table is package data beside the lexicon**, `agents/analyst/domain/data/company_names.json`, one entry per ticker of the fleet's universe (`scripts/universe_sp100.txt`), each listing the company's names and brands as headlines write them. A test fails when a universe ticker has no entry. *Ruled out:* Finnhub's `/stock/profile2` `name` at run time: one more vendor read a name a night, legal suffixes to strip, no brands (*Google*, *Facebook*, *Coke*), and a replay would need the names recorded.
+- **D4. A ticker with no entry scores on every served headline, as before, and says so** (`sentiment_subject_filtered` 0). Only a universe outside the fleet's can reach this, by D3's test.
+- **D5. Fewer than `sentiment_min_own_headlines` own headlines carrying a lexicon word → no sentiment pillar for that name.** A tunable, default **2**, bounds 1 to 10. Two removes the noisiest case, a pillar of 0 or 1 from one headline, and keeps the pillar for 85 % of names; three would take it from more than a third.
+- **D6. The batch-duplicate weights are unchanged:** still computed over the served news, so a headline served for many names still counts less.
+- **D7. Every scored name's metrics carry** `sentiment_served_headlines`, `sentiment_own_headlines` (headline counts) and `sentiment_subject_filtered` (1 or 0), so a debater or the operator can see what the pillar read (ANLZ-OBS-04's unit naming).
+- **D8. Law and version.** Analyst law v1.12: a new `ANLZ-OUT-11` (D2, D4, D5) and the PARAM row; PATCH `0.128.05`.
+- **D9. Deploy.** `agents/analyst/` is a fidelity decision path, so the deploy restarts the fidelity count (session 2 since `sched-2026-10-16`, pin `v0.128.03`). The planner's recommendation: merge on evidence, deploy after the fidelity verdict; at about one changed decision in four nights, waiting costs less than restarting the count that EXP-014 and EXP-022 wait on. The deploy is the operator's word either way.
+
+**Named, not built.** The debaters' packet still lists every served headline; a provider sentiment shadow and the forecaster's challengers keep their own inputs; a headline about two universe companies counts for both; universe changes need a table entry (D3's test says which).
+
 ## DL-307 - a test lane beside the fleet: a run that cannot touch the live account, graph or bus - status: MEASURED, OPEN (planner, 2026-10-17 12:40 AEDT); work-queue 136; the operator, 2026-10-17: *"why can't we have a test db on existing infrastructure and use it for testing?"*, then *"yes write it up"*
 
 **Why.** A test run today is a run of the live fleet: the planner widens the KEDA window and fires a `RunRequest` (the work queue's standing operational notes). It was declined twice in two days (2026-10-16 and 2026-10-17) because the run's first step, the drop sweep, cancels any order still pending from an earlier run (JNJ, then CAT and MDLZ, each waiting for the open). The operator asks why a test database is not enough.

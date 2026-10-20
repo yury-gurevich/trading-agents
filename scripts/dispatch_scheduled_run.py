@@ -122,7 +122,7 @@ def format_dispatch_result(result: ScheduledDispatchResult) -> str:
     """Render an intentional hold as a successful scheduler decision."""
     if result.action == "held":
         return (
-            f"held {result.run_id} reason={result.readiness_state} "
+            f"held {result.run_id} reason={result.readiness_state or result.reason} "
             f"failures={len(result.failures)}"
         )
     return f"{result.action} {result.run_id} reason={result.reason}"

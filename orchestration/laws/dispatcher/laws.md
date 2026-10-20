@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
 > brief the operator once on each run it placed, and tell the operator when a container of the
@@ -61,9 +61,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Triggers (`TRG`)
 
-- **DSP-TRG-01** — A cron fire may place a run only inside the action window
-  `_ACTION_START=22:30 UTC` through `_ACT_BY=23:20 UTC`. A late `run_now` answer remains evidence but
-  cannot place a run.
+- **DSP-TRG-01** — A cron fire may place a run only inside the action window, read by the fire's
+  ten-minute tick (the job's cron is `*/10`, and a fire lands seconds after its tick): from
+  `_ACTION_START=22:30 UTC` to the last placing fire, `_ACT_BY=23:10 UTC`. The last placing fire leaves
+  a run 20 minutes before the fleet's window ends at 23:30 UTC, which the longest measured run fits
+  (DL-309). A late `run_now` answer remains evidence but cannot place a run.
 - **DSP-TRG-02** — Calendar skip is evaluated before readiness, Telegram polling, notices, or hold
   writes.
 - **DSP-TRG-03** — Every fire whose `as_of` is its own UTC date attempts that day's brief after the
@@ -129,6 +131,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the configured universe membership, and never decides what to buy, sell, size, or veto.
 - **DSP-NEV-03** — The sensor never acts on a container: it starts, stops, scales, restarts and
   reconfigures nothing, and calls no management API. It reads the log workspace and tells.
+- **DSP-NEV-04** — The scheduled dispatcher never holds a run whose day-keyed `RunRequest` exists.
+  Once an earlier fire placed it, on a passing check or on a `run_now` answer, a fire reads no
+  readiness, writes no `RunHold` and sends no hold notice; it reports `already-placed`, and inside
+  the action window it retries a degraded notice that was not sent.
 
 ## State & effects (`STA`)
 
@@ -141,8 +147,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **DSP-IDM-01** — The scheduled run id is deterministic from the session date:
   `sched-YYYY-MM-DD`.
-- **DSP-IDM-02** — Re-firing the same scheduled placement is idempotent: ready runs merge to one
-  `RunRequest`, and failing runs merge to one active `RunHold`.
+- **DSP-IDM-02** — Re-firing the same scheduled placement is idempotent: once the day's `RunRequest`
+  exists a fire writes no `RunRequest` and no `RunHold`, and until it exists failing runs merge to
+  one active `RunHold`.
 - **DSP-IDM-03** — At most one brief per run id. A fire sends only while the run's `RunRequest`
   carries no `brief_sent_at`; a successful send writes `brief_sent_at`, `brief_message_id`, and
   `brief_verdict` (the verdict the brief carried, `NOT_FINISHED` for a RED brief) on that
@@ -181,7 +188,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Type alignment (`TYP`)
 
 - **DSP-TYP-01** — `ScheduledDispatchResult` is the dispatcher output contract and its action space
-  is exactly `placed`, `skipped`, or `held`, with readiness details present only when relevant.
+  is exactly `placed`, `already-placed`, `skipped`, or `held`, with readiness details present only
+  when relevant.
 
 ## Security & privilege (`SEC`)
 
@@ -215,10 +223,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **DSP-OBS-03** — Each sensor run prints one line: the rows read, the new events, the alarms and how
   many were told, or the failure. Every alarm and report the sensor kept, and every read, is
   reconstructable from `ContainerEvent` and `ContainerSensorRead` facts and their `TOLD` edges.
+- **DSP-OBS-04** — Each fire prints one line that names what it did and why: `placed` with the
+  calendar's reason on the fire that wrote the run; `already-placed` on every later fire; `held`
+  with the readiness state and the failure count, or, once the action window has passed, that it
+  has; `skipped` with the calendar's reason, `operator` for a skip answer, or which side of the
+  action window the fire is on, with the window's times.
 
 ## Performance envelope (`PERF`)
 
-- **DSP-PERF-01** — Human override placement is bounded to the 22:30-23:20 UTC action window; outside
+- **DSP-PERF-01** — Human override placement is bounded to the 22:30-23:10 UTC action window; outside
   that window the dispatcher does not begin a run.
 
 ## Capability declaration (`CAP`)
@@ -304,3 +317,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   whoever caused it: a revision update the platform failed, its autoscaler failing, and any other
   row it marks `Warning` but the five measured by-products of a deploy or a wake. `DSP-IN-05`
   amended. No clause added.
+- v1.7 — S285 (DL-309, work-queue 131 parts b and d): the last placing fire is the 23:10 tick, read
+  by the fire's tick, and leaves a run 20 minutes before the 23:30 window end; a placed run is
+  never held again; each fire's line says what it did. New `DSP-NEV-04` and `DSP-OBS-04`;
+  `DSP-TRG-01`, `DSP-IDM-02`, `DSP-TYP-01` (now proven) and `DSP-PERF-01` amended.

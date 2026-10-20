@@ -73,7 +73,7 @@ class ScheduledDispatchDecision:
 class ScheduledDispatchResult:
     """Scheduled-run outcome after optional graph placement."""
 
-    action: Literal["placed", "skipped", "held"]
+    action: Literal["placed", "already-placed", "skipped", "held"]
     run_id: str
     reason: str
     node_key: str | None = None

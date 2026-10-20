@@ -230,7 +230,7 @@ Default schedule:
 
 | Component | Schedule |
 | --- | --- |
-| `dispatcher-cron` job | `*/10 22-23 * * 1-5` UTC: every ten minutes, weekdays; it places a run only from 22:30 to 23:20 ([DL-183](design-log-archive/INDEX.md)) |
+| `dispatcher-cron` job | `*/10 22-23 * * 1-5` UTC: every ten minutes, weekdays; it places a run only from the 22:30 fire to the 23:10 fire, and only once ([DL-183](design-log-archive/INDEX.md), [DL-309](design-log.md)) |
 | `master` app cron scale window | starts `0 22 * * 1-5` UTC on the live app (operator, 2026-10-12, [DL-294](design-log.md) amendment 1): one readiness check before the 22:30 run; the script's default since [S274](sprints/sprint-274-a-full-up-keeps-the-masters-live-start.md) |
 | 15 agent app cron scale window | starts `30 22 * * 1-5` UTC |
 | all app scale windows | end `30 23 * * 1-5` UTC (operator, 2026-10-11, [DL-294](design-log.md): weekdays only, one hour; it was every day until 00:30) |

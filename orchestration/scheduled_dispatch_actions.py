@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from agents.scanner.universe import FileUniverse
+from contracts.provider import RUN_REQUEST_LABEL
+from contracts.run_posture import RUN_POSTURE_DEGRADED, RUN_POSTURE_NORMAL
 from orchestration.scheduled_dispatch import (
     ScheduledDispatchResult,
     place_scheduled_run,
@@ -27,7 +29,9 @@ if TYPE_CHECKING:
     from orchestration.scheduled_dispatch import TradingCalendar
 
 _ACTION_START = time(22, 30)
-_ACT_BY = time(23, 20)
+# DL-309: the last placing fire leaves a run 20 minutes before the 23:30 window end.
+_ACT_BY = time(23, 10)
+_TICK_MINUTES = 10  # The pack's */10 cron; a fire lands seconds after its tick.
 
 
 def act_by_text(now: datetime, timezone: str) -> str:
@@ -44,17 +48,44 @@ def act_by_text(now: datetime, timezone: str) -> str:
     return f"{deadline:%H:%M} {timezone.rsplit('/', 1)[-1]} ({utc})"
 
 
+def fire_tick(now: datetime) -> time:
+    """Return the cron tick a fire belongs to: its time floored to ten minutes."""
+    return time(now.hour, now.minute - now.minute % _TICK_MINUTES)
+
+
 def is_action_time(now: datetime) -> bool:
     """Return whether a dispatcher fire may place a run in the fleet window."""
-    return _ACTION_START <= now.time().replace(tzinfo=None) <= _ACT_BY
+    return _ACTION_START <= fire_tick(now) <= _ACT_BY
 
 
 def outside_window(
-    run_id: str, reason: str, hold: Node | None
+    run_id: str, now: datetime, hold: Node | None
 ) -> ScheduledDispatchResult:
-    """Keep an existing hold, or skip placement outside the bounded window."""
+    """Keep an existing hold, or skip, naming which side of the window the fire is."""
+    side = "before" if fire_tick(now) < _ACTION_START else "after"
+    reason = f"{side} the placing window, {_ACTION_START:%H:%M} to {_ACT_BY:%H:%M} UTC"
+    if hold is None:
+        return ScheduledDispatchResult("skipped", run_id, reason)
+    failures = tuple(str(item) for item in hold.props.get("failures", ()))
+    return ScheduledDispatchResult("held", run_id, reason, hold.key, failures=failures)
+
+
+def already_placed(graph: GraphStore, run_id: str) -> ScheduledDispatchResult | None:
+    """Return the day's run an earlier fire placed, or None while there is none."""
+    node = graph.get_node(RUN_REQUEST_LABEL, f"run-request:{run_id}")
+    if node is None:
+        return None
+    degraded = node.props.get("run_posture") == RUN_POSTURE_DEGRADED
     return ScheduledDispatchResult(
-        "held" if hold is not None else "skipped", run_id, reason
+        "already-placed",
+        run_id,
+        "placed by an earlier fire",
+        node.key,
+        tuple(str(ticker) for ticker in node.props.get("tickers", ())),
+        failures=tuple(str(item) for item in node.props.get("degraded_by", ()))
+        if degraded
+        else (),
+        run_posture=RUN_POSTURE_DEGRADED if degraded else RUN_POSTURE_NORMAL,
     )
 
 

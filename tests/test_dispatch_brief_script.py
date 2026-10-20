@@ -26,7 +26,7 @@ from orchestration.tests.daily_brief_scenarios import (
 from orchestration.tests.scheduled_dispatch_human_helpers import FakeTelegram
 
 # 23:30 is past the action window: the job places nothing, and the brief still goes.
-_PRINTED = "skipped sched-2026-09-25 reason=NYSE trading session\n"
+_PRINTED = "already-placed sched-2026-09-25 reason=placed by an earlier fire\n"
 
 
 class _Clock(datetime):

@@ -10,9 +10,13 @@ from __future__ import annotations
 from datetime import timedelta
 from importlib import import_module
 
+import pytest
+
+from agents.scanner.universe import FakeUniverse
 from contracts.provider import RUN_REQUEST_LABEL
 from kernel import InMemoryGraphStore
 from orchestration.tests.scheduled_dispatch_human_helpers import (
+    AS_OF,
     NOW,
     FakeAnswer,
     FakeTelegram,
@@ -107,13 +111,25 @@ def test_c4_second_fire_on_one_hold_sends_no_second_notice() -> None:
 
 
 def test_c5_rehold_after_release_gets_its_own_notice() -> None:
-    """DSP-STA-01: a released hold is untouched and a new hold is announced."""
+    """DSP-STA-01: a released hold is untouched and a new hold is announced.
+
+    The release places nothing (an empty universe): a placed run is never held
+    again (DSP-NEV-04).
+    """
     graph = InMemoryGraphStore()
     telegram = FakeTelegram()
     preflight(graph, passed=False)
     dispatch(graph, telegram)
     preflight(graph, passed=True, checked_at=NOW - timedelta(minutes=4))
-    dispatch(graph, telegram)
+    controller = import_module("orchestration.scheduled_dispatch_human")
+    with pytest.raises(ValueError, match="no tickers"):
+        controller.dispatch_with_human_answer(
+            graph,
+            as_of=AS_OF,
+            now=NOW,
+            telegram=telegram,
+            universe_source=FakeUniverse({"sp500": ()}),
+        )
     preflight(graph, passed=False, checked_at=NOW - timedelta(minutes=3))
 
     dispatch(graph, telegram)

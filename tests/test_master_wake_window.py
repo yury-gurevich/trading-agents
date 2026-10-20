@@ -49,7 +49,7 @@ def test_the_check_made_at_the_wake_is_fresh_at_the_first_placing_tick() -> None
 
 
 def test_every_placing_tick_finds_a_fresh_check() -> None:
-    """DSP-IN-03 / DSP-TRG-01: all six placing ticks find readable, fresh checks."""
+    """DSP-IN-03 / DSP-TRG-01: all five placing ticks find readable, fresh checks."""
     limit = OrchestratorSettings(_env_file=None).preflight_max_age_minutes
     interval = MasterSettings(_env_file=None).fleet_preflight_interval_minutes
     wake = _wake()
@@ -62,7 +62,7 @@ def test_every_placing_tick_finds_a_fresh_check() -> None:
         ticks.append(tick)
         tick += timedelta(minutes=10)  # The pack's */10 dispatcher cron.
 
-    assert len(ticks) == 6
+    assert len(ticks) == 5
     for tick in ticks:
         newest = max(check for check in checks if check <= tick)
         assert tick - newest <= timedelta(minutes=limit)

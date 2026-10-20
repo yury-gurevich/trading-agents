@@ -58,7 +58,7 @@ def test_a4_the_brief_survives_the_windows_early_return() -> None:
     after = {key: dict(node.props) for key, node in graph._nodes.items()}
     assert len(telegram.briefs) == 1
     assert result == fire(no_brief, FakeTelegram(), at(23, 30))
-    assert result.action == "skipped"
+    assert result.action == "already-placed"
     changed = {key for key in after if after[key] != before.get(key)}
     assert changed == {("RunRequest", "run-request:sched-2026-09-25")}
     added = (
@@ -130,7 +130,7 @@ def test_a_missing_brief_module_is_a_fault_and_the_fire_places(
 
     result = fire(graph, FakeTelegram(), at(22, 50))
 
-    assert result.action == "placed"
+    assert result.action == "already-placed"
     (fault,) = graph.list_nodes("Fault")
     assert fault.props["message"] == (
         "daily brief not sent for sched-2026-09-25: brief failed (ModuleNotFoundError)"
@@ -163,7 +163,7 @@ def test_a_fault_the_graph_refuses_still_never_stops_the_fire(
 
     result = fire(graph, FakeTelegram(brief_raises=True), at(22, 50))
 
-    assert result.action == "placed"
+    assert result.action == "already-placed"
     err = capsys.readouterr().err
     assert err == "error daily brief fault not recorded: OSError\n"
     assert amount_free(err)

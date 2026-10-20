@@ -34,7 +34,7 @@ def test_degraded_run_sends_one_informational_notice_and_no_hold() -> None:
     first = dispatch(graph, telegram)
     second = dispatch(graph, telegram)
 
-    assert (first.action, second.action) == ("placed", "placed")
+    assert (first.action, second.action) == ("placed", "already-placed")
     assert telegram.sent == []
     assert len(telegram.degraded_sent) == 1
     assert telegram.degraded_sent[0] == {

@@ -20,6 +20,7 @@ from orchestration.scheduled_dispatch import (
 )
 from orchestration.scheduled_dispatch_actions import (
     act_by_text,
+    already_placed,
     is_action_time,
     outside_window,
     place_override,
@@ -64,8 +65,14 @@ def dispatch_with_human_answer(
     brief_safely(
         graph, telegram, run_id=decision.run_id, as_of=as_of, now=now, settings=settings
     )
+    placed = already_placed(graph, decision.run_id)
+    if placed is not None:
+        # Once placed, a fire reads no readiness and holds nothing (DSP-NEV-04).
+        if is_action_time(now) and placed.run_posture == RUN_POSTURE_DEGRADED:
+            _notify_degraded_run(graph, telegram, placed, now)
+        return placed
     if not is_action_time(now):
-        return outside_window(decision.run_id, decision.reason, hold)
+        return outside_window(decision.run_id, now, hold)
     if answer == "skip_today":
         return ScheduledDispatchResult("skipped", decision.run_id, "operator")
     if answer == "run_now":

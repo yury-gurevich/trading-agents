@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-284-a-headline-counts-only-for-the-company-it-names`
-**Status:** BUILT
-**Version:** `0.128.06` (PATCH after local `main` at `0.128.05`)
+**Status:** MERGED
+**Version:** `0.128.06` (tag `v0.128.06`, `main` fast-forwarded to `f7e7ac21`)
 **Effort:** M
 **Decisions:** [DL-308](../design-log.md) (decided, nine decisions with the roads not taken) · work-queue 108 · [DL-264](../design-log.md) amendment 3 (where it was found)
 
@@ -152,13 +152,13 @@ On the unchanged tree the whole file fails at import. After Appendix section 1 a
 
 ## Success factors
 
-- [ ] On the built tree, `s284_f1.py` over the nine nights (planner's F1) prints exactly the prototype's output (`f1_proto.txt`): the same two decisions change (CL, 10-12 and 10-19) and nothing else.
+- [x] On the built tree, `s284_f1.py` over the nine nights (planner's F1) prints exactly the prototype's output (`f1_proto.txt`): the same two decisions change (CL, 10-12 and 10-19) and nothing else.
 - [x] `MarketData`, `contracts/`, the provider and the debaters unchanged; no existing test changed beyond Appendix section 2's four files.
 - [x] Design decisions recorded with rejected alternatives: DL-308, already on `main`.
 - [x] Law cycle done as Appendix section 2: `ANLZ-OUT-11` 🟩, rollup 31 / 54 in both rollups.
 - [x] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
 - [x] Every touched module < 200 lines, test files included (four sit at 192 to 199: add nothing to them).
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage. *(Planner, 2026-10-20: the builder's offline run was red only at the dependency audit; the remote CI on `f7e7ac21` ran all 16 steps green, GATE PROVEN.)*
 
 ---
 
@@ -547,6 +547,40 @@ EXISTING_TESTS_CHANGED=only the four Appendix section 2 files
 **`make gate-ran`:** not done — the planner's after push, from this worktree and checked against its exact final HEAD. Push and remote CI/CodeQL/Security Findings are not done under the network prohibition.
 
 **Not met / verified failing:** Overall `make ci` verified failing (exit 2), fresh dependency audit not done offline. F1 nine-night prototype comparison not done (planner, needs the main checkout's `.env`); push, remote gates, CodeQL review, merge, image build, deploy and F2 not done. No live or replay-equality result is claimed.
+
+### The planner's review and merge (2026-10-20)
+
+Kit and outputs in OneDrive `trading-agents-data/wq108-2026-10-20/`.
+
+- **Scope:** the 17 changed files are the spec's: four production files under `agents/analyst/`
+  (two new), the four law files, the four Appendix section 2 test files and the new
+  `test_sentiment_subject.py`, `pyproject.toml`, `uv.lock` (the root package's version line only),
+  this spec and its README row; `contracts/`, the provider and the debaters unchanged.
+- **Blobs:** 12 of 12 equal `prototype_blobs.txt`.
+- **Breaks:** 25 of 25 red against the builder's `test_sentiment_subject.py` alone, tree clean after
+  (`s284_breaks_on_built_codex_tests_f7e7ac21.txt`).
+- **The planner's tests on the built tree** (beside the builder's under a temporary name, then
+  removed): 26 passed; with the whole analyst suite, 459 passed (`s284_planner_tests_on_built_f7e7ac21.txt`).
+- **CodeQL** set-diff against the S283 branch by rule and path: nothing new, nothing gone, 0 errors.
+  Both branches list 134 open alerts where S283's review read 78 on the same branch, so CodeQL's
+  count moved, not the code (`codeql_sprint-283-….tsv`, `codeql_sprint-284-….tsv`).
+- **F1 passed** (`s284_f1.py` over the nine nights, read only, `main` `2ed9ed0f` then the built
+  `f7e7ac21` minutes apart): `main` equals the morning's baseline (sha256 `f07daeb203ef9ed5` both,
+  303 of 328 lines equal to the record), so the book had not moved; the built output equals
+  `f1_proto.txt` byte for byte (sha256 `b16c60d13166eeb1`). The decisions that change: CL on 10-12
+  (REJECT → buy 0.637) and on 10-19 (REJECT → buy 0.607), nothing else (`f1_main_2ed9ed0f.txt`,
+  `f1_built_f7e7ac21.txt`).
+- **`make gate-ran`** from `../ta-s284`: GATE PROVEN for `f7e7ac21` (CI, which ran the dependency
+  audit the builder could not reach, CodeQL, Security Findings; `s284-gate-ran-branch-f7e7ac21.txt`).
+- **Deploy check:** `git diff v0.128.05..v0.128.06` touches `agents/analyst/`, one of
+  `scripts/replay_fidelity_git.py::DECISION_PATHS`, so the deploy restarts the fidelity count; nothing
+  under `kernel/`, `orchestration/`, `infra/` or a Dockerfile, so it is an image-only retag.
+- **The builder's return notes, answered:** DL-308 D8's `0.128.05` was the planner's, written before
+  the aiohttp chore took that number; corrected to `0.128.06` in the design log. The A7 parser fix and
+  the added annotations sit in the builder's own test file; accepted.
+- **Merged:** `main` fast-forwarded `2ed9ed0f` → `f7e7ac21`; tag `v0.128.06`. **Not deployed:** held
+  for the fidelity verdict (DL-308 D9), on the operator's word; rollback `s283`. F2 on the first
+  weekday night after the deploy, then close work-queue 108.
 
 ---
 

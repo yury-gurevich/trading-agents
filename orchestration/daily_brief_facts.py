@@ -15,11 +15,14 @@ import math
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from datetime import date
 from typing import TYPE_CHECKING
 
 from agents.supervisor.domain.health import compute_health
 from contracts.run_posture import RUN_POSTURE_DEGRADED, run_posture
 from orchestration.batch_chain import CHAIN, POSITION_SYNC_KEY
+from orchestration.book_brief import book_lines
+from orchestration.book_odds import book_odds
 from orchestration.container_brief import container_line
 from orchestration.daily_brief_fills import fills_between, parse_instant, run_orders
 from orchestration.daily_brief_text import (
@@ -92,7 +95,16 @@ def brief_facts(
         scoreboard=_clause(snapshot),
         fills=fills_between(fills, reference.created if reference else None, created),
         last_stage=None,
+        book=book_lines(book_odds(graph, _session(nodes["RunRequest"]))),
     )
+
+
+def _session(request: Node) -> date:
+    """The run's session, the day its held claims are keyed by (DL-311)."""
+    try:
+        return date.fromisoformat(str(request.props.get("requested_at", ""))[:10])
+    except ValueError as exc:
+        raise BriefDataError("RunRequest.requested_at") from exc
 
 
 def _source_key(pm_run: Node) -> str:

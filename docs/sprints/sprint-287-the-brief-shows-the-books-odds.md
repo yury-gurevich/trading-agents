@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-287-the-brief-shows-the-books-odds`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge* (`0.130.00` while `main` is `0.129.00`)
 **Effort:** M
 **Decisions:** [DL-311](../design-log.md) (decided, nine decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md): the book as a distribution; [DL-310](../design-log.md): the nightly held claims this sprint reads)
@@ -170,12 +170,12 @@ On the unchanged tree every one fails or errors except A11. After Appendix secti
 
 ## Success factors
 
-- [ ] On the built tree, F1 (kit `s287_f1.py`, run from the built tree with its own venv) prints exactly the prototype's output (`f1_proto.txt`, digest `0a8e6318978cd7b0`): the two book lines above, a whole brief with them after `Filled: none`, 34 dashboard rows.
-- [ ] No file under `contracts/`, `kernel/`, `agents/` or a decision path changes; no existing test changes.
-- [ ] Design decisions recorded with rejected alternatives: DL-311, already on `main`.
-- [ ] Law cycle done as Appendix section 2: `DSP-OUT-10` and `SRF-OUT-09` 🟩; dispatcher 47 / 50 and surfaces 32 / 39 in both rollups.
-- [ ] B1 to B26 each planted, watched to fail against your tests alone, restored — stated per break.
-- [ ] Every touched module < 200 lines, test files included.
+- [x] On the built tree, F1 (kit `s287_f1.py`, run from the built tree with its own venv) prints exactly the prototype's output (`f1_proto.txt`, digest `0a8e6318978cd7b0`): the two book lines above, a whole brief with them after `Filled: none`, 34 dashboard rows.
+- [x] No file under `contracts/`, `kernel/`, `agents/` or a decision path changes; no existing test changes.
+- [x] Design decisions recorded with rejected alternatives: DL-311, already on `main`.
+- [x] Law cycle done as Appendix section 2: `DSP-OUT-10` and `SRF-OUT-09` 🟩; dispatcher 47 / 50 and surfaces 32 / 39 in both rollups.
+- [x] B1 to B26 each planted, watched to fail against your tests alone, restored — stated per break.
+- [x] Every touched module < 200 lines, test files included.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -329,15 +329,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| Book reader and book wording | `orchestration/laws/dispatcher/laws.md` and `test-plan.md`, whole; `docs/laws/conventions.md` and `drift-register.md`, whole (2026-10-21, before code) | DSP-IDN-04, DSP-OUT-06/08/09, new DSP-OUT-10, DSP-DEP-01, CAP, DSP-FAIL-03 | Retain Appendix exactly: active lots, session-keyed held claims, rounded cents, no writes or decision changes. DSP-DEP-01 is partial and remains gray. |
+| Brief facts, composition and dispatcher image | Same dispatcher book and plan; `tests/test_dispatch_scheduled_run.py`, whole | DSP-IDN-04, DSP-OUT-06/08/09/10, DSP-FAIL-03, CAP | Put the lines only on finished briefs after fills; copy both imports in the slim image. |
+| Dashboard projection, route and static panel | `surfaces/laws/laws.md` and `test-plan.md`, whole; conventions and drift register above | SRF-OUT-01/05/06, new SRF-OUT-09 | Selected-request session; brief's own lines; forecast rows first, stop probability descending; no control or writes. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, two new guarantees, no contract change. Apply Appendix section 2 exactly: DSP-OUT-10 and SRF-OUT-09, dispatcher v1.8 and surfaces v1.9, their named test-plan rows and both rollups. DL-311 D1-D9 and its ruled-out alternatives were read; no design decision is left open.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** None found in the complete reading. The specified amendment supplies the new read capability and guarantees.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** The two new output guarantees are absent before this sprint; Appendix section 2 explicitly supplies them. No additional silence needing a decision was found.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Clauses that were ⬜ and are now proven:** No pre-existing gray clause changed status. New DSP-OUT-10 and SRF-OUT-09 now have passing cited functional tests; dispatcher 47 / 50 and surfaces 32 / 39. DSP-DEP-01 remains partial/gray (clock/calendar/universe dependencies unproven); SRF-IDN-01/02, SRF-TRG-01, SRF-SEC-01/02, SRF-DEP-01 and SRF-PERF-02 remain gray. This sentence records the final proof; the reading record above preceded the first code edit.
 
 ---
 
@@ -345,51 +347,205 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to be filled by the builder* | | | |
+| A1 | `test_the_book_joins_each_held_name_to_its_sessions_claim` | `orchestration/tests/test_book_odds.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A2 | `test_a_name_without_a_readable_claim_is_unforecast` | `orchestration/tests/test_book_odds.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A3 | `test_nothing_held_is_no_book` | `orchestration/tests/test_book_odds.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A4 | `test_the_book_reads_positions_once_and_each_claim_by_key` | `orchestration/tests/test_book_odds.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A5 | `test_the_label_and_prefix_are_the_forecasters` | `orchestration/tests/test_book_odds.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A6 | `test_the_book_line_totals_the_names_past_their_target` | `orchestration/tests/test_book_brief.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A7 | `test_the_odds_line_sums_the_claims_and_names_the_likelier_to_stop` | `orchestration/tests/test_book_brief.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A8 | `test_a_book_with_no_claim_says_so_in_one_line` | `orchestration/tests/test_book_brief.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A9 | `test_no_name_past_its_target_reads_none` | `orchestration/tests/test_book_brief.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A10 | `test_a_finished_brief_carries_the_book_after_its_fills` | `orchestration/tests/test_daily_brief_book.py` | PASS (baseline FAIL) | DSP-OUT-10, DSP-OUT-06 |
+| A11 | `test_a_red_brief_carries_no_book` | `orchestration/tests/test_daily_brief_book.py` | PASS (baseline PASS) | DSP-OUT-10 |
+| A12 | `test_a_malformed_session_names_its_field` | `orchestration/tests/test_daily_brief_book.py` | PASS (baseline FAIL) | DSP-OUT-10 |
+| A13 | `test_the_book_view_says_what_the_brief_says_and_leads_with_the_stop` | `surfaces/tests/test_dashboard_book.py` | PASS (baseline FAIL) | SRF-OUT-09, SRF-OUT-01 |
+| A14 | `test_a_run_with_no_request_or_no_book_shows_nothing` | `surfaces/tests/test_dashboard_book.py` | PASS (baseline FAIL) | SRF-OUT-09 |
+| A15 | `test_the_panel_is_served_and_wired` | `surfaces/tests/test_dashboard_book.py` | PASS (baseline FAIL) | SRF-OUT-09, SRF-OUT-05 |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** None. `orchestration/tests/book_fixtures.py` supplies synthetic lots, claims, fixed expected lines and the counting graph.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to be filled by the builder*
+**Status:** BUILT — local branch only; full CI verified failing at the offline dependency audit.
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s287`, branch `sprint-287-the-brief-shows-the-books-odds`, starting HEAD/main `bd3b5c5f3f156ee7ce880747e12800ed07a5905c`; clean at start; `.env` absent. Full CI used a credential-stripped child environment, `UV_OFFLINE=1`, `UV_NO_SYNC=1`, and an external socket guard allowing only local test servers; no external service was reached.
 
-**Result:** *to be filled by the builder*
+**Result:** A1-A15: 14 failed / 1 passed before production edits (A11 passed), then 15 passed. All 26 exact breaks independently made an A test fail and were restored byte for byte. All 15 Appendix production/law blobs match `prototype_blobs.txt`. F1 equals `f1_proto.txt` byte for byte: 2 book lines, 34 dashboard rows, digest `0a8e6318978cd7b0`. Full pytest: `5279 passed, 9 skipped, 2470 warnings in 462.77s (0:07:42)`, 100.00 % coverage. Version `0.130.00`; `uv lock --offline` resolved 180 packages and changed only the project version to `0.130.0`; `uv.lock` staged. The dependency audit is the only failing CI step; its external advisory lookup is not done.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:** The exact 9 section-1 files and 6 section-2 files; the four planned test files and `orchestration/tests/book_fixtures.py`; `pyproject.toml`, `uv.lock`; this sprint document and `docs/sprints/README.md` (24 files). No existing test, excluded tree/path, other Dockerfile, STATE, design-log or work-queue change.
 
 **Design decisions:** recorded as [`DL-311`](../design-log.md) — on `main` before the build; the rejected alternatives are there.
 
 **Proof — the red run first:**
 
+The red and green runs used `uv run --offline --no-sync pytest --no-cov -v orchestration/tests/test_book_odds.py orchestration/tests/test_book_brief.py orchestration/tests/test_daily_brief_book.py surfaces/tests/test_dashboard_book.py` from the recorded worktree.
+
 ```text
-to be filled by the builder
+============================= test session starts =============================
+collecting ... collected 15 items
+
+orchestration/tests/test_book_odds.py::test_the_book_joins_each_held_name_to_its_sessions_claim FAILED [  6%]
+orchestration/tests/test_book_odds.py::test_a_name_without_a_readable_claim_is_unforecast FAILED [ 13%]
+orchestration/tests/test_book_odds.py::test_nothing_held_is_no_book FAILED [ 20%]
+orchestration/tests/test_book_odds.py::test_the_book_reads_positions_once_and_each_claim_by_key FAILED [ 26%]
+orchestration/tests/test_book_odds.py::test_the_label_and_prefix_are_the_forecasters FAILED [ 33%]
+orchestration/tests/test_book_brief.py::test_the_book_line_totals_the_names_past_their_target FAILED [ 40%]
+orchestration/tests/test_book_brief.py::test_the_odds_line_sums_the_claims_and_names_the_likelier_to_stop FAILED [ 46%]
+orchestration/tests/test_book_brief.py::test_a_book_with_no_claim_says_so_in_one_line FAILED [ 53%]
+orchestration/tests/test_book_brief.py::test_no_name_past_its_target_reads_none FAILED [ 60%]
+orchestration/tests/test_daily_brief_book.py::test_a_finished_brief_carries_the_book_after_its_fills FAILED [ 66%]
+orchestration/tests/test_daily_brief_book.py::test_a_red_brief_carries_no_book PASSED [ 73%]
+orchestration/tests/test_daily_brief_book.py::test_a_malformed_session_names_its_field FAILED [ 80%]
+surfaces/tests/test_dashboard_book.py::test_the_book_view_says_what_the_brief_says_and_leads_with_the_stop FAILED [ 86%]
+surfaces/tests/test_dashboard_book.py::test_a_run_with_no_request_or_no_book_shows_nothing FAILED [ 93%]
+surfaces/tests/test_dashboard_book.py::test_the_panel_is_served_and_wired FAILED [100%]
+======================== 14 failed, 1 passed in 12.87s ========================
+RED_EXIT=1
 ```
 
 **Proof — the green run:**
 
 ```text
-to be filled by the builder
+============================= test session starts =============================
+collecting ... collected 15 items
+
+orchestration/tests/test_book_odds.py::test_the_book_joins_each_held_name_to_its_sessions_claim PASSED [  6%]
+orchestration/tests/test_book_odds.py::test_a_name_without_a_readable_claim_is_unforecast PASSED [ 13%]
+orchestration/tests/test_book_odds.py::test_nothing_held_is_no_book PASSED [ 20%]
+orchestration/tests/test_book_odds.py::test_the_book_reads_positions_once_and_each_claim_by_key PASSED [ 26%]
+orchestration/tests/test_book_odds.py::test_the_label_and_prefix_are_the_forecasters PASSED [ 33%]
+orchestration/tests/test_book_brief.py::test_the_book_line_totals_the_names_past_their_target PASSED [ 40%]
+orchestration/tests/test_book_brief.py::test_the_odds_line_sums_the_claims_and_names_the_likelier_to_stop PASSED [ 46%]
+orchestration/tests/test_book_brief.py::test_a_book_with_no_claim_says_so_in_one_line PASSED [ 53%]
+orchestration/tests/test_book_brief.py::test_no_name_past_its_target_reads_none PASSED [ 60%]
+orchestration/tests/test_daily_brief_book.py::test_a_finished_brief_carries_the_book_after_its_fills PASSED [ 66%]
+orchestration/tests/test_daily_brief_book.py::test_a_red_brief_carries_no_book PASSED [ 73%]
+orchestration/tests/test_daily_brief_book.py::test_a_malformed_session_names_its_field PASSED [ 80%]
+surfaces/tests/test_dashboard_book.py::test_the_book_view_says_what_the_brief_says_and_leads_with_the_stop PASSED [ 86%]
+surfaces/tests/test_dashboard_book.py::test_a_run_with_no_request_or_no_book_shows_nothing PASSED [ 93%]
+surfaces/tests/test_dashboard_book.py::test_the_panel_is_served_and_wired PASSED [100%]
+
+============================= 15 passed in 3.57s ==============================
+GREEN_EXIT=0
 ```
 
-**Guards planted:** *to be filled by the builder*
+Existing image-closure and capability tests, unchanged:
 
-**Module line counts:** *to be filled by the builder*
+```text
+.......                                                                  [100%]
+7 passed in 5.07s
+EXISTING_EXIT=0
+```
 
-**`make ci`:** *to be filled by the builder*
+Frozen F1 and exact Appendix proof:
 
-**`make gate-ran`:** *to be filled by the builder*
+```text
+code from C:\Users\yury_\Downloads\project\ta-s287\orchestration\book_odds.py
+APPENDIX_BLOBS=15/15
+F1_BYTES_EQUAL=True
+2 book lines, 34 dashboard rows; digest 0a8e6318978cd7b0
+```
 
-**Not met / verified failing:** *to be filled by the builder*
+**Guards planted:** `GUARDS_PROVEN=26/26; ALL_MUTATED_FILES_RESTORED`. Each ran only the four planned test files; each restoration was checked against the original bytes before the next plant.
+
+| Break | A tests made red | Observed result |
+| --- | --- | --- |
+| B1 | A3 | exit 1; 1 failed, 14 passed in 5.93s; bytes restored |
+| B2 | A1, A6, A10 | exit 1; 3 failed, 12 passed in 6.05s; bytes restored |
+| B3 | A1, A6, A10, A13 | exit 1; 4 failed, 11 passed in 5.96s; bytes restored |
+| B4 | A1, A2, A4, A6, A7, A9, A10, A13 | exit 1; 8 failed, 7 passed in 6.03s; bytes restored |
+| B5 | A1, A2, A4, A6, A7, A8, A9, A10, A13 | exit 1; 9 failed, 6 passed in 6.01s; bytes restored |
+| B6 | A2 | exit 1; 1 failed, 14 passed in 5.91s; bytes restored |
+| B7 | A1, A6, A9, A10, A13 | exit 1; 5 failed, 10 passed in 6.18s; bytes restored |
+| B8 | A1, A6, A10, A13 | exit 1; 4 failed, 11 passed in 5.92s; bytes restored |
+| B9 | A7 | exit 1; 1 failed, 14 passed in 5.93s; bytes restored |
+| B10 | A7 | exit 1; 1 failed, 14 passed in 5.85s; bytes restored |
+| B11 | A6, A7, A9, A10 | exit 1; 4 failed, 11 passed in 5.92s; bytes restored |
+| B12 | A6, A10 | exit 1; 2 failed, 13 passed in 5.99s; bytes restored |
+| B13 | A1, A2, A4, A5, A6, A7, A9, A10, A13 | exit 1; 9 failed, 6 passed in 5.91s; bytes restored |
+| B14 | A4 | exit 1; 1 failed, 14 passed in 5.93s; bytes restored |
+| B15 | A6, A10 | exit 1; 2 failed, 13 passed in 6.38s; bytes restored |
+| B16 | A8 | exit 1; 1 failed, 14 passed in 5.98s; bytes restored |
+| B17 | A7 | exit 1; 1 failed, 14 passed in 5.93s; bytes restored |
+| B18 | A7 | exit 1; 1 failed, 14 passed in 6.10s; bytes restored |
+| B19 | A11 | exit 1; 1 failed, 14 passed in 5.91s; bytes restored |
+| B20 | A10 | exit 1; 1 failed, 14 passed in 5.84s; bytes restored |
+| B21 | A10 | exit 1; 1 failed, 14 passed in 6.02s; bytes restored |
+| B22 | A12 | exit 1; 1 failed, 14 passed in 5.96s; bytes restored |
+| B23 | A13 | exit 1; 1 failed, 14 passed in 5.85s; bytes restored |
+| B24 | A13 | exit 1; 1 failed, 14 passed in 5.85s; bytes restored |
+| B25 | A13 | exit 1; 1 failed, 14 passed in 6.13s; bytes restored |
+| B26 | A13 | exit 1; 1 failed, 14 passed in 6.00s; bytes restored |
+
+**Module line counts:** All 11 touched Python files are below 200 lines after formatting.
+
+```text
+orchestration/book_odds.py: 169
+orchestration/book_brief.py: 70
+orchestration/daily_brief_facts.py: 182
+orchestration/daily_brief_text.py: 185
+surfaces/dashboard/projections_book.py: 73
+surfaces/dashboard/app.py: 186
+orchestration/tests/book_fixtures.py: 124
+orchestration/tests/test_book_odds.py: 108
+orchestration/tests/test_book_brief.py: 90
+orchestration/tests/test_daily_brief_book.py: 80
+surfaces/tests/test_dashboard_book.py: 88
+```
+
+Other section-1 counts reproduce: `orchestration/Dockerfile` 125, `book.js` 64, `index.html` 153.
+
+**`make ci`:** Redirected directly to `%TEMP%/s287-ci.txt` (no pipe), exit 2. Read the saved output; the first 13 steps passed. Steps 15 and 16 were run separately after step 14 stopped make and passed. The online dependency audit is **NOT RUN**; full CI is **not green**.
+
+```text
+uv run ruff check . --output-format=github -> PASS
+uv run ruff format --check . -> PASS
+uv run mypy kernel contracts agents orchestration surfaces -> PASS
+uv run lint-imports -> PASS
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts -> PASS
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts -> PASS
+uv run python scripts/check_law_coverage.py -> PASS
+uv run python scripts/check_param_law_sync.py -> PASS
+uv run python scripts/check_sprint_status.py -> PASS
+uv run python scripts/check_tracker_size.py -> PASS
+uv run python scripts/check_markdown_links.py -> PASS
+uv run python scripts/check_version_scheme.py -> PASS
+uv run pytest -> PASS
+uv run python scripts/check_dependency_audit.py -> VERIFIED FAILING (offline advisory lookup)
+TOTAL                                                           21860      0   4688      0  100.00%
+========= 5279 passed, 9 skipped, 2470 warnings in 462.77s (0:07:42) ==========
+make: exit 2 at dependency audit
+OSError: S287 offline proof: external DNS blocked
+uv run pre-commit run detect-secrets --all-files -> PASS (run separately after make stopped)
+uv run python scripts/check_untracked_secrets.py -> PASS (run separately after make stopped)
+```
+
+After filling this handback and changing both statuses to BUILT, the document checks were run again:
+
+```text
+uv run python scripts/check_sprint_status.py -> PASS (exit 0)
+docs_seen=292 SPEC=10 BUILT=1 MERGED=281 UNMAPPED=0 MISSING=0
+uv run python scripts/check_tracker_size.py -> PASS (exit 0; existing size warnings remain)
+uv run python scripts/check_markdown_links.py -> PASS (exit 0)
+git diff --check -> PASS (exit 0)
+```
+
+**`make gate-ran`:** not done; no push or network access, so no remote exact-SHA proof.
+
+**Not met / verified failing:** `make ci` verified failing only at the dependency audit because external DNS is blocked; a fresh advisory result is not done and remains the planner's. Push, remote CI/Security Findings/CodeQL, merge, image build, deployment, F2 live brief proof and local dashboard restart/inspection are not done.
 
 ---
 
 ## Return notes
 
-- *to be filled by the builder*
+- Count correction: section 1 contains six Python modules (three new), not five; its nine-file total is correct. The supplied diff was applied without modification.
+- The first F1 helper invocation used the same temporary filename for stdout and its output artifact. Corrected the helper to separate them, reran F1, and used only the clean byte-for-byte comparison above. No repository source changed for this correction.
+- No law/spec contradiction or existing-test failure was found; no drift row or extra law wording was added. DSP-DEP-01 remains partial/gray. New DSP-OUT-10 and SRF-OUT-09 are proven; both exact rollups are dispatcher 47 / 50 and surfaces 32 / 39.
+- No bare `uv sync`, infrastructure script, `pwsh`, `az`, live service, graph write outside synthetic fixtures, push, merge or deployment was run. All proof tooling and full logs are outside the worktree under `%TEMP%/s287-*`.
+- Planner carry-forward: run the online dependency audit and remote exact-SHA gates, review, then handle merge/deploy/F2 in the specified order. F1 is locally reproduced; no live result is inferred from it.
 
 ---
 

@@ -71,6 +71,7 @@ class BriefFacts:
     last_stage: str | None = None
     containers: str | None = None
     llm: str | None = None
+    book: tuple[str, ...] = ()
 
 
 def compose_brief(facts: BriefFacts) -> str:
@@ -92,6 +93,7 @@ def compose_brief(facts: BriefFacts) -> str:
             facts.scoreboard or "Scoreboard: not in this run's report",
             _orders(facts.orders),
             _fills(facts.fills),
+            *facts.book,
             *sensed,
             _needs_you(facts),
         )

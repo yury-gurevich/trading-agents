@@ -16,6 +16,7 @@ from urllib.parse import parse_qs
 from surfaces.dashboard import hold_answer_route, projections, projections_state
 from surfaces.dashboard.bundle_azure import container_logs
 from surfaces.dashboard.chat import handle_chat
+from surfaces.dashboard.projections_book import run_book
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_performance import performance_vital
@@ -41,6 +42,7 @@ _RUN_VIEWS: dict[str, Callable[[GraphStore, str], object]] = {
     "flags": lambda g, r: projections_state.run_flags(g, r),
     "positions": projections_state.run_positions,
     "recovery": projections_state.run_recovery,
+    "book": run_book,
 }
 
 _CONTAINER = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")

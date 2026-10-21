@@ -66,6 +66,8 @@ COPY agents/supervisor/store.py agents/supervisor/store.py
 COPY orchestration/__init__.py orchestration/__init__.py
 COPY orchestration/batch_chain.py orchestration/batch_chain.py
 COPY orchestration/batch_trace.py orchestration/batch_trace.py
+COPY orchestration/book_brief.py orchestration/book_brief.py
+COPY orchestration/book_odds.py orchestration/book_odds.py
 COPY orchestration/container_alarm_text.py orchestration/container_alarm_text.py
 COPY orchestration/container_brief.py orchestration/container_brief.py
 COPY orchestration/llm_brief.py orchestration/llm_brief.py

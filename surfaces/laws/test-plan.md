@@ -1,6 +1,6 @@
 # `Surfaces` — Law Test-Plan
 
-**Prefix:** `SRF` · **status:** LOCKED v1.6 · **aligned with:** laws.md LOCKED v1.6
+**Prefix:** `SRF` · **status:** LOCKED v1.9 · **aligned with:** laws.md LOCKED v1.9
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -42,3 +42,4 @@
 | SRF-OBS-02 | Context bundles contain per-container logs and image evidence when available, and name unavailable or partial evidence truthfully. | `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_has_per_container_logs_and_real_image_tags`; `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_partial_log_failure_and_unavailable_mode` | 🟩 |
 | SRF-PERF-01 | Log and bundle reads are bounded by tail settings; invalid tail inputs fall back to the default. | `surfaces/tests/test_dashboard_app.py::test_s123_routes_use_fake_azure_and_tail_bounds`; `surfaces/tests/test_dashboard_bundle_azure.py::test_bundle_has_per_container_logs_and_real_image_tags` | 🟩 |
 | SRF-PERF-02 | Projection, fleet, cost, self-heal, GitHub, and Azure reads are bounded by declared timeout/cache settings. | _tbd_ | ⬜ |
+| SRF-OUT-09 | The selected run's book panel shows the brief's own book lines, then a row per held name from its held claim for the run's session (close, stop, target, past target, the three chances, gain), the likeliest to reach its stop first leading and names with no claim last; no session or no book, no row; it reads only. | `surfaces/tests/test_dashboard_book.py::test_the_book_view_says_what_the_brief_says_and_leads_with_the_stop`; `surfaces/tests/test_dashboard_book.py::test_a_run_with_no_request_or_no_book_shows_nothing`; `surfaces/tests/test_dashboard_book.py::test_the_panel_is_served_and_wired` | 🟩 |

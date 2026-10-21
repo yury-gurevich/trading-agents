@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -74,6 +74,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   graph cannot see are listed with every answer. The window is dates: the selected run does not scope
   it, and `SRF-OUT-01` does not cover it. An empty window or an unreadable graph reads unavailable and
   shows no number. They make no model call and no agent request.
+- **SRF-OUT-09** — The selected run's book panel (`/api/runs/{run}/book`, DL-311) shows the book on
+  the run's session (its `RunRequest`'s `requested_at`) as the daily brief reads it: the brief's own
+  book lines, then one row per held name with its ticker and quantity and, from its held claim, the
+  close, stop and target in cents, whether the close is past the target, the three chances and the
+  gain at the close. Names with a claim lead, ordered by their chance of the stop first, highest
+  first and ties by ticker; a name with none follows, showing its ticker, its quantity and that it
+  has no forecast. A run whose session is not a date, or with nothing held, shows no row. The panel
+  reads only; it writes nothing and offers no control.
 
 ## Prohibitions (`NEV`)
 
@@ -225,6 +233,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | CORRECTED (v1.3, S251): `SRF-OUT-03` narrowed to model-composed answers; the quick asks are named as graph reads that write no audit facts. |
 
 ## Changelog
+
+- v1.9 — S287 / DL-311 (2026-10-21): new `SRF-OUT-09`, the selected run's book
+  panel: the brief's own book lines and one row per held name, the likeliest to reach its stop
+  first leading. The test-plan's status line, left at v1.6 by the PARAM-only v1.7 and v1.8, is
+  aligned. 31 / 38 → 32 / 39.
 
 - v1.8 — S274 / DL-300 (2026-10-14): PARAM only. master_window_start_utc is 22:00, the master's
   live wake (DL-294 amendment 1). No clause changes.

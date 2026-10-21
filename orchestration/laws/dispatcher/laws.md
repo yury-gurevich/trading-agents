@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture,
 > brief the operator once on each run it placed, and tell the operator when a container of the
@@ -117,15 +117,32 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   it recorded no alarm in 24 hours; or how many alarms it recorded in 24 hours, repeats counted as in
   `DSP-OUT-07`, naming at most three kinds of failure with their apps and counting the rest. Before the
   first read the brief carries no such line.
-
-## Prohibitions (`NEV`)
-
 - **DSP-OUT-09** — A brief whose last 24 hours hold an `AgentInstance` activated on an LLM candidate
   with another passed over, or whose run's `DeliberationRun` names an `llm_switches` line, carries
   one line after the container line and before needs-you: `LLM: ` then, for each distinct choice and
   passed-over list, the agent types sorted, ` on ` the chosen `vendor/model/effort`, and in brackets
   `passed over ` each passed-over line; then each `llm_switches` line followed by ` during the run`;
   the parts joined by ` · `. With neither there is no line.
+- **DSP-OUT-10** — A finished brief whose book holds a name carries the book's lines after the
+  fills and before the container line (DL-311). The book is the active `Position` lots, summed by
+  ticker (the quantity, and the cost as quantity × `opened_price_cents`), each joined to its held
+  claim for the run's session, read by key (`barrier-garch-v1:held:{ticker}:{session}`, the session
+  being the `RunRequest`'s `requested_at`), never by listing the claims; a claim lacking a figure the
+  lines need, or holding one that is not a number, is no claim. With no claim for the session the
+  brief carries one line, `Book: N held · no forecast for <session>`. Otherwise two. The first is
+  `Book: N held · ` then, over the claims whose `target_basis` is `rebased` (the close at or past the
+  declared target): how many, their gain now (quantity × close − cost), the part of it above the
+  target (quantity × (close − `target_price`)) and their gain at their stops (the gain less quantity
+  × (close − `stop_price`)); or `none past its target`. The second is `Odds, next H sessions, M names
+  (not yet scored): ` then the sums of the claims' `p_target_first`, `p_stop_first` and `p_neither`
+  to one decimal; then the names whose `p_stop_first` exceeds their `p_target_first`, likeliest
+  first and ties by ticker, three named with their chance in whole percent and the rest counted;
+  then the held names with no claim, four named and the rest counted. Prices are cents rounded from
+  the claim's dollars, and every figure is a stored one or a sum of them. A RED brief carries no
+  book line.
+
+## Prohibitions (`NEV`)
+
 - **DSP-NEV-01** — The scheduled dispatcher never writes master-owned `FleetPreflight` evidence.
 - **DSP-NEV-02** — The scheduled dispatcher never talks to the broker, never chooses tickers beyond
   the configured universe membership, and never decides what to buy, sell, size, or veto.
@@ -211,7 +228,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (`DEP-CLOCK`), provider-owned market calendar, configured universe source, and Telegram port for
   optional operator notices, answers, and the daily brief. For the brief its graph reads include the
   run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, the
-  master's `AgentInstance` records of the last 24 hours, and the pack's acceptance verdict. The sensor depends on the job's managed-identity endpoint and the log
+  master's `AgentInstance` records of the last 24 hours, the active `Position` lots and the
+  forecaster's held `BarrierForecast` claims for the run's session, and the pack's acceptance
+  verdict. The sensor depends on the job's managed-identity endpoint and the log
   workspace's query API.
 
 ## Observability & audit (`OBS`)
@@ -248,7 +267,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
       "FleetPreflight", "RunRequest", "RunHold", "RunHoldAnswer", "MarketData", "ScanRun",
       "AnalystRun", "PMRun", "DeliberationRun", "OrderIntent", "ExecutionRun", "MonitorRun",
       "Snapshot", "Fill", "Fault", "FaultResolution", "Flag", "FlagResolution",
-      "BrokerPositionSnapshot", "ContainerEvent", "ContainerSensorRead", "AgentInstance"
+      "BrokerPositionSnapshot", "ContainerEvent", "ContainerSensorRead", "AgentInstance",
+      "Position", "BarrierForecast"
     ],
     "access": "bounded dispatcher placement; the brief marks only its own RunRequest"
   },
@@ -321,3 +341,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   by the fire's tick, and leaves a run 20 minutes before the 23:30 window end; a placed run is
   never held again; each fire's line says what it did. New `DSP-NEV-04` and `DSP-OBS-04`;
   `DSP-TRG-01`, `DSP-IDM-02`, `DSP-TYP-01` (now proven) and `DSP-PERF-01` amended.
+- v1.8 — S287 (DL-311, work-queue 92): the brief's book lines, the held names past their
+  declared target and the forecast's odds for the book, read from the active Positions and the
+  session's held claims by key. New `DSP-OUT-10`; `DSP-DEP-01` and `CAP` amended for the
+  `Position` and `BarrierForecast` reads. `DSP-OUT-09` moves back under Outputs: since v1.4 it
+  sat under the Prohibitions heading. 46 / 49 → 47 / 50.

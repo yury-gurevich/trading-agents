@@ -560,9 +560,16 @@ Kit and outputs in OneDrive `trading-agents-data/wq92odds-2026-10-21/`.
 - **`make gate-ran`** from `../ta-s287`: GATE PROVEN for `40ef6bfd` (CI, CodeQL, Security Findings),
   the SHA checked against `HEAD` (`s287_gate_ran_40ef6bfd.txt`). `main` fast-forwarded
   `bd3b5c5f` → `40ef6bfd`, tag `v0.130.00`.
-- **Not deployed.** An image-only retag from `v0.130.00` on the operator's word; rollback `s286`; no
-  decision path, so the fidelity count holds. F2 on the first weekday night after the deploy, as
-  *Sequencing after merge* step 4 says.
+- **Deployed as `s287`** on the operator's word (*"if you need to deploy then you have my OK"*).
+  No injected pack moved since `d4b10c75` (all four diffs empty; every live pack on the 17 targets
+  hashed equal to the repo's before and after), so an image-only retag. Build `39559425114` from
+  `v0.130.00`, 15 of 15; retag 07:05-07:12 UTC, 17 of 17 `Succeeded`; the snapshots before and after
+  differ only in each target's image; 16 apps at min 0 with their one scale rule, the job's cron
+  unchanged. **`DeployRecord s287:40ef6bfd`** (actor `yury_gurevich`). Read at the retag: 15 of 15
+  agent types activated, 2 fleet checks passed, 0 faults, escalations, flags or LLM calls; CL 10 and
+  SBUX 10 still `accepted` for the 10-21 open. Rollback `s286`; no decision path, so the fidelity
+  count holds. Evidence: OneDrive `trading-agents-data/deploy-s287-2026-10-21/`. F2 on
+  `sched-2026-10-21` (the first weekday night), as *Sequencing after merge* step 4 says.
 
 ---
 

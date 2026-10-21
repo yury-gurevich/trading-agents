@@ -38,11 +38,14 @@ def test_a_runs_claims_read_its_history_once() -> None:
 
 
 def test_a_history_the_provider_writes_later_is_read_when_it_lands() -> None:
-    """FORE-PERF-04: a missing key is never cached; a later write is observed."""
+    """FORE-PERF-04: a missing key is never cached, even over an earlier run's
+    held history; a later write is observed."""
     from agents.forecaster.history_cache import HistoryCache
 
     graph = CountingGraph()
     cache = HistoryCache()
+    earlier = seed_history(graph, barrier_bars("KO", 30), run_key="run-earlier")
+    assert cache.read(graph, earlier) is not None
     assert cache.read(graph, HISTORY_KEY) is None
     seed_history(graph, barrier_bars("COP", 760))
 
@@ -51,7 +54,7 @@ def test_a_history_the_provider_writes_later_is_read_when_it_lands() -> None:
     assert history is not None
     assert history.requested == ("COP",)
     assert cache.read(graph, HISTORY_KEY) is history
-    assert graph.reads["BarrierHistory"] == 2
+    assert graph.reads["BarrierHistory"] == 3
 
 
 def test_a_pass_lists_no_claim_and_settles_the_open_ones() -> None:

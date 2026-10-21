@@ -68,6 +68,9 @@ def test_a_settlement_records_every_field_the_ledger_needs() -> None:
         "entry_close_settling": 100.0,
         "entry_ratio": 1.0,
         "brier": pytest.approx(0.38, abs=1e-12),
+        "realised_return": 0.07,
+        "close_return": 0.0,
+        "outcome_session": 2,
     }
     assert created.tzinfo is not None
     assert list(graph.descendants(claim, max_depth=1, edge_types={"SETTLED_BY"})) == [

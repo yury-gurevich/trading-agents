@@ -4,7 +4,7 @@ Agent: forecaster
 Role: persist a barrier claim with every field its later settlement reads, keyed
       so a rerun on the same last bar merges into the same node (DL-241 D2/D5); a
       held name's claim is keyed apart from a buy's and says which stop and target
-      it stood on (DL-310).
+      it stood on (DL-310); a claim states its return figures (DL-312).
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from datetime import date
 
     from agents.forecaster.domain.barrier_garch import GarchParams
+    from agents.forecaster.domain.barrier_returns import BarrierReturns
     from agents.forecaster.held_claim import HeldBarriers
     from kernel import GraphStore, Node
 
@@ -51,6 +52,8 @@ class BarrierClaim:
     sessions_requested: int
     held: HeldBarriers | None = None
     """A held name's stop and target, and where they came from; None for a buy."""
+    returns: BarrierReturns | None = None
+    """What the same paths say of the return (DL-312); every stated claim has them."""
 
     @property
     def key(self) -> str:
@@ -91,6 +94,15 @@ def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
         "created_at": datetime.now(tz=UTC).isoformat(),
         "shadow": True,
     }
+    if claim.returns is not None:
+        props.update(
+            {
+                "expected_return": claim.returns.expected_return,
+                "close_return_p05": claim.returns.close_return_p05,
+                "sessions_to_target": claim.returns.sessions_to_target,
+                "sessions_to_stop": claim.returns.sessions_to_stop,
+            }
+        )
     if claim.held is not None:
         props.update(
             {

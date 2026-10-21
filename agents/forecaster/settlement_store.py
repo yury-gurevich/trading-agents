@@ -3,9 +3,10 @@
 Agent: forecaster
 Role: persist a claim's settlement as its own append-only node, keyed from the
       claim and linked BarrierForecast -SETTLED_BY-> BarrierSettlement, carrying
-      the claim's three-class Brier (absent for a void); and read the ledger back
-      for one model (S241, DL-243). The claim itself is never written to: it is a
-      record of what was said, and what happened is a later fact of its own.
+      the claim's three-class Brier (absent for a void) and the return its outcome
+      gave (DL-312); and read the ledger back for one model (S241, DL-243). The
+      claim itself is never written to: it is a record of what was said, and what
+      happened is a later fact of its own.
 External I/O: GraphStore reads and writes via the injected backend.
 """
 
@@ -73,6 +74,9 @@ def write_settlement(
         "entry_close_settling": settlement.entry_close_settling,
         "entry_ratio": settlement.entry_ratio,
         "brier": None if void else brier(probabilities, settlement.outcome),
+        "realised_return": settlement.realised_return,
+        "close_return": settlement.close_return,
+        "outcome_session": settlement.outcome_session,
         "created_at": datetime.now(tz=UTC).isoformat(),
     }
     node = graph.merge_node(SETTLEMENT_LABEL, settlement_key(claim.key), props)

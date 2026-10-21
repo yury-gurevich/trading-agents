@@ -3,9 +3,10 @@
 Agent: forecaster
 Role: turn a stock's daily history, a stop, a target, fitted GARCH parameters and a
       seed into P(stop first), P(target first), P(neither) within 10 sessions, and
-      apply EXP-018's fit-acceptance rule. Copied from the experiment's
-      `exp018_sim.py` (EXP-018 Appendix S), not rewritten: the one change is that
-      the variance filter is the same first-order recursion written as a loop,
+      apply EXP-018's fit-acceptance rule; the paths are returned too, so a claim's
+      other figures read the paths its probabilities counted (DL-312). Copied from the
+      experiment's `exp018_sim.py` (EXP-018 Appendix S), not rewritten: the one change
+      is that the variance filter is the same first-order recursion written as a loop,
       because the unit gate has no scipy (DL-241 D7: bit-identical to `lfilter`).
 External I/O: none.
 """
@@ -124,6 +125,24 @@ def garch_path_probs(
     n_paths: int,
 ) -> tuple[float, float, float]:
     """EXP-018's `garch_path_probs`, with `N_PATHS` as ``n_paths``."""
+    prev, high, low, _last = garch_paths(
+        rng, params, r, lh_pct, ll_pct, lo, t, n_paths=n_paths
+    )
+    return barrier_probs(prev, high, low, stop, target)
+
+
+def garch_paths(
+    rng: np.random.Generator,
+    params: tuple[float, float, float, float],
+    r: Floats,
+    lh_pct: Floats,
+    ll_pct: Floats,
+    lo: int,
+    t: int,
+    *,
+    n_paths: int,
+) -> tuple[Floats, Floats, Floats, Floats]:
+    """EXP-018's loop: each path's prior closes, highs, lows and tenth close."""
     mu, omega, alpha, beta = params
     seg = r[lo:t]
     s2_0 = seg.var()
@@ -143,7 +162,7 @@ def garch_path_probs(
         llw[:, k] = np.exp(np.minimum(s * ul[j], rr) / 100)
         level = level * np.exp(rr / 100)
         s2_next = omega + alpha * (rr - mu) ** 2 + beta * s2_next
-    return barrier_probs(prev_all, hh, llw, stop, target)
+    return prev_all, hh, llw, level
 
 
 def _variance_filter(

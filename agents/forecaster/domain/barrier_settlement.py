@@ -4,10 +4,11 @@ Agent: forecaster
 Role: settle one claim on one ticker's later daily bars by EXP-018's outcome rule
       (`scripts/barrier_testbed.outcome()`, copied: over the 10 sessions after
       ``as_of`` the low is checked first, so a session touching both is the stop),
-      measured from the settling series' own close on ``as_of``; or void it with a
-      named reason, never a false outcome (S241, DL-243). It reads the claim's date,
-      entry close and barriers only: never its probabilities, which only the Brier
-      uses.
+      measured from the settling series' own close on ``as_of``, with the return that
+      rule gives, the tenth close's return and the session of the touch (DL-312); or
+      void it with a named reason, never a false outcome (S241, DL-243). It reads the
+      claim's date, entry close and barriers only: never its probabilities, which
+      only the Brier uses.
 External I/O: none.
 """
 
@@ -62,27 +63,35 @@ class Settlement:
     """The settling series' own close on ``as_of`` (absent when it has no such bar)."""
     entry_ratio: float | None
     """``entry_close_settling`` / the claim's ``entry_close``: drift between fetches."""
+    realised_return: float | None = None
+    """Minus ``stop_pct``, ``target_pct``, or the tenth close's return, by outcome."""
+    close_return: float | None = None
+    """The tenth close over the settling close, less 1, whatever the outcome."""
+    outcome_session: int | None = None
+    """The session (1 to 10) of the stop's or the target's touch; None for neither."""
 
 
-def outcome_index(
+def first_touch(
     hi: Sequence[float],
     lo: Sequence[float],
     cl: Sequence[float],
     t: int,
     stop: float,
     target: float,
-) -> int:
-    """0 stop first, 1 target first, 2 neither; touching both counts as the stop.
+) -> tuple[int, int | None]:
+    """0 stop first, 1 target first, 2 neither, and the touch's session (1 to 10).
 
+    Touching both counts as the stop; neither has no session (None).
     `scripts/barrier_testbed.outcome()` line for line, with its ``H`` as
-    ``HORIZON_SESSIONS``: the same comparisons in the same order.
+    ``HORIZON_SESSIONS``: the same comparisons in the same order (DL-312: the
+    session is returned beside the index).
     """
     for k in range(t + 1, t + HORIZON_SESSIONS + 1):
         if lo[k] <= cl[t] * (1 - stop):
-            return 0
+            return 0, k - t
         if hi[k] >= cl[t] * (1 + target):
-            return 1
-    return 2
+            return 1, k - t
+    return 2, None
 
 
 def settle(
@@ -110,7 +119,7 @@ def settle(
     ratio = entry / entry_close
     if _corporate_action(window):
         return Settlement(VOID, CORPORATE_ACTION, pass_date, entry, ratio)
-    k = outcome_index(
+    k, session = first_touch(
         [bar.high for bar in window],
         [bar.low for bar in window],
         [bar.close for bar in window],
@@ -118,7 +127,11 @@ def settle(
         stop_pct,
         target_pct,
     )
-    return Settlement(OUTCOMES[k], None, window[-1].day, entry, ratio)
+    close_return = window[-1].close / entry - 1
+    realised = (-stop_pct, target_pct, close_return)[k]
+    return Settlement(
+        OUTCOMES[k], None, window[-1].day, entry, ratio, realised, close_return, session
+    )
 
 
 def _corporate_action(window: Sequence[SettlingBar]) -> bool:

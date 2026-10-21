@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-288-each-claim-states-its-return`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.131.00` (MINOR after local main's `0.130.00`)
 **Effort:** M
 **Decisions:** [DL-312](../design-log.md) (decided, seven decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md): each name a distribution, *"the chance … and the return in each case"*; [DL-310](../design-log.md): the held claims this sprint extends)
 
@@ -170,11 +170,11 @@ On the unchanged tree every one fails or errors. After Appendix section 1 all fo
 ## Success factors
 
 - [ ] On the built tree, F1 (`s288_f1.py <kit> <out>`, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, full digest **`83e0650cf43b3a55`**): its probabilities digest is main's, `43c45020da6e057d`; 32 held claims with figures; the ledger's 25 claims re-simulate and re-settle 25 / 25.
-- [ ] No file under `contracts/`, `kernel/`, a decision path, `orchestration/` (but the pack) or `surfaces/` changes; no existing test changes but section 2's two.
-- [ ] Design decisions recorded with rejected alternatives: DL-312, already on `main`.
-- [ ] Law cycle done as Appendix section 2: `FORE-OUT-11`, `FORE-OUT-12` 🟩; forecaster 30 / 57 in both rollups.
-- [ ] B1 to B27 each planted, watched to fail against your tests alone, restored — stated per break.
-- [ ] Every touched module < 200 lines, test files included.
+- [x] No file under `contracts/`, `kernel/`, a decision path, `orchestration/` (but the pack) or `surfaces/` changes; no existing test changes but section 2's two.
+- [x] Design decisions recorded with rejected alternatives: DL-312, already on `main`.
+- [x] Law cycle done as Appendix section 2: `FORE-OUT-11`, `FORE-OUT-12` 🟩; forecaster 30 / 57 in both rollups.
+- [x] B1 to B27 each planted, watched to fail against your tests alone, restored — stated per break.
+- [x] Every touched module < 200 lines, test files included.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -329,15 +329,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| Paths and claim figures | Whole `agents/forecaster/laws/laws.md` v1.11 and `test-plan.md`; whole `docs/laws/conventions.md` and `drift-register.md` | `FORE-OUT-07/09`, `FORE-IDM-04`, new `FORE-OUT-11` | Yes: use the frozen EXP-018 loop as the independent array oracle; keep one simulation and the model version. |
+| Settlement and persistence | Same four whole law files | `FORE-OUT-08`, `FORE-FAIL-05`, new `FORE-OUT-11` | Pin the settling close independently of the claim close, exact sessions and absent void figures. |
+| Return scorecard | Same four whole law files | `FORE-OUT-08/10`, `FORE-IDM-05`, new `FORE-OUT-12`, `FORE-NEV-01/02` | Pin S241's exact metric names, whole-date intervals, repeatability and held scores apart. |
+| Vocabulary and existing field-set tests | Same four whole law files; `kernel/graph_vocabulary.py` | `FORE-IDN-02`, `FORE-OUT-07/08`, new `FORE-OUT-11` | Exercise the actual pack guard and add exactly the Appendix's seven fields. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+Reading completed before any code change in `C:\Users\yury_\Downloads\project\ta-s288`, branch `sprint-288-each-claim-states-its-return`; clean baseline `65a27ad42f99a142d5f1205b1d37c071a5b25d61` (also local `main` and `origin/main`), no `.env`. Read `CLAUDE.md`, the navigation indexes and DL-312 D1-D7. The sprint handover overrides the skill's tracker/push steps: no prohibited tracker edits and no network.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: new claim/settlement figures (`FORE-OUT-11`) and return scores (`FORE-OUT-12`), no contract change. Apply Appendix section 2 exactly: v1.12, 30 / 57 and both rollups.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Contradictions found between a law and this spec:** None found in the whole-file readings, recorded before code or tests were written.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Laws found silent where a decision was needed:** The two new guarantees are absent from v1.11 and explicitly supplied by section 2 and decided in DL-312; no additional decision or drift row needed.
+
+**Clauses that were ⬜ and are now proven:** No existing gray clause reclassified. New `FORE-OUT-11` and `FORE-OUT-12` are proven by A1-A14 (18 passing cases) and the 27 red/restored breaks. `FORE-IDN-01`, `FORE-IDM-03` and `FORE-OBS-01` remain gray for the unrelated gaps their rows name. Section 2's law/rollup blobs match exactly.
 
 ---
 
@@ -345,51 +350,367 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | |
+| A1 | `test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close` | `test_barrier_returns.py` | PASS | `FORE-OUT-11` |
+| A2 | `test_with_no_touch_a_barriers_sessions_are_absent` | `test_barrier_returns.py` | PASS | `FORE-OUT-11` |
+| A3 | `test_the_paths_are_exp018s_own` | `test_barrier_returns.py` | PASS, 3 cases | `FORE-OUT-07`, `FORE-OUT-11` |
+| A4 | `test_a_claim_states_its_return_from_the_paths_its_probabilities_counted` | `test_barrier_claim_returns.py` | PASS | `FORE-OUT-11`, `FORE-IDM-04` |
+| A5 | `test_a_held_claim_states_its_return_too` | `test_barrier_claim_returns.py` | PASS | `FORE-OUT-11`, `FORE-OUT-09` |
+| A6 | `test_a_claim_stated_before_its_figures_gains_them_on_a_rerun` | `test_barrier_claim_returns.py` | PASS | `FORE-IDM-04`, `FORE-OUT-11` |
+| A7 | `test_a_settlement_records_the_return_its_outcome_gave` | `test_barrier_settlement_returns.py` | PASS, 3 cases | `FORE-OUT-11`, `FORE-OUT-08` |
+| A8 | `test_a_session_touching_both_is_the_stop_and_its_session` | `test_barrier_settlement_returns.py` | PASS | `FORE-OUT-08`, `FORE-OUT-11` |
+| A9 | `test_a_void_settlement_records_no_return` | `test_barrier_settlement_returns.py` | PASS | `FORE-FAIL-05`, `FORE-OUT-11` |
+| A10 | `test_the_return_scores_appear_once_a_claim_that_stated_one_settles` | `test_barrier_return_scorecard.py` | PASS | `FORE-OUT-12`, `FORE-OUT-08` |
+| A11 | `test_held_claims_return_scores_are_apart` | `test_barrier_return_scorecard.py` | PASS | `FORE-OUT-12`, `FORE-OUT-10` |
+| A12 | `test_a_claim_or_settlement_without_figures_is_not_return_scored` | `test_barrier_return_scorecard.py` | PASS | `FORE-OUT-12` |
+| A13 | `test_the_bias_interval_resamples_whole_dates` | `test_barrier_return_scores.py` | PASS | `FORE-OUT-12`, `FORE-IDM-05` |
+| A14 | `test_the_tail_share_counts_closes_strictly_below_their_percentile` | `test_barrier_return_scores.py` | PASS | `FORE-OUT-12` |
 
-**Tests added beyond the plan:** *(builder fills)*
+All five files above live under `agents/forecaster/tests/`; the test names and docstring citations were checked against section 2's test-plan rows.
+
+**Tests added beyond the plan:** None. Added helper `agents/forecaster/tests/s288_return_fixtures.py`; A4 additionally asserts one simulation call.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s288`, branch `sprint-288-each-claim-states-its-return`; `.env` absent. Ready venv, `uv run --offline --no-sync`, no bare sync. Full CI used `UV_OFFLINE=1`, `UV_NO_SYNC=1`, disabled dotenv loading, removed external-service configuration, blocked external Python DNS/connect calls with a temporary process audit hook, and disabled Git HTTP/HTTPS/SSH transports. No external network or live-service access.
 
-**Result:** *(builder fills)*
+**Result:** Built `0.131.00`: all 15 Appendix blobs match their supplied IDs; A1-A14 fail first and then pass (18 cases); B1-B27 each red and restored. Full pytest: 5,297 passed, 9 skipped, 100.00% coverage. `make ci` is **verified failing**, exit 2 at the network-dependent dependency audit; no green overall gate claimed.
 
-**Files changed:** *(builder fills)*
+**Files changed:** 25 authorized paths: section 1's nine production/vocabulary files; section 2's six law/rollup/existing-test files; the five new test files above and `s288_return_fixtures.py`; `pyproject.toml`, `uv.lock`; this spec and `docs/sprints/README.md`. No other existing test edited. No forbidden production path, tracker or design-log edit.
 
 **Design decisions:** recorded as [`DL-312`](../design-log.md) — seven decisions, the roads not taken listed there.
 
 **Proof — the red run first:**
 
 ```text
-(builder fills)
+Command: uv run --offline --no-sync pytest agents/forecaster/tests/test_barrier_returns.py agents/forecaster/tests/test_barrier_claim_returns.py agents/forecaster/tests/test_barrier_settlement_returns.py agents/forecaster/tests/test_barrier_return_scorecard.py agents/forecaster/tests/test_barrier_return_scores.py --no-cov -v
+Unchanged production and existing tests; exit 1. All fourteen named tests, eighteen parameter cases, failed.
+============================= test session starts =============================
+collecting ... collected 18 items
+
+agents/forecaster/tests/test_barrier_returns.py::test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close FAILED [  5%]
+agents/forecaster/tests/test_barrier_returns.py::test_with_no_touch_a_barriers_sessions_are_absent FAILED [ 11%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[full-760] FAILED [ 16%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[capped-like] FAILED [ 22%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[lo-t-slice] FAILED [ 27%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_states_its_return_from_the_paths_its_probabilities_counted FAILED [ 33%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_held_claim_states_its_return_too FAILED [ 38%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_stated_before_its_figures_gains_them_on_a_rerun FAILED [ 44%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[stop] FAILED [ 50%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[target] FAILED [ 55%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[neither] FAILED [ 61%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_session_touching_both_is_the_stop_and_its_session FAILED [ 66%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_void_settlement_records_no_return FAILED [ 72%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_the_return_scores_appear_once_a_claim_that_stated_one_settles FAILED [ 77%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_held_claims_return_scores_are_apart FAILED [ 83%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_a_claim_or_settlement_without_figures_is_not_return_scored FAILED [ 88%]
+agents/forecaster/tests/test_barrier_return_scores.py::test_the_bias_interval_resamples_whole_dates FAILED [ 94%]
+agents/forecaster/tests/test_barrier_return_scores.py::test_the_tail_share_counts_closes_strictly_below_their_percentile FAILED [100%]
+
+================================== FAILURES ===================================
+___ test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close ___
+agents\forecaster\tests\test_barrier_returns.py:22: in test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close
+    from agents.forecaster.domain.barrier_returns import barrier_returns
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_returns'
+______________ test_with_no_touch_a_barriers_sessions_are_absent ______________
+agents\forecaster\tests\test_barrier_returns.py:41: in test_with_no_touch_a_barriers_sessions_are_absent
+    from agents.forecaster.domain.barrier_returns import barrier_returns
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_returns'
+__________________ test_the_paths_are_exp018s_own[full-760] ___________________
+agents\forecaster\tests\test_barrier_returns.py:79: in test_the_paths_are_exp018s_own
+    ours = barrier_garch.garch_paths(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agents.forecaster.domain.barrier_garch' has no attribute 'garch_paths'. Did you mean: 'garch_path_probs'?
+_________________ test_the_paths_are_exp018s_own[capped-like] _________________
+agents\forecaster\tests\test_barrier_returns.py:79: in test_the_paths_are_exp018s_own
+    ours = barrier_garch.garch_paths(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agents.forecaster.domain.barrier_garch' has no attribute 'garch_paths'. Did you mean: 'garch_path_probs'?
+_________________ test_the_paths_are_exp018s_own[lo-t-slice] __________________
+agents\forecaster\tests\test_barrier_returns.py:79: in test_the_paths_are_exp018s_own
+    ours = barrier_garch.garch_paths(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agents.forecaster.domain.barrier_garch' has no attribute 'garch_paths'. Did you mean: 'garch_path_probs'?
+___ test_a_claim_states_its_return_from_the_paths_its_probabilities_counted ___
+agents\forecaster\tests\test_barrier_claim_returns.py:31: in test_a_claim_states_its_return_from_the_paths_its_probabilities_counted
+    wraps=barrier_garch.garch_paths,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agents.forecaster.domain.barrier_garch' has no attribute 'garch_paths'. Did you mean: 'garch_path_probs'?
+___________________ test_a_held_claim_states_its_return_too ___________________
+agents\forecaster\tests\test_barrier_claim_returns.py:57: in test_a_held_claim_states_its_return_too
+    assert_claim_figures(claim, bars)
+agents\forecaster\tests\s288_return_fixtures.py:66: in assert_claim_figures
+    from agents.forecaster.domain.barrier_returns import barrier_returns
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_returns'
+________ test_a_claim_stated_before_its_figures_gains_them_on_a_rerun _________
+agents\forecaster\tests\test_barrier_claim_returns.py:67: in test_a_claim_stated_before_its_figures_gains_them_on_a_rerun
+    expected = {name: first.props[name] for name in RETURN_FIELDS}
+                      ^^^^^^^^^^^^^^^^^
+E   KeyError: 'expected_return'
+_________ test_a_settlement_records_the_return_its_outcome_gave[stop] _________
+agents\forecaster\tests\test_barrier_settlement_returns.py:47: in test_a_settlement_records_the_return_its_outcome_gave
+    assert result.realised_return == pytest.approx(realised)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settlement' object has no attribute 'realised_return'
+________ test_a_settlement_records_the_return_its_outcome_gave[target] ________
+agents\forecaster\tests\test_barrier_settlement_returns.py:47: in test_a_settlement_records_the_return_its_outcome_gave
+    assert result.realised_return == pytest.approx(realised)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settlement' object has no attribute 'realised_return'
+_______ test_a_settlement_records_the_return_its_outcome_gave[neither] ________
+agents\forecaster\tests\test_barrier_settlement_returns.py:47: in test_a_settlement_records_the_return_its_outcome_gave
+    assert result.realised_return == pytest.approx(realised)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settlement' object has no attribute 'realised_return'
+__________ test_a_session_touching_both_is_the_stop_and_its_session ___________
+agents\forecaster\tests\test_barrier_settlement_returns.py:65: in test_a_session_touching_both_is_the_stop_and_its_session
+    assert (result.outcome, result.outcome_session, result.realised_return) == (
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settlement' object has no attribute 'outcome_session'
+__________________ test_a_void_settlement_records_no_return ___________________
+agents\forecaster\tests\test_barrier_settlement_returns.py:96: in test_a_void_settlement_records_no_return
+    assert result.realised_return is None
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Settlement' object has no attribute 'realised_return'
+_____ test_the_return_scores_appear_once_a_claim_that_stated_one_settles ______
+agents\forecaster\tests\test_barrier_return_scorecard.py:40: in test_the_return_scores_appear_once_a_claim_that_stated_one_settles
+    write_return_ledger(graph)
+agents\forecaster\tests\s288_return_fixtures.py:139: in write_return_ledger
+    write_return_case(
+agents\forecaster\tests\s288_return_fixtures.py:127: in write_return_case
+    settlement = replace(
+..\..\..\miniconda3\Lib\dataclasses.py:1596: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\dataclasses.py:1630: in _replace
+    return self.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Settlement.__init__() got an unexpected keyword argument 'realised_return'
+__________________ test_held_claims_return_scores_are_apart ___________________
+agents\forecaster\tests\test_barrier_return_scorecard.py:62: in test_held_claims_return_scores_are_apart
+    write_return_ledger(graph)
+agents\forecaster\tests\s288_return_fixtures.py:139: in write_return_ledger
+    write_return_case(
+agents\forecaster\tests\s288_return_fixtures.py:127: in write_return_case
+    settlement = replace(
+..\..\..\miniconda3\Lib\dataclasses.py:1596: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\dataclasses.py:1630: in _replace
+    return self.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Settlement.__init__() got an unexpected keyword argument 'realised_return'
+_______ test_a_claim_or_settlement_without_figures_is_not_return_scored _______
+agents\forecaster\tests\test_barrier_return_scorecard.py:83: in test_a_claim_or_settlement_without_figures_is_not_return_scored
+    write_return_case(
+agents\forecaster\tests\s288_return_fixtures.py:127: in write_return_case
+    settlement = replace(
+..\..\..\miniconda3\Lib\dataclasses.py:1596: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\miniconda3\Lib\dataclasses.py:1630: in _replace
+    return self.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Settlement.__init__() got an unexpected keyword argument 'realised_return'
+________________ test_the_bias_interval_resamples_whole_dates _________________
+agents\forecaster\tests\test_barrier_return_scores.py:15: in test_the_bias_interval_resamples_whole_dates
+    from agents.forecaster.domain.barrier_return_scores import ReturnCase, return_scores
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_return_scores'
+______ test_the_tail_share_counts_closes_strictly_below_their_percentile ______
+agents\forecaster\tests\test_barrier_return_scores.py:35: in test_the_tail_share_counts_closes_strictly_below_their_percentile
+    from agents.forecaster.domain.barrier_return_scores import ReturnCase, return_scores
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_return_scores'
+=========================== short test summary info ===========================
+FAILED agents/forecaster/tests/test_barrier_returns.py::test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close
+FAILED agents/forecaster/tests/test_barrier_returns.py::test_with_no_touch_a_barriers_sessions_are_absent
+FAILED agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[full-760]
+FAILED agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[capped-like]
+FAILED agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[lo-t-slice]
+FAILED agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_states_its_return_from_the_paths_its_probabilities_counted
+FAILED agents/forecaster/tests/test_barrier_claim_returns.py::test_a_held_claim_states_its_return_too
+FAILED agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_stated_before_its_figures_gains_them_on_a_rerun
+FAILED agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[stop]
+FAILED agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[target]
+FAILED agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[neither]
+FAILED agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_session_touching_both_is_the_stop_and_its_session
+FAILED agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_void_settlement_records_no_return
+FAILED agents/forecaster/tests/test_barrier_return_scorecard.py::test_the_return_scores_appear_once_a_claim_that_stated_one_settles
+FAILED agents/forecaster/tests/test_barrier_return_scorecard.py::test_held_claims_return_scores_are_apart
+FAILED agents/forecaster/tests/test_barrier_return_scorecard.py::test_a_claim_or_settlement_without_figures_is_not_return_scored
+FAILED agents/forecaster/tests/test_barrier_return_scores.py::test_the_bias_interval_resamples_whole_dates
+FAILED agents/forecaster/tests/test_barrier_return_scores.py::test_the_tail_share_counts_closes_strictly_below_their_percentile
+============================= 18 failed in 2.67s ==============================
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder fills)
+Same command as red run; Appendix section 1 then section 2 applied; exit 0.
+============================= test session starts =============================
+collecting ... collected 18 items
+
+agents/forecaster/tests/test_barrier_returns.py::test_the_figures_are_the_return_to_the_first_barrier_or_the_tenth_close PASSED [  5%]
+agents/forecaster/tests/test_barrier_returns.py::test_with_no_touch_a_barriers_sessions_are_absent PASSED [ 11%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[full-760] PASSED [ 16%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[capped-like] PASSED [ 22%]
+agents/forecaster/tests/test_barrier_returns.py::test_the_paths_are_exp018s_own[lo-t-slice] PASSED [ 27%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_states_its_return_from_the_paths_its_probabilities_counted PASSED [ 33%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_held_claim_states_its_return_too PASSED [ 38%]
+agents/forecaster/tests/test_barrier_claim_returns.py::test_a_claim_stated_before_its_figures_gains_them_on_a_rerun PASSED [ 44%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[stop] PASSED [ 50%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[target] PASSED [ 55%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_settlement_records_the_return_its_outcome_gave[neither] PASSED [ 61%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_session_touching_both_is_the_stop_and_its_session PASSED [ 66%]
+agents/forecaster/tests/test_barrier_settlement_returns.py::test_a_void_settlement_records_no_return PASSED [ 72%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_the_return_scores_appear_once_a_claim_that_stated_one_settles PASSED [ 77%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_held_claims_return_scores_are_apart PASSED [ 83%]
+agents/forecaster/tests/test_barrier_return_scorecard.py::test_a_claim_or_settlement_without_figures_is_not_return_scored PASSED [ 88%]
+agents/forecaster/tests/test_barrier_return_scores.py::test_the_bias_interval_resamples_whole_dates PASSED [ 94%]
+agents/forecaster/tests/test_barrier_return_scores.py::test_the_tail_share_counts_closes_strictly_below_their_percentile PASSED [100%]
+
+============================= 18 passed in 2.10s ==============================
 ```
 
-**Guards planted:** *(builder fills: B1 to B27, per break)*
+**Guards planted:** B1 to B27, the exact Traps replacements, one at a time; only the five new test files ran (`python -B -m pytest <five files> --no-cov -q`). Each mutation was restored to its original bytes before the next. Pasted runner output:
 
-**Module line counts:** *(builder fills)*
+```text
+B1: exit 1; 3 failed, 15 passed in 2.32s; RED; RESTORED
+B2: exit 1; 3 failed, 15 passed in 2.36s; RED; RESTORED
+B3: exit 1; 1 failed, 17 passed in 2.35s; RED; RESTORED
+B4: exit 1; 1 failed, 17 passed in 2.19s; RED; RESTORED
+B5: exit 1; 2 failed, 16 passed in 2.21s; RED; RESTORED
+B6: exit 1; 1 failed, 17 passed in 2.23s; RED; RESTORED
+B7: exit 1; 1 failed, 17 passed in 2.23s; RED; RESTORED
+B8: exit 1; 2 failed, 16 passed, 4 warnings in 2.32s; RED; RESTORED
+B9: exit 1; 1 failed, 17 passed in 2.31s; RED; RESTORED
+B10: exit 1; 2 failed, 16 passed in 2.43s; RED; RESTORED
+B11: exit 1; 3 failed, 15 passed in 2.68s; RED; RESTORED
+B12: exit 1; 2 failed, 16 passed in 2.22s; RED; RESTORED
+B13: exit 1; 1 failed, 17 passed in 2.26s; RED; RESTORED
+B14: exit 1; 2 failed, 16 passed in 2.51s; RED; RESTORED
+B15: exit 1; 2 failed, 16 passed in 2.23s; RED; RESTORED
+B16: exit 1; 1 failed, 17 passed in 2.22s; RED; RESTORED
+B17: exit 1; 3 failed, 15 passed in 2.22s; RED; RESTORED
+B18: exit 1; 1 failed, 17 passed in 2.23s; RED; RESTORED
+B19: exit 1; 1 failed, 17 passed in 2.22s; RED; RESTORED
+B20: exit 1; 1 failed, 17 passed in 2.26s; RED; RESTORED
+B21: exit 1; 1 failed, 17 passed in 2.17s; RED; RESTORED
+B22: exit 1; 1 failed, 17 passed in 2.21s; RED; RESTORED
+B23: exit 1; 1 failed, 17 passed in 2.28s; RED; RESTORED
+B24: exit 1; 1 failed, 17 passed in 2.83s; RED; RESTORED
+B25: exit 1; 1 failed, 17 passed in 2.21s; RED; RESTORED
+B26: exit 1; 3 failed, 15 passed in 2.48s; RED; RESTORED
+B27: exit 1; 1 failed, 17 passed in 2.25s; RED; RESTORED
+BREAKS_PROVEN=27/27; exact bytes restored after every break
+```
 
-**`make ci`:** *(builder fills: the step lines and verdicts, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**Module line counts:** Pasted verifier output after formatting, all touched Python files below 200:
 
-**`make gate-ran`:** *(planner: run from the branch's worktree after the push)*
+```text
+LINES 177 agents/forecaster/barrier_forecast.py
+LINES 108 agents/forecaster/barrier_scorecard.py
+LINES 122 agents/forecaster/barrier_store.py
+LINES 191 agents/forecaster/domain/barrier_garch.py
+LINES 82 agents/forecaster/domain/barrier_return_scores.py
+LINES 73 agents/forecaster/domain/barrier_returns.py
+LINES 151 agents/forecaster/domain/barrier_settlement.py
+LINES 104 agents/forecaster/settlement_store.py
+LINES 149 agents/forecaster/tests/s288_return_fixtures.py
+LINES 199 agents/forecaster/tests/test_barrier_claim.py
+LINES 83 agents/forecaster/tests/test_barrier_claim_returns.py
+LINES 99 agents/forecaster/tests/test_barrier_return_scorecard.py
+LINES 41 agents/forecaster/tests/test_barrier_return_scores.py
+LINES 100 agents/forecaster/tests/test_barrier_returns.py
+LINES 196 agents/forecaster/tests/test_barrier_settlement_record.py
+LINES 105 agents/forecaster/tests/test_barrier_settlement_returns.py
+TEST_NAMES=14/14; clause citations present
+ENV_PRESENT=False
+```
 
-**Not met / verified failing:** *(builder fills)*
+**`make ci`:** `make ci > $env:TEMP\s288-ci.txt 2>&1`, read the log; exit **2**. Steps 1-13 returned 0 (the recipe reached each next step). Step 14 returned 1 and stopped make. Steps 15-16 then passed separately, both exit 0. Across all 16 checks, the dependency audit is the only verified failure.
+
+| Step | Recipe command, pasted from the log | Verdict |
+| --- | --- | --- |
+| 1 | `uv run ruff check . --output-format=github` | PASS, exit 0 |
+| 2 | `uv run ruff format --check .` | PASS, exit 0; 1824 files already formatted |
+| 3 | `uv run mypy kernel contracts agents orchestration surfaces` | PASS, exit 0; 1300 source files |
+| 4 | `uv run lint-imports` | PASS, exit 0; 5 kept, 0 broken |
+| 5 | `uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts` | PASS, exit 0; warnings and unchanged legacy ceilings |
+| 6 | `uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts` | PASS, exit 0 |
+| 7 | `uv run python scripts/check_law_coverage.py` | PASS, exit 0 |
+| 8 | `uv run python scripts/check_param_law_sync.py` | PASS, exit 0; two existing PM envelope warnings |
+| 9 | `uv run python scripts/check_sprint_status.py` | PASS, exit 0; final BUILT reconciliation also PASS, exit 0 |
+| 10 | `uv run python scripts/check_tracker_size.py` | PASS, exit 0; size warnings, no block |
+| 11 | `uv run python scripts/check_markdown_links.py` | PASS, exit 0 |
+| 12 | `uv run python scripts/check_version_scheme.py` | PASS, exit 0 |
+| 13 | `uv run pytest` | PASS, exit 0; 5297 passed, 9 skipped; 100.00% |
+| 14 | `uv run python scripts/check_dependency_audit.py` | VERIFIED FAILING, exit 1; external PyPI request blocked offline |
+| 15 | `uv run pre-commit run detect-secrets --all-files` | not done in make (audit stopped it); separate run PASS, exit 0 |
+| 16 | `uv run python scripts/check_untracked_secrets.py` | not done in make (audit stopped it); separate run PASS, exit 0 |
+
+Selected real output, not the full log:
+
+```text
+1824 files already formatted
+Success: no issues found in 1300 source files
+Contracts: 5 kept, 0 broken.
+TOTAL                                                           21952      0   4700      0  100.00%
+Coverage HTML written to dir htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5297 passed, 9 skipped, 2470 warnings in 473.46s (0:07:53) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by NewConnectionError("HTTPSConnection(host='pypi.org', port=443): Failed to establish a new connection: S288 offline policy blocks external DNS and network access"))
+make: *** [Makefile:60: ci] Error 1
+MAKE_CI_EXIT=2
+```
+
+The two security steps after the audit, pasted from their separate log (`.secrets.baseline` unchanged):
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+Final handback's status/README agreement, tracker sizes and Markdown links were checked again, all exit 0; the Appendix identities and scope were also rechecked:
+
+```text
+docs_seen=293 SPEC=10 BUILT=1 MERGED=282 UNMAPPED=0 MISSING=0
+SPRINT_STATUS_EXIT=0
+TRACKER_SIZE_EXIT=0
+MARKDOWN_LINKS_EXIT=0
+SCOPE OK: 25 changed paths, all authorized
+```
+
+Offline version/lock output; `uv.lock` staged successfully:
+
+```text
+Resolved 180 packages in 319ms
+Updated trading-agents v0.130.0 -> v0.131.0
+```
+
+**`make gate-ran`:** not done; planner runs from this branch's worktree after the push and compares its printed SHA to `git rev-parse HEAD`. No push or remote proof in this offline build.
+
+**Not met / verified failing:** Overall `make ci` verified failing solely at its dependency-audit stop; fresh dependency/security-advisory proof is not done and is owed to the planner. F1 frozen-kit digest proof, CodeQL, push, remote gates, merge, tag, deployment and F2/live return-score proof are not done. The two remaining local security steps passed separately. No existing test failed.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- Both Appendix patches applied directly, in order, with `git apply --check` then `git apply`; all 15 resulting Git blob IDs matched, and were rechecked after all mutations. No Appendix correction or added law text was needed.
+- A1-A14 are 14 fixed names and 18 parameter cases: A3 and A7 have three each. Red output is from unchanged production/existing tests; green and break output use only those five new test files. B10 also fails the one-simulation assertion.
+- Main's locally verified version was `0.130.00`; bumped to `0.131.00`, ran `uv lock --offline` and staged its normalized `0.131.0` package version. No dependency changed.
+- One Windows search command used a filename glob as a literal (`scripts/dependency_audit*.py`); corrected to search `scripts` with `-g 'dependency_audit*.py'`. No spec path, count or production measurement needed a correction.
+- Full CI's only observed failure is the blocked fresh PyPI audit. It is not a clean audit or a green overall gate; the planner owes that network-enabled proof. The process guard and all proof runners/logs live in the OS temporary directory, outside the repository.
+- The planner owns F1 and remote/merge/deploy sequencing in this spec. F1's digest and the live return scores were not measured here. No decision path changed; no claim is made that the figures have skill.
+- The Git directory accepted staging. A commit is attempted after the handback and final local checks; its actual outcome is reported with the final handback. No push, merge, live service, infra script, `pwsh` or `az` command was run.
 
 ---
 

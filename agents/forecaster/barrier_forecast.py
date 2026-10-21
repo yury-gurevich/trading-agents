@@ -5,8 +5,8 @@ Role: for one ticker and its stop and target (a buy's, or a held name's live sto
       and declared target measured from the claim's close, DL-310), read ~3 years
       of its own daily bars from the BarrierHistory the provider wrote for the run
       (DL-241 D10), fit GARCH(1,1)-t, simulate EXP-018's 10-session paths and
-      record the three probabilities as an append-only, advisory BarrierForecast
-      claim. Any refusal
+      record the three probabilities, and the return figures the same paths give
+      (DL-312), as an append-only, advisory BarrierForecast claim. Any refusal
       (malformed barriers, no or a failed history, a ticker the provider dropped,
       short history, a failed fit, a conflicting rerun) records a fault and returns
       the neutral reading; a claim is never fabricated (FORE-FAIL-04). A designed
@@ -34,10 +34,12 @@ from agents.forecaster.barrier_store import BARRIER_LABEL, BarrierClaim, write_c
 from agents.forecaster.domain.barrier_garch import (
     BARRIER_MODEL_ID,
     accept_fit,
+    barrier_probs,
     barrier_seed,
     daily_moves,
-    garch_path_probs,
+    garch_paths,
 )
+from agents.forecaster.domain.barrier_returns import barrier_returns
 from agents.forecaster.domain.features import confidence_from_history
 from agents.forecaster.domain.sentiment import NEUTRAL
 from agents.forecaster.held_claim import held_barriers, held_prices
@@ -138,7 +140,7 @@ def _state_claim(
         )
     as_of = date.fromisoformat(rows[-1][0])
     seed = barrier_seed(ticker, as_of)
-    probabilities = garch_path_probs(
+    paths = garch_paths(
         np.random.default_rng(seed),
         params.as_tuple(),
         r,
@@ -146,8 +148,6 @@ def _state_claim(
         ll_pct,
         0,
         len(r),
-        stop,
-        target,
         n_paths=settings.barrier_paths,
     )
     return BarrierClaim(
@@ -156,7 +156,8 @@ def _state_claim(
         entry_close=rows[-1][4],
         stop_pct=stop,
         target_pct=target,
-        probabilities=probabilities,
+        probabilities=barrier_probs(*paths[:3], stop, target),
+        returns=barrier_returns(paths, stop, target),
         params=params,
         history_bars=len(rows),
         n_paths=settings.barrier_paths,

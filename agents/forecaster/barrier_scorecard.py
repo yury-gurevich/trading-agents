@@ -5,7 +5,8 @@ Role: answer the barrier_scorecard capability from the forecaster's own ledger, 
       BarrierForecast claims and their BarrierSettlements: counts settled, void and
       open, then EXP-018's scores over the settled ones (FORE-OUT-08): buys' claims
       under the names S241 gave them, held names' claims apart under ``held_``
-      once the ledger holds one (DL-310), each against the same climatology.
+      once the ledger holds one (DL-310), each against the same climatology; and,
+      once a settled claim stated its return, the return scores (DL-312).
       Read-only and
       repeatable (FORE-IDM-05); never promotion-eligible (FORE-OUT-04); it reports
       and decides nothing (FORE-NEV-01/02).
@@ -17,6 +18,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.forecaster.domain.barrier_return_scores import ReturnCase, return_scores
 from agents.forecaster.domain.barrier_settlement import OUTCOMES, VOID
 from agents.forecaster.domain.barrier_skill import ScoredCase, ledger_scores
 from agents.forecaster.settlement_store import model_ledger
@@ -68,6 +70,8 @@ def _scores(
         "open": float(len(claims) - len(mine)),
     }
     metrics.update(ledger_scores(cases))
+    returns = [_return_case(claims[key], mine[key]) for _as_of, key in settled]
+    metrics.update(return_scores([case for case in returns if case is not None]))
     return {f"{prefix}{name}": value for name, value in metrics.items()}, len(cases)
 
 
@@ -82,4 +86,23 @@ def _case(claim: Node, settlement: Node) -> ScoredCase:
             float(claim.props["p_neither"]),
         ),
         brier=float(settlement.props["brier"]),
+    )
+
+
+def _return_case(claim: Node, settlement: Node) -> ReturnCase | None:
+    """A settled claim's return figures, or None when it stated none.
+
+    A claim stated before its figures existed, or settled before the settlement
+    recorded a realised return, has nothing to score.
+    """
+    declared = claim.props.get("expected_return")
+    realised = settlement.props.get("realised_return")
+    if declared is None or realised is None:
+        return None
+    return ReturnCase(
+        as_of=str(settlement.props["as_of"]),
+        declared=float(declared),
+        realised=float(realised),
+        close_p05=float(claim.props["close_return_p05"]),
+        close_return=float(settlement.props["close_return"]),
     )

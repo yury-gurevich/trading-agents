@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -103,8 +103,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   last bar's date), `entry_close` (that bar's close), `horizon_sessions`, `stop_pct`, `target_pct`,
   the three probabilities, `model_id`, `model_version`, `history_bars`, `history_ref` (the
   `BarrierHistory` the bars were read from), `n_paths`, `seed`, `fit_status` (`accepted` |
-  `capped`), the fitted `garch_mu` / `garch_omega` / `garch_alpha` / `garch_beta`, `created_at` and
-  `shadow: true`, and returns a `ShadowPrediction` whose `value` is `p_target_first` and whose
+  `capped`), the fitted `garch_mu` / `garch_omega` / `garch_alpha` / `garch_beta`, `created_at`,
+  `shadow: true` and the return figures `FORE-OUT-11` names, and returns a `ShadowPrediction` whose
+  `value` is `p_target_first` and whose
   `confidence` is `history_bars ÷` the history's `sessions_requested` (at most 1). It writes no
   `ShadowPrediction` node. The claim is advisory evidence only (`FORE-NEV-01/02`).
 - **FORE-OUT-08** — Each `BarrierForecast` claim is settled against what the market did, by
@@ -118,8 +119,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `claim_key`, `model_id`, `ticker`, `as_of`, `outcome` (`stop` | `target` | `neither` | `void`),
   `void_reason`, `settled_on` (the tenth session's date, or for a void the date of the pass that
   voided it), `settling_ref` (that run's `MarketData` key), `entry_close_settling`, `entry_ratio`
-  (settling ÷ claimed close), the claim's three-class `brier` (absent for `void`) and `created_at`; the
-  claim itself is never written to. `barrier_scorecard` (`BarrierScorecardRequest { model_id }`)
+  (settling ÷ claimed close), the claim's three-class `brier` (absent for `void`), the realised
+  figures `FORE-OUT-11` names and `created_at`; the claim itself is never written to. `barrier_scorecard` (`BarrierScorecardRequest { model_id }`)
   reports one model's ledger: the `settled`, `void` and `open` counts; the realised share and the mean
   declared probability of each outcome; `brier_model`; `brier_climatology` from EXP-018's fixed shares
   (stop 0.287, target 0.477, neither 0.236), never re-estimated from the ledger; `skill` = 1 −
@@ -145,6 +146,31 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   them, exactly as it would with no held claim in the ledger, and, once the ledger holds a held-name
   claim, the held claims' own counts and scores under the same names prefixed `held_`, against the
   same climatology. `sample_size` counts the buys' settled claims. *(DL-310.)*
+- **FORE-OUT-11** — Each barrier claim also states what the paths its three probabilities were counted
+  on say of its return, from that one simulation (never a second): `expected_return`, the mean over the
+  paths of the return to the first barrier or the tenth close (minus `stop_pct` on a path the stop comes
+  first on, `target_pct` on one the target comes first on, else the tenth close over the claim's close,
+  less 1; first touches by `FORE-OUT-07`'s rule); `close_return_p05`, the tenth close's return at its
+  5th percentile with the barriers ignored; and `sessions_to_target` and `sessions_to_stop`, the median
+  session (1 to 10) of that barrier's first touch over the paths it comes first on, null when it comes
+  first on none. The figures are fractions of the claim's close, and the probabilities are unchanged. A
+  claim stated before the figures existed gains them on a rerun on the same last bar, from the same
+  paths (`FORE-IDM-04`). Its settlement (`FORE-OUT-08`) records what happened by the same rule:
+  `realised_return` (minus `stop_pct`, `target_pct`, or the tenth session's close over the settling
+  close, less 1, by the outcome), `close_return` (that tenth close's return, whatever the outcome) and
+  `outcome_session` (the session, 1 to 10, of the stop's or the target's touch; null for neither); a
+  void records none of the three. They are the model's figures, never a fill's: a stop gapped through
+  still realises minus `stop_pct`. *(DL-312.)*
+- **FORE-OUT-12** — Once the ledger holds a settled claim that stated `expected_return` and whose
+  settlement recorded a `realised_return`, `barrier_scorecard` reports the return scores over those
+  claims beside `FORE-OUT-08`'s: `return_settled` (their count), `declared_return` (their mean
+  `expected_return`), `realised_return` (their mean `realised_return`), `return_bias` (the second less
+  the first) with its 95 % interval `return_bias_lo` / `return_bias_hi` from `FORE-OUT-08`'s date
+  bootstrap (the same draws and seed; absent under two dates), and `close_below_p05` (the share whose
+  `close_return` is below their `close_return_p05`: near 0.05 when the tail is calibrated). A claim
+  without the figures, or a settlement without a realised return, is counted as before and not
+  return-scored; with none, no return score is reported. Held claims' return scores carry `held_`
+  (`FORE-OUT-10`). The scorecard reports; it decides nothing (`FORE-NEV-01/02`). *(DL-312.)*
 
 ## Prohibitions (`NEV`)
 
@@ -448,3 +474,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `FORE-IN-07` (the held request's prices), `FORE-TRG-01` (a run waits for its history while the book
   holds a name; one request per held name; `held_count`) and `FORE-FAIL-04` (three designed held
   refusals; malformed held prices). 25 / 52 → 28 / 55.
+- v1.12 — S288 / DL-312 (2026-10-21): each claim states its return. New `FORE-OUT-11` (from the paths
+  its probabilities were counted on: the expected return to the first barrier or the tenth close, the
+  tenth close's 5th percentile, each barrier's median session; the settlement's realised return,
+  tenth-close return and session) and `FORE-OUT-12` (the scorecard's return scores once a claim that
+  stated them settles). `FORE-OUT-07` and `FORE-OUT-08` name the new fields. Why: DL-240 reads each
+  name as a distribution, the chance of each outcome and the return in each case; the claim stated the
+  chances only, and the PM's sizing over distributions needs the return. 28 / 55 → 30 / 57.

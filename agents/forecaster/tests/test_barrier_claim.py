@@ -59,6 +59,10 @@ _CLAIM_FIELDS = {
     "garch_beta",
     "created_at",
     "shadow",
+    "expected_return",
+    "close_return_p05",
+    "sessions_to_target",
+    "sessions_to_stop",
 }
 
 

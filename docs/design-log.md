@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-309 - the dispatcher places the day's run once, by a deadline it keeps, and each fire's line says what it did - status: MEASURED and DECIDED (planner, 2026-10-20 19:55 AEDT); work-queue 131 parts (b) and (d); specced as [S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md), merged as `0.128.07` (`f01edfc6`) and deployed as `s285` 2026-10-21; the operator, 2026-10-20: *"are we ready for another sprint for Codex? I have no preference so go ahead"*
+## DL-309 - the dispatcher places the day's run once, by a deadline it keeps, and each fire's line says what it did - status: MEASURED and DECIDED (planner, 2026-10-20 19:55 AEDT); work-queue 131 parts (b) and (d); specced as [S285](sprints/sprint-285-the-dispatcher-keeps-the-deadline-it-tells.md), merged as `0.128.07` (`f01edfc6`) and deployed as `s285` 2026-10-21; F2 PASSED on `sched-2026-10-20`, parts (b) and (d) closed; the operator, 2026-10-20: *"are we ready for another sprint for Codex? I have no preference so go ahead"*
 
 **Why.** Work-queue 131 left (b), a held run's answer deadline against the window's end, and (d), the dispatcher's misleading line, named in [DL-294](design-log.md) and read in [DL-300](design-log.md). It is the top row a builder can take now: 113 and 134 wait on a night, 136 on a second paper account, and the rows below touch a fidelity decision path or need a paid run.
 
@@ -40,7 +40,7 @@ and is marked CLOSED here.
 
 **Found on the way.** The resume-run skill's *Manual wake now* starts the dispatcher job, which places nothing outside 22:30 to 23:10 and wakes no agent (each app wakes on its own scale rule); corrected with the spec.
 
-## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 12:35 AEDT); work-queue 108; specced as [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md), merged 2026-10-20 as `0.128.06`, deployed as `s284` the same day on the operator's word (D9 below); the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
+## DL-308 - the sentiment pillar scores only the headlines that name the ticker's company - status: DECIDED (planner, 2026-10-20 12:35 AEDT); work-queue 108; specced as [S284](sprints/sprint-284-a-headline-counts-only-for-the-company-it-names.md), merged 2026-10-20 as `0.128.06`, deployed as `s284` the same day on the operator's word (D9 below); F2 PASSED on `sched-2026-10-20`, work-queue 108 closed (2026-10-21); the operator, 2026-10-20: *"I do not care what it is right now as long as we are moving forward"*
 
 **Why.** Work-queue 108: on `sched-2026-10-05` MRK cleared its confidence floor only on its sentiment score, and 7 of its 20 headlines were about Vaxcyte's vaccine trial ([DL-264](design-log.md) amendment 3). The analyst scores every headline Finnhub's `/company-news` serves for a ticker; that endpoint's `related` field only echoes the symbol asked for, so the feed itself says nothing about whose news a headline is.
 

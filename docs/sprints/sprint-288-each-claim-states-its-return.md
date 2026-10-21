@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-288-each-claim-states-its-return`
-**Status:** BUILT
-**Version:** `0.131.00` (MINOR after local main's `0.130.00`)
+**Status:** MERGED
+**Version:** `0.131.00` (MINOR; `main` was `0.130.00` at build)
 **Effort:** M
 **Decisions:** [DL-312](../design-log.md) (decided, seven decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md): each name a distribution, *"the chance … and the return in each case"*; [DL-310](../design-log.md): the held claims this sprint extends)
 
@@ -169,13 +169,13 @@ On the unchanged tree every one fails or errors. After Appendix section 1 all fo
 
 ## Success factors
 
-- [ ] On the built tree, F1 (`s288_f1.py <kit> <out>`, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, full digest **`83e0650cf43b3a55`**): its probabilities digest is main's, `43c45020da6e057d`; 32 held claims with figures; the ledger's 25 claims re-simulate and re-settle 25 / 25.
+- [x] On the built tree, F1 (`s288_f1.py <kit> <out>`, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, full digest **`83e0650cf43b3a55`**): its probabilities digest is main's, `43c45020da6e057d`; 32 held claims with figures; the ledger's 25 claims re-simulate and re-settle 25 / 25. *(Planner, 2026-10-21: passed, `f1_built_83c4da27.txt`.)*
 - [x] No file under `contracts/`, `kernel/`, a decision path, `orchestration/` (but the pack) or `surfaces/` changes; no existing test changes but section 2's two.
 - [x] Design decisions recorded with rejected alternatives: DL-312, already on `main`.
 - [x] Law cycle done as Appendix section 2: `FORE-OUT-11`, `FORE-OUT-12` 🟩; forecaster 30 / 57 in both rollups.
 - [x] B1 to B27 each planted, watched to fail against your tests alone, restored — stated per break.
 - [x] Every touched module < 200 lines, test files included.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage. *(Planner, 2026-10-21: the builder's offline run was red only at the dependency audit; the remote CI ran all 16 steps green on `83c4da27`, GATE PROVEN.)*
 
 ---
 
@@ -699,6 +699,48 @@ Updated trading-agents v0.130.0 -> v0.131.0
 **`make gate-ran`:** not done; planner runs from this branch's worktree after the push and compares its printed SHA to `git rev-parse HEAD`. No push or remote proof in this offline build.
 
 **Not met / verified failing:** Overall `make ci` verified failing solely at its dependency-audit stop; fresh dependency/security-advisory proof is not done and is owed to the planner. F1 frozen-kit digest proof, CodeQL, push, remote gates, merge, tag, deployment and F2/live return-score proof are not done. The two remaining local security steps passed separately. No existing test failed.
+
+### The planner's review and merge (2026-10-21)
+
+Kit and outputs in OneDrive `trading-agents-data/wq92ret-2026-10-21/`.
+
+- **Scope:** the 25 changed files are the spec's: the Appendix's 15 (sections 1 and 2), the
+  builder's five test files and `s288_return_fixtures.py`, `pyproject.toml`, `uv.lock` (the root
+  package's version line only), this spec and its README row; nothing under `contracts/`, `kernel/`,
+  `surfaces/` or a `DECISION_PATHS` entry (`scripts/replay_fidelity_git.py`), and under
+  `orchestration/` only the vocabulary pack. The builder's edits to this spec stay in the status
+  line, the success factors and the handback sections.
+- **Blobs:** 15 of 15 equal `prototype_blobs.txt`.
+- **The planner's tests on the built tree** (swapped in at the same paths with
+  `barrier_return_helpers.py`, then restored): 18 passed (`s288_planner_tests_on_built_83c4da27.txt`).
+- **Breaks:** 27 of 27 red against the builder's tests alone (its five new files and the two
+  existing tests the Appendix edits), the tree clean after
+  (`s288_breaks_on_built_codex_tests_83c4da27.txt`).
+- **CodeQL** set-diff by rule and path against the S287 branch: nothing new, nothing gone, 0 errors
+  (135 open on both).
+- **F1 passed:** `s288_f1.py` from the main checkout with `PYTHONPATH` the built tree (its `code from`
+  line names `ta-s288`), byte for byte the prototype's (full digest `83e0650cf43b3a55`; the
+  probabilities digest `43c45020da6e057d` is main's; `f1_built_83c4da27.txt`). The ledger's 25
+  claims re-simulate to their stored probabilities and re-settle to their stored outcomes 25 / 25;
+  declared +0.50 %, realised +0.16 %, bias −0.34 % [−1.80 %, +1.73 %]; 0 of 25 tenth closes below
+  their p05.
+- **`make ci`:** the builder's offline run was red only at the dependency audit; the remote CI ran all
+  16 steps green on `83c4da27`.
+- **`make gate-ran`** from `../ta-s288`: GATE PROVEN for `83c4da27` (CI, CodeQL, Security Findings),
+  the SHA checked against `HEAD` (`s288_gate_ran_83c4da27.txt`). `main` fast-forwarded
+  `65a27ad4` → `83c4da27`, tag `v0.131.00`.
+- **Deployed as `s288`** on the operator's word (*"if you need to deploy then you have my OK"*).
+  Only the vocabulary pack moved since `40ef6bfd`; the credential, LLM and issuer packs equal the
+  repo's on every target before and after. Vocabulary step 10:02-10:09 UTC: 17 of 17 `[OK]`, every
+  target's vocabulary `cd8bf1e4` (`40ef6bfd`) → `7e11d214` (`83c4da27`), only `GRAPH_VOCABULARY_B64`
+  changed. Build `39581593600` from `v0.131.00`, 15 of 15; retag 10:10-10:16 UTC, 17 of 17
+  `Succeeded`; the snapshots before and after differ only in each target's image; 16 apps at min 0
+  with their one scale rule (the two debaters max 3), the job's cron unchanged.
+  **`DeployRecord s288:83c4da27`** (actor `yury_gurevich`). Read since 10:02 UTC: 15 of 15 agent
+  types activated, 4 fleet checks passed, 0 faults, escalations, flags or LLM calls; CL 10 and
+  SBUX 10 still open for the 10-21 open. Rollback `s287`; no decision path, so the fidelity count
+  holds. Evidence: OneDrive `trading-agents-data/deploy-s288-2026-10-21/`. F2 on `sched-2026-10-21`
+  (the first weekday night), as *Sequencing after merge* step 4 says.
 
 ---
 

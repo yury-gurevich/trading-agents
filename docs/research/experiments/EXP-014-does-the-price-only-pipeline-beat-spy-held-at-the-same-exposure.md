@@ -8,6 +8,28 @@
 [S250](../../sprints/sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict.md) ·
 **Cost:** $0 of LLM spend; about 7 hours of local compute.
 
+**Amendment 1 — 2026-10-21 22:30 AEDT, approved by the operator, recorded before any arm starts.** As
+[EXP-022's Amendment 1](EXP-022-does-an-exit-besides-the-stop-make-the-book-earn-more.md): the gate moves from *running* the arms to *reading* them. Appendix P
+stays as frozen; this overrides its **Gate** line and section 5 step 1 in that one respect, and changes
+nothing that is computed.
+
+- **Run now.** The five arms run before the fidelity verdict, after EXP-022's twelve, from the same
+  clean detached checkout at `v0.128.06` (`f7e7ac21`), the fidelity pin since `sched-2026-10-20`.
+  [DL-237](../../design-log.md) decision (3) already put EXP-014 on the pinned commit in place of
+  section 4's "the commit that merges S250"; `v0.128.06` holds S250's tooling and
+  `scripts/exp014_arms.json` as merged.
+- **Blind until PASS.** `replay_verdict.py` does not run, and no arm's `summary.json`, `equity.csv`,
+  `fills.csv`, `sessions.csv` or `benchmark.csv` is opened; the run's logs strip the equity figure from
+  every progress line. When the five finish, the SHA-256 of every file goes into a seal, and the seal's
+  digest into Appendix R, before anything is scored.
+- **On PASS** read at a commit whose decision paths equal `v0.128.06`'s: verify the seal, then score by
+  section 5. **On FAIL**, the arms are deleted unread and section 5 step 1 holds; if the count restarts
+  on decision paths that differ from `v0.128.06`'s, they are deleted unread and run again on PASS.
+- **Why.** The replay has no randomness and reads no live state, so an arm run now computes exactly
+  what it would compute on PASS; nothing is scored or read before PASS, so the gate keeps both its
+  purposes. **Ruled out:** scoring now; waiting (the same computation, later); running beside EXP-022's
+  arms three at a time (this machine has two cores: every arm and the operator's own use would slow).
+
 ## 1. Why we needed this experiment
 
 **The decision that waits.** G-EDGE: the operator chooses between putting an edge to work (P18A:

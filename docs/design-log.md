@@ -3209,7 +3209,7 @@ unchanged. Not claimed: F1, F2 or GATE PROVEN.
 
 ---
 
-## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250)
+## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250); **amended 2026-10-21** (the operator approved): the arms run before PASS from the fidelity pin, blind and sealed, and are scored only on PASS (EXP-014 Amendment 1)
 
 **Question.** E17.5 owes a verdict on the price-only pipeline (DL-232): edge, no edge, or edge in one
 pillar. What exactly is scored, by what rule, and what must the harness stop doing first?

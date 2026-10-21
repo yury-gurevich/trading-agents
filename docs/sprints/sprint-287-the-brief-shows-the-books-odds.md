@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-287-the-brief-shows-the-books-odds`
-**Status:** BUILT
-**Version:** *next available MINOR at merge* (`0.130.00` while `main` is `0.129.00`)
+**Status:** MERGED
+**Version:** `0.130.00` (MINOR; `main` was `0.129.00` at build)
 **Effort:** M
 **Decisions:** [DL-311](../design-log.md) (decided, nine decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md): the book as a distribution; [DL-310](../design-log.md): the nightly held claims this sprint reads)
 
@@ -176,7 +176,7 @@ On the unchanged tree every one fails or errors except A11. After Appendix secti
 - [x] Law cycle done as Appendix section 2: `DSP-OUT-10` and `SRF-OUT-09` 🟩; dispatcher 47 / 50 and surfaces 32 / 39 in both rollups.
 - [x] B1 to B26 each planted, watched to fail against your tests alone, restored — stated per break.
 - [x] Every touched module < 200 lines, test files included.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage. *(Planner, 2026-10-21: the builder's offline run was red only at the dependency audit; the remote CI ran all 16 steps green on `40ef6bfd`, GATE PROVEN.)*
 
 ---
 
@@ -536,6 +536,33 @@ git diff --check -> PASS (exit 0)
 **`make gate-ran`:** not done; no push or network access, so no remote exact-SHA proof.
 
 **Not met / verified failing:** `make ci` verified failing only at the dependency audit because external DNS is blocked; a fresh advisory result is not done and remains the planner's. Push, remote CI/Security Findings/CodeQL, merge, image build, deployment, F2 live brief proof and local dashboard restart/inspection are not done.
+
+### The planner's review and merge (2026-10-21)
+
+Kit and outputs in OneDrive `trading-agents-data/wq92odds-2026-10-21/`.
+
+- **Scope:** the 24 changed files are the spec's: Appendix section 1's 9, section 2's 6, the four
+  test files and `book_fixtures.py`, `pyproject.toml`, `uv.lock` (the root package's version line
+  only), this spec and its README row; nothing under `contracts/`, `kernel/`, `agents/` or a
+  `DECISION_PATHS` entry (`scripts/replay_fidelity_git.py`). The builder's edits to this spec stay in
+  the status line, the success factors and the handback sections.
+- **Blobs:** 15 of 15 equal `prototype_blobs.txt`.
+- **The planner's tests on the built tree** (swapped in at the same paths, then restored): 15
+  passed (`s287_planner_tests_on_built_40ef6bfd.txt`).
+- **Breaks:** 26 of 26 red against the builder's tests alone, the tree clean after
+  (`s287_breaks_on_built_codex_tests_40ef6bfd.txt`).
+- **CodeQL** set-diff by rule and path against the S286 branch: nothing new, nothing gone, 0 errors
+  (135 open on both: 120 notes, 15 warnings).
+- **F1 passed:** `s287_f1.py` from the built tree, byte for byte the prototype's (digest
+  `0a8e6318978cd7b0`; `f1_built_40ef6bfd.txt`).
+- **`make ci`:** the builder's offline run was red only at the dependency audit; the remote CI ran all
+  16 steps green on `40ef6bfd`.
+- **`make gate-ran`** from `../ta-s287`: GATE PROVEN for `40ef6bfd` (CI, CodeQL, Security Findings),
+  the SHA checked against `HEAD` (`s287_gate_ran_40ef6bfd.txt`). `main` fast-forwarded
+  `bd3b5c5f` → `40ef6bfd`, tag `v0.130.00`.
+- **Not deployed.** An image-only retag from `v0.130.00` on the operator's word; rollback `s286`; no
+  decision path, so the fidelity count holds. F2 on the first weekday night after the deploy, as
+  *Sequencing after merge* step 4 says.
 
 ---
 

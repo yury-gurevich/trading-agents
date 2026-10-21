@@ -10,6 +10,27 @@
 fidelity gate [DL-237](../../design-log.md) · **Cost:** $0 of LLM spend; about 17 hours of local compute
 (twelve arms of about 84 minutes each, two or three at a time).
 
+**Amendment 1 — 2026-10-21 22:20 AEDT, approved by the operator, recorded before any arm starts.** The
+gate moves from *running* the arms to *reading* them. Appendix P stays as frozen; this overrides its
+**Gate** line and section 5 step 1 in that one respect, and changes nothing that is computed.
+
+- **Run now.** The twelve arms run before the fidelity verdict, from one clean detached checkout at
+  `v0.128.06` (`f7e7ac21`), the commit the fidelity count is pinned to from `sched-2026-10-20`.
+  `git diff --name-only v0.128.06 45a2fdc1 -- <DECISION_PATHS>` is empty *[measured 2026-10-21]*.
+- **Blind until PASS.** The scorer does not run, and no arm's `summary.json`, `equity.csv`,
+  `fills.csv`, `sessions.csv` or `benchmark.csv` is opened; the run's logs strip the equity figure
+  from every progress line. When the twelve finish, the SHA-256 of every file goes into a seal, and the
+  seal's digest into Appendix R, before anything is scored.
+- **On PASS** read at a commit whose decision paths equal `v0.128.06`'s: verify the seal, then score by
+  section 5 steps 4–8. **On FAIL**, or if the count restarts on decision paths that differ from
+  `v0.128.06`'s, the arms are deleted unread and this experiment runs as section 5 says.
+- **Why.** The replay has no randomness and reads no live state, so an arm run now computes exactly
+  what it would compute on PASS. The gate exists so that no exit verdict comes from a replay not shown
+  faithful, and so that no one knows the result while the gate is open; both hold, because nothing is
+  scored or read before PASS. It moves about 17 hours of compute from after PASS to before it.
+  **Ruled out:** scoring now (knowing the result would colour any later call on the fidelity count);
+  waiting (the same computation, 17 hours later).
+
 ## 1. Why we needed this experiment
 
 **The decision that waits.** Which exit, if any, the fleet builds first (DL-240 step 4). Today the only

@@ -233,7 +233,7 @@ and is marked CLOSED here.
 
 **Fidelity.** Every changed file is under `agents/execution/` and none is `order_tolerance.py`; nothing in `contracts/` or the packs changes, so a deploy does not restart the count (`scripts/replay_fidelity_git.py::DECISION_PATHS`).
 
-## DL-305 - EXP-022 is pre-registered before the fidelity verdict, and its scorer pairs each exit arm with stops-only at the same slippage on the same resampled days - status: DECIDED (planner, 2026-10-16 18:05 AEDT); built as [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md), MERGED 2026-10-16 (`50d29eee`); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"create next sprint for 92"*)
+## DL-305 - EXP-022 is pre-registered before the fidelity verdict, and its scorer pairs each exit arm with stops-only at the same slippage on the same resampled days - status: DECIDED (planner, 2026-10-16 18:05 AEDT); built as [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md), MERGED 2026-10-16 (`50d29eee`); **amended 2026-10-21** (the operator approved): the arms run before PASS, blind and sealed, and are scored only on PASS (EXP-022 Amendment 1, which records the roads not taken); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"create next sprint for 92"*)
 
 **Question.** S281 gave the replay its exits. DL-240's next step is the pre-registered exit
 experiment. What does it measure, against what bar, and what must be built before it can be scored?

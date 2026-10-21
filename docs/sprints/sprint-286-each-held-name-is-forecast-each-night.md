@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-286-each-held-name-is-forecast-each-night`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.129.00` (MINOR; local main was `0.128.08` at build)
 **Effort:** M
 **Decisions:** [DL-310](../design-log.md) (decided, ten decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md) and its amendment: the daily re-read of held names feeds the exits)
@@ -181,13 +181,13 @@ On the unchanged tree every one fails or errors. After Appendix section 1 all se
 
 ## Success factors
 
-- [ ] On the built tree, F1 (`s286_f1.py` on the frozen book, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, digest `9d5791f9a903ba29`): 34 held requests, 32 held claims, 2 designed refusals, 3 buy claims. *(Planner, at review.)*
+- [x] On the built tree, F1 (`s286_f1.py` on the frozen book, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, digest `9d5791f9a903ba29`): 34 held requests, 32 held claims, 2 designed refusals, 3 buy claims. *(Planner, 2026-10-21: byte for byte, digest `9d5791f9a903ba29`.)*
 - [x] No file under `contracts/`, `kernel/` or a decision path changes; no existing test changes but `tests/poll_reference.py`.
 - [x] Design decisions recorded with rejected alternatives: DL-310, already on `main`.
 - [x] Law cycle done as Appendix section 2: `FORE-OUT-09`, `FORE-OUT-10`, `FORE-PERF-04` 🟩; forecaster 28 / 55 and provider 24 / 67 in both rollups.
 - [x] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
 - [x] Every touched module < 200 lines, test files included.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `make ci` exit 0, 100.00 % coverage. *(Planner, 2026-10-21: the builder's offline run was red only at the dependency audit; on `d4b10c75` the planner's local run and the remote CI ran all 16 steps green, GATE PROVEN.)*
 
 ---
 
@@ -596,6 +596,46 @@ UNTRACKED_SECRETS_EXIT=0
 **Not met / verified failing:** `make ci` exit 0 is verified failing: the dependency audit cannot refresh PyPI metadata offline. No vulnerability-clean audit is claimed. Nine pytest cases are skipped for missing local services/secrets, link privilege, SciPy or opt-in network flags (exact reasons above). F1, F2, remote gates, push, merge and deployment are not done. The decision path's live behaviour and held-claim skill are not measured here.
 
 ---
+
+### The planner's review, merge and deploy (2026-10-21)
+
+Kit and outputs in OneDrive `trading-agents-data/wq92held-2026-10-21/`; the deploy's in
+`deploy-s286-2026-10-21/`.
+
+- **Scope:** the 31 changed files are the spec's: Appendix section 1's 13, section 2's 7, the six
+  test files and `held_helpers.py`, `pyproject.toml`, `uv.lock` (the root package's version line
+  only), this spec and its README row; nothing under `contracts/`, `kernel/` or a decision path.
+- **Blobs:** 20 of 20 equal `prototype_blobs.txt`.
+- **The planner's tests on the built tree** (swapped in at the same paths, then restored): 26
+  passed (`s286_planner_tests_on_built_61f4ad75.txt`).
+- **Breaks: 24 of 25 red against the builder's tests alone; B17 stayed green**
+  (`s286_breaks_on_built_codex_tests_61f4ad75.txt`). The builder planted its own reading of B17;
+  the kit's (the cache records a key that has no node while it still holds an earlier run's
+  history, then serves that history under the new key) survived A12, which started from an empty
+  cache. The cache lives as long as the agent, so that is the defect that matters: last night's bars
+  served to tonight's claims. 🪤 Planner's miss: the spec named B17 in words and pointed at a kit
+  the builder cannot read. **Planner's change, on the operator's word** (*"Fix it yourself"*):
+  `d4b10c75`, A12 reads an earlier run's history first (test only, no production change); then 25 of
+  25 red, tree clean after (`s286_breaks_on_built_codex_tests_after_a12.txt`).
+- **CodeQL** set-diff by rule and path against the S285 branch: nothing new, 0 errors, on `61f4ad75`
+  and on `d4b10c75` (135 open; `61f4ad75` read 79 a moment earlier, CodeQL's moving count).
+- **F1 passed** (`s286_f1.py` on the frozen `book_sched-2026-10-20.json`, from the main checkout with
+  `PYTHONPATH` the built tree): byte for byte the prototype's (digest `9d5791f9a903ba29`): 34 held
+  requests, 32 held claims (13 `rebased`: the names past their target), 2 designed refusals (PM and
+  UNH), 3 buy claims (`f1_built_61f4ad75.txt`).
+- **`make ci`** on `d4b10c75` (the planner's own change, so run locally): exit 0, every step, 5,264
+  passed, 9 skipped, 100.00 %, the dependency audit clean (`s286_make_ci_d4b10c75.txt`).
+- **`make gate-ran`** from `../ta-s286`: GATE PROVEN for `d4b10c75` (CI, CodeQL, Security Findings),
+  the SHA checked against `HEAD`. `main` fast-forwarded `dd3abd8b` → `d4b10c75`, tag `v0.129.00`.
+- **Deployed as `s286`** on the operator's word (*"deploy if you need to"*). `v0.128.07..v0.129.00`
+  touches no `DECISION_PATHS` entry: the fidelity count holds. The vocabulary step first
+  (03:25-03:32 UTC): 17 of 17 `[OK]`, and every target's decoded vocabulary went `aed6e10c`
+  (`f01edfc6`) → `cd8bf1e4` (`d4b10c75`); across the step only `GRAPH_VOCABULARY_B64` changed, on
+  every target. Build `39538387658` from `v0.129.00`, 15 of 15. Retag 03:33:14-03:39:34 UTC, 17 of
+  17 `Succeeded`; `compare_snapshots.py`: only the image changed (KEDA rules, replicas, env intact;
+  the debaters keep max 3). **`DeployRecord s286:d4b10c75`**. Read since the vocabulary step: 15 of
+  15 agent types activated, 4 fleet checks passed, 0 faults, escalations, flags or LLM calls; the
+  CL 10 and SBUX 10 day limits still `accepted`. Rollback `s285`.
 
 ## Return notes
 

@@ -17,6 +17,7 @@ from agents.forecaster.barrier_forecast import forecast_barrier
 from agents.forecaster.barrier_scorecard import barrier_scorecard
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
 from agents.forecaster.factor_prediction import forecast_factor
+from agents.forecaster.history_cache import HistoryCache
 from agents.forecaster.model import FakeSentimentModel
 from agents.forecaster.price_signal import read_return
 from agents.forecaster.provider_client import request_news
@@ -72,6 +73,7 @@ class ForecasterAgent(AgentBase):
         self._barrier_fitter = (
             barrier_fitter if barrier_fitter is not None else ArchGarchFitter()
         )
+        self._histories = HistoryCache()
         self.handlers = {
             "forecast": self._forecast,
             "forecast_return": self._forecast_return,
@@ -140,6 +142,7 @@ class ForecasterAgent(AgentBase):
             self._settings,
             self._barrier_fitter,
             request,
+            self._histories,
         )
 
     def _read_sentiment(self, ticker: str) -> ModelReading:

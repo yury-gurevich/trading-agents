@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -45,12 +45,12 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-TRG-01` — **Request-driven**: it acts only on a **recorded data need**. That is a data
   request on the bus (a data-request event consumed from its subscribed topic, ADR-0005, or a
   capability request from an authorised caller, `PROV-SEC-07`), an unconsumed **`RunRequest`** on
-  the graph (DL-08, `PROV-TRG-05`), or an **`AnalystRun`'s qualifying buys** with no `BarrierHistory`
-  yet (`PROV-TRG-04`). A `RunRequest` needs no bus event to be acted on. It is never self-initiated
+  the graph (DL-08, `PROV-TRG-05`), or an **`AnalystRun`'s qualifying buys or held names** with no
+  `BarrierHistory` yet (`PROV-TRG-04`). A `RunRequest` needs no bus event to be acted on. It is never self-initiated
   (`PROV-TRG-02`). *(DRIFT-082; was: only a data-request event from its subscribed topic.)*
 - `PROV-TRG-02` — It **never self-triggers** — no timer, no scheduled fetch, no speculative
   prefetch absent a request. A data need another stage recorded in the graph (a `RunRequest`, DL-08;
-  an `AnalystRun`'s qualifying buys, `PROV-TRG-04`) is a request: finding it unconsumed is a
+  an `AnalystRun`'s qualifying buys or held names, `PROV-TRG-04`) is a request: finding it unconsumed is a
   trigger, not a self-trigger, and a poll that finds none fetches nothing. The poll finds its
   pending work **by key and edge alone**: a `RunRequest` with no `INGESTED_BY` edge, and a current
   `AnalystRun` with no `BARRIER_HISTORY_BY` edge. It **fetches props only for those nodes**, so a poll
@@ -58,9 +58,11 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-TRG-03` — Precondition to fetch is a **valid** request; otherwise it rejects and does not
   fetch.
 - `PROV-TRG-04` — An `AnalystRun` holding at least one **buy with both a suggested stop and a
-  suggested target** (the contract's `barrier_buys` rule) and no `BarrierHistory` yet is a trigger
-  for the barrier history (`PROV-OUT-08`). A run with no such buy triggers nothing: sells, holds and a
-  buy missing either barrier ask for no history. The **deployed** loop counts only a *current* run,
+  suggested target** (the contract's `barrier_buys` rule), or run while the book holds a name
+  (`contracts.positions`' active Positions, DL-310), and no `BarrierHistory` yet is a trigger for the
+  barrier history (`PROV-OUT-08`). A run with neither triggers nothing: sells, holds and a buy missing
+  either barrier ask for no history while nothing is held, and a run with no recommendation set asks
+  for none at all. The **deployed** loop counts only a *current* run,
   one created within 24 h (`contracts/barrier_history.is_current_run`, DL-241 D11): an older run is
   never fetched, so the backlog of runs no forecaster ever read is not claimed on later bars.
 - `PROV-TRG-05` — An ingest a **`RunRequest`** triggers serves **that run's as-of** (its
@@ -108,7 +110,8 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   clause. *(DRIFT-080 — S238, DL-233, DL-239; DRIFT-084 — S251.)*
 - `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
   through its own fetch path (the source's feed and end rule, then validation and the extreme-move
-  guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers,
+  guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers
+  and then each held name's, each once (a name both bought and held, once),
   over a calendar window holding at least `barrier_history_sessions` sessions
   **that ends on the run's as-of** (the `window_end` of the `MarketData` the run was scanned
   from, read through the run's lineage `AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→
@@ -121,8 +124,9 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   extreme-move guard, or nothing served), never silently absent; a served ticker whose last bar is
   stale is listed as `stale`. A **failed fetch still writes the node**, `status: failed` with the
   reason and every ticker dropped with it, so no reader waits forever — never an empty success, never
-  no node. A barrier fetch holds too few tickers for the `PROV-OUT-09` guard to fire (its √(n−1)
-  ceiling), so this path **leans on the daily request's guard**: its newest session is the one the
+  no node. A barrier fetch of fewer than 66 tickers cannot fire the `PROV-OUT-09` guard (its √(n−1)
+  ceiling against `max_daily_move_sigma` 8; with the held names it was 36 on 2026-10-20), so this path
+  **leans on the daily request's guard**: its newest session is the one the
   daily request judged, and a ticker the daily request excluded never becomes a buy.
   A run with no such `MarketData` has no as-of and is served as an ingest no run triggered is:
   its window ends on the UTC date of the fetch (`PROV-TRG-05`). A `MarketData` whose
@@ -518,3 +522,8 @@ status:
   fetch's UTC date; an absent or unparseable stored `window_end` fails before any fetch or
   history write. Why: the clock shifted a late run's history and claim beyond the bars its
   barriers came from (DRIFT-110). No new clause, contract, property or tunable; 24 / 67 unchanged.
+- v1.11 — S286 / DL-310 (2026-10-21): the barrier history also holds every held name. `PROV-TRG-01`,
+  `PROV-TRG-02` and `PROV-TRG-04` amended (a run triggers its history while the book holds a name,
+  with or without a barrier buy; a run with no recommendation set never does); `PROV-OUT-08` amended
+  (one request for the barrier buys, then each held name, once each; the guard's reach restated:
+  fewer than 66 tickers cannot fire it). No new clause, contract or tunable; 24 / 67 unchanged.

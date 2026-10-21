@@ -1,10 +1,12 @@
 """forecast_barrier: state how likely a buy's target comes before its stop.
 
 Agent: forecaster
-Role: for one ticker and its stop and target, read ~3 years of its own daily bars
-      from the BarrierHistory the provider wrote for the run (DL-241 D10), fit
-      GARCH(1,1)-t, simulate EXP-018's 10-session paths and record the three
-      probabilities as an append-only, advisory BarrierForecast claim. Any refusal
+Role: for one ticker and its stop and target (a buy's, or a held name's live stop
+      and declared target measured from the claim's close, DL-310), read ~3 years
+      of its own daily bars from the BarrierHistory the provider wrote for the run
+      (DL-241 D10), fit GARCH(1,1)-t, simulate EXP-018's 10-session paths and
+      record the three probabilities as an append-only, advisory BarrierForecast
+      claim. Any refusal
       (malformed barriers, no or a failed history, a ticker the provider dropped,
       short history, a failed fit, a conflicting rerun) records a fault and returns
       the neutral reading; a claim is never fabricated (FORE-FAIL-04). A designed
@@ -38,6 +40,8 @@ from agents.forecaster.domain.barrier_garch import (
 )
 from agents.forecaster.domain.features import confidence_from_history
 from agents.forecaster.domain.sentiment import NEUTRAL
+from agents.forecaster.held_claim import held_barriers, held_prices
+from agents.forecaster.held_plan import HELD_SUBJECT
 from contracts.common import Provenance
 from contracts.forecaster import ForecastRequest, ShadowPrediction
 from kernel.errors import fault_boundary
@@ -46,6 +50,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
     from agents.forecaster.barrier_fit import GarchFitter
+    from agents.forecaster.history_cache import HistoryCache
     from agents.forecaster.settings import ForecasterSettings
     from contracts.barrier_history import BarRow
     from kernel import FaultSink, GraphStore
@@ -57,8 +62,12 @@ def forecast_barrier(
     settings: ForecasterSettings,
     fitter: GarchFitter,
     request: BaseModel,
+    histories: HistoryCache | None = None,
 ) -> ShadowPrediction:
-    """Return P(target first) as a shadow prediction, or the neutral reading."""
+    """Return P(target first) as a shadow prediction, or the neutral reading.
+
+    ``histories`` lets the run's claims share one read of its BarrierHistory.
+    """
     forecast = ForecastRequest.model_validate(request)
     run_id = f"forecaster-run-{uuid.uuid4().hex}"
     claim: BarrierClaim | None = None
@@ -70,7 +79,7 @@ def forecast_barrier(
         reraise=False,
     ) as capture:
         try:
-            claim = _state_claim(graph, settings, fitter, forecast)
+            claim = _state_claim(graph, settings, fitter, forecast, histories)
         except BarrierClaimRefusedError as refusal:
             record_refusal(sink, refusal)
         else:
@@ -103,11 +112,14 @@ def _state_claim(
     settings: ForecasterSettings,
     fitter: GarchFitter,
     forecast: ForecastRequest,
+    histories: HistoryCache | None,
 ) -> BarrierClaim:
     """Read, fit and simulate; raise BarrierClaimRefusedError on any refusal."""
-    stop, target = barriers(forecast.features)
     ticker = forecast.subject_ref
-    history = read_history(graph, forecast.history_ref, ticker)
+    held = forecast.subject_kind == HELD_SUBJECT
+    prices = held_prices(ticker, forecast.features) if held else None
+    stop, target = (0.0, 0.0) if held else barriers(forecast.features)
+    history = read_history(graph, forecast.history_ref, ticker, histories)
     rows = history.histories[ticker].bars
     if len(rows) < settings.barrier_min_history_sessions:
         raise BarrierClaimRefusedError(
@@ -115,6 +127,9 @@ def _state_claim(
             f"{settings.barrier_min_history_sessions}; no claim",
             severity=DESIGNED,
         )
+    plan = None if prices is None else held_barriers(ticker, prices, rows[-1][4])
+    if plan is not None:
+        stop, target = plan.stop_pct, plan.target_pct
     r, lh_pct, ll_pct = _moves(rows)
     params = accept_fit(fitter.fit(r))
     if params is None:
@@ -148,6 +163,7 @@ def _state_claim(
         seed=seed,
         history_ref=str(forecast.history_ref),
         sessions_requested=history.sessions_requested,
+        held=plan,
     )
 
 

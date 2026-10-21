@@ -2,7 +2,9 @@
 
 Agent: forecaster
 Role: persist a barrier claim with every field its later settlement reads, keyed
-      so a rerun on the same last bar merges into the same node (DL-241 D2/D5).
+      so a rerun on the same last bar merges into the same node (DL-241 D2/D5); a
+      held name's claim is keyed apart from a buy's and says which stop and target
+      it stood on (DL-310).
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -22,9 +24,12 @@ if TYPE_CHECKING:
     from datetime import date
 
     from agents.forecaster.domain.barrier_garch import GarchParams
+    from agents.forecaster.held_claim import HeldBarriers
     from kernel import GraphStore, Node
 
 BARRIER_LABEL = "BarrierForecast"
+#: The key segment and ``subject_kind`` of a held name's claim.
+HELD_KEY_SEGMENT = "held"
 
 
 @dataclass(frozen=True)
@@ -44,11 +49,14 @@ class BarrierClaim:
     history_ref: str
     """The provider's BarrierHistory key the bars were read from (DL-241 D10)."""
     sessions_requested: int
+    held: HeldBarriers | None = None
+    """A held name's stop and target, and where they came from; None for a buy."""
 
     @property
     def key(self) -> str:
-        """``{model_id}:{ticker}:{as_of}``: one claim per model, ticker and bar."""
-        return f"{BARRIER_MODEL_ID}:{self.ticker}:{self.as_of.isoformat()}"
+        """``{model_id}:{ticker}:{as_of}``, or ``{model_id}:held:{ticker}:{as_of}``."""
+        subject = "" if self.held is None else f"{HELD_KEY_SEGMENT}:"
+        return f"{BARRIER_MODEL_ID}:{subject}{self.ticker}:{self.as_of.isoformat()}"
 
 
 def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
@@ -83,6 +91,16 @@ def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
         "created_at": datetime.now(tz=UTC).isoformat(),
         "shadow": True,
     }
+    if claim.held is not None:
+        props.update(
+            {
+                "subject_kind": "position",
+                "target_basis": claim.held.basis,
+                "stop_price": claim.held.prices.stop_price,
+                "target_price": claim.held.prices.target_price,
+                "declared_target_pct": claim.held.prices.target_pct,
+            }
+        )
     existing = graph.get_node(BARRIER_LABEL, claim.key)
     if existing is not None:
         # A rerun on the same last bar (a resumed run) keeps where and when the claim

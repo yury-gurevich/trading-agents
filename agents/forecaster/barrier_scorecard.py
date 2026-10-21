@@ -3,7 +3,10 @@
 Agent: forecaster
 Role: answer the barrier_scorecard capability from the forecaster's own ledger, its
       BarrierForecast claims and their BarrierSettlements: counts settled, void and
-      open, then EXP-018's scores over the settled ones (FORE-OUT-08). Read-only and
+      open, then EXP-018's scores over the settled ones (FORE-OUT-08): buys' claims
+      under the names S241 gave them, held names' claims apart under ``held_``
+      once the ledger holds one (DL-310), each against the same climatology.
+      Read-only and
       repeatable (FORE-IDM-05); never promotion-eligible (FORE-OUT-04); it reports
       and decides nothing (FORE-NEV-01/02).
 External I/O: GraphStore reads via the injected backend.
@@ -29,27 +32,43 @@ def barrier_scorecard(graph: GraphStore, request: BaseModel) -> Scorecard:
     """Score one model's ledger; never promotion-eligible."""
     req = BarrierScorecardRequest.model_validate(request)
     claims, settlements = model_ledger(graph, req.model_id)
-    settled = sorted(
-        (
-            (str(node.props["as_of"]), key)
-            for key, node in settlements.items()
-            if node.props["outcome"] != VOID
-        )
-    )
-    cases = [_case(claims[key], settlements[key]) for _as_of, key in settled]
-    metrics: dict[str, float] = {
-        "settled": float(len(cases)),
-        "void": float(len(settlements) - len(cases)),
-        "open": float(len(claims) - len(settlements)),
-    }
-    metrics.update(ledger_scores(cases))
+    held = {key for key, node in claims.items() if _held(node)}
+    buys = {key: node for key, node in claims.items() if key not in held}
+    metrics, sample_size = _scores(buys, settlements, "")
+    if held:
+        held_claims = {key: claims[key] for key in held}
+        metrics.update(_scores(held_claims, settlements, "held_")[0])
     return Scorecard(
         model_id=req.model_id,
         metrics=metrics,
-        sample_size=len(cases),
+        sample_size=sample_size,
         fresh_as_of=datetime.now(tz=UTC),
         promotion_eligible=False,
     )
+
+
+def _held(claim: Node) -> bool:
+    return claim.props.get("subject_kind") == "position"
+
+
+def _scores(
+    claims: dict[str, Node], settlements: dict[str, Node], prefix: str
+) -> tuple[dict[str, float], int]:
+    """Counts and scores over ``claims``, names prefixed; and the settled count."""
+    mine = {key: node for key, node in settlements.items() if key in claims}
+    settled = sorted(
+        (str(node.props["as_of"]), key)
+        for key, node in mine.items()
+        if node.props["outcome"] != VOID
+    )
+    cases = [_case(claims[key], mine[key]) for _as_of, key in settled]
+    metrics: dict[str, float] = {
+        "settled": float(len(cases)),
+        "void": float(len(mine) - len(cases)),
+        "open": float(len(claims) - len(mine)),
+    }
+    metrics.update(ledger_scores(cases))
+    return {f"{prefix}{name}": value for name, value in metrics.items()}, len(cases)
 
 
 def _case(claim: Node, settlement: Node) -> ScoredCase:

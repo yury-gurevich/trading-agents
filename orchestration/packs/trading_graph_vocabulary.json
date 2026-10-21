@@ -572,6 +572,7 @@
     "BarrierForecast": [
       "as_of",
       "created_at",
+      "declared_target_pct",
       "entry_close",
       "fit_status",
       "garch_alpha",
@@ -590,7 +591,11 @@
       "seed",
       "shadow",
       "stop_pct",
+      "stop_price",
+      "subject_kind",
+      "target_basis",
       "target_pct",
+      "target_price",
       "ticker"
     ],
     "BarrierHistory": [

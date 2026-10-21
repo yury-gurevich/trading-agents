@@ -1,8 +1,9 @@
 """Provider barrier-history work kind: the long daily history a barrier claim needs.
 
 Agent: provider
-Role: find AnalystRun nodes holding a buy with both a suggested stop and target and no
-      BarrierHistory yet; fetch those tickers' daily bars in ONE request through the
+Role: find AnalystRun nodes holding a buy with both a suggested stop and target, or
+      run while the book holds a name (DL-310), and no BarrierHistory yet; fetch
+      those buys' and held names' daily bars in ONE request through the
       provider's own fetch path (the source's feed and end rule, then validation and
       the unchanged extreme-move guard), and write ONE BarrierHistory node linked from
       the AnalystRun. A dropped ticker is listed with its reason; a failed fetch still
@@ -27,6 +28,7 @@ from contracts.barrier_history import (
     barrier_history_key,
     is_current_run,
 )
+from contracts.positions import open_position_tickers
 from contracts.provider import DataRequest
 from kernel.errors import fault_boundary
 from kernel.graph_pending import pending_nodes
@@ -46,7 +48,7 @@ _SOURCE_FAILED_NOTE = "source_unavailable"
 def find_pending_barrier_history(
     graph: GraphStore, *, now: datetime | None = None
 ) -> list[Node]:
-    """AnalystRun nodes with a qualifying buy and no BarrierHistory yet.
+    """AnalystRun nodes with a qualifying buy or a held name, and no history yet.
 
     With ``now`` (the deployed loop), only a current run counts (DL-241 D11): the
     store is asked only for runs created since ``now - CLAIM_RUN_MAX_AGE``, so the
@@ -59,13 +61,13 @@ def find_pending_barrier_history(
             graph, ANALYST_RUN_LABEL, BARRIER_HISTORY_EDGE, created_at_from=since
         )
         if (now is None or is_current_run(node.props, now))
-        and _qualifying_tickers(node)
+        and _qualifying_tickers(graph, node)
     ]
 
 
 def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
     """Fetch the run's qualifying tickers once and write one linked BarrierHistory."""
-    tickers = _qualifying_tickers(node)
+    tickers = _qualifying_tickers(agent._graph, node)
     sessions = agent._settings.barrier_history_sessions
     window = barrier_window(sessions, run_as_of(agent._graph, node))
     market: MarketData | None = None
@@ -84,12 +86,14 @@ def write_barrier_history(node: Node, *, agent: ProviderAgent) -> None:
     agent._graph.add_edge(node, written, BARRIER_HISTORY_EDGE)
 
 
-def _qualifying_tickers(node: Node) -> tuple[str, ...]:
+def _qualifying_tickers(graph: GraphStore, node: Node) -> tuple[str, ...]:
+    """The run's barrier buys, then each held name, once each, in that order."""
     raw = node.props.get("recommendation_set")
     if raw is None:
         return ()
-    recommendation_set = RecommendationSet.model_validate(raw)
-    return tuple(dict.fromkeys(rec.ticker for rec in barrier_buys(recommendation_set)))
+    buys = barrier_buys(RecommendationSet.model_validate(raw))
+    held = open_position_tickers(graph)
+    return tuple(dict.fromkeys((*(rec.ticker for rec in buys), *held)))
 
 
 def _history(

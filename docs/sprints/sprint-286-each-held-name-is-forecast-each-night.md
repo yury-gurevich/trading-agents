@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-286-each-held-name-is-forecast-each-night`
-**Status:** SPEC
-**Version:** *next available MINOR at merge* (main is `0.128.07`)
+**Status:** BUILT
+**Version:** `0.129.00` (MINOR; local main was `0.128.08` at build)
 **Effort:** M
 **Decisions:** [DL-310](../design-log.md) (decided, ten decisions with the roads not taken) · work-queue 92 ([DL-240](../design-log.md) and its amendment: the daily re-read of held names feeds the exits)
 
@@ -182,11 +182,11 @@ On the unchanged tree every one fails or errors. After Appendix section 1 all se
 ## Success factors
 
 - [ ] On the built tree, F1 (`s286_f1.py` on the frozen book, run from the main checkout with `PYTHONPATH=<built tree>`) prints exactly the prototype's output (`f1_proto.txt`, digest `9d5791f9a903ba29`): 34 held requests, 32 held claims, 2 designed refusals, 3 buy claims. *(Planner, at review.)*
-- [ ] No file under `contracts/`, `kernel/` or a decision path changes; no existing test changes but `tests/poll_reference.py`.
-- [ ] Design decisions recorded with rejected alternatives: DL-310, already on `main`.
-- [ ] Law cycle done as Appendix section 2: `FORE-OUT-09`, `FORE-OUT-10`, `FORE-PERF-04` 🟩; forecaster 28 / 55 and provider 24 / 67 in both rollups.
-- [ ] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
-- [ ] Every touched module < 200 lines, test files included.
+- [x] No file under `contracts/`, `kernel/` or a decision path changes; no existing test changes but `tests/poll_reference.py`.
+- [x] Design decisions recorded with rejected alternatives: DL-310, already on `main`.
+- [x] Law cycle done as Appendix section 2: `FORE-OUT-09`, `FORE-OUT-10`, `FORE-PERF-04` 🟩; forecaster 28 / 55 and provider 24 / 67 in both rollups.
+- [x] B1 to B25 each planted, watched to fail against your tests alone, restored — stated per break.
+- [x] Every touched module < 200 lines, test files included.
 - [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
@@ -326,15 +326,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Held plan, held claims, storage and vocabulary | `agents/forecaster/laws/laws.md` v1.10 and `test-plan.md`, whole; `docs/laws/conventions.md`, whole | `FORE-IN-07`, `FORE-OUT-07/08`, `FORE-IDM-04`, `FORE-FAIL-04`, `FORE-NEV-01/02`, `FORE-IDN-02`; Appendix's new `FORE-OUT-09` | Yes: send prices, convert on the claim's close, import the existing private lineage rule, and guard the write with the vocabulary pack. |
+| Poll, history cache, settlement and scorecard | Same forecaster files, whole; `docs/laws/drift-register.md`, whole | `FORE-TRG-01`, `FORE-IDM-05`, `FORE-OUT-08`, `FORE-NEV-01/02`; Appendix's new `FORE-OUT-10`, `FORE-PERF-04` | Yes: preserve buy metrics, never cache a missing history, and find open claims by key and edge. |
+| Provider history and reference finder | `agents/provider/laws/laws.md` v1.10 and `test-plan.md`, whole; both umbrella files above, whole | `PROV-TRG-01/02/04`, `PROV-OUT-08` | Yes: one ordered, deduplicated request; no recommendation set still triggers nothing. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: three new forecaster guarantees, with no contract change. Apply only Appendix section 2's v1.11 amendments and rollups after the red run and section 1. The new clauses are not yet proven. Existing relied-on clauses are green; `FORE-IDN-01`, `FORE-STA-01`, `FORE-IDM-03`, `FORE-OBS-01`, existing performance clauses and CAP remain gray, and this sprint claims no proof of their whole statements. Provider dependency rows remain structural; no live dependency proof is attempted.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None found beyond the explicit amendments supplied by section 2. Read `CLAUDE.md`, repository indexes and DL-310 D1-D10 before code. Scope: Appendix only, new tests, MINOR/lock and handback. Initial tree clean, branch `sprint-286-each-held-name-is-forecast-each-night`, HEAD/main/origin-main `dd3abd8b49564963aa26f8a76f0884380c8dd1da`; `.env` absent. No network, live services, deployment, main edits or tracker edits authorized.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** Held claims, separate held scores and bounded reads are the already-decided silences resolved by DL-310 and Appendix section 2. No additional decision was needed; no additional drift row or law amendment is made.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** At the pre-code record none were proven. After the unchanged-tree red run and exact Appendix application, `FORE-OUT-09`, `FORE-OUT-10` and `FORE-PERF-04` have passing functional tests A1-A15. No existing gray clause is promoted beyond Appendix section 2.
 
 ---
 
@@ -342,51 +344,269 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder)* | | | |
+| A1 | `test_a_held_name_carries_its_live_stop_and_declared_target` | `agents/forecaster/tests/test_held_plan.py` | PASS | `FORE-OUT-09` |
+| A2 | `test_a_pm_lineage_position_declares_its_own_target` | `agents/forecaster/tests/test_held_plan.py` | PASS | `FORE-OUT-09` |
+| A3 | `test_a_target_the_lineage_does_not_declare_is_left_out` | `agents/forecaster/tests/test_held_plan.py` | PASS | `FORE-OUT-09`, `FORE-FAIL-04` |
+| A4 | `test_the_newest_live_placement_is_the_stop` | `agents/forecaster/tests/test_held_plan.py` | PASS | `FORE-OUT-09` |
+| A5 | `test_every_held_name_gets_a_claim_request_beside_the_buys` | `agents/forecaster/tests/test_held_poll.py` | PASS | `FORE-TRG-01`, `FORE-OUT-09` |
+| A6 | `test_a_run_waits_for_its_bars_while_the_book_holds_a_name` | `agents/forecaster/tests/test_held_poll.py` | PASS | `FORE-TRG-01` |
+| A7 | `test_a_held_claim_measures_its_barriers_from_its_close` | `agents/forecaster/tests/test_held_claim.py` | PASS | `FORE-OUT-09`, `FORE-IN-07` |
+| A8 | `test_past_its_target_a_held_claim_asks_for_the_width_again` | `agents/forecaster/tests/test_held_claim.py` | PASS | `FORE-OUT-09` |
+| A9 | `test_what_a_held_claim_cannot_stand_on_is_refused` (six cases) | `agents/forecaster/tests/test_held_claim.py` | PASS, 6/6 | `FORE-FAIL-04` |
+| A10 | `test_a_buy_and_a_held_claim_on_one_bar_both_stand` | `agents/forecaster/tests/test_held_claim.py` | PASS | `FORE-IDM-04` |
+| A11 | `test_a_runs_claims_read_its_history_once` | `agents/forecaster/tests/test_held_reads.py` | PASS | `FORE-PERF-04` |
+| A12 | `test_a_history_the_provider_writes_later_is_read_when_it_lands` | `agents/forecaster/tests/test_held_reads.py` | PASS | `FORE-PERF-04` |
+| A13 | `test_a_pass_lists_no_claim_and_settles_the_open_ones` | `agents/forecaster/tests/test_held_reads.py` | PASS | `FORE-PERF-04`, `FORE-OUT-08` |
+| A14 | `test_a_settlement_written_without_its_edge_is_linked_not_redone` | `agents/forecaster/tests/test_held_reads.py` | PASS | `FORE-IDM-05` |
+| A15 | `test_held_claims_are_scored_apart_and_the_buys_scores_stand` | `agents/forecaster/tests/test_held_scorecard.py` | PASS | `FORE-OUT-10` |
+| A16 | `test_the_history_holds_the_buys_then_each_held_name_once` | `agents/provider/tests/test_barrier_history_held.py` | PASS | `PROV-TRG-04`, `PROV-OUT-08` |
+| A17 | `test_a_run_with_no_buy_gets_a_history_while_the_book_holds_a_name` | `agents/provider/tests/test_barrier_history_held.py` | PASS | `PROV-TRG-04` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** No additional test names. A3 also checks boolean, text, zero and negative lineage targets. A1 checks the empty book; A4 also checks an older placement read after the newest one; A12 also checks that an already-read history is reused. `held_helpers.py` supplies synthetic fixtures and graph read counters. The existing `test_barrier_scorecard.py` is run unchanged alongside the sprint tests.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT — local source and test proof complete; overall CI is verified failing at the offline dependency audit.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s286`, branch `sprint-286-each-held-name-is-forecast-each-night`; `.env` absent. Ready `.venv/Scripts/python.exe`; no sync, network or live-service proof.
 
-**Result:** *(builder)*
+**Result:** Applied both Appendix sections exactly (20/20 blobs), wrote all A1-A17 (22 cases), proved each red before implementation and green afterward, and proved B1-B25 red/restored against the final tests. Full pytest: 5,264 passed, 9 skipped, 100.00% coverage. Version `0.129.00` and offline lock update complete. `make ci` exited 2 only at the dependency audit's unavailable PyPI lookup; fresh audit, remote and live proof are not done.
 
-**Files changed:** *(builder)*
+**Files changed:** 31 paths: Appendix section 1's 13 production/vocabulary paths; section 2's seven law/rollup/reference-test paths; the six fixed test files in the results table and `agents/forecaster/tests/held_helpers.py`; `pyproject.toml`, `uv.lock`, this handover and `docs/sprints/README.md`. No other production or existing-test file changed. No protected path or tracker changed.
 
 **Design decisions:** recorded as [`DL-310`](../design-log.md) — ten decisions, the rejected alternatives under *Ruled out*.
 
 **Proof — the red run first:**
 
 ```text
-(builder)
+Tree: C:/Users/yury_/Downloads/project/ta-s286
+Command: .venv/Scripts/python.exe -m pytest --no-cov -vv
+  agents/forecaster/tests/test_held_plan.py
+  agents/forecaster/tests/test_held_poll.py
+  agents/forecaster/tests/test_held_claim.py
+  agents/forecaster/tests/test_held_reads.py
+  agents/forecaster/tests/test_held_scorecard.py
+  agents/provider/tests/test_barrier_history_held.py
+Production and existing tests unchanged; RED_EXIT=1.
+agents/forecaster/tests/test_held_plan.py::test_a_held_name_carries_its_live_stop_and_declared_target FAILED [  4%]
+agents/forecaster/tests/test_held_plan.py::test_a_pm_lineage_position_declares_its_own_target FAILED [  9%]
+agents/forecaster/tests/test_held_plan.py::test_a_target_the_lineage_does_not_declare_is_left_out FAILED [ 13%]
+agents/forecaster/tests/test_held_plan.py::test_the_newest_live_placement_is_the_stop FAILED [ 18%]
+agents/forecaster/tests/test_held_poll.py::test_every_held_name_gets_a_claim_request_beside_the_buys FAILED [ 22%]
+agents/forecaster/tests/test_held_poll.py::test_a_run_waits_for_its_bars_while_the_book_holds_a_name FAILED [ 27%]
+agents/forecaster/tests/test_held_claim.py::test_a_held_claim_measures_its_barriers_from_its_close FAILED [ 31%]
+agents/forecaster/tests/test_held_claim.py::test_past_its_target_a_held_claim_asks_for_the_width_again FAILED [ 36%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[no-stop] FAILED [ 40%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[no-target] FAILED [ 45%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[at-stop] FAILED [ 50%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[zero-width] FAILED [ 54%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[negative-stop] FAILED [ 59%]
+agents/forecaster/tests/test_held_claim.py::test_what_a_held_claim_cannot_stand_on_is_refused[wide-target] FAILED [ 63%]
+agents/forecaster/tests/test_held_claim.py::test_a_buy_and_a_held_claim_on_one_bar_both_stand FAILED [ 68%]
+agents/forecaster/tests/test_held_reads.py::test_a_runs_claims_read_its_history_once FAILED [ 72%]
+agents/forecaster/tests/test_held_reads.py::test_a_history_the_provider_writes_later_is_read_when_it_lands FAILED [ 77%]
+agents/forecaster/tests/test_held_reads.py::test_a_pass_lists_no_claim_and_settles_the_open_ones FAILED [ 81%]
+agents/forecaster/tests/test_held_reads.py::test_a_settlement_written_without_its_edge_is_linked_not_redone FAILED [ 86%]
+agents/forecaster/tests/test_held_scorecard.py::test_held_claims_are_scored_apart_and_the_buys_scores_stand FAILED [ 90%]
+agents/provider/tests/test_barrier_history_held.py::test_the_history_holds_the_buys_then_each_held_name_once FAILED [ 95%]
+agents/provider/tests/test_barrier_history_held.py::test_a_run_with_no_buy_gets_a_history_while_the_book_holds_a_name FAILED [100%]
+============================= 22 failed in 2.51s ==============================
+Full failure trace: ../s286-evidence/red.txt. Every A1-A17 failed: five absent-module
+failures; assertions pin missing held requests, wrong refusal severities/reasons,
+three history reads, claim listings, an unlinked settlement, pooled scores and
+missing held histories. No existing test was run or edited in this red proof.
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder)
+Command: .venv/Scripts/python.exe -m pytest --no-cov -v
+  agents/forecaster/tests/test_held_plan.py
+  agents/forecaster/tests/test_held_poll.py
+  agents/forecaster/tests/test_held_claim.py
+  agents/forecaster/tests/test_held_reads.py
+  agents/forecaster/tests/test_held_scorecard.py
+  agents/provider/tests/test_barrier_history_held.py
+  agents/forecaster/tests/test_barrier_scorecard.py
+GREEN_EXIT=0
+collecting ... collected 26 items
+============================= 26 passed in 2.18s ==============================
+APPENDIX_BLOBS=20/20
 ```
 
-**Guards planted:** *(builder: B1 to B25, each planted, red, restored)*
+**Guards planted:** All B1-B25 planted separately against A1-A17 plus the unchanged `test_barrier_scorecard.py`; every child exited 1 with a named failing test. Restored original bytes after each child, including failure cleanup. The runner asserted all original files were restored after B25.
 
-**Module line counts:** *(builder)*
+```text
+B1 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.27s
+B2 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.26s
+B3 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.31s
+B4 EXIT=1 RESTORED=True 3 failed, 23 passed in 2.28s
+B5 EXIT=1 RESTORED=True 2 failed, 24 passed in 2.33s
+B6 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.26s
+B7 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.28s
+B8 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.24s
+B9 EXIT=1 RESTORED=True 2 failed, 24 passed in 2.24s
+B10 EXIT=1 RESTORED=True 2 failed, 24 passed in 2.32s
+B11 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.27s
+B12 EXIT=1 RESTORED=True 9 failed, 17 passed in 2.30s
+B13 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.23s
+B14 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.26s
+B15 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.30s
+B16 EXIT=1 RESTORED=True 2 failed, 24 passed in 2.28s
+B17 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.24s
+B18 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.30s
+B19 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.27s
+B20 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.46s
+B21 EXIT=1 RESTORED=True 3 failed, 23 passed in 2.26s
+B22 EXIT=1 RESTORED=True 2 failed, 24 passed in 2.27s
+B23 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.30s
+B24 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.22s
+B25 EXIT=1 RESTORED=True 1 failed, 25 passed in 2.26s
+BREAKS_PROVEN=25/25; ALL_ORIGINAL_BYTES_RESTORED
+```
 
-**`make ci`:** *(builder: redirected to a file; exit code; passed and skipped; coverage; dependency audit; detect-secrets)*
+| Break | At least one test observed red |
+| --- | --- |
+| B1 | `test_the_newest_live_placement_is_the_stop` |
+| B2 | `test_the_newest_live_placement_is_the_stop` |
+| B3 | `test_a_target_the_lineage_does_not_declare_is_left_out` |
+| B4 | `test_a_held_name_carries_its_live_stop_and_declared_target`, `test_a_target_the_lineage_does_not_declare_is_left_out`, `test_the_newest_live_placement_is_the_stop` |
+| B5 | `test_a_held_name_carries_its_live_stop_and_declared_target`, `test_a_pm_lineage_position_declares_its_own_target` |
+| B6 | `test_past_its_target_a_held_claim_asks_for_the_width_again` |
+| B7 | `test_what_a_held_claim_cannot_stand_on_is_refused[at-stop]` |
+| B8 | `test_what_a_held_claim_cannot_stand_on_is_refused[no-target]` |
+| B9 | `test_a_held_claim_measures_its_barriers_from_its_close`, `test_past_its_target_a_held_claim_asks_for_the_width_again` |
+| B10 | `test_a_held_claim_measures_its_barriers_from_its_close`, `test_a_buy_and_a_held_claim_on_one_bar_both_stand` |
+| B11 | `test_a_held_claim_measures_its_barriers_from_its_close` |
+| B12 | `test_a_held_claim_measures_its_barriers_from_its_close`, `test_past_its_target_a_held_claim_asks_for_the_width_again`, `test_what_a_held_claim_cannot_stand_on_is_refused[no-stop]`, `test_what_a_held_claim_cannot_stand_on_is_refused[no-target]`, `test_what_a_held_claim_cannot_stand_on_is_refused[at-stop]`, `test_what_a_held_claim_cannot_stand_on_is_refused[zero-width]`, `test_what_a_held_claim_cannot_stand_on_is_refused[negative-stop]`, `test_what_a_held_claim_cannot_stand_on_is_refused[wide-target]`, `test_a_buy_and_a_held_claim_on_one_bar_both_stand` |
+| B13 | `test_every_held_name_gets_a_claim_request_beside_the_buys` |
+| B14 | `test_a_run_waits_for_its_bars_while_the_book_holds_a_name` |
+| B15 | `test_every_held_name_gets_a_claim_request_beside_the_buys` |
+| B16 | `test_a_runs_claims_read_its_history_once`, `test_a_history_the_provider_writes_later_is_read_when_it_lands` |
+| B17 | `test_a_history_the_provider_writes_later_is_read_when_it_lands` |
+| B18 | `test_a_pass_lists_no_claim_and_settles_the_open_ones` |
+| B19 | `test_a_settlement_written_without_its_edge_is_linked_not_redone` |
+| B20 | `test_held_claims_are_scored_apart_and_the_buys_scores_stand` |
+| B21 | `test_held_claims_are_scored_apart_and_the_buys_scores_stand`, `test_an_empty_ledger_reports_counts_and_no_scores`, `test_another_models_ledger_is_its_own` |
+| B22 | `test_the_history_holds_the_buys_then_each_held_name_once`, `test_a_run_with_no_buy_gets_a_history_while_the_book_holds_a_name` |
+| B23 | `test_the_history_holds_the_buys_then_each_held_name_once` |
+| B24 | `test_a_run_with_no_buy_gets_a_history_while_the_book_holds_a_name` |
+| B25 | `test_a_held_claim_measures_its_barriers_from_its_close` |
 
-**`make gate-ran`:** *(planner, at review)*
+**Module line counts:** All touched Python files are below 200 after formatting; production counts reproduce the Appendix's measurements.
 
-**Not met / verified failing:** *(builder)*
+```text
+agents/forecaster/agent.py: 169
+agents/forecaster/barrier_forecast.py: 176
+agents/forecaster/barrier_refusal.py: 88
+agents/forecaster/barrier_scorecard.py: 85
+agents/forecaster/barrier_store.py: 110
+agents/forecaster/held_claim.py: 89
+agents/forecaster/held_plan.py: 105
+agents/forecaster/history_cache.py: 38
+agents/forecaster/poll.py: 172
+agents/forecaster/settlement_pass.py: 144
+agents/forecaster/settlement_store.py: 100
+agents/provider/barrier_history.py: 183
+agents/forecaster/tests/held_helpers.py: 153
+agents/forecaster/tests/test_held_claim.py: 141
+agents/forecaster/tests/test_held_plan.py: 91
+agents/forecaster/tests/test_held_poll.py: 59
+agents/forecaster/tests/test_held_reads.py: 108
+agents/forecaster/tests/test_held_scorecard.py: 41
+agents/provider/tests/test_barrier_history_held.py: 61
+tests/poll_reference.py: 63
+```
+
+**`make ci`:** Redirected to `C:/Users/yury_/Downloads/project/s286-evidence/ci.txt`, then read. **Exit 2; overall gate VERIFIED FAILING.** Steps 1-13 completed successfully; step 14 alone failed for unavailable network. Steps 15-16 did not run inside `make` and were run separately, both exit 0. No floor or baseline was relaxed. `UV_OFFLINE=1`, `UV_NO_SYNC=1`; HTTP(S) proxies pointed to an unavailable loopback port, preventing external access. The inherited OpenAI credential was removed from the gate process. Fresh dependency audit remains owed to the planner.
+
+| Step | Check | Verdict |
+| --- | --- | --- |
+| 1 | ruff | PASS |
+| 2 | format | PASS |
+| 3 | mypy | PASS |
+| 4 | import-linter | PASS |
+| 5 | module size | PASS |
+| 6 | module header | PASS |
+| 7 | law coverage | PASS |
+| 8 | PARAM/settings sync | PASS |
+| 9 | sprint status | PASS |
+| 10 | tracker size | PASS |
+| 11 | Markdown links | PASS |
+| 12 | version scheme | PASS |
+| 13 | pytest (100.00% floor) | PASS |
+| 14 | dependency audit | VERIFIED FAILING: offline PyPI lookup |
+| 15 | detect-secrets | PASS separately; NOT RUN inside make after step 14 stopped |
+| 16 | untracked secrets | PASS separately; NOT RUN inside make after step 14 stopped |
+
+Pasted command/result lines from the redirected gate (not a pipe):
+
+```text
+make ci > C:/Users/yury_/Downloads/project/s286-evidence/ci.txt 2>&1
+MAKE_CI_EXIT=2
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1808 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 1284 source files
+uv run lint-imports
+Contracts: 5 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+uv run python scripts/check_tracker_size.py
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+uv run pytest
+TOTAL                                                           21716      0   4666      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5264 passed, 9 skipped, 2470 warnings in 434.67s (0:07:14) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: WARNING:pip_audit._cli:--no-deps is supported, but users are encouraged to fully hash their pinned dependencies
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /pypi/aiohappyeyeballs/2.7.1/json (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))
+make: *** [Makefile:60: ci] Error 1
+```
+
+Pasted output of the separately completed security steps:
+
+```text
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+DETECT_SECRETS_EXIT=0
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+UNTRACKED_SECRETS_EXIT=0
+```
+
+**`make gate-ran`:** Not done (offline, no push); planner at review, for the final branch SHA from this worktree.
+
+**Not met / verified failing:** `make ci` exit 0 is verified failing: the dependency audit cannot refresh PyPI metadata offline. No vulnerability-clean audit is claimed. Nine pytest cases are skipped for missing local services/secrets, link privilege, SciPy or opt-in network flags (exact reasons above). F1, F2, remote gates, push, merge and deployment are not done. The decision path's live behaviour and held-claim skill are not measured here.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- Count correction: the fixed A1-A17 paths name five forecaster test files and one provider test file, not six forecaster test files. Added exactly those six test files plus `agents/forecaster/tests/held_helpers.py` (seven new test/helper modules).
+- The handover's main-version snapshot was `0.128.07`; local `main` and `origin/main` were both `dd3abd8b49564963aa26f8a76f0884380c8dd1da`, version `0.128.08`. The next MINOR is still `0.129.00`; `uv lock --offline` exited 0, resolved 180 packages and changed only the project version in `uv.lock` (`0.129.0` after normalization). The lock is staged.
+- Corrected the new synthetic Fill fixture from `action` to the shared lineage rule's `side`. Reversed both Appendices, repeated the unchanged-tree red proof (22/22 failed), and reapplied both sections exactly before the passing proof and all 25 break runs. No production adjustment was made.
+- A focused coverage check found A4 had not exercised an older placement read after a newer one. Added that ordering to A4: all three new modules then measured 100.00% statement and branch coverage (102 statements, 38 branches). Stopped the first in-progress `make ci` because it began before this test addition; that invocation is interrupted, not a gate result. Repeated the final tests' red proof on the original production/version, the exact Appendix application and the break proof before the final gate.
+- Command correction: the additional coverage probe initially named importable modules in `--source`, causing pre-import/collection errors. Re-ran with filesystem scope `--source=agents/forecaster` and a three-file report include; the corrected probe passed. No existing test was run in that failed probe, and no production change was needed.
+- Every production line count reproduces the spec; all 20 Appendix blobs match after the breaks. Protected paths and trackers have zero diff; the sole existing-test edit is `tests/poll_reference.py`.
+- The first standalone secrets hook reported modified files while the handback was being edited. With edits stopped, the rerun passed; untracked-secrets also passed. `.secrets.baseline` is unchanged. The final full suite reproduces the prototype's 5,264 passed / 9 skipped and 100.00% coverage; the overall gate is still verified failing solely at the offline audit.
+- F1, F2, remote gates, push, merge and deployment are not done; they remain planner/operator work. No network or live-service access was used. No new decision, design-log entry or drift amendment was needed.
 
 ---
 

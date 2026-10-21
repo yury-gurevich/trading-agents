@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.11 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -43,16 +43,22 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   no claim, a fault, and the `FORE-OUT-06` neutral reading, never a raise to the bus. The stock's
   daily bars are read **only** from that provider-written node, never requested over the bus; no
   named node, a node that does not hold the ticker, a ticker the provider dropped, or a failed node
-  is a refusal (`FORE-FAIL-04`).
+  is a refusal (`FORE-FAIL-04`). A **held name's** request (`subject_kind: "position"`, `FORE-OUT-09`)
+  carries prices, not fractions: `stop_price` (the live stop, dollars), `target_price` (the declared
+  target, dollars) and `target_pct` (the declared width, in (0, 1]); its barriers are measured from
+  the claim's own close once the history is read. A missing stop or target is refused before the
+  history is read; a price that is not positive or a width outside (0, 1] is malformed.
 
 ## Triggers (`TRG`)
 
 - **FORE-TRG-01** — Every capability runs on a request, never on an event subscription. A request
   comes from an RPC caller or from the forecaster's graph-pull loop: for each `AnalystRun` that has no
-  `ForecasterRun` yet (and, when it holds a buy with both a stop and a target, whose `BarrierHistory`
-  the provider has written; a run with no such buy never waits), the loop requests the legs its
+  `ForecasterRun` yet (and, when it holds a buy with both a stop and a target or the book holds a
+  name, whose `BarrierHistory` the provider has written; a run with neither never waits), the loop
+  requests the legs its
   caller names and then records one `ForecasterRun` for it, so an `AnalystRun` is forecast once. The **deployed** loop names
-  `forecast_barrier` only, fired once per buy that carries both a stop and a target; `forecast`,
+  `forecast_barrier` only, fired once per buy that carries both a stop and a target and once per held
+  name (`FORE-OUT-09`), and its `ForecasterRun` records `held_count`; `forecast`,
   `forecast_return` and `forecast_factor` are fired by the in-process pipeline or an RPC caller, never
   by the deployed loop. A leg name the loop does not know is refused before any request. The deployed
   loop also counts only a *current* `AnalystRun`, one created within 24 h (the shared
@@ -121,6 +127,24 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `skill_hi` (1,000 resamples of whole `as_of` dates, a fixed seed). A score it cannot compute is
   absent, never zero: with no settled claim only the counts are reported, and with fewer than two
   settled dates there is no interval. The scorecard reports; it decides nothing (`FORE-NEV-01/02`).
+- **FORE-OUT-09** — Each name the book holds gets a barrier claim per run, beside the buys'
+  (DL-310). The held book is `contracts.positions`' active Positions, the book the analyst scored.
+  Its **stop** is the one the broker holds: the newest `BrokerStopOrder` execution placed under the
+  holding's position_ref, unless that placement was cancelled or replaced. Its **target** is the one
+  its buy declared: for a broker-adopted Position, the `target_pct` of the `OrderIntent` its one
+  exact lineage buy executed (the rule its stop is read by, DL-222/223), and for a PM-lineage
+  Position its own `target_pct`, as a price from the holding's entry; two lots of one name, or no
+  such buy, declare none. The claim measures both from its last close: `stop_pct` = 1 − stop ÷ close;
+  while the close is below the target, `target_pct` = target ÷ close − 1 (`target_basis: declared`),
+  and once at or past it, the declared width again (`target_basis: rebased`). It is keyed
+  `{model_id}:held:{ticker}:{as_of}`, apart from a buy's claim on the same bar, and carries what
+  `FORE-OUT-07` lists plus `subject_kind: position`, `target_basis`, `stop_price`, `target_price` and
+  `declared_target_pct`. It is settled by `FORE-OUT-08`'s rule like any claim. It reads Position,
+  `BrokerStopOrder`, Fill and `OrderIntent` nodes and writes none of them (`FORE-NEV-01/02`).
+- **FORE-OUT-10** — `barrier_scorecard` reports the buys' claims under the names `FORE-OUT-08` gives
+  them, exactly as it would with no held claim in the ledger, and, once the ledger holds a held-name
+  claim, the held claims' own counts and scores under the same names prefixed `held_`, against the
+  same climatology. `sample_size` counts the buys' settled claims. *(DL-310.)*
 
 ## Prohibitions (`NEV`)
 
@@ -193,9 +217,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   whose the refusal is**. A **designed** "no claim", the system working as intended, is a
   `warning`, never an open incident: a ticker the provider dropped or a history it wrote as failed
   (the provider records its own fault for the failed fetch), fewer than
-  `barrier_min_history_sessions` bars, or a fit outside EXP-018's acceptance rule. A **missing or
-  broken input** is an `error`: no named `BarrierHistory`, one that does not hold the ticker,
-  malformed barriers (`FORE-IN-07`), an optimiser exception or an absent `arch`. *(DL-247 D3,
+  `barrier_min_history_sessions` bars, a fit outside EXP-018's acceptance rule, or a held name with
+  no live stop, no declared target, or a close at or below its live stop (`FORE-OUT-09`). A **missing
+  or broken input** is an `error`: no named `BarrierHistory`, one that does not hold the ticker,
+  malformed barriers or held prices (`FORE-IN-07`), a held claim's barrier outside (0, 1], an
+  optimiser exception or an absent `arch`. *(DL-247 D3,
   DRIFT-089.)*
 - **FORE-FAIL-05** — A claim that cannot be settled honestly is never scored as a stop, a target or
   neither: it is settled `void` with a named `void_reason` and no `brier`. `suspected_corporate_action`
@@ -256,6 +282,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   bars minimum for full confidence).
 - **FORE-PERF-03** — `news_lookback_days=7` caps the provider request window; `price_lookback_days
   =90` caps the return model window.
+- **FORE-PERF-04** — A run's claims share **one read** of its `BarrierHistory` per forecaster
+  process: the node is written once and never changed, so the last one read is held by key and a key
+  with no node yet is never held. A settlement pass finds the open claims **by key and edge** (a
+  `BarrierForecast` with no `SETTLED_BY` yet) and reads only those: it never lists every claim or
+  every settlement, so its reads grow with the open claims, not with the ledger. A settlement written
+  without its edge (a pass stopped between the two) is linked on the next pass, never settled again.
+  *(DL-310: held names add ~34 claims a night, and a history of ~36 tickers is ~1.3 MB.)*
 
 ## Capability declaration (`CAP`)
 
@@ -408,3 +441,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   candidate props. The existing current-run and history-readiness predicates remain; a local call
   without `now` stays unbounded. Why: the two idle polls downloaded every `AnalystRun` separately.
   Payload, backlog, bad-stamp and existing loop tests re-prove the clause; 25 / 52 unchanged.
+- v1.11 — S286 / DL-310 (2026-10-21): a barrier claim on every held name. New `FORE-OUT-09` (the held
+  book, its live stop and declared target, the claim's barriers from its close, its key and fields),
+  `FORE-OUT-10` (the scorecard keeps the buys' metrics and reports held claims under `held_`) and
+  `FORE-PERF-04` (one history read per run; a settlement pass reads open claims only). Amended
+  `FORE-IN-07` (the held request's prices), `FORE-TRG-01` (a run waits for its history while the book
+  holds a name; one request per held name; `held_count`) and `FORE-FAIL-04` (three designed held
+  refusals; malformed held prices). 25 / 52 → 28 / 55.

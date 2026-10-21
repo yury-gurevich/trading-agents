@@ -31,9 +31,16 @@ def settlement_key(claim_key: str) -> str:
     return f"settlement:{claim_key}"
 
 
-def settled_claim_keys(graph: GraphStore) -> set[str]:
-    """The keys of every claim that already has a settlement."""
-    return {str(node.props["claim_key"]) for node in graph.list_nodes(SETTLEMENT_LABEL)}
+def relink_settlement(graph: GraphStore, claim: Node) -> bool:
+    """Link a settlement written without its edge (a pass stopped between the two).
+
+    True when the claim was already settled: the pass leaves it as written.
+    """
+    node = graph.get_node(SETTLEMENT_LABEL, settlement_key(claim.key))
+    if node is None:
+        return False
+    graph.add_edge(claim, node, SETTLED_EDGE)
+    return True
 
 
 def write_settlement(

@@ -50,11 +50,11 @@ def reporter(graph: GraphStore) -> list[Node]:
 
 
 def barrier(graph: GraphStore, now: datetime) -> list[Node]:
-    """Current AnalystRuns with a qualifying buy and no BarrierHistory."""
+    """Current AnalystRuns with a qualifying buy or held name and no BarrierHistory."""
     return [
         node
         for node in _unprocessed(graph, "AnalystRun", "BARRIER_HISTORY_BY")
-        if is_current_run(node.props, now) and _qualifying_tickers(node)
+        if is_current_run(node.props, now) and _qualifying_tickers(graph, node)
     ]
 
 

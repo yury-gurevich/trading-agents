@@ -6,6 +6,8 @@ Role: find AnalystRuns not yet passed over and, for each, read the MarketData th
       ScanRun -DERIVED_FROM-> MarketData: one node, never a listing), settle or void
       every open BarrierForecast claim its bars decide (FORE-OUT-08, FORE-FAIL-05),
       then record one BarrierSettlementPass so the run is passed once (FORE-IDM-05).
+      Only open claims are read, by key and edge (no SETTLED_BY yet), never a
+      listing of every claim or settlement (FORE-PERF-04, DL-310).
       Loop work fired by the run (FORE-TRG-01/02), never a timer; it sends nothing
       on the bus and touches nothing on the decision path (FORE-NEV-01/02).
 External I/O: GraphStore reads and writes via the injected backend.
@@ -19,7 +21,11 @@ from typing import TYPE_CHECKING
 
 from agents.forecaster.barrier_store import BARRIER_LABEL
 from agents.forecaster.domain.barrier_settlement import VOID, settle
-from agents.forecaster.settlement_store import settled_claim_keys, write_settlement
+from agents.forecaster.settlement_store import (
+    SETTLED_EDGE,
+    relink_settlement,
+    write_settlement,
+)
 from agents.forecaster.settling_bars import bars_by_ticker, settling_market
 from contracts.barrier_history import CLAIM_RUN_MAX_AGE, is_current_run
 from kernel import CollectingFaultSink
@@ -73,10 +79,10 @@ def settle_analyst_node(
     market = settling_market(graph, node)
     settling_ref = market.key if market is not None else None
     bars = bars_by_ticker(market, sink) if market is not None else {}
-    settled = settled_claim_keys(graph)
     counts: Counter[str] = Counter()
-    for claim in graph.list_nodes(BARRIER_LABEL):
-        if claim.key not in settled:
+    for claim_key in graph.keys_without_edge(BARRIER_LABEL, SETTLED_EDGE):
+        claim = graph.get_node(BARRIER_LABEL, claim_key)
+        if claim is not None and not relink_settlement(graph, claim):
             status = _settle_claim(graph, sink, claim, bars, pass_date, settling_ref)
             counts[status] += 1
     marker = graph.merge_node(

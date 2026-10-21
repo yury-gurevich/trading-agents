@@ -4,8 +4,9 @@ Agent: forecaster
 Role: find AnalystRun nodes not yet forecast and, for each recommendation, request
       the chosen advisory legs from the forecaster over the bus: shadow sentiment,
       return and factor predictions, and a barrier claim for each buy carrying a stop
-      and a target (FORE-TRG-01/02: an unconsumed AnalystRun is the trigger, never a
-      timer; FORE-NEV: shadow, never gates). The caller names the legs (DL-241 D9).
+      and a target and for each held name (DL-310) (FORE-TRG-01/02: an unconsumed
+      AnalystRun is the trigger, never a timer; FORE-NEV: shadow, never gates). The
+      caller names the legs (DL-241 D9).
       The predictions are a side branch off AnalystRun — they never touch the
       PM/execution path, so a missing or slow forecaster cannot block a trade.
 External I/O: none directly (the bus carries the forecast RPCs; provider owns the I/O).
@@ -13,8 +14,9 @@ External I/O: none directly (the bus carries the forecast RPCs; provider owns th
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
+from agents.forecaster.held_plan import HELD_SUBJECT, held_requests
 from contracts.analyst import RecommendationSet
 from contracts.barrier_history import (
     BARRIER_HISTORY_LABEL,
@@ -24,6 +26,7 @@ from contracts.barrier_history import (
     is_current_run,
 )
 from contracts.forecaster import ForecastRequest
+from contracts.positions import open_position_tickers
 from kernel import AgentMessage
 from kernel.graph_pending import pending_nodes
 
@@ -50,8 +53,9 @@ DEPLOYED_CAPABILITIES = (BARRIER_CAPABILITY,)
 def find_pending(graph: GraphStore, *, now: datetime | None = None) -> list[Node]:
     """Return AnalystRun nodes with no ForecasterRun that are ready to forecast.
 
-    A run holding a buy with both barriers waits until the provider has written its
-    BarrierHistory (DL-241 D10); a run with no such buy never waits. With ``now``
+    A run holding a buy with both barriers, or run while the book holds a name,
+    waits until the provider has written its BarrierHistory (DL-241 D10, DL-310); a
+    run with neither never waits. With ``now``
     (the deployed loop), only a current run counts (DL-241 D11).
     """
     since = None if now is None else now - CLAIM_RUN_MAX_AGE
@@ -69,7 +73,9 @@ def _history_ready(graph: GraphStore, node: Node) -> bool:
     raw = node.props.get("recommendation_set")
     if raw is None:  # no recommendations to wait for; processing reports the gap
         return True
-    if not barrier_buys(RecommendationSet.model_validate(raw)):
+    if not barrier_buys(RecommendationSet.model_validate(raw)) and not (
+        open_position_tickers(graph)
+    ):
         return True
     return (
         graph.get_node(BARRIER_HISTORY_LABEL, barrier_history_key(node.key)) is not None
@@ -110,11 +116,22 @@ def forecast_analyst_node(
                 features=_barrier_features(recommendation),
                 history_ref=barrier_history_key(node.key),
             )
+    held = held_requests(graph) if BARRIER_CAPABILITY in capabilities else ()
+    for ticker, features in held:
+        _request_forecast(
+            bus,
+            BARRIER_CAPABILITY,
+            ticker,
+            features=features,
+            history_ref=barrier_history_key(node.key),
+            subject_kind=HELD_SUBJECT,
+        )
     forecaster_run = graph.merge_node(
         FORECASTER_RUN_LABEL,
         node.key,
         {
             "recommendation_count": len(recommendation_set.recommendations),
+            "held_count": len(held),
             "source_analyst_run_id": node.key,
         },
     )
@@ -136,6 +153,7 @@ def _request_forecast(
     *,
     features: dict[str, float] | None = None,
     history_ref: str | None = None,
+    subject_kind: Literal["recommendation", "position"] = "recommendation",
 ) -> None:
     """Fire one advisory forecast RPC; the forecaster persists the shadow output."""
     bus.request(
@@ -145,7 +163,7 @@ def _request_forecast(
             message_type="request",
             capability=capability,
             payload=ForecastRequest(
-                subject_kind="recommendation",
+                subject_kind=subject_kind,
                 subject_ref=ticker,
                 features=features or {},
                 history_ref=history_ref,

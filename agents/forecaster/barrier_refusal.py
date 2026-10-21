@@ -15,10 +15,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from contracts.barrier_history import BARRIER_HISTORY_LABEL, BarrierHistory
+from agents.forecaster.history_cache import HistoryCache
 from kernel.errors import fault_from_exception
 
 if TYPE_CHECKING:
+    from contracts.barrier_history import BarrierHistory
     from kernel import FaultSink, GraphStore
     from kernel.errors import Severity
 
@@ -50,14 +51,18 @@ def record_refusal(sink: FaultSink, refusal: BarrierClaimRefusedError) -> None:
     )
 
 
-def read_history(graph: GraphStore, ref: str | None, ticker: str) -> BarrierHistory:
-    """The provider's BarrierHistory for this request, holding this ticker's bars."""
-    node = graph.get_node(BARRIER_HISTORY_LABEL, ref) if ref else None
-    if node is None:
+def read_history(
+    graph: GraphStore, ref: str | None, ticker: str, cache: HistoryCache | None = None
+) -> BarrierHistory:
+    """The provider's BarrierHistory for this request, holding this ticker's bars.
+
+    With ``cache``, the run's claims share one read of the node (FORE-PERF-04).
+    """
+    history = (cache or HistoryCache()).read(graph, ref) if ref else None
+    if history is None:
         raise BarrierClaimRefusedError(
             f"{ticker}: no BarrierHistory {ref!r} in the graph; no claim"
         )
-    history = BarrierHistory.model_validate(dict(node.props))
     if ticker in history.dropped:
         # A failed history is dropped too; the provider faulted its own fetch.
         raise BarrierClaimRefusedError(

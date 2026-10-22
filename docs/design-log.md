@@ -12,6 +12,54 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-315 - If EXP-014 finds no edge, the price-only ranking stays in the code and its research line closes - status: DECIDED (the operator, 2026-10-23 07:11 AEDT, on the planner's recommendation: *"no edge → keep the code, close the line."*); applies when EXP-014 scores (work-queue 82); follows [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md)
+
+**Why.** EXP-023 section 7 left the price-only ranking's future to the operator once EXP-014
+scores. Fixing the consequence now, while every EXP-014 arm is sealed and unread, means its verdict
+applies the rule without a second discussion, and the rule cannot lean on what the arms show.
+
+**Measured (EXP-015, EXP-023):**
+
+- **The score:** the technical score's mean rank IC at 10 sessions is −0.0099 over 1,761 sessions,
+  95 % interval [−0.0175, +0.0119]. On EXP-015's holdout its net top decile over 43 rebalances
+  returned −3.1 % (gross +16.3 %).
+- **Its parts:** none of the 16 components carries after Holm. The scanner's selection beats the
+  members it turns away by +0.06 % over 10 sessions, interval [−0.13 %, +0.31 %].
+- **The one lean:** the three weakness rules clear of zero unadjusted on 2018–2024
+  (`bollinger_position` +0.0094, `williams_r` +0.0103, `nw_deviation_pct` +0.0116) read +0.0007,
+  −0.0013 and +0.0029 on 2025 → (reported, not tested).
+
+**Decided (the operator):**
+
+1. **D1 — on EXP-014's H0, either reading (behind or indistinguishable), the ranking code stays as
+   it is.** `agents/analyst/` and `agents/scanner/` do not change. No re-weighted technical score,
+   no reversal-score pre-registration, no ensemble.
+2. **D2 — the line closes in an ADR** written with EXP-014's verdict. It also closes the
+   reversal-score shape EXP-023 section 7 left open.
+3. **D3 — edge work moves elsewhere:** to the exits ([EXP-022](research/experiments/EXP-022-does-an-exit-besides-the-stop-make-the-book-earn-more.md)), and to what the replay cannot
+   see, fundamentals and sentiment in the live composite, measured forward through the claims
+   ledger (work-queue 92).
+4. **D4 — H1 and H2 follow EXP-014's own pre-registration, unchanged.** On H2 the ranking switches
+   to the pillar that carries. On H1 the pipeline stays; since the ranking shows no skill, its edge
+   is read as sizing, stops or exposure, and EXP-022 names the exit.
+
+**Ruled out (the planner's reasons, which the operator accepted):**
+
+- **A reversal score on sessions after 2026-09-25.** The lean had already faded on 2025 →. Seven
+  years gave an interval of about ±0.015, so one year gives about ±0.04 *[estimate, scaled by
+  √(1761/250)]*: years to confirm +0.01. And +0.01 is worth about 0.1 % per 10 sessions to a
+  top-decile pick (IC × a cross-sectional spread of about 5.5 % × the top decile's mean z of 1.75)
+  against 0.5 % a round trip at 25 bps a side *[estimate, not measured]*.
+- **EXP-015's LightGBM ensemble.** It failed walk-forward bars 1 and 2; its holdout (+28.6 % net)
+  has been read once and is spent.
+- **Removing the ranking, or picking at random.** Nothing gained, and `agents/analyst/` is a
+  decision path: the change would restart the fidelity count.
+- **Re-weighting the rules.** EXP-023 section 7 rules it out: every cached session has been read.
+
+**What it does not touch.** The etalon bar (unattended trading, an evidence discipline that
+catches its own defects): this finding is the discipline working and blocks nothing. It does mean
+the trading pack has no demonstrated stock-picking skill.
+
 ## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); run 2026-10-23, nothing carries; pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
 
 **Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) reported the

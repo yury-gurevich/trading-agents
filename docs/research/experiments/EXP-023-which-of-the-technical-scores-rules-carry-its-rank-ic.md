@@ -198,6 +198,10 @@ The reading fixed before the run:
 fidelity PASS in any case. After EXP-014 scores, the operator decides whether the price-only ranking
 is kept, replaced or pre-registered anew as a reversal score on unseen sessions.
 
+**Decided 2026-10-23 ([DL-315](../../design-log.md), the operator):** if EXP-014 finds no edge,
+the price-only ranking stays in the code and this line closes, the reversal score included.
+H1 and H2 follow EXP-014's own pre-registration.
+
 ## Appendix P — Pre-registration (frozen)
 
 Frozen at the commit that adds this file (`git log --diff-filter=A` on this path). Never edited.

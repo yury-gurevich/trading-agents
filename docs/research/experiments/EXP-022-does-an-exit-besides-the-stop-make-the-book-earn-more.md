@@ -227,9 +227,28 @@ Frozen at the commit that adds this file (`git log --diff-filter=A` on this path
 
 ## Appendix R — Run record
 
-*Pending.*
+*The arms under Amendment 1: run and sealed, not scored. Nothing below is a result.*
+
+- **Commit.** `f7e7ac21` (`v0.128.06`), a detached clean checkout; every `arm.json` reads `dirty: false`,
+  and all twelve name the one commit.
+- **Machine and software.** As section 4: Intel Core i7-7660U (2 cores, 4 threads), 16 GB, Windows 10 Pro;
+  Python 3.13.2, uv 0.8.14.
+- **Arms.** The twelve of `scripts/exp022_arms.json`, each 2017-01-03 → 2026-09-25, 2,446 sessions, history
+  rule on, exits as the manifest declares; one cache, its seven checksums those of section 3.
+- **When.** 2026-10-21 22:50 AEDT → 2026-10-22 12:49 AEDT, one arm at a time, 67 to 75 minutes each. A first
+  start two at a time (22:24) was stopped after 7 minutes because the machine overheated; its two partial
+  arms were deleted and run again whole (section 5 step 8). A guard logged the CPU's throttle counters
+  every minute (`thermal.csv`, 834 samples with an arm running): the performance limit never fell below 100 %.
+- **Seal.** `seal.txt` lists the SHA-256, size and path of the 72 files (six per arm); its own SHA-256 is
+  `020ebb5ed68cedc65ec2e0162556fd63d361115136e69157e66b1ed5ba3a2627`. Outputs in OneDrive
+  `trading-agents-data/exp022-2026-10-21/`: `arms/`, `logs/` (the equity figure stripped from every line),
+  `status/` (exit codes, all 0), `run.log`, `thermal.csv`.
+- **Not done.** Scoring: it waits for the fidelity PASS; the seal is verified first.
 
 ## Appendix S — Scripts
 
-*Pending. The scripts are S281's and S282's, in `scripts/`; the commands used are recorded here at the
-run.*
+The scripts are S281's and S282's, in `scripts/`. Each arm ran as its own process, from the checkout's
+root: `uv run --no-sync python -B scripts/replay_arms.py run --arm <name> --manifest
+scripts/exp022_arms.json --out-root <OneDrive>/exp022-2026-10-21/arms --cache <OneDrive>/trading-agents-data`,
+started by `run_exp022_arms.ps1` beside the outputs (one arm at a time, below-normal priority, the seal at
+the end). Scoring, on PASS: `uv run python scripts/exit_verdict.py score --out-root <the same arms folder>`.

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *no bump*
 **Effort:** L
 **Decisions:** [DL-313](../design-log.md) (this sprint, twelve decisions, the gaps the
@@ -660,6 +660,46 @@ FINAL_DOC_CHECKS=4/4 PASS
 ```
 
 **Not met / verified failing:** `make ci` verified failing solely at the offline dependency audit; a fresh advisory audit is not done. Planner F1 digests, CodeQL set-diff, remote gates, merge, deploy and the real EXP-015 run are not done. Cleanup of the accidental ignored pytest cache is not done: automatic approval review rejected deletion with only `blocked by policy`. The remaining path is `Usersyury_Downloadsprojects289-evidence/pytest-cache/` inside this worktree.
+
+### The planner's review and merge (2026-10-22)
+
+Kit and outputs in OneDrive `trading-agents-data/wq90-2026-10-22/`.
+
+- **Scope:** the 22 changed files are the spec's: the Appendix's 13 scripts, the builder's six test
+  files and `tests/exp015_fixtures.py`, this spec and its README row. No existing file under
+  `scripts/` or `tests/` changed; nothing under `kernel/`, `contracts/`, `agents/`, `orchestration/`
+  or `surfaces/`; `pyproject.toml` and `uv.lock` unchanged. The builder's edits to this spec stay in
+  the status line and the handback sections; the Appendix is byte for byte the one handed over.
+- **Blobs:** 13 of 13 equal `prototype_blobs.txt` on `dc236e92`.
+- **The planner's tests on the built tree** (swapped in at the same paths, then restored): 24 passed
+  (`s289_planner_tests_on_built_dc236e92.txt`).
+- **Breaks:** 36 of 36 red against the builder's tests alone, the tree clean after
+  (`s289_breaks_on_built_codex_tests_dc236e92.txt`).
+- **F1 passed:** `s289_f1.py` from the main checkout with `PYTHONPATH` the built tree
+  (`exp015_panel` from `ta-s289`), byte for byte the prototype's: panel `3266c6dc67fa059d`, 8,804
+  rows (6,928 primary, 7,463 secondary), record `d519ce88f41e0274`, the control passed
+  (`f1_built_dc236e92.txt`).
+- **CodeQL** set-diff by rule and path against the S288 branch: 0 errors, nothing gone; three new
+  alerts, all in the prototype's own code. Two notes (`py/ineffectual-statement`) are the `...`
+  bodies of the `Booster` protocol in `exp015_models.py`, the pattern the baseline already carries
+  54 times. One warning (`py/comparison-of-identical-expressions`, alert 309) was `value != value`
+  as a NaN test in `exp015_report._num`: correct, but fixed before the experiment records its
+  commit. **`1c91c21e`** (planner): `math.isnan(value)`, same behaviour; no break targets that module
+  and F1 does not import it, and A22's byte-stable page passes on it inside `make ci`. The only blob
+  that differs from the Appendix is `scripts/exp015_report.py`.
+  After it: 137 open, 0 errors; the two notes are the only additions.
+- **`make ci`:** the builder's offline run was red only at the dependency audit. The planner's on
+  `1c91c21e` exited 0 on all 16 steps: 5,321 passed, 9 skipped, 100.00 %, no unaccepted
+  vulnerabilities (`s289_make_ci_1c91c21e.txt`).
+- **`make gate-ran`** from `../ta-s289`: GATE PROVEN for `1c91c21e` (CI, CodeQL, Security Findings),
+  the SHA checked against `HEAD` (`s289_gate_ran_1c91c21e.txt`). `main` fast-forwarded
+  `2b6d1bc6` → `1c91c21e`; no tag (no bump); no deploy.
+- **The run** started 2026-10-22 11:43 UTC from a detached worktree `../ta-exp015` at `1c91c21e`
+  (clean), the main venv's Python 3.13.2 with LightGBM 4.7.0 and numpy 2.5.3, every module read
+  from that tree; `panel` then `walk-forward`, one job at a time at BelowNormal priority
+  (`run_exp015.ps1`, log `exp015_run.log`); outputs in OneDrive
+  `trading-agents-data/experiments/EXP-015/`. The holdout waits until the walk-forward is recorded
+  in EXP-015.
 
 ---
 

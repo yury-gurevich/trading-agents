@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-313 - EXP-015's tooling: the panel offers each session as the replay does, the baseline is the analyst's own score, and the holdout can be touched once - status: DECIDED (planner, 2026-10-22 16:20 AEDT); specced as [S289](sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md); work-queue 90 (the operator, 2026-10-22: *"create a sprint for codex to create tooling for 015"*)
+## DL-313 - EXP-015's tooling: the panel offers each session as the replay does, the baseline is the analyst's own score, and the holdout can be touched once - status: DECIDED (planner, 2026-10-22 16:20 AEDT); specced as [S289](sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md), merged 2026-10-22 (`1c91c21e`); work-queue 90 (the operator, 2026-10-22: *"create a sprint for codex to create tooling for 015"*)
 
 **Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) was
 pre-registered on 2026-09-27 ([DL-236](design-log.md)) and has no code. It does not wait for the

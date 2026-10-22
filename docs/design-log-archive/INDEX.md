@@ -13,5 +13,6 @@
 | [DL-141-to-175.md](DL-141-to-175.md) | 35 | DL-141 to 159, 161 to 175 | 2026-10-11 |
 | [DL-176-to-223.md](DL-176-to-223.md) | 47 | DL-176 to 185, 187 to 223 | 2026-10-11 |
 | [DL-224-to-249.md](DL-224-to-249.md) | 21 | DL-224 to 227, 229, 231 to 235, 238 to 239, 241 to 249 | 2026-10-11 |
+| [DL-251-to-271.md](DL-251-to-271.md) | 15 | DL-251, 253 to 256, 258 to 263, 267 to 268, 270 to 271 | 2026-10-22 |
 
 🪤 **"Verbatim" means the text, not the links.** A moved entry's relative links resolved from `docs/`; here each one carries one more `../`. Text inside backticks is not a link and is not re-based.

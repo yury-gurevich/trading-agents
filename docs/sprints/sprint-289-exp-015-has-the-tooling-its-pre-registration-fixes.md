@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*
 **Effort:** L
 **Decisions:** [DL-313](../design-log.md) (this sprint, twelve decisions, the gaps the
@@ -188,10 +188,10 @@ Every test is red on the unchanged tree. Each docstring cites its ID (`S289-A<n>
 
 - [ ] On the F1 pilot (planner, `s289_f1.py`) the built tree prints the prototype's panel and record
       digests, byte for byte (`3266c6dc…`, `d519ce88…`).
-- [ ] A1–A24 pass, each docstring citing its ID.
-- [ ] B01–B36 each turn at least one of the builder's tests red (planner re-runs `s289_breaks.py`).
-- [ ] The Appendix applied exactly: all 13 production blobs equal the prototype's.
-- [ ] No existing file changed; every new module under 200 lines after formatting.
+- [x] A1–A24 pass, each docstring citing its ID.
+- [x] B01–B36 each turn at least one of the builder's tests red (planner re-runs `s289_breaks.py`).
+- [x] The Appendix applied exactly: all 13 production blobs equal the prototype's.
+- [x] No existing file changed; every new module under 200 lines after formatting.
 - [ ] `make ci` exit 0 (the remote gate).
 
 ---
@@ -356,17 +356,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Laws read (file + sections) | Clause(s) that govern it | What the law requires that the code must honour |
 | --- | --- | --- | --- |
-| The primary universe | | | |
-| The baseline | | | |
-| Statistics and stages | | | |
+| The primary universe | `agents/scanner/laws/laws.md`, whole (LOCKED v1.5), including IDN, OUT, NEV, IDM and PARAM | No clause changed; existing SCAN-IDN-01, SCAN-IDM-01 | Call `apply_filters` on the replay's offered bars and keep every survivor; do not reimplement filters or apply the analyst's candidate cap. |
+| The baseline | `agents/analyst/laws/laws.md`, whole (LOCKED v1.12), including IN, OUT, IDM, TYP and PARAM | No clause changed; existing ANLZ-OUT-02, ANLZ-IDM-01 | Call `score_candidate(...).technical_score` with the replay's settings and price-only inputs; confidence is a distinct field. |
+| Statistics and stages | `docs/laws/conventions.md`, whole (sections 1-11); DL-313 D1-D12 and EXP-015, whole | None: scripts-only tooling, no agent guarantee | Preserve the frozen features, target, folds, inference, bar and one-touch holdout. Cite S289-A1 through S289-A24; do not claim new agent-law proof. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** <Yes/No + what it owed and what was done>
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Scripts call existing scanner and analyst functions; no contracts, agent guarantees, law amendments, ledger rows or drift rows are owed. Reading recorded before the first code change on 2026-10-22 in `../ta-s289`, branch `sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes` (clean starting HEAD `2b6d1bc6f8d3d02a7a12c543bae1e1dfe8f333bc`).
 
-**Contradictions found between a law and this spec:** <none | what, and what you did>
+**Contradictions found between a law and this spec:** none.
 
-**Laws found silent where a decision was needed:** <none | what, and the drift row filed>
+**Laws found silent where a decision was needed:** none requiring an agent law; DL-313 D1-D12 already decide the scripts' open definitions. No drift row owed.
 
-**Clauses that were ⬜ and are now proven:** <IDs, and the rollup in ledger.md + INDEX.md>
+**Clauses that were ⬜ and are now proven:** none; no agent-law rollup changes.
 
 ---
 
@@ -374,39 +374,304 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | Test name | Pass/Fail | Notes |
 | --- | --- | --- | --- |
-| A1 … A24 | | | |
+| A1 | `test_a1_returns_and_history` | PASS | Literal feature order, hand-calculated returns, high window and NaN warm-ups. |
+| A2 | `test_a2_risk_volume_and_beta` | PASS | Log-volatility ddof 1, beta 2, residual 0, ATR and volume arithmetic. |
+| A3 | `test_a3_no_feature_reads_a_later_bar` | PASS | Every feature unchanged through d after tripling every later input. |
+| A4 | `test_a4_forward_returns_and_adjustment_masks` | PASS | Next-open endpoints, missing entry/exit, calendar tail and inclusive move-mask boundaries. |
+| A5 | `test_a5_ranks_within_groups` | PASS | Average tied ranks; NaN and singleton at 0.5. |
+| A6 | `test_a6_twenty_features_and_sector_ranks` | PASS | All 20 columns, session/sector ordering and missing-sector neutral ranks. |
+| A7 | `test_a7_per_session_rank_ic` | PASS | IC +1/-1; nine names, flat predictions and absent pairs excluded. |
+| A8 | `test_a8_folds_purge_embargo_and_holdout` | PASS | Expanding train, 15 omitted sessions, last train index start-16, holdout and absent year. |
+| A9 | `test_a9_composite_signs` | PASS | Signal +1 and mirror -1; composites equal. |
+| A10 | `test_a10_ridge_closed_form` | PASS | Ranked-target normal equation with lambda 1; missing target excluded. |
+| A11 | `test_a11_ranked_ensemble` | PASS | Four ordered predictions, mean of three per-session ranks, IC above 0.3. |
+| A12 | `test_a12_lightgbm_fixed_settings` | PASS | Stand-in module observes Dataset and exact fixed native train call. |
+| A13 | `test_a13_decile_spread` | PASS | Top tenth minus bottom tenth; nine-name session skipped. |
+| A14 | `test_a14_net_top_decile` | PASS | Top name held; initial 25 bps, hold zero, swap 50 bps. |
+| A15 | `test_a15_bootstrap_every_tenth_session` | PASS | Exact S250 seed-zero bootstrap on every tenth of 300 differences. |
+| A16 | `test_a16_bars_controls_and_verdicts` | PASS | 0.01 threshold plus interval, five fold wins, all bars and failed control. |
+| A17 | `test_a17_control_shuffles_only_within_session` | PASS | Deterministic return/SPY permutation within sessions; all other fields unchanged. |
+| A18 | `test_a18_primary_is_every_scanner_survivor` | PASS | Primary matches real apply_filters on replay offers, including more than the cap. |
+| A19 | `test_a19_baseline_is_the_replays_technical_score` | PASS | Each replay recommendation's technical_score equals its panel baseline. |
+| A20 | `test_a20_secondary_features_masks_and_sectors` | PASS | 253-own-bar flag, exact feature alignment, adjustment masks and absent-sector count. |
+| A21 | `test_a21_panel_stage_record` | PASS | Saved panel digest, commit, cache checksums, row counts and session endpoints. |
+| A22 | `test_a22_walk_forward_is_byte_stable` | PASS | Two actual stage runs give identical JSON/Markdown and SHA-256; control passed. |
+| A23 | `test_a23_holdout_guards_and_one_touch` | PASS | Wrong digest, STOPPED and second touch refused; guards precede trainer calls. |
+| A24 | `test_a24_dirty_tree_and_command_line` | PASS | Dirty stages, worktree output and missing required CLI arguments refused. |
 
-**Tests added beyond the plan:** <none | what and why>
+**Tests added beyond the plan:** none; exactly A1-A24 plus the named fixture helper.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** <BUILT | MERGED>
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** <path, branch, .env yes/no>
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s289`, branch `sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes`; `.env` absent. Proofs used the ready venv on the working tree based on `2b6d1bc6f8d3d02a7a12c543bae1e1dfe8f333bc`.
 
-**Result:** <what is now true, in the artefact's own words — not the intent restated>
+**Result:** All 24 synthetic tests pass. All 36 prescribed breaks cause a test failure and are restored byte for byte. The 13 production blobs equal the Appendix. 5321 passed, 9 skipped, 2470 warnings in 1002.04s (0:16:42), coverage 100.00%. The actual EXP-015 run and the planner's F1 pilot are not done.
 
-**Files changed:** <list>
+**Files changed (tracked):** 13 new scripts and seven new test/helper files; this spec and only Sprint 289's README row. No existing script or test changed.
+
+- `scripts/exp015.py`
+- `scripts/exp015_evaluate.py`
+- `scripts/exp015_features.py`
+- `scripts/exp015_folds.py`
+- `scripts/exp015_models.py`
+- `scripts/exp015_panel.py`
+- `scripts/exp015_ranks.py`
+- `scripts/exp015_report.py`
+- `scripts/exp015_rule.py`
+- `scripts/exp015_spec.py`
+- `scripts/exp015_stages.py`
+- `scripts/exp015_store.py`
+- `scripts/exp015_targets.py`
+- `tests/exp015_fixtures.py`
+- `tests/test_exp015_features.py`
+- `tests/test_exp015_measure.py`
+- `tests/test_exp015_models.py`
+- `tests/test_exp015_panel.py`
+- `tests/test_exp015_ranks.py`
+- `tests/test_exp015_stages.py`
 
 **Design decisions:** recorded as [`DL-313`](../design-log.md).
 
-**Proof — the red run first:** <the unchanged-tree run, pasted>
+**Proof — the red run first:** All 24 A1-A24 functions were present; all six test modules failed at their missing Appendix imports before any production file was added.
 
-**Proof — the green run:** <the applied-tree run, pasted>
+```text
+.venv/Scripts/python.exe -m pytest tests/test_exp015_*.py --no-cov
+============================= test session starts =============================
+collected 0 items / 6 errors
 
-**Guards planted:** <B01–B36: what was planted, that it failed, that it was restored>
+=================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_exp015_features.py ________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_features.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_features.py:12: in <module>
+    from scripts.exp015_features import line_features
+E   ModuleNotFoundError: No module named 'scripts.exp015_features'
+________________ ERROR collecting tests/test_exp015_measure.py ________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_measure.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_measure.py:14: in <module>
+    from scripts.exp015_evaluate import decile_spread, top_decile
+E   ModuleNotFoundError: No module named 'scripts.exp015_evaluate'
+________________ ERROR collecting tests/test_exp015_models.py _________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_models.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_models.py:14: in <module>
+    from scripts.exp015_models import fit, lightgbm_trainer
+E   ModuleNotFoundError: No module named 'scripts.exp015_models'
+_________________ ERROR collecting tests/test_exp015_panel.py _________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_panel.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_panel.py:12: in <module>
+    from scripts.exp015_features import line_features
+E   ModuleNotFoundError: No module named 'scripts.exp015_features'
+_________________ ERROR collecting tests/test_exp015_ranks.py _________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_ranks.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_ranks.py:14: in <module>
+    from scripts.exp015_folds import holdout, walk_forward
+E   ModuleNotFoundError: No module named 'scripts.exp015_folds'
+________________ ERROR collecting tests/test_exp015_stages.py _________________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s289\tests\test_exp015_stages.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_exp015_stages.py:16: in <module>
+    from scripts import exp015
+E   ImportError: cannot import name 'exp015' from 'scripts' (unknown location)
+=========================== short test summary info ===========================
+ERROR tests/test_exp015_features.py
+ERROR tests/test_exp015_measure.py
+ERROR tests/test_exp015_models.py
+ERROR tests/test_exp015_panel.py
+ERROR tests/test_exp015_ranks.py
+ERROR tests/test_exp015_stages.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!
+============================== 6 errors in 1.71s ==============================
+RED_EXIT=2
+```
 
-**Module line counts:** <file **n**, …>
+**Proof — the green run:**
 
-**Not met / verified failing:** <plainly, or "none">
+```text
+.venv/Scripts/python.exe -m pytest tests/test_exp015_*.py --no-cov
+============================= test session starts =============================
+collected 24 items
+
+tests\test_exp015_features.py ....                                       [ 16%]
+tests\test_exp015_measure.py .....                                       [ 37%]
+tests\test_exp015_models.py ....                                         [ 54%]
+tests\test_exp015_panel.py ...                                           [ 66%]
+tests\test_exp015_ranks.py ....                                          [ 83%]
+tests\test_exp015_stages.py ....                                         [100%]
+
+- generated xml file: C:\Users\yury_\Downloads\project\s289-evidence\green.xml -
+============================= 24 passed in 19.59s =============================
+GREEN_EXIT=0
+```
+
+**CI — commands and verdicts only:** Exit 0 for a silent step is proven by make starting the following recipe. Steps 15-16 were run separately after make stopped at step 14.
+
+```text
+uv run ruff check . --output-format=github
+PASS exit=0
+uv run ruff format --check .
+PASS exit=0
+uv run mypy kernel contracts agents orchestration surfaces
+PASS exit=0
+uv run lint-imports
+PASS exit=0
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+PASS exit=0
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+PASS exit=0
+uv run python scripts/check_law_coverage.py
+PASS exit=0
+uv run python scripts/check_param_law_sync.py
+PASS exit=0
+uv run python scripts/check_sprint_status.py
+PASS exit=0
+uv run python scripts/check_tracker_size.py
+PASS exit=0
+uv run python scripts/check_markdown_links.py
+PASS exit=0
+uv run python scripts/check_version_scheme.py
+PASS exit=0
+uv run pytest
+PASS exit=0; 5321 passed, 9 skipped, 2470 warnings in 1002.04s (0:16:42); coverage 100.00%
+uv run python scripts/check_dependency_audit.py
+VERIFIED FAILING exit=1: offline advisory lookup blocked by loopback proxy
+uv run pre-commit run detect-secrets --all-files
+PASS exit=0
+uv run python scripts/check_untracked_secrets.py
+PASS exit=0
+make ci: EXIT=2
+```
+
+**Guards planted:** Each exact Traps replacement was applied alone; each run exited 1 with a failing test (no collection-error substitutes). Each original byte sequence was restored in `finally` before the next break.
+
+```text
+B01 exp015_features.py: RED exit=1; test_a1_returns_and_history; RESTORED
+B02 exp015_features.py: RED exit=1; test_a1_returns_and_history; RESTORED
+B03 exp015_features.py: RED exit=1; test_a2_risk_volume_and_beta; RESTORED
+B04 exp015_features.py: RED exit=1; test_a2_risk_volume_and_beta; RESTORED
+B05 exp015_features.py: RED exit=1; test_a3_no_feature_reads_a_later_bar; RESTORED
+B06 exp015_spec.py: RED exit=1; test_a2_risk_volume_and_beta; RESTORED
+B07 exp015_features.py: RED exit=1; test_a2_risk_volume_and_beta; RESTORED
+B08 exp015_features.py: RED exit=1; test_a2_risk_volume_and_beta; RESTORED
+B09 exp015_targets.py: RED exit=1; test_a4_forward_returns_and_adjustment_masks; RESTORED
+B10 exp015_targets.py: RED exit=1; test_a4_forward_returns_and_adjustment_masks; RESTORED
+B11 exp015_targets.py: RED exit=1; test_a4_forward_returns_and_adjustment_masks; RESTORED
+B12 exp015_ranks.py: RED exit=1; test_a5_ranks_within_groups; RESTORED
+B13 exp015_ranks.py: RED exit=1; test_a5_ranks_within_groups; RESTORED
+B14 exp015_ranks.py: RED exit=1; test_a6_twenty_features_and_sector_ranks; RESTORED
+B15 exp015_spec.py: RED exit=1; test_a7_per_session_rank_ic; RESTORED
+B16 exp015_folds.py: RED exit=1; test_a8_folds_purge_embargo_and_holdout; RESTORED
+B17 exp015_models.py: RED exit=1; test_a9_composite_signs; RESTORED
+B18 exp015_models.py: RED exit=1; test_a10_ridge_closed_form; RESTORED
+B19 exp015_models.py: RED exit=1; test_a10_ridge_closed_form; RESTORED
+B20 exp015_models.py: RED exit=1; test_a11_ranked_ensemble; RESTORED
+B21 exp015_spec.py: RED exit=1; test_a12_lightgbm_fixed_settings; RESTORED
+B22 exp015_evaluate.py: RED exit=1; test_a14_net_top_decile; RESTORED
+B23 exp015_evaluate.py: RED exit=1; test_a14_net_top_decile; RESTORED
+B24 exp015_rule.py: RED exit=1; test_a15_bootstrap_every_tenth_session; RESTORED
+B25 exp015_rule.py: RED exit=1; test_a16_bars_controls_and_verdicts; RESTORED
+B26 exp015_rule.py: RED exit=1; test_a16_bars_controls_and_verdicts; RESTORED
+B27 exp015_rule.py: RED exit=1; test_a16_bars_controls_and_verdicts; RESTORED
+B28 exp015_rule.py: RED exit=1; test_a16_bars_controls_and_verdicts; RESTORED
+B29 exp015_store.py: RED exit=1; test_a17_control_shuffles_only_within_session; RESTORED
+B30 exp015_panel.py: RED exit=1; test_a18_primary_is_every_scanner_survivor; RESTORED
+B31 exp015_panel.py: RED exit=1; test_a19_baseline_is_the_replays_technical_score; RESTORED
+B32 exp015_panel.py: RED exit=1; test_a20_secondary_features_masks_and_sectors; RESTORED
+B33 exp015_stages.py: RED exit=1; test_a23_holdout_guards_and_one_touch; RESTORED
+B34 exp015_stages.py: RED exit=1; test_a23_holdout_guards_and_one_touch; RESTORED
+B35 exp015_stages.py: RED exit=1; test_a24_dirty_tree_and_command_line; RESTORED
+B36 exp015.py: RED exit=1; test_a24_dirty_tree_and_command_line; RESTORED
+BREAKS_PROVEN=36/36; RESTORED=36/36
+```
+
+**Module line counts (after formatting):**
+
+```text
+scripts/exp015.py 53
+scripts/exp015_evaluate.py 118
+scripts/exp015_features.py 121
+scripts/exp015_folds.py 63
+scripts/exp015_models.py 78
+scripts/exp015_panel.py 161
+scripts/exp015_ranks.py 84
+scripts/exp015_report.py 92
+scripts/exp015_rule.py 124
+scripts/exp015_spec.py 67
+scripts/exp015_stages.py 172
+scripts/exp015_store.py 91
+scripts/exp015_targets.py 60
+tests/exp015_fixtures.py 151
+tests/test_exp015_features.py 149
+tests/test_exp015_measure.py 140
+tests/test_exp015_models.py 114
+tests/test_exp015_panel.py 124
+tests/test_exp015_ranks.py 103
+tests/test_exp015_stages.py 146
+APPENDIX_BLOBS=13/13 EXACT
+```
+
+**Final scope and handback checks:**
+
+```text
+SCOPE=20 new Python files + 2 authorized handback docs
+EXISTING_SOURCE_TESTS_VERSION_LOCK_STATE_DESIGN_QUEUE_EXP015=UNCHANGED
+APPENDIX_BYTES=13/13 EXACT; TEST_IDS=24/24; NEW_MODULES_UNDER_200=20/20
+uv run python scripts/check_sprint_status.py
+EXIT=0
+docs_seen=294 SPEC=10 BUILT=1 MERGED=283 UNMAPPED=0 MISSING=0
+uv run python scripts/check_tracker_size.py
+EXIT=0
+uv run python scripts/check_markdown_links.py
+EXIT=0
+git diff --check HEAD
+EXIT=0
+FINAL_DOC_CHECKS=4/4 PASS
+```
+
+**Not met / verified failing:** `make ci` verified failing solely at the offline dependency audit; a fresh advisory audit is not done. Planner F1 digests, CodeQL set-diff, remote gates, merge, deploy and the real EXP-015 run are not done. Cleanup of the accidental ignored pytest cache is not done: automatic approval review rejected deletion with only `blocked by policy`. The remaining path is `Usersyury_Downloadsprojects289-evidence/pytest-cache/` inside this worktree.
 
 ---
 
 ## Return notes
 
-<corrections made under the first tier, and anything the planner should know>
+- EXP-014 gate: read only the last line of its `run.log`: `2026-10-22T08:38:34Z SEALED files=30 seal_sha256=6adf6a46e6a96be798f17e1b155a7d5b9df1a976a0bdc25f9a305170c1cc83d1`. Its SEALED event has timestamp and metadata; nothing else in that folder was read.
+- First-tier command correction: Windows native-tool globs were expanded to the six explicit test paths. Focused runs used the ready venv's `python -m pytest` and `python -m ruff`; no sync was run.
+- First-tier path correction: the first CI attempt was interrupted after pytest setup errors. Backslashes in my `PYTEST_ADDOPTS` path were stripped by argument parsing, producing WinError 3 before test bodies ran. Forward slashes correct it; the two observed graph-vocabulary files then passed all 16 tests. The corrected full CI used `--maxfail=1` to enforce the stop rule promptly. No existing code was repaired.
+- That malformed path created five ignored pytest-cache files in the worktree. Directory cleanup and narrower deletion of the known files were both automatically rejected (`blocked by policy`); cleanup is not done. All intended logs, coverage reports and synthetic stage artifacts are outside the worktree under `../s289-evidence/`. Import-linter's cache is routed there through an ignored junction.
+- A4 proves the Appendix's inclusive mask from move index m through m+252 (the 252-session lookback boundary), and excludes m+253; no production count or formula was altered.
+- UV ran with `UV_OFFLINE=1` and `UV_NO_SYNC=1`; HTTP(S) used a loopback-only proxy, pip indexes were disabled and Git network transports disallowed. No network request was allowed through. Dependency-audit proof and all planner sequencing remain owed where named above.
+- `pyproject.toml` and `uv.lock` are unchanged. No edits to agents, contracts, kernel, orchestration, surfaces, existing scripts/tests, STATE, design-log, work-queue or EXP-015. No push, merge, tag, deployment or actual experiment run.
 
 ---
 

@@ -12,6 +12,53 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
+
+**Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) reported the
+analyst's technical score at a mean rank IC of −0.0099 over 2018–2024 and −0.0070 on 2025 →, on the
+scanner's survivors, at 10 sessions. In the price-only replay that score is the whole ranking.
+It is `0.8 × mean(15 banded rules) + 0.2 × relative strength`. Four of the rules reward trend and
+five reward weakness, so an equal-weight mean can cancel what its parts know.
+
+**Measured, 2026-10-23:**
+
+- **The blend:** `agents/analyst/domain/scoring.py` `_apply_relative_strength`; weight 0.20
+  (`relative_strength_weight`).
+- **The 15 rule names:** `technical_rules*.py`.
+- **Decision paths:** `agents/analyst/` and `agents/scanner/` are both fidelity decision paths
+  (`scripts/replay_fidelity_git.py`).
+- **Reusable code:** EXP-015's panel holds every survivor row's target and score;
+  `exp015_ranks.session_ic` and `exp015_rule.interval` take any per-session series.
+
+**Decided (planner, delegated):**
+
+1. **D1 — measure, do not change.** EXP-023 decomposes the score into its 16 components and tests
+   each one's IC, with Holm across the 16 at a family-wise 5 %. It also asks whether the scanner's
+   filter picks names that beat the members it turns away.
+2. **D2 — the same evidence as EXP-015:** the same survivors, target, scored window (2018–2024),
+   sessions and interval. 2025 → is reported apart, since EXP-015 has read it in aggregate.
+3. **D3 — an alignment stop.** Every survivor row's recomputed score, and the blend rebuilt from its
+   components, must equal EXP-015's panel; a mismatch stops the run unscored.
+4. **D4 — a planner's read-only script**, kept in the kit and verbatim in the record's Appendix S
+   (the template's route for an experiment's scripts). It reuses the tested `scripts/exp015_*`
+   functions; no repo code changes.
+5. **D5 — what each outcome leads to is fixed before the run** (EXP-023 section 7). Components that
+   carry with opposite signs lead to a new pre-registration on sessions after 2026-09-25. None
+   carrying hands the pillar's future to the operator after EXP-014 scores. A carrying filter says
+   where price-only information lives.
+
+**Ruled out:**
+
+- **Re-weighting or flipping rules now.** `agents/analyst/` is a decision path: a change restarts
+  the fidelity count, which EXP-014 and EXP-022 wait on.
+- **Fitting new weights on 2018–2026 and declaring them.** Every cached session has now been read;
+  weights fitted there have no unseen data to prove them on.
+- **A Codex sprint for the tooling.** A descriptive read on functions already tested does not earn
+  a spec, a prototype and a review cycle. The operator can redirect.
+- **The live composite (fundamentals and sentiment).** The replay is price-only, and the live graph
+  holds too few scored sessions.
+- **An unadjusted 5 % per component.** About 0.8 of the 16 would carry by chance.
+
 ## DL-313 - EXP-015's tooling: the panel offers each session as the replay does, the baseline is the analyst's own score, and the holdout can be touched once - status: DECIDED (planner, 2026-10-22 16:20 AEDT); specced as [S289](sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md), merged 2026-10-22 (`1c91c21e`); run 2026-10-23, EXP-015 FAIL; work-queue 90 (the operator, 2026-10-22: *"create a sprint for codex to create tooling for 015"*)
 
 **Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) was

@@ -223,8 +223,31 @@ Frozen at the commit that adds this file (`git log --diff-filter=A` on this path
 
 ## Appendix R — Run record
 
-*Pending.*
+*The arms under Amendment 1: run and sealed, not scored. Nothing below is a result.*
+
+- **Commit.** `f7e7ac21` (`v0.128.06`), the clean detached checkout EXP-022's arms ran from; every
+  `arm.json` reads `dirty: false`, and all five name the one commit.
+- **Machine and software.** As section 4: Intel Core i7-7660U (2 cores, 4 threads), 16 GB, Windows 10 Pro;
+  Python 3.13.2, uv 0.8.14.
+- **Arms.** The five of `scripts/exp014_arms.json`, each 2017-01-03 → 2026-09-25, 2,446 sessions, history
+  rule on; slippage and overrides as Appendix P names them; the one cache of section 3, the same
+  checksums as EXP-022's arms.
+- **When.** 2026-10-22 13:04 → 19:38 AEDT, one arm at a time, 76 to 82 minutes each, after EXP-022's twelve
+  and a short hold for an unrelated `make ci`. The CPU-throttle guard's 391 samples with an arm running
+  never read a performance limit below 100 %.
+- **Seal.** `seal.txt` lists the SHA-256, size and path of the 30 files (six per arm); its own SHA-256 is
+  `6adf6a46e6a96be798f17e1b155a7d5b9df1a976a0bdc25f9a305170c1cc83d1`. Outputs in OneDrive
+  `trading-agents-data/exp014-2026-10-21/`: `arms/`, `logs/` (the equity figure stripped from every line),
+  `status/` (exit codes, all 0), `run.log`.
+- **A determinism check, from checksums only.** `base-25` and `base-10` declare the same replay as EXP-022's
+  `stops-25` and `stops-10`; their `equity.csv` and `fills.csv` are byte for byte identical across the two
+  seals.
+- **Not done.** Scoring: it waits for the fidelity PASS; the seal is verified first.
 
 ## Appendix S — Scripts
 
-*Pending. The scripts are S250's, in `scripts/`; the commands used are recorded here at the run.*
+The scripts are S250's, in `scripts/`. Each arm ran as its own process, from the checkout's root:
+`uv run --no-sync python -B scripts/replay_arms.py run --arm <name> --manifest scripts/exp014_arms.json
+--out-root <OneDrive>/exp014-2026-10-21/arms --cache <OneDrive>/trading-agents-data`, started by EXP-022's
+`run_exp022_arms.ps1` with `-Manifest scripts/exp014_arms.json`. Scoring, on PASS:
+`uv run python scripts/replay_verdict.py` over the same arms folder.

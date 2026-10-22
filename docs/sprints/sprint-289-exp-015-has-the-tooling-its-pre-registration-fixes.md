@@ -698,8 +698,10 @@ Kit and outputs in OneDrive `trading-agents-data/wq90-2026-10-22/`.
   (clean), the main venv's Python 3.13.2 with LightGBM 4.7.0 and numpy 2.5.3, every module read
   from that tree; `panel` then `walk-forward`, one job at a time at BelowNormal priority
   (`run_exp015.ps1`, log `exp015_run.log`); outputs in OneDrive
-  `trading-agents-data/experiments/EXP-015/`. The holdout waits until the walk-forward is recorded
-  in EXP-015.
+  `trading-agents-data/experiments/EXP-015/`. `panel` 11:43 → 13:38 UTC (1,209,946 rows),
+  `walk-forward` 13:38 → 13:48; recorded in EXP-015 as `3eac394d`; then `holdout` once, 13:51 → 13:53.
+  **EXP-015's verdict: FAIL** (bars 1 and 2 fail in the walk-forward; bar 3 holds on the holdout);
+  nothing is built. The run worktree `../ta-exp015` is removed.
 
 ---
 

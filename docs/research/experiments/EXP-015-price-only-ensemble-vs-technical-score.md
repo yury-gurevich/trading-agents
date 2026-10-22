@@ -1,9 +1,10 @@
 # EXP-015 — Does a price-only ensemble rank names better than the analyst's technical score, out of sample?
 
-**Status:** PRE-REGISTERED 2026-09-27 (planner). **WALK-FORWARD RECORDED 2026-10-23, before the
-holdout: bars 1 and 2 fail, so H0 holds whatever the holdout reads; the holdout is still touched
-once, as *Process* says.** Everything under *Purpose* and *Process* was fixed before the first fit
-and is unchanged. A change after the first fit is a new experiment, not an edit to this one.
+**Status:** PRE-REGISTERED 2026-09-27 (planner). **CLOSED 2026-10-23: FAIL (H0).** The
+walk-forward was recorded first (`3eac394d`) with bars 1 and 2 failing; the holdout was then
+touched once and bar 3 held, which cannot change the verdict. Everything under *Purpose* and
+*Process* was fixed before the first fit and is unchanged. A change after the first fit is a new
+experiment, not an edit to this one.
 **Decision:** [DL-236](../../design-log.md) (operator, 2026-09-27) · work-queue **90** · runs beside
 E17.4 ([S237](../../sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md)).
 **LLM cost:** $0.
@@ -162,8 +163,46 @@ Mean daily rank IC against the 10-session forward excess return, primary univers
 
 Files: `panel.json`, `panel.npz`, `walk_forward.json`, `walk_forward.md` in the OneDrive folder.
 
+### Holdout result (touched once, 2026-10-22 13:51 → 13:53 UTC, after `3eac394d` recorded the above)
+
+`holdout --walk-forward-sha256 d375dbb9…` from the same tree and Python. One fit on 2016-10-17 →
+2024-12-09 (593,535 primary rows; the 15-session gap before the test), tested on 2025-01-02 →
+2026-09-25 (434 sessions, 424 with a 10-session target; 118,027 rows). `holdout.json` SHA-256
+`fd8bb0ccdd5676fcc2ca474be280db49eb4bb38fdb167946a1cf692a481a562c`.
+
+| Bar | Reading | Holds |
+| --- | --- | --- |
+| 3: holdout IC difference > 0, and the ensemble's net top decile ahead | **+0.0345** over 424 sessions; net top decile, 43 rebalances: ensemble **+28.6 %**, technical score **−3.1 %** (gross +48.3 % and +16.3 %) | yes |
+| **Verdict** (all three required) | bars 1 and 2 failed in the walk-forward | **FAIL** |
+
+Holdout, reported: mean IC technical score −0.0070, ensemble +0.0275 (composite +0.0452, ridge
++0.0099, LightGBM +0.0113); decay, technical score −0.0061 at 5 sessions and −0.0054 at 20,
+ensemble +0.0186 and +0.0344; secondary universe technical score −0.0011, ensemble +0.0204, net top
+decile +13.9 % against +1.1 %.
+
+Files: `holdout.json`, `verdict.md`. 🪤 The pages (`walk_forward.md`, `verdict.md`) print the
+secondary universe's rows with no header of their own (in `verdict.md` both rows read `holdout`; the
+second is the secondary universe). The JSON is the record; the stage refuses a second touch, so the
+pages are never rendered again.
+
 ## Interpretation
 
-*Pending — written only from the recorded results.* Pass: a spec that feeds the ensemble to the
-forecaster's shadow loop, with live shadowing waiting on work-queue item 89 (IEX volume). Fail: the
-record says so, and nothing is built.
+*Written 2026-10-23 from the recorded results only.* The plan said: pass, a spec that feeds the
+ensemble to the forecaster's shadow loop, with live shadowing waiting on work-queue item 89 (IEX
+volume); fail, the record says so, and nothing is built.
+
+**FAIL: nothing is built.** Out of sample, a price-only ensemble does not rank the scanner's
+survivors better than the technical score by the pre-registered bar. Over seven walk-forward
+years its lead is +0.0123 in mean IC, but the interval runs from −0.0219 to +0.0313 and it leads
+in only 3 of 7 years. The holdout's clear lead (+0.0345, and a net top decile 32 points ahead)
+is one 21-month stretch. The walk-forward has years like it (2018, 2021) and years that reverse
+it (2022 to 2024), so it is not evidence of a lasting edge.
+
+**What the record shows about the baseline, which *Purpose* says carries most of the price-only
+pipeline's ranking:** over 1,761 walk-forward sessions the analyst's technical score has a mean rank
+IC of **−0.0099** against the 10-session forward excess return (−0.0126 at 20 sessions), and
+**−0.0070** on the holdout. By year it is positive in four of seven (at most +0.0206, in 2024) and
+negative in three (down to −0.0638, in 2019). Taken whole, it ranks the survivors no better than
+chance. EXP-015 was not built to test that: its bar compares two rankers and says nothing about
+either one's absolute skill. This is a reported reading, not a verdict on the technical score.
+*Purpose* says either answer informs G-EDGE, and this is the part that does.

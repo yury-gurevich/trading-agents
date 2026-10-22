@@ -12,6 +12,75 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-313 - EXP-015's tooling: the panel offers each session as the replay does, the baseline is the analyst's own score, and the holdout can be touched once - status: DECIDED (planner, 2026-10-22 16:20 AEDT); specced as [S289](sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md); work-queue 90 (the operator, 2026-10-22: *"create a sprint for codex to create tooling for 015"*)
+
+**Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) was
+pre-registered on 2026-09-27 ([DL-236](design-log.md)) and has no code. It does not wait for the
+fidelity PASS, and its tooling is scripts only, so it moves while the count runs. Its *Process* fixes
+the data, target, baseline, features, models, folds, holdout, metrics, bar and control; it leaves a
+few choices open. They are made here, before any fit, so the first fit reads no result.
+
+**Measured, 2026-10-22** (the spec's table): the analyst's per-name score is `score_candidate`'s
+`technical_score` (the rule score blended with relative strength at the pack's 0.20); the pack caps
+the analyst at 25 candidates; one `score_candidate` call takes 2.43 ms; LightGBM is in the
+`forecaster` extra only, scikit-learn in no environment, SciPy not in CI; four known adjustment
+errors (TGNA, RTX, APTV, SW).
+
+**Decided (planner, delegated):**
+
+1. **D1 — the panel offers each session as the replay does.** Members by point-in-time episode, the
+   fleet's declared lookback window, the history rule (`offer_lines`), then `apply_filters` with the
+   pack's settings and SIP volume. **Primary** = every survivor (the pre-registration's universe, not
+   the analyst's capped 25). **Secondary** = an offered member with at least 253 bars of its own.
+2. **D2 — the baseline is `score_candidate(...).technical_score`**, with no fundamentals and no news
+   (the replay is price-only): the score the S235 replay's recommendations carry. Not raw
+   `score_technical` (that is not the score the fleet ranks with); not `score_candidates` (it scores
+   only the capped 25).
+3. **D3 — the features the list names without a definition:** windows count the line's own bars;
+   volatility is the standard deviation of daily log returns (ddof 1); ATR % is the 14-bar mean true
+   range over the close; beta and residual volatility are the 60-bar OLS of daily simple returns on
+   SPY's; volume ratios are means; dollar volume is the 20-bar mean of close × volume; `rs_120` is
+   (1 + r) / (1 + r_SPY) − 1. *Found:* `rs_120` ranks identically to `ret_120` within a session; it
+   stays, because the list is frozen.
+4. **D4 — missing values.** A feature without its history is NaN and ranks 0.5; a line without a
+   sector gets 0.5 for the five sector features (13 % of symbols, named in DL-236); a row without a
+   forward bar on d+1 or d+h has no target and leaves the IC and the portfolios (counted).
+5. **D5 — the four adjustment errors.** A move masks a line's features for 252 sessions from it and
+   its targets when (d, d + 20] holds it. Real events (bank runs, bankruptcies) stay.
+6. **D6 — ranks and the IC.** Ranks average ties and scale to [0, 1]; a session's IC needs ten names
+   and inputs that are not flat.
+7. **D7 — LightGBM** through its native API (scikit-learn is installed nowhere), the six settings as
+   written plus `objective` regression, `deterministic`, one thread, `force_col_wise` and silence:
+   reproducibility, not tuning. Its target is the per-session rank of the forward excess, ridge's
+   target (the pre-registration names ridge's only).
+8. **D8 — the composite.** A feature's sign is +1 when its mean train IC is at least 0, else −1; the
+   prediction is the mean of sign × (rank − 0.5).
+9. **D9 — the folds.** Train from the panel's first session to fifteen sessions before the test's
+   first (purge 10, embargo 5); seven annual tests 2018 to 2024; the holdout 2025-01-02 to the last
+   session, trained the same way.
+10. **D10 — inference and the bar.** Bar 1's point is the mean IC difference over every walk-forward
+    test session; its interval is S250's stationary bootstrap (block 20, 10,000, seed 0) of the mean
+    of every 10th session's difference, pooled in date order. Bar 2 compares fold means. Bar 3: the
+    holdout's mean difference above 0 and its net compounded top decile ahead. The long-only top
+    decile: every 10th test session, the top ceil(n / 10) names, equal weight, 25 bps on each unit of
+    weight traded, no charge for a final exit. The control shuffles each session's forward returns
+    among its rows (seed 0) and passes when its interval contains 0; a failure is `STOPPED`.
+11. **D11 — three stages, outside the repo.** `panel` writes `panel.npz` and `panel.json` (commit,
+    cache checksums, the panel's own digest, since a zip's bytes carry its time); `walk-forward`
+    writes `walk_forward.json` and `.md` and prints the file's SHA-256; `holdout` refuses a second
+    touch, a SHA-256 that is not the recorded one, and a `STOPPED` walk-forward. Each refuses a dirty
+    tree.
+12. **D12 — no bump, no deploy:** scripts and tests only (S281's and S282's precedent).
+
+**Ruled out.** *Re-implement the technical score* — the pre-registration forbids it. *Score the
+capped 25* — the universe is the survivors. *scikit-learn's LightGBM wrapper* — not installed.
+*A CSV panel* — about 1.2 M rows, slow to read and large. *Drop rows with any NaN feature* — the
+universe would differ by feature. *A pilot inside the scored folds* — the F1 pilot stays in 2016–17.
+*Real LightGBM in CI* — it is not installed; a stub trainer and a stand-in module prove the call.
+
+**Named, not built.** The run itself (planner, after the merge, one heavy job at a time); the shadow
+loop a pass would feed; live shadowing (work-queue 89).
+
 ## DL-312 - each barrier claim states its return: the expected return to its first barrier or tenth close, the tenth close's worst case, each barrier's median session; its settlement records what happened - status: MEASURED and DECIDED (planner, 2026-10-21 19:20 AEDT); work-queue 92; specced as [S288](sprints/sprint-288-each-claim-states-its-return.md), merged as `0.131.00` (`83c4da27`) and deployed as `s288` 2026-10-21; the operator, 2026-10-21: *"create another sprint for 92"*, then, offered the choice, *"Each claim states its return (Recommended)"* over a notice on the night a held name passes its target and a retention rule for `BarrierHistory`
 
 **Why.** [DL-240](design-log.md) reads each name as a distribution: *"the chance it reaches its target first, its stop first, or neither, and the return in each case"*, and the book as their aggregate, *"an expected return and a left tail"*. Since S239 a claim states the three chances only, and since S286 there is one on every held name. The PM's sizing over distributions, the last step of item 92 and the operator's policy, needs a return per name; the take-profit and time exit that follow EXP-022 need to know how long a target takes. Every step that sells waits for EXP-022; this one does not: forecaster only, shadow, no decision path, so it deploys while the fidelity count runs.

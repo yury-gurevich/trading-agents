@@ -102,6 +102,8 @@ the train and test date ranges per fold, and a test asserts that no feature read
 bootstrap, the holdout line, and the control. None of them go in the repo (the SIP bars are
 licensed). Code goes under `scripts/` with tests on synthetic bars.
 
+**Tooling:** [S289](../../sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md), specced 2026-10-22. Where *Process* is silent, [DL-313](../../design-log.md) decides, before any fit (feature windows, missing values, the four adjustment errors, the folds' gap, the bootstrap's sessions, the top decile's costs).
+
 ## Interpretation
 
 *Pending — written only from the recorded results.* Pass: a spec that feeds the ensemble to the

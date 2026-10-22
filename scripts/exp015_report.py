@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any
 
 from scripts.exp015_spec import BAR_FOLDS_WON, BAR_IC_DIFFERENCE, EXPERIMENT
@@ -85,7 +86,7 @@ def _mean(values: Mapping[str, float]) -> float | None:
 
 
 def _num(value: float | None) -> str:
-    return "n/a" if value is None or value != value else f"{value:.4f}"
+    return "n/a" if value is None or math.isnan(value) else f"{value:.4f}"
 
 
 def _yes(flag: bool) -> str:

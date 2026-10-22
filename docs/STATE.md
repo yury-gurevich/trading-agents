@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-10-23 03:59 AEDT · **Version:** **0.131.01 on `main`** (`cc03042d`, tag `v0.131.01`, GATE PROVEN: a chore, virtualenv 21.14.12 for five advisories, dev tooling only, no deploy; before it `0.131.00`, [S288](sprints/sprint-288-each-claim-states-its-return.md) (work-queue 92, [DL-312](design-log.md)), each barrier claim states its return and its settlement the realised one; before it `0.130.00`, [S287](sprints/sprint-287-the-brief-shows-the-books-odds.md), the brief and the dashboard show the held book's odds) · **the fleet on `s288` = 0.131.00, deployed 2026-10-21** (the vocabulary step, then an image-only retag; rollback `s287`; `s287` and `s286` deployed earlier the same day) · **[EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) FAILED and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md) found no component of the technical score that carries: the price-only ranking shows no edge; its future is the operator's call after EXP-014. Owed: S288's settlement limb at the first settlement; S283's stop limb by 2026-11-10; the fidelity count (session 2 of 4 since `sched-2026-10-20`, pinned `v0.128.06`); EXP-022's and EXP-014's arms SEALED unread, both scored only on that PASS.**
+**Last updated:** 2026-10-23 05:42 AEDT · **Version:** **0.131.02 on `main`** (`43801ed9`, tag `v0.131.02`, GATE PROVEN: a chore, opentelemetry-api 1.45.1 for CVE-2026-114603, which turned `main`'s audit red on `145b593a`; no deploy; before it `0.131.01`, virtualenv 21.14.12; before that `0.131.00`, [S288](sprints/sprint-288-each-claim-states-its-return.md) (work-queue 92, [DL-312](design-log.md)), each barrier claim states its return and its settlement the realised one; before it `0.130.00`, [S287](sprints/sprint-287-the-brief-shows-the-books-odds.md), the brief and the dashboard show the held book's odds) · **the fleet on `s288` = 0.131.00, deployed 2026-10-21** (the vocabulary step, then an image-only retag; rollback `s287`; `s287` and `s286` deployed earlier the same day) · **[EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) FAILED and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md) found no component of the technical score that carries: the price-only ranking shows no edge; its future is the operator's call after EXP-014. Owed: S288's settlement limb at the first settlement; S283's stop limb by 2026-11-10; the fidelity count (session 2 of 4 since `sched-2026-10-20`, pinned `v0.128.06`); EXP-022's and EXP-014's arms SEALED unread, both scored only on that PASS.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…23.md` + git). **LAW-02:** an item is "shipped" only when
@@ -34,8 +34,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ### Standing conditions — live, each with what lifts it
 
-- **The fleet is on `s280`** = `0.128.03` (`85752f1a`), since 2026-10-16. Rollback: `s279`. A
-  rollback below `s262` must also put the hand-made eight-probe pack back on the master in the
+- **The fleet is on `s288`** = `0.131.00` (`83c4da27`), since 2026-10-21. Rollback: `s287`.
+  `main`'s `0.131.01` and `0.131.02` are dependency chores, not deployed (they ride the next image
+  build). A rollback below `s262` must also put the hand-made eight-probe pack back on the master in the
   same step (an older image ignores the declared provider and would run Anthropic's probes).
 - **The debate runs on OpenAI (`gpt-5.5`)**, declared in `orchestration/packs/trading_llm.json` and
   kept by a full `up` since `s262` ([DL-282](design-log.md)); the master runs and counts OpenAI's

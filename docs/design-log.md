@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
+## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); run 2026-10-23, nothing carries; pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
 
 **Why.** [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) reported the
 analyst's technical score at a mean rank IC of −0.0099 over 2018–2024 and −0.0070 on 2025 →, on the

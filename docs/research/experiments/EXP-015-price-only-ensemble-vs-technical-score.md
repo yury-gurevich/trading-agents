@@ -1,8 +1,9 @@
 # EXP-015 — Does a price-only ensemble rank names better than the analyst's technical score, out of sample?
 
-**Status:** PRE-REGISTERED 2026-09-27 (planner). **No model has been fitted.** Everything under
-*Purpose* and *Process* is fixed before the first fit. A change after the first fit is a new
-experiment, not an edit to this one.
+**Status:** PRE-REGISTERED 2026-09-27 (planner). **WALK-FORWARD RECORDED 2026-10-23, before the
+holdout: bars 1 and 2 fail, so H0 holds whatever the holdout reads; the holdout is still touched
+once, as *Process* says.** Everything under *Purpose* and *Process* was fixed before the first fit
+and is unchanged. A change after the first fit is a new experiment, not an edit to this one.
 **Decision:** [DL-236](../../design-log.md) (operator, 2026-09-27) · work-queue **90** · runs beside
 E17.4 ([S237](../../sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md)).
 **LLM cost:** $0.
@@ -98,11 +99,68 @@ the train and test date ranges per fold, and a test asserts that no feature read
 
 ## Delivery
 
-*Pending.* Outputs go to OneDrive `trading-agents-data\experiments\EXP-015\`: per-fold IC tables, the
+Outputs go to OneDrive `trading-agents-data\experiments\EXP-015\`: per-fold IC tables, the
 bootstrap, the holdout line, and the control. None of them go in the repo (the SIP bars are
 licensed). Code goes under `scripts/` with tests on synthetic bars.
 
-**Tooling:** [S289](../../sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md), specced 2026-10-22. Where *Process* is silent, [DL-313](../../design-log.md) decides, before any fit (feature windows, missing values, the four adjustment errors, the folds' gap, the bootstrap's sessions, the top decile's costs).
+**Tooling:** [S289](../../sprints/sprint-289-exp-015-has-the-tooling-its-pre-registration-fixes.md), merged 2026-10-22 at `1c91c21e`. Where *Process* is silent, [DL-313](../../design-log.md) decides, before any fit (feature windows, missing values, the four adjustment errors, the folds' gap, the bootstrap's sessions, the top decile's costs).
+
+### Run record
+
+- **Code:** `1c91c21e` (clean), from a detached worktree; Python 3.13.2, numpy 2.5.3, LightGBM 4.7.0;
+  Windows 10, i7-7660U; one job at a time, BelowNormal priority. Seeds as *Process* fixes them
+  (LightGBM 0, bootstrap 0, the control's shuffle 0).
+- **`panel`:** 2026-10-22 11:43 → 13:38 UTC. 1,209,946 rows over 2,698 sessions; 715,852 primary
+  (scanner survivors), 1,185,447 secondary; 139,294 member-sessions not offered; 55,782 rows without
+  a sector. The first session with a row is **2016-10-17**: the expanding window starts at the
+  cache's first session, and no name has the history the scanner and features need before then.
+  Panel SHA-256 `aff1a727b1c0e9d1e9ccef3577d0aa2143150e7396702da3023693bccee52b52`; cache file
+  checksums in `panel.json`.
+- **`walk-forward`:** 13:38 → 13:48 UTC. **`walk_forward.json` SHA-256
+  `d375dbb9b17fff5e453d44e0cf70e0c3699bd1c3e49e033872fa1afc60ed63ff`** (re-hashed independently).
+  This is the digest the holdout stage must be given.
+
+### Walk-forward result (recorded 2026-10-23, before the holdout was touched)
+
+| Bar | Reading | Holds |
+| --- | --- | --- |
+| 1: mean IC difference ≥ 0.01, 95 % CI lower bound > 0 | **+0.0123** over 1,761 test sessions; the bootstrap on every 10th session (177): mean +0.0048, **[−0.0219, +0.0313]** | **no** |
+| 2: the ensemble's IC ahead in ≥ 5 of 7 folds | **3 of 7** (2018, 2019, 2021) | **no** |
+| Control: shuffled target, the IC difference's CI contains 0 | mean −0.0023, [−0.0119, +0.0062] | yes: no leakage seen |
+
+Mean daily rank IC against the 10-session forward excess return, primary universe:
+
+| Fold (test year) | Train rows / test rows | Technical score | Ensemble | Composite | Ridge | LightGBM |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2018 | 99,726 / 72,570 | +0.0018 | +0.0303 | +0.0385 | +0.0199 | +0.0108 |
+| 2019 | 174,974 / 72,107 | −0.0638 | −0.0041 | −0.0097 | −0.0068 | +0.0074 |
+| 2020 | 244,141 / 56,694 | +0.0085 | +0.0068 | −0.0020 | +0.0041 | +0.0141 |
+| 2021 | 300,547 / 104,596 | −0.0392 | +0.0274 | +0.0300 | +0.0153 | +0.0256 |
+| 2022 | 405,538 / 46,922 | −0.0116 | −0.0217 | −0.0074 | −0.0388 | −0.0120 |
+| 2023 | 454,842 / 58,043 | +0.0145 | −0.0153 | −0.0096 | −0.0084 | −0.0150 |
+| 2024 | 511,553 / 82,082 | +0.0206 | −0.0069 | −0.0077 | −0.0040 | −0.0037 |
+| **All 1,761 sessions** | | **−0.0099** | **+0.0024** | +0.0046 | −0.0027 | +0.0039 |
+
+**Reported, not barred.**
+
+- **The difference is the baseline's, not the ensemble's.** Over the seven years the ensemble's
+  mean IC is +0.0024 and the technical score's is −0.0099: neither ranks the survivors; the
+  technical score sits slightly below zero, worst in 2019 (−0.064) and 2021 (−0.039).
+- **Decay**, all sessions: the technical score −0.0046 at 5 sessions, −0.0126 at 20; the ensemble
+  +0.0013 and +0.0034.
+- **Net long-only top decile** (25 bps a side, rebalanced every 10 sessions, compounded per fold): the
+  ensemble ahead in 4 of 7 folds (2018, 2019, 2021, 2023), the technical score in 3 (2020, 2022,
+  2024). Costs take about 8 to 13 points a year from either.
+- **Secondary universe** (every member with 253 bars; descriptive): technical score −0.0044, ensemble
+  +0.0077 over all sessions; the ensemble ahead in 5 of 7 folds (behind in 2020 and 2024). Not
+  barred: the bar reads the primary universe only.
+- **LightGBM's gain**, share averaged over the folds: dollar-volume rank 0.124, 60-session beta
+  0.111, 252-skip-21 return 0.093, residual volatility 0.071, volume ratio 20/120 0.066; every
+  sector-ranked return 0.032 or less.
+- **The control** reads about zero for every model (all sessions: technical score +0.0010, ensemble
+  −0.0001).
+
+Files: `panel.json`, `panel.npz`, `walk_forward.json`, `walk_forward.md` in the OneDrive folder.
 
 ## Interpretation
 

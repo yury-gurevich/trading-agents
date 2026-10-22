@@ -86,6 +86,9 @@ nothing.
 | Known adjustment errors | 4: TGNA 2017-06-01, RTX 2020-04-03, APTV 2017-12-05, SW 2016-05-16 | *[measured]* `scripts/sp500_known_moves.csv` |
 | The relative-strength feature | `rs_120` ranks identically to `ret_120` within a session (SPY's return is the same for every name) | *[derived]* kept: the feature list is frozen |
 | S250's bootstrap | `seeded`, `stationary_draws`, `percentile_interval` in `scripts/replay_verdict_stats.py`, reused unchanged | *[measured, read]* |
+| The prototype | `make ci` exit 0: 5,321 passed, 9 skipped, 100.00 %, audit clean | *[measured]* `../ta-s289-proto` `e6a231f2`, after EXP-014 sealed |
+| The planted breaks against the planner's tests | 36 of 36 red (the first run 33 of 36: B23, B25 and B28 stayed green, so A14 and A16 were strengthened; the Test plan rows say how) | *[measured]* `s289_breaks.py` on `27190561` |
+| F1, the 2016–17 pilot | 8,804 rows (6,928 primary, 7,463 secondary); panel `3266c6dc67fa059d`, record `d519ce88f41e0274`; a rerun byte-identical; control passed | *[measured]* `s289_f1.py`, main venv (LightGBM 4.7.0) |
 
 ## Scope — and what is deliberately NOT here
 
@@ -167,9 +170,9 @@ Every test is red on the unchanged tree. Each docstring cites its ID (`S289-A<n>
 | A11 | the ensemble | the planted panel, a stub booster | four predictions in order; the ensemble the mean of the three per-session ranks; its IC above 0.3 |
 | A12 | 🎯 LightGBM's fixed settings | a stand-in `lightgbm` module | `train(LGBM_PARAMS, Dataset(x, label=y), num_boost_round=200)`; depth 3, rate 0.05, 31 leaves, 500 per leaf, fraction 0.8, seed 0 |
 | A13 | the decile spread | 20 names, and a session of 9 | the top tenth's mean target minus the bottom's; the 9-name session skipped |
-| A14 | 🎯 the net top decile | two rebalances; the same name, then another | 25 bps on each unit of weight traded; a held name trades nothing; a swap trades two units |
+| A14 | 🎯 the net top decile | two rebalances; names with different returns; the same name, then another | the top-ranked name is the one held, never the bottom; 25 bps on each unit of weight traded; a held name trades nothing; a swap trades two units |
 | A15 | the bootstrap takes every 10th session | 300 differences | S250's draws on every 10th, seed 0: the interval equals `percentile_interval` of those means |
-| A16 | 🎯 bars and verdicts | seven folds; a null and a leaking control | bar 1 at 0.01 with its interval; bar 2 at 5 of 7; bar 3; `PENDING HOLDOUT`, `PASS`, `FAIL`, `STOPPED` |
+| A16 | 🎯 bars and verdicts | seven folds; a null and a leaking control; a small steady gain; a failed holdout | bar 1 at 0.01 with its interval (a mean of 0.005 whose interval is above 0 is not bar 1); bar 2 at 5 of 7; bar 3; `PENDING HOLDOUT`, `PASS`, `FAIL` (bars 1 and 2 with bar 3 failed), `STOPPED` |
 | A17 | the control shuffles within sessions | 5 sessions × 12 lines | each session keeps its own returns, reordered; features and baseline unchanged; the same seed, the same order |
 | A18 | 🎯 the primary rows are the scanner's survivors | a synthetic cache, 6 sessions | per session, primary = `apply_filters` on the replay's offered bars; some rows not primary |
 | A19 | 🎯 the baseline is the replay's | the same | each recommendation's `technical_score` from `run_replay_day` equals the row's baseline |
@@ -184,7 +187,7 @@ Every test is red on the unchanged tree. Each docstring cites its ID (`S289-A<n>
 ## Success factors
 
 - [ ] On the F1 pilot (planner, `s289_f1.py`) the built tree prints the prototype's panel and record
-      digests, byte for byte.
+      digests, byte for byte (`3266c6dc…`, `d519ce88…`).
 - [ ] A1–A24 pass, each docstring citing its ID.
 - [ ] B01–B36 each turn at least one of the builder's tests red (planner re-runs `s289_breaks.py`).
 - [ ] The Appendix applied exactly: all 13 production blobs equal the prototype's.

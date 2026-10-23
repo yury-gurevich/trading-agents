@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | [2026-07.md](2026-07.md) | 53 | 2026-07-01 to 2026-07-31 | 2026-10-11 |
 | [2026-08.md](2026-08.md) | 21 | 2026-08-04 to 2026-08-21 | 2026-10-11 |
-| [2026-09.md](2026-09.md) | 28 | 2026-09-01 to 2026-09-24 | 2026-10-11 |
+| [2026-09.md](2026-09.md) | 36 | 2026-09-01 to 2026-09-30 | 2026-10-11, 2026-10-23 |
+| [2026-10.md](2026-10.md) | 26 | 2026-10-01 to 2026-10-09 | 2026-10-23 |
 
 🪤 **"Verbatim" means the text, not the links.** A moved row's relative links resolved from `docs/laws/`; here each one carries one more `../`. Text inside backticks is not a link and is not re-based.

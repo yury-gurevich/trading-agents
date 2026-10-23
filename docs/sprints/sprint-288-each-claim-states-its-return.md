@@ -741,6 +741,13 @@ Kit and outputs in OneDrive `trading-agents-data/wq92ret-2026-10-21/`.
   SBUX 10 still open for the 10-21 open. Rollback `s287`; no decision path, so the fidelity count
   holds. Evidence: OneDrive `trading-agents-data/deploy-s288-2026-10-21/`. F2 on `sched-2026-10-21`
   (the first weekday night), as *Sequencing after merge* step 4 says.
+- **F2 PASSED (planner).** The claims limb on `sched-2026-10-21` (read 2026-10-22): 32 of 32 claims
+  carry the four figures, no forecaster `error` fault, no `VocabularyError`. The settlement limb on
+  `sched-2026-10-22` (read 2026-10-23): the first two settlements since the deploy carry
+  `realised_return`, `close_return` and `outcome_session` (GOOGL stop first at session 9, TMO target
+  first at session 5). That night KO's and XOM's held claims carry a null `sessions_to_stop`, the
+  law's null when no path touches the stop first. Evidence: OneDrive
+  `trading-agents-data/f2-sched-2026-10-21/` and `f2-sched-2026-10-22/`; the register's rows of both dates.
 
 ---
 

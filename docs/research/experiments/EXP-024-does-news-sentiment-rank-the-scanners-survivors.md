@@ -1,7 +1,9 @@
 # EXP-024 — Does news sentiment, read by the lexicon or by FinBERT, rank the scanner's survivors over 2017–2026?
 
-**Status:** PRE-REGISTERED 2026-10-23 (the commit that adds this file) | COMPLETE — · *verdict once
-complete*
+**Status:** PRE-REGISTERED 2026-10-23 (`410a79c1`; Amendment 1 `095cf8e7`) | COMPLETE 2026-10-23 ·
+**nothing carries: neither the lexicon nor FinBERT ranks the scanner's survivors at 10 sessions on
+Benzinga's news, and FinBERT is not better than the lexicon; no code changes.** Sections 1–5 and
+Appendix P are as pre-registered, with Amendment 1.
 **Decision / origin:** [DL-316](../../design-log.md) · work-queue **138** · the operator, 2026-10-23:
 *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's
 historical news"* · **Cost:** $0 (Alpaca's news on the account the fleet already uses; FinBERT on
@@ -243,15 +245,83 @@ Each scorer is read as the fleet reads it (section 5) on the scanner's survivors
 
 ## 6. Results
 
-*Written after the run.*
+**MEASURED.** One scored run, 2026-10-23 09:30 → 11:51 UTC, `exp024.json` (Appendix R).
+696,537 rows over 2,446 sessions. Every stop passed: no month missing or thin, and FinBERT's used
+scores within 8.9e-8 of one at a time.
+
+**Nothing carries.** Holm across the three needs p ≤ 0.0167 for the first. The smallest p is 0.117
+(H3). Mean IC at 10 sessions, 2017-01-03 → 2026-09-25, 95 % interval:
+
+| Test | Mean IC | 95 % interval | p | Carries (Holm) | Sessions with an IC |
+| --- | --- | --- | --- | --- | --- |
+| H1 — the lexicon | **+0.0022** | [−0.0101, +0.0206] | 0.406 | no | 2,435 |
+| H2 — FinBERT | **−0.0050** | [−0.0168, +0.0108] | 0.609 | no | 2,436 |
+| H3 — FinBERT minus the lexicon, on the lexicon's rows | **−0.0091** | [−0.0289, +0.0030] | 0.117 | no | 2,435 |
+
+**Reported, not tested:**
+
+- **Horizons 5 and 20:** lexicon +0.0013 and +0.0021; FinBERT −0.0056 and −0.0048.
+- **By year, H1 (the lexicon):** 2017 +0.034, 2018 −0.017, 2019 +0.023, 2020 +0.002, 2021 −0.007,
+  2022 +0.007, 2023 +0.006, 2024 −0.003, 2025 +0.005, 2026 −0.040 (nine months). Six of ten years are
+  positive, with no trend.
+- **By year, H2 (FinBERT):** 2017 +0.005, 2018 +0.001, 2019 −0.000, 2020 −0.017, 2021 −0.006,
+  2022 +0.025, 2023 −0.008, 2024 −0.019, 2025 −0.015, 2026 −0.021. Seven of ten years are at or below
+  zero.
+- **Coverage:** the share of rows served a headline rises from 52.8 % (2017) to 75.3 % (2025). The
+  share with a lexicon reading rises from 23.7 % to 38.4 %. FinBERT reads every served row.
+- **The 99 company-table names** (156,274 rows, own-headline filter applied): lexicon −0.0039
+  [−0.0363, +0.0370]; FinBERT −0.0013 [−0.0157, +0.0217].
+- **Never served over the whole window:** 2 tickers (JEF and MUR).
+- **The pilot** and **the feed overlap** are in Appendix R.
 
 ## 7. Conclusions
 
-*Written after the run.*
+**Nothing carries,** so section 2's reading applies. On Benzinga's news, neither the lexicon nor
+FinBERT shows 10-session ranking information among the scanner's survivors that this test can see.
+FinBERT does not read the news better than the lexicon; if anything it leans the other way. DL-315
+D3's sentiment half is answered for the replay. Whether the forward ledger still measures sentiment
+is the operator's call. No code changes.
+
+**What the test could see.** The intervals came out narrower than section 2 estimated. At 95 %,
+FinBERT's mean IC is below **+0.011** and the lexicon's below **+0.021**. EXP-015 set +0.01 as the
+bar for an IC worth building on. FinBERT's interval rules that out. The lexicon's does not quite,
+but its point estimate (+0.002) sits far below it, and no year after 2019 reached +0.01.
+
+**What it does not say:**
+
+- **Not the live feed.** This experiment read Benzinga's headlines. In the overlap week they were
+  13.7 % of what Finnhub serves the live pillar for the same names. A wider feed is not shown to
+  carry, and not shown to be empty.
+- **Not short horizons.** The panel's horizons are 5, 10 and 20 sessions, and all three are flat. A
+  1-to-2-day effect, where the literature finds most of news tone's information *[literature, not
+  measured here]*, is not measured. The fleet holds for longer than that, at 25 bps a side.
+- **Not news in general.** It reads tone only. What an item is about (earnings, guidance, a deal)
+  is not read.
+
+**Together with EXP-015 and EXP-023:** in the replay, neither the price-only ranking nor news tone
+shows skill at choosing among the scanner's survivors. What DL-315 D3 leaves for the edge question:
+the exits (EXP-022, sealed until the fidelity PASS), fundamentals (forward through the claims
+ledger), and the candidate DL-316 named, filing text ("Lazy Prices").
 
 ## 8. Recommended code changes, and how to implement them
 
-*Written after the run.*
+**None.** Nothing carries, and `agents/analyst/` cannot change before the fidelity PASS in any case.
+Three calls go to the operator, and none is urgent:
+
+1. **The sentiment pillar's weight (0.20).** It shows no ranking information here, so in the
+   composite it adds variation without signal. **The planner's recommendation: keep it as it is**,
+   as DL-315 did for the price-only ranking. A change is a decision-path change that restarts the
+   fidelity count, the measured gain is nil, and this result does not certify Finnhub's wider feed
+   as empty. Record it in the ADR that closes DL-315's line.
+2. **The forward sentiment measurement** (DL-315 D3, the claims ledger). **Recommendation:** stop
+   treating it as an edge line. Keep the shadow readings, which cost nothing.
+3. **FinBERT's challenger seat (ADR-0002).** H3 gives no reason to promote it. Two hygiene items
+   stand whatever the operator decides:
+   - pin `model_ref` to revision `4556d130`;
+   - record the weights' non-commercial licence (CC BY-NC-SA 4.0) in ADR-0002.
+
+   Together they are a small chore after the PASS: a `revision` setting passed to the pipeline, and
+   a line in the ADR.
 
 ## Appendix P — Pre-registration (frozen)
 
@@ -327,9 +397,977 @@ Frozen at the commit that adds this file (`git log --diff-filter=A` on this path
   - `exp024_overlap.py` `ea0ac8d8afeb2c23541ea449614e58c0719d242390545c3f8781a9ac633de6fd`
   - `exp024_coverage_probe.py` `d6bfa0ce535b411a8a0325615e2c104bea322024626a2e39df8ead13e809daea`
   - `run_exp024.ps1` `70dc8af5c7b8c149dae6fafbe0b281c3587d74b0f087a2ab39a5bf542a3de401`
+- **The scored run:** 09:30:51 → 11:51:01 UTC, from `095cf8e7`, clean, `exp024_score.py` at its
+  frozen SHA-256. EXP-015's panel digest checked first (`aff1a727…`). 696,537 rows (the stop passed),
+  21,724 of them on a renamed symbol; no month missing or thin. 327,012 distinct headlines: 122,682
+  from the prescore and 204,358 scored in the run (8,225 s, 0 over 512 tokens). The check is
+  reported: 8.9e-8. The lexicon took 21 s. Verdict `COMPLETE`.
+- **Output:** OneDrive `trading-agents-data/experiments/EXP-024/`: `exp024.json` SHA-256
+  `afdfb09e26308354f708e0d98904faac4bfdf69d1da2d0ce4019728336bfedf9`, with `exp024.md`, `pilot.json`,
+  `prescore.json` and the score cache `finbert_scores.jsonl`. The news is in
+  `trading-agents-data/news-alpaca/`. The kit is `trading-agents-data/exp024-2026-10-23/` (scripts,
+  runner, log, stdout and stderr, probe, rename table, name changes, overlap).
 
 ## Appendix S — Scripts
 
-*Added verbatim when frozen.* The coverage probe that measured section 1's figures before this
-pre-registration (counts only, no return read) is `exp024_coverage_probe.py` in the kit folder; its
-output is `coverage_probe.json`.
+Each as frozen. The scorers import the repo's own code from the worktree. The SHA-256 in Appendix R
+is of the files on disk, five of which have CRLF line endings (only `exp024_news.py` is LF). The text
+below is LF, and equals each file byte for byte once CRLF is read as LF (checked 2026-10-23).
+
+### `exp024_coverage_probe.py`
+
+The coverage probe, run before the pre-registration (counts only, no return read).
+
+```python
+"""EXP-024 coverage probe: how much Alpaca (Benzinga) news reaches the scanner's survivors.
+
+Read-only, counts only. It reads the panel's sessions, lines and survivor flags (never a return)
+and the membership episodes, fetches every news item in a 7-day window before sample sessions,
+and asks the analyst's own ``subject_sentiment`` whether a pillar would form. It records no score.
+
+Run from the main checkout:  .venv/Scripts/python.exe -I <this file> <repo> <data dir> <out json>
+"""
+
+from __future__ import annotations
+
+import csv
+import gzip
+import json
+import sys
+import time
+import urllib.parse
+import urllib.request
+from datetime import date, datetime, time as dtime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import numpy as np
+
+NY = ZoneInfo("America/New_York")
+URL = "https://data.alpaca.markets/v1beta1/news"
+LOOKBACK_DAYS = 7
+CAP = 20
+MIN_OWN = 2
+
+
+def env_keys(repo: Path) -> tuple[str, str]:
+    vals = {}
+    for line in (repo / ".env").read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            vals[k.strip()] = v.strip().strip('"').strip("'")
+    return vals["PROVIDER_ALPACA_API_KEY"], vals["PROVIDER_ALPACA_API_SECRET"]
+
+
+def fetch(keys: tuple[str, str], start: datetime, end: datetime) -> tuple[list[dict], int]:
+    items: list[dict] = []
+    token = None
+    calls = 0
+    while True:
+        q = {"start": start.isoformat(), "end": end.isoformat(), "limit": "50", "sort": "desc",
+             "include_content": "false"}
+        if token:
+            q["page_token"] = token
+        req = urllib.request.Request(f"{URL}?{urllib.parse.urlencode(q)}", headers={
+            "APCA-API-KEY-ID": keys[0], "APCA-API-SECRET-KEY": keys[1]})
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    body = json.loads(r.read())
+                break
+            except urllib.error.HTTPError as exc:
+                if exc.code == 429 and attempt < 4:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                raise
+        calls += 1
+        items.extend(body.get("news", []))
+        token = body.get("next_page_token")
+        time.sleep(0.32)
+        if not token:
+            return items, calls
+
+
+def episodes(data: Path) -> dict[str, list[tuple[str, date, date]]]:
+    out: dict[str, list[tuple[str, date, date]]] = {}
+    with gzip.open(data / "sp500_membership.csv.gz", "rt", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            out.setdefault(row["line"], []).append(
+                (row["ticker"], date.fromisoformat(row["first"]), date.fromisoformat(row["last"])))
+    return out
+
+
+def ticker_on(eps: dict, line: str, day: date) -> str:
+    for ticker, first, last in eps.get(line, ()):
+        if first <= day <= last:
+            return ticker
+    return line
+
+
+def sample_sessions(sessions: np.ndarray) -> list[str]:
+    uniq = sorted(set(sessions.tolist()))
+    picks = []
+    for year in range(2016, 2027):
+        for month, day in ((2, 10), (8, 10)) if year > 2016 else ((10, 20), (12, 9)):
+            target = date(year, month, day).isoformat()
+            later = [s for s in uniq if s >= target]
+            if later and later[0][:4] == str(year):
+                picks.append(later[0])
+    return picks
+
+
+def main(repo: Path, data: Path, out: Path) -> None:
+    sys.path.insert(0, str(repo))
+    from agents.analyst.domain.sentiment_subject import COMPANY_NAMES, subject_sentiment
+    from agents.analyst.domain.sentiment_weights import batch_headline_weights
+
+    keys = env_keys(repo)
+    with np.load(data / "experiments" / "EXP-015" / "panel.npz", allow_pickle=False) as d:
+        sessions, lines, primary = d["sessions"], d["lines"], d["primary"]
+    eps = episodes(data)
+    rows = []
+    for s in sample_sessions(sessions):
+        day = date.fromisoformat(s)
+        end = datetime.combine(day, dtime(16, 0), NY)
+        start = end - timedelta(days=LOOKBACK_DAYS)
+        t0 = time.time()
+        items, calls = fetch(keys, start, end)
+        lo, hi = start.astimezone(ZoneInfo("UTC")), end.astimezone(ZoneInfo("UTC"))
+        def ts(v: str) -> datetime:
+            return datetime.fromisoformat(v.replace("Z", "+00:00"))
+        before = sum(1 for i in items if ts(i["created_at"]) < lo)
+        revised = sum(1 for i in items if ts(i["updated_at"]) - ts(i["created_at"]) > timedelta(hours=1))
+        items = [i for i in items if lo <= ts(i["created_at"]) <= hi]
+        by_symbol: dict[str, list[tuple[str, str]]] = {}
+        for it in items:
+            for sym in it.get("symbols") or ():
+                if it.get("headline"):
+                    by_symbol.setdefault(sym, []).append((it["created_at"], it["headline"]))
+        surv = [str(x) for x in lines[(sessions == s) & primary]]
+        served = {}
+        for line in surv:
+            tk = ticker_on(eps, line, day)
+            heads = sorted(by_symbol.get(tk, ()), reverse=True)[:CAP]
+            if heads:
+                served[line] = (tk, tuple(h for _, h in heads))
+        weights = batch_headline_weights({ln: v[1] for ln, v in served.items()})
+        pillar = sum(1 for ln, (tk, hs) in served.items()
+                     if subject_sentiment(tk, hs, MIN_OWN, headline_weights=weights)[0] is not None)
+        listed = [ln for ln in surv if ticker_on(eps, ln, day) in COMPANY_NAMES]
+        row = {"session": s, "articles": len(items), "tagged": sum(1 for i in items if i.get("symbols")),
+               "calls": calls, "created_before_start": before, "updated_1h_after_created": revised, "seconds": round(time.time() - t0, 1), "survivors": len(surv),
+               "served": len(served), "pillar": pillar, "listed": len(listed),
+               "mean_served_headlines": round(float(np.mean([len(v[1]) for v in served.values()])) if served else 0.0, 2),
+               "oldest_created": min((i["created_at"] for i in items), default=None)}
+        rows.append(row)
+        print(json.dumps(row), flush=True)
+        out.write_text(json.dumps({"partial": True, "rows": rows}, indent=1), encoding="utf-8")
+    out.write_text(json.dumps({"lookback_days": LOOKBACK_DAYS, "cap": CAP, "min_own": MIN_OWN,
+                               "rows": rows}, indent=1), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))
+```
+
+### `exp024_news.py`
+
+The fetch.
+
+```python
+"""EXP-024's news fetch (DL-316): every Alpaca (Benzinga) news item, month by month, to OneDrive.
+
+A planner's read-only script: it reads Alpaca's News API with the provider's key and writes outside
+the repo. Resumable: a month whose file is in the manifest is skipped.
+
+  python -B -I exp024_news.py <repo with .env> <news_dir> [--start 2016-10]
+
+Each month's API window [first day 00:00Z, next month 00:00Z) is fetched ascending, 50 a page, no
+bodies; the current month runs last, alone, up to now. At most 150 calls a minute across three
+workers, and none 21:45 -> 00:15 UTC (the fleet's night window; the key may share its rate limit).
+Each item keeps id, created_at, updated_at, headline, symbols, source. Dedupe by id is the scorer's.
+"""
+
+from __future__ import annotations
+
+import gzip
+import hashlib
+import json
+import sys
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+URL = "https://data.alpaca.markets/v1beta1/news"
+PER_MINUTE = 150
+WORKERS = 3
+PAUSE = ((21, 45), (0, 15))  # UTC, crosses midnight
+KEEP = ("id", "created_at", "updated_at", "headline", "symbols", "source")
+
+
+class Limiter:
+    """One call at least 60 / PER_MINUTE seconds after the last, across threads; none in the pause."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._next = 0.0
+
+    def wait(self) -> None:
+        while paused(datetime.now(UTC)):
+            time.sleep(30)
+        with self._lock:
+            now = time.monotonic()
+            slot = max(now, self._next)
+            self._next = slot + 60.0 / PER_MINUTE
+        time.sleep(max(0.0, slot - now))
+
+
+def paused(now: datetime) -> bool:
+    (h0, m0), (h1, m1) = PAUSE
+    minute = now.hour * 60 + now.minute
+    return minute >= h0 * 60 + m0 or minute < h1 * 60 + m1
+
+
+def env_keys(repo: Path) -> tuple[str, str]:
+    vals: dict[str, str] = {}
+    for line in (repo / ".env").read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            vals[k.strip()] = v.strip().strip('"').strip("'")
+    return vals["PROVIDER_ALPACA_API_KEY"], vals["PROVIDER_ALPACA_API_SECRET"]
+
+
+def call(keys: tuple[str, str], limiter: Limiter, query: dict[str, str]) -> dict:
+    req = urllib.request.Request(f"{URL}?{urllib.parse.urlencode(query)}", headers={
+        "APCA-API-KEY-ID": keys[0], "APCA-API-SECRET-KEY": keys[1]})
+    for attempt in range(8):
+        limiter.wait()
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (429, 500, 502, 503, 504) or attempt == 7:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == 7:
+                raise
+        time.sleep(min(300, 10 * 2**attempt))
+    raise RuntimeError("unreachable")
+
+
+def month_starts(first: str, now: datetime) -> list[datetime]:
+    y, m = (int(x) for x in first.split("-"))
+    out = []
+    while (y, m) <= (now.year, now.month):
+        out.append(datetime(y, m, 1, tzinfo=UTC))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return out
+
+
+def next_month(start: datetime) -> datetime:
+    return (start + timedelta(days=32)).replace(day=1)
+
+
+def fetch_month(keys, limiter, news_dir: Path, start: datetime, end: datetime) -> dict[str, object]:
+    t0, calls, count, token = time.time(), 0, 0, None
+    tmp = news_dir / f"{start:%Y-%m}.jsonl.gz.part"
+    with gzip.open(tmp, "wt", encoding="utf-8") as fh:
+        while True:
+            q = {"start": start.isoformat().replace("+00:00", "Z"), "end": end.isoformat().replace("+00:00", "Z"),
+                 "limit": "50", "sort": "asc", "include_content": "false"}
+            if token:
+                q["page_token"] = token
+            body = call(keys, limiter, q)
+            calls += 1
+            for item in body.get("news") or ():
+                fh.write(json.dumps({k: item.get(k) for k in KEEP}, ensure_ascii=False) + "\n")
+                count += 1
+            token = body.get("next_page_token")
+            if not token:
+                break
+    path = news_dir / f"{start:%Y-%m}.jsonl.gz"
+    tmp.replace(path)
+    return {"month": f"{start:%Y-%m}", "items": count, "calls": calls, "seconds": round(time.time() - t0, 1),
+            "window": [q["start"], q["end"]], "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "fetched_at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def main(argv: list[str]) -> int:
+    repo, news_dir = Path(argv[1]), Path(argv[2])
+    first = argv[argv.index("--start") + 1] if "--start" in argv else "2016-10"
+    news_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = news_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text("utf-8")) if manifest_path.exists() else {"months": {}}
+    keys, limiter, lock = env_keys(repo), Limiter(), threading.Lock()
+    now = datetime.now(UTC)
+    starts = month_starts(first, now)
+    past, current = starts[:-1], starts[-1]
+
+    def run(start: datetime, end: datetime) -> None:
+        if f"{start:%Y-%m}" in manifest["months"]:
+            return
+        row = fetch_month(keys, limiter, news_dir, start, end)
+        with lock:
+            manifest["months"][row["month"]] = row
+            manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", "utf-8")
+        print(json.dumps({k: row[k] for k in ("month", "items", "calls", "seconds")}), flush=True)
+
+    with ThreadPoolExecutor(WORKERS) as pool:
+        for f in [pool.submit(run, s, next_month(s)) for s in past]:
+            f.result()
+    run(current, datetime.now(UTC).replace(microsecond=0))
+    total = sum(int(r["items"]) for r in manifest["months"].values())
+    print(f"DONE months={len(manifest['months'])} items={total}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
+```
+
+### `exp024_renames.py`
+
+The symbol news carried (Amendment 1).
+
+```python
+"""EXP-024: the symbol each panel line's news carried on each day (a defect fix found by the dev pilot).
+
+The membership file names a line by today's ticker; Benzinga tags an item with the ticker of its
+day. Spans come from three sources, first match per line wins:
+  1. S235's own symbol map (scripts/sp500_symbol_map.csv): explicit spans;
+  2. Alpaca's name_change corporate actions (name_changes.json), chained backwards from the line;
+  3. HAND: renames before Alpaca's records (2016-10 .. 2019), each checked on the news below.
+Every span is checked on the news: items tagged with the old symbol inside the span, and with the
+line's symbol inside it. Lines with survivor rows in a year and no tagged item are listed.
+
+  python -B exp024_renames.py <tree> <data dir> <news_dir> <kit>
+"""
+
+from __future__ import annotations
+
+import csv
+import gzip
+import json
+import re
+import sys
+from datetime import date, timedelta
+from pathlib import Path
+
+import numpy as np
+
+SYMBOL = re.compile(r"^[A-Z]{1,5}(\.[A-Z])?$")
+START = "2016-10-01"
+# old symbol, the line (today's symbol), the first day under the new symbol. Each is checked below.
+# The day is the first item tagged with the new symbol (measured 2026-10-23 on this fetch): the old
+# symbol's items stop there. LUK: the index held Leucadia until 2018-05-24; earlier JEF tags are not it.
+HAND: tuple[tuple[str, str, str], ...] = (
+    ("TSO", "ANDV", "2017-08-08"), ("COH", "TPR", "2017-11-02"), ("PCLN", "BKNG", "2018-02-28"),
+    ("CBG", "CBRE", "2018-04-03"), ("HCN", "WELL", "2018-04-25"), ("LUK", "JEF", "2018-05-24"),
+    ("KORS", "CPRI", "2019-01-11"), ("HRS", "LHX", "2019-07-03"), ("TMK", "GL", "2019-08-22"),
+    ("BHGE", "BKR", "2019-10-22"), ("SYMC", "GEN", "2019-11-06"),
+)
+# chained renames reviewed and refused: the old symbol is another listing of the same issuer
+REJECT = {"CCL": "CUK is Carnival plc's own listing; Carnival Corp traded as CCL throughout"}
+
+
+def day_before(stamp: str) -> str:
+    return (date.fromisoformat(stamp) - timedelta(days=1)).isoformat()
+
+
+def map_spans(tree: Path) -> dict[str, list[list[str]]]:
+    out: dict[str, list[list[str]]] = {}
+    with (tree / "scripts" / "sp500_symbol_map.csv").open(newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if row["kind"] == "rename":
+                out.setdefault(row["line"], []).append([row["symbol"], "0000-01-01", day_before(row["from"])])
+            elif row["kind"] == "bars" and row["symbol"] != row["line"]:
+                out.setdefault(row["line"], []).append([row["symbol"], row["from"], row["to"]])
+    return out
+
+
+def chain_spans(line: str, events: list[dict]) -> list[list[str]]:
+    """Walk back from the line: the latest change into the current symbol, then into its old one."""
+    spans, cur, until = [], line, "9999-12-31"
+    for _ in range(10):
+        into = [e for e in events if e["new_symbol"] == cur and e["process_date"] <= until and e["old_symbol"] != cur]
+        if not into:
+            break
+        e = max(into, key=lambda x: x["process_date"])
+        spans.append([e["old_symbol"], "0000-01-01", day_before(e["process_date"])])
+        if len(spans) > 1:
+            spans[-2][1] = e["process_date"]
+        cur, until = e["old_symbol"], day_before(e["process_date"])
+    return spans
+
+
+def main(argv: list[str]) -> int:
+    tree, data, news_dir, kit = (Path(a) for a in argv[1:5])
+    with np.load(data / "experiments" / "EXP-015" / "panel.npz", allow_pickle=False) as d:
+        sessions, lines, primary = d["sessions"], d["lines"], d["primary"]
+    surv_lines = sorted(set(lines[primary].tolist()))
+    years = {ln: {} for ln in surv_lines}
+    for ln, s in zip(lines[primary].tolist(), sessions[primary].tolist(), strict=True):
+        years[ln][s[:4]] = years[ln].get(s[:4], 0) + 1
+    events = [e for e in json.loads((kit / "name_changes.json").read_text("utf-8"))
+              if SYMBOL.match(e.get("old_symbol") or "") and SYMBOL.match(e.get("new_symbol") or "")]
+    spans: dict[str, list[list[str]]] = {}
+    source: dict[str, str] = {}
+    from_map = map_spans(tree)
+    last_member: dict[str, str] = {}
+    with gzip.open(data / "sp500_membership.csv.gz", "rt", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            last_member[row["line"]] = max(last_member.get(row["line"], ""), row["last"])
+    refused: dict[str, str] = {}
+    for ln in surv_lines:
+        if ln in from_map:
+            spans[ln], source[ln] = from_map[ln], "symbol_map"
+            continue
+        chained = [s for s in chain_spans(ln, events) if s[2] >= START]
+        if chained and ln in REJECT:
+            refused[ln] = REJECT[ln]
+            continue
+        if chained and chained[0][2] >= last_member.get(ln, "9999"):  # renamed into ln after it left
+            refused[ln] = f"renamed into {ln} after the line left the index ({last_member.get(ln)}): another issuer"
+            continue
+        if chained:
+            spans[ln], source[ln] = chained, "alpaca_name_change"
+    for old, ln, first_new in HAND:
+        held = spans.setdefault(ln, [])
+        earliest = [sp for sp in held if sp[1] == "0000-01-01"]
+        if earliest and earliest[0][2] < first_new:
+            print(f"HAND row {old}->{ln} refused: {source[ln]} already reaches {earliest[0]}")
+            continue
+        if earliest:  # extend the chain back: its earliest symbol starts at first_new
+            earliest[0][1] = first_new
+        held.append([old, "0000-01-01", day_before(first_new)])
+        source[ln] = f"{source[ln]}+hand" if ln in source else "hand"
+    # count tagged items per symbol per day, latest revision per id
+    latest: dict[int, tuple[str, str, tuple[str, ...]]] = {}
+    for path in sorted(news_dir.glob("*.jsonl.gz")):
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            for raw in fh:
+                it = json.loads(raw)
+                held = latest.get(int(it["id"]))
+                if held is None or it["updated_at"] > held[0]:
+                    latest[int(it["id"])] = (it["updated_at"], it["created_at"][:10],
+                                             tuple(s.replace("-", ".").replace("/", ".") for s in it.get("symbols") or ()))
+    tagged: dict[str, list[str]] = {}
+    for _, day, syms in latest.values():
+        for s in syms:
+            tagged.setdefault(s, []).append(day)
+    for days in tagged.values():
+        days.sort()
+
+    def count(sym: str, first: str, last: str) -> int:
+        days = tagged.get(sym, [])
+        lo = np.searchsorted(days, max(first, START), side="left")
+        hi = np.searchsorted(days, last, side="right")
+        return int(max(0, hi - lo))
+
+    checks = []
+    for ln in sorted(spans):
+        for sym, first, last in spans[ln]:
+            if last < START:
+                continue
+            checks.append({"line": ln, "symbol": sym, "first": first, "last": last, "source": source[ln],
+                           "items_old_symbol": count(sym, first, last), "items_line_symbol": count(ln, first, last)})
+
+    def symbol_on(ln: str, day: str) -> str:
+        for sym, first, last in spans.get(ln, ()):
+            if first <= day <= last:
+                return sym
+        return ln
+
+    dark = []
+    for ln in surv_lines:
+        for year, rows in sorted(years[ln].items()):
+            first, last = f"{year}-01-01", f"{year}-12-31"
+            n = count(symbol_on(ln, first), first, last) + (count(symbol_on(ln, last), first, last)
+                                                           if symbol_on(ln, first) != symbol_on(ln, last) else 0)
+            if rows >= 50 and n == 0:
+                dark.append({"line": ln, "year": year, "survivor_rows": rows})
+    record = {"spans": spans, "source": source, "refused": refused, "checks": checks, "dark_line_years": dark,
+              "news_months": sorted(p.name[:7] for p in news_dir.glob("*.jsonl.gz"))}
+    (kit / "renames.json").write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", "utf-8")
+    for c in checks:
+        print(json.dumps(c))
+    print(f"lines with spans {len(spans)}; dark line-years {len(dark)}")
+    for d_ in dark:
+        print("DARK", json.dumps(d_))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
+```
+
+### `exp024_score.py`
+
+The readings, IC and test: `--prescore`, `--pilot`, and the scored run.
+
+```python
+"""EXP-024: news sentiment's rank IC, the lexicon and FinBERT, on EXP-015's survivors (DL-316).
+
+A planner's read-only script. Main venv python, the tree (a clean worktree) first on sys.path:
+
+  python -B exp024_score.py <tree> <cache> <exp015_out> <news_dir> <out_dir> [--pilot | --prescore]
+
+--pilot: 2016-10-17 .. 2016-12-30, not scored. Otherwise the scored window 2017-01-03 .. 2026-09-25.
+--prescore (Amendment 1): FinBERT scores the scored window's served headlines on the months fetched so
+far, into the cache, and exits before any target is read.
+Each scorer is read as the fleet reads it: the analyst's subject_sentiment over the served headlines
+(7 days to 16:00 New York, the 20 newest), and the forecaster's mean aligned FinBERT score over them.
+"""
+
+from __future__ import annotations
+
+import csv
+import gzip
+import hashlib
+import json
+import sys
+import time
+from bisect import bisect_right
+from datetime import date, datetime
+from datetime import time as dtime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+TREE = Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(TREE))
+
+import numpy as np  # noqa: E402
+
+from agents.analyst.domain.sentiment_subject import COMPANY_NAMES, subject_sentiment  # noqa: E402
+from agents.analyst.domain.sentiment_weights import batch_headline_weights  # noqa: E402
+from agents.forecaster.domain.sentiment import aggregate, align_label  # noqa: E402
+from agents.forecaster.finbert import FinBERTModel  # noqa: E402
+from scripts.exp015_ranks import session_ic  # noqa: E402
+from scripts.exp015_spec import BLOCK, HORIZONS, RESAMPLES, SEED, STEP_SESSIONS  # noqa: E402
+from scripts.exp015_store import load_panel, panel_digest  # noqa: E402
+from scripts.replay_settings import build_effective_settings  # noqa: E402
+from scripts.replay_verdict_stats import percentile_interval, seeded, stationary_draws  # noqa: E402
+
+PANEL_SHA = "aff1a727b1c0e9d1e9ccef3577d0aa2143150e7396702da3023693bccee52b52"  # pragma: allowlist secret
+SNAPSHOT = Path.home() / ".cache/huggingface/hub/models--ProsusAI--finbert/snapshots/4556d13015211d73dccd3fdd39d39232506f3e43"
+WEIGHTS_SHA = "e15a7b5738df7f17553399b6d94c6e2ff69c89245d066e8e5d183f5803a554e3"  # pragma: allowlist secret
+PILOT, WINDOW = ("2016-10-17", "2016-12-30"), ("2017-01-03", "2026-09-25")
+SCORED_ROWS, LOOKBACK, CAP, MIN_OWN = 696_537, 7 * 86_400, 20, 2
+MONTHS, MONTH_FLOOR, CHECK_N, CHECK_TOL = ("2016-10", "2026-09"), 0.25, 1_000, 1e-5  # Amendment 1
+ALPHA, ECONOMIC, BATCH, CHUNK = 0.05, 0.01, 32, 2_048
+NY = ZoneInfo("America/New_York")
+
+
+def stopped(out_dir: Path, pilot: bool, record: dict, why: str) -> int:
+    record |= {"verdict": "STOPPED", "why": why}
+    (out_dir / ("pilot.json" if pilot else "exp024.json")).write_text(json.dumps(record, indent=2) + "\n", "utf-8")
+    print(f"STOPPED: {why}", file=sys.stderr)
+    return 2
+
+
+def episodes(cache: Path) -> dict[str, list[tuple[str, str, str]]]:
+    out: dict[str, list[tuple[str, str, str]]] = {}
+    with gzip.open(cache / "sp500_membership.csv.gz", "rt", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            out.setdefault(row["line"], []).append((row["ticker"], row["first"], row["last"]))
+    return out
+
+
+RENAMES = Path(__file__).with_name("renames.json")  # exp024_renames.py: the symbol news carried
+
+
+def ticker_on(eps: dict, line: str, day: str, spans: dict) -> str:
+    for symbol, first, last in spans.get(line, ()):
+        if first <= day <= last:
+            return symbol
+    for ticker, first, last in eps.get(line, ()):
+        if first <= day <= last:
+            return ticker
+    return line
+
+
+def epoch(stamp: str) -> int:
+    return int(datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp())
+
+
+def load_news(news_dir: Path, tickers: set[str]) -> tuple[dict, dict[str, int], dict[str, object]]:
+    """Dedupe by id at the latest updated_at; per ticker (created, id, headline) sorted; month counts."""
+    latest: dict[int, tuple[str, str, str, tuple[str, ...]]] = {}
+    read = 0
+    for path in sorted(news_dir.glob("*.jsonl.gz")):
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            for raw in fh:
+                item = json.loads(raw)
+                read += 1
+                key, updated = int(item["id"]), item.get("updated_at") or item["created_at"]
+                held = latest.get(key)
+                if held is None or updated > held[0]:
+                    # Benzinga writes a class share BRK.B, BRK-B or BF/B; membership uses the dot.
+                    alias = (s.replace("-", ".").replace("/", ".") for s in item.get("symbols") or ())
+                    syms = tuple(dict.fromkeys(s for s in alias if s in tickers))
+                    headline = (item.get("headline") or "").strip() if syms else ""
+                    latest[key] = (updated, item["created_at"], headline, syms)
+    months: dict[str, int] = {}
+    per: dict[str, list[tuple[int, int, str]]] = {}
+    for key, (_, created, headline, syms) in latest.items():
+        months[created[:7]] = months.get(created[:7], 0) + 1
+        if headline and syms:
+            stamp = epoch(created)
+            for s in syms:
+                per.setdefault(s, []).append((stamp, key, headline))
+    index = {}
+    for s, rows in per.items():
+        rows.sort()
+        index[s] = (np.array([r[0] for r in rows], dtype=np.int64), [r[2] for r in rows])
+    return index, dict(sorted(months.items())), {"lines_read": read, "unique_items": len(latest)}
+
+
+def served(index: dict, ticker: str, close: int) -> tuple[str, ...]:
+    """created in (close - 7 days, close], newest first, the first CAP."""
+    held = index.get(ticker)
+    if held is None:
+        return ()
+    stamps, heads = held
+    hi, lo = bisect_right(stamps, close), bisect_right(stamps, close - LOOKBACK)
+    return tuple(heads[i] for i in range(hi - 1, lo - 1, -1))[:CAP]
+
+
+def reading(values: dict[str, float]) -> dict[str, object]:
+    """EXP-023's: mean over all sessions; every 10th session's stationary bootstrap: interval and two-sided p."""
+    if not values:
+        return {"sessions": 0, "mean": None, "step_sessions": 0, "step_mean": None, "low": None, "high": None, "p": 1.0}
+    series = list(values.values())[::STEP_SESSIONS]
+    rng = seeded(SEED)
+    means = [sum(series[i] for i in stationary_draws(len(series), BLOCK, rng)) / len(series) for _ in range(RESAMPLES)]
+    low, high = percentile_interval(means)
+    step_mean = sum(series) / len(series)
+    far = sum(1 for m in means if (m <= 0.0 if step_mean > 0.0 else m >= 0.0))
+    return {
+        "sessions": len(values), "mean": sum(values.values()) / len(values),
+        "step_sessions": len(series), "step_mean": step_mean, "low": low, "high": high,
+        "p": min(1.0, 2.0 * (1 + far) / (RESAMPLES + 1)),
+    }  # fmt: skip
+
+
+def holm(ps: dict[str, float]) -> dict[str, bool]:
+    order, out = sorted(ps, key=lambda c: ps[c]), dict.fromkeys(ps, False)
+    for k, c in enumerate(order):
+        if ps[c] > ALPHA / (len(order) - k):
+            break
+        out[c] = True
+    return out
+
+
+def by_year(values: dict[str, float]) -> dict[str, float]:
+    years: dict[str, list[float]] = {}
+    for k, v in values.items():
+        years.setdefault(k[:4], []).append(v)
+    return {y: sum(v) / len(v) for y, v in sorted(years.items())}
+
+
+def finbert_scores(heads: list[str], out_dir: Path, log: dict, check: bool = True) -> dict[str, float]:
+    """Each distinct headline once, in batches of 32 ordered by token length; resumable through a JSONL
+    cache. The check (Amendment 1): the scores used for the first CHECK_N headlines against one at a time."""
+    model = FinBERTModel(model_ref=str(SNAPSHOT))
+    pipe = model._pipeline
+    cache_path = out_dir / "finbert_scores.jsonl"
+    scores: dict[str, float] = {}
+    if cache_path.exists():
+        for raw in cache_path.read_text("utf-8").splitlines():
+            h, v = json.loads(raw)
+            scores[h] = v
+    todo = [h for h in heads if h not in scores]
+    sizes = [len(ids) for ids in pipe.tokenizer(todo)["input_ids"]] if todo else []
+    todo = [h for _, h in sorted(zip(sizes, todo, strict=True))]
+    lengths = sum(1 for n in sizes if n > 512)
+    t0 = time.time()
+    with cache_path.open("a", encoding="utf-8") as fh:
+        for k in range(0, len(todo), CHUNK):
+            chunk = todo[k : k + CHUNK]
+            for h, r in zip(chunk, pipe(chunk, batch_size=BATCH, truncation=True), strict=True):
+                v = align_label(str(r["label"]), float(r["score"]))
+                scores[h] = v
+                fh.write(json.dumps([h, v], ensure_ascii=False) + "\n")
+            fh.flush()
+            done = k + len(chunk)
+            print(f"finbert {done}/{len(todo)} {done / max(time.time() - t0, 1e-9):.1f}/s", flush=True)
+    log |= {"distinct": len(heads), "scored_now": len(todo), "over_512_tokens_scored_now": lengths,
+            "seconds": round(time.time() - t0, 1)}
+    if check and heads:
+        sample = heads[:CHECK_N]
+        one = model.score_headlines(tuple(sample))
+        log["check_max_abs"] = max(abs(a - scores[h]) for a, h in zip(one, sample, strict=True))
+    return scores
+
+
+def main(argv: list[str]) -> int:
+    cache, exp015_out, news_dir, out_dir = (Path(a) for a in argv[2:6])
+    pilot, prescore = "--pilot" in argv, "--prescore" in argv
+    out_dir.mkdir(parents=True, exist_ok=True)
+    record: dict[str, object] = {"experiment": "EXP-024", "pilot": pilot}
+    weights_sha = hashlib.sha256((SNAPSHOT / "pytorch_model.bin").read_bytes()).hexdigest()
+    min_own = build_effective_settings(()).analyst.sentiment_min_own_headlines
+    record |= {"weights_sha256": weights_sha, "min_own": min_own}
+    if weights_sha != WEIGHTS_SHA or min_own != MIN_OWN:
+        return stopped(out_dir, pilot, record, "FinBERT weights or min_own differ from the pre-registration")
+    panel = load_panel(exp015_out)
+    if panel_digest(panel) != PANEL_SHA:
+        return stopped(out_dir, pilot, record, "EXP-015's panel digest differs")
+    span = PILOT if pilot else WINDOW
+    mask = panel.primary & (panel.sessions >= span[0]) & (panel.sessions <= span[1])
+    idx = np.flatnonzero(mask)
+    sessions, lines = panel.sessions[idx], panel.lines[idx]
+    record |= {"window": list(span), "rows": len(idx), "sessions": len(np.unique(sessions))}
+    if not pilot and len(idx) != SCORED_ROWS:
+        return stopped(out_dir, pilot, record, f"scored window holds {len(idx)} survivor rows, not {SCORED_ROWS}")
+    eps = episodes(cache)
+    renames = json.loads(RENAMES.read_text("utf-8"))
+    record["renames_sha256"] = hashlib.sha256(RENAMES.read_bytes()).hexdigest()
+    spans = renames["spans"]
+    tickers = np.array([ticker_on(eps, str(ln), str(d), spans) for ln, d in zip(lines, sessions, strict=True)])
+    record["rows_on_a_renamed_symbol"] = int(sum(1 for t, ln in zip(tickers, lines, strict=True) if t != ln))
+    # the company table is keyed by today's ticker: the line, where it lists the line
+    subject = np.array([str(ln) if str(ln) in COMPANY_NAMES else str(t) for ln, t in zip(lines, tickers, strict=True)])
+    t0 = time.time()
+    index, months, news_log = load_news(news_dir, set(tickers.tolist()))
+    in_range = {m: n for m, n in months.items() if MONTHS[0] <= m <= MONTHS[1]}
+    median = float(np.median(list(in_range.values()))) if in_range else 0.0
+    thin = {m: n for m, n in in_range.items() if n < MONTH_FLOOR * median}
+    missing = [f"{y}-{m:02d}" for y in range(2016, 2027) for m in range(1, 13)
+               if MONTHS[0] <= f"{y}-{m:02d}" <= MONTHS[1] and f"{y}-{m:02d}" not in in_range]
+    record |= {"news": news_log | {"seconds": round(time.time() - t0, 1), "median_month": median,
+               "thin_months": thin, "missing_months": missing, "months": months}}
+    if (thin or missing) and not prescore:
+        return stopped(out_dir, pilot, record, f"news months under a quarter of the median or missing: {thin} {missing}")
+    lex = np.full(len(idx), np.nan)
+    served_n = np.zeros(len(idx), dtype=int)
+    heads_by_row: list[tuple[str, ...]] = [()] * len(idx)
+    t0 = time.time()
+    days, starts, counts = np.unique(sessions, return_index=True, return_counts=True)
+    if not all(bool((sessions[s : s + n] == d).all()) for d, s, n in zip(days, starts, counts, strict=True)):
+        return stopped(out_dir, pilot, record, "the panel's rows are not in session order")
+    for day, start, count in zip(days, starts, counts, strict=True):
+        rows = range(int(start), int(start + count))
+        close = int(datetime.combine(date.fromisoformat(str(day)), dtime(16, 0), NY).timestamp())
+        batch = {str(tickers[r]): served(index, str(tickers[r]), close) for r in rows}
+        weights = batch_headline_weights({t: h for t, h in batch.items() if h})
+        for r in rows:
+            heads = batch[str(tickers[r])]
+            heads_by_row[r], served_n[r] = heads, len(heads)
+            raw, _ = subject_sentiment(str(subject[r]), heads, min_own, headline_weights=weights)
+            if raw is not None:
+                lex[r] = max(0.0, min(1.0, raw / 100.0))
+    record["lexicon_seconds"] = round(time.time() - t0, 1)
+    distinct = sorted({h for heads in heads_by_row for h in heads})
+    fin_log: dict[str, object] = {}
+    scores = finbert_scores(distinct, out_dir, fin_log, check=not prescore)
+    record["finbert"] = fin_log
+    if prescore:  # no target is read in this mode
+        (out_dir / "prescore.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", "utf-8")
+        print(f"PRESCORED distinct={len(distinct)} scored_now={fin_log['scored_now']}")
+        return 0
+    if pilot and float(fin_log.get("check_max_abs", 0.0)) > CHECK_TOL:
+        return stopped(out_dir, pilot, record, f"FinBERT's used scores off one at a time by {fin_log['check_max_abs']}")
+    fin = np.full(len(idx), np.nan)
+    for r, heads in enumerate(heads_by_row):
+        got = aggregate(tuple(scores[h] for h in heads), 1)
+        if got is not None:
+            fin[r] = got.value
+    targets = {h: panel.excess[idx, j] for j, h in enumerate(HORIZONS)}
+    ic_l = {h: session_ic(lex, targets[h], sessions) for h in HORIZONS}
+    ic_f = {h: session_ic(fin, targets[h], sessions) for h in HORIZONS}
+    on_l = np.isfinite(lex)
+    ic_f_on_l = session_ic(fin[on_l], targets[10][on_l], sessions[on_l])
+    diff = {d: ic_f_on_l[d] - ic_l[10][d] for d in sorted(ic_f_on_l) if d in ic_l[10]}
+    tests = {"H1": reading(ic_l[10]), "H2": reading(ic_f[10]), "H3": reading(diff)}
+    carries = holm({k: float(v["p"]) for k, v in tests.items()})
+    for k, v in tests.items():
+        mean = v["mean"]
+        v |= {"carries": carries[k], "sign": None if mean is None else ("+" if mean > 0 else "-"),
+              "worth_building_on": bool(carries[k] and k != "H3" and mean is not None and mean >= ECONOMIC)}
+    listed = np.isin(subject, list(COMPANY_NAMES))
+    years = np.array([str(d)[:4] for d in sessions])
+    coverage = {y: {"rows": int((years == y).sum()), "served": float((served_n[years == y] > 0).mean()),
+                    "lexicon": float(on_l[years == y].mean()), "finbert": float(np.isfinite(fin[years == y]).mean())}
+                for y in sorted(set(years.tolist()))}
+    never = sorted(set(tickers.tolist()) - {str(tickers[r]) for r in np.flatnonzero(served_n > 0)})
+    record |= {
+        "tests": tests,
+        "reported": {
+            "lexicon_ic5_mean": reading(ic_l[5])["mean"], "lexicon_ic20_mean": reading(ic_l[20])["mean"],
+            "finbert_ic5_mean": reading(ic_f[5])["mean"], "finbert_ic20_mean": reading(ic_f[20])["mean"],
+            "per_year": {"H1": by_year(ic_l[10]), "H2": by_year(ic_f[10]), "H3": by_year(diff)},
+            "coverage": coverage,
+            "listed_rows": int(listed.sum()),
+            "listed_lexicon": reading(session_ic(np.where(listed, lex, np.nan), targets[10], sessions)),
+            "listed_finbert": reading(session_ic(np.where(listed, fin, np.nan), targets[10], sessions)),
+            "tickers_never_served": never,
+        },
+        "verdict": "PILOT" if pilot else "COMPLETE",
+    }  # fmt: skip
+    name = "pilot" if pilot else "exp024"
+    (out_dir / f"{name}.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", "utf-8")
+    page = [f"# EXP-024 {record['verdict']}: {span[0]} .. {span[1]}", "",
+            f"rows {len(idx)}, served {float((served_n > 0).mean()):.3f}, lexicon {float(on_l.mean()):.3f}, "
+            f"finbert {float(np.isfinite(fin).mean()):.3f}", "",
+            "| test | mean IC | 95 % interval | p | carries (Holm) | worth building on |", "| --- | --- | --- | --- | --- | --- |"]
+    for k, v in tests.items():
+        mean, low, high = (v[x] for x in ("mean", "low", "high"))
+        cell = "n/a" if mean is None else f"{mean:+.4f} | [{low:+.4f}, {high:+.4f}]"
+        page.append(f"| {k} | {cell} | {v['p']:.4f} | {v['carries']} | {v['worth_building_on']} |")
+    (out_dir / f"{name}.md").write_text("\n".join(page) + "\n", "utf-8")
+    print(f"{record['verdict']} rows={len(idx)} " + " ".join(
+        f"{k}={v['mean']:+.4f}[{v['low']:+.4f},{v['high']:+.4f}]p={v['p']:.4f}{'*' if v['carries'] else ''}"
+        if v["mean"] is not None else f"{k}=n/a" for k, v in tests.items()))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
+```
+
+### `exp024_overlap.py`
+
+Step 9, the feed overlap.
+
+```python
+"""EXP-024 step 9, reported: how much of Finnhub's company news Alpaca's (Benzinga's) feed carries.
+
+A planner's read-only script. For the analyst's company-table tickers, Finnhub /company-news for one
+week against the Alpaca items tagged with the ticker and created in the same UTC days. The figure is
+the share of Finnhub headlines with an exact, case-folded match among Alpaca's.
+
+  python -B exp024_overlap.py <tree> <repo with .env> <news_dir> <out json> [2026-10-13 2026-10-19]
+"""
+
+from __future__ import annotations
+
+import gzip
+import json
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+TREE = Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(TREE))
+
+from agents.analyst.domain.sentiment_subject import COMPANY_NAMES  # noqa: E402
+
+URL = "https://finnhub.io/api/v1/company-news"
+
+
+def key(repo: Path) -> str:
+    for line in (repo / ".env").read_text(encoding="utf-8").splitlines():
+        if line.startswith("PROVIDER_FINNHUB_API_KEY="):
+            return line.split("=", 1)[1].strip().strip('"').strip("'")
+    raise KeyError("PROVIDER_FINNHUB_API_KEY")
+
+
+def fold(text: str) -> str:
+    return " ".join(text.casefold().split())
+
+
+def main(argv: list[str]) -> int:
+    repo, news_dir, out = Path(argv[2]), Path(argv[3]), Path(argv[4])
+    first, last = (argv[5], argv[6]) if len(argv) > 6 else ("2026-10-13", "2026-10-19")
+    tickers = sorted(COMPANY_NAMES)
+    alpaca: dict[str, set[str]] = {t: set() for t in tickers}
+    latest: dict[int, tuple[str, str, str, list[str]]] = {}
+    for path in sorted(news_dir.glob(f"{first[:7]}*.jsonl.gz")) + sorted(news_dir.glob(f"{last[:7]}*.jsonl.gz")):
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            for raw in fh:
+                item = json.loads(raw)
+                held = latest.get(int(item["id"]))
+                if held is None or item["updated_at"] > held[0]:
+                    latest[int(item["id"])] = (item["updated_at"], item["created_at"], item.get("headline") or "",
+                                               [s.replace("-", ".").replace("/", ".") for s in item.get("symbols") or ()])
+    for _, created, headline, syms in latest.values():
+        if first <= created[:10] <= last and headline:
+            for s in syms:
+                if s in alpaca:
+                    alpaca[s].add(fold(headline))
+    token, rows = key(repo), []
+    for t in tickers:
+        q = urllib.parse.urlencode({"symbol": t, "from": first, "to": last, "token": token})
+        with urllib.request.urlopen(f"{URL}?{q}", timeout=30) as r:
+            items = json.loads(r.read())
+        finn = {fold(i.get("headline") or "") for i in items if i.get("headline")}
+        rows.append({"ticker": t, "finnhub": len(finn), "alpaca": len(alpaca[t]), "matched": len(finn & alpaca[t])})
+        time.sleep(1.1)
+    total_f = sum(r["finnhub"] for r in rows)
+    total_m = sum(r["matched"] for r in rows)
+    record = {"week": [first, last], "tickers": len(rows), "finnhub_headlines": total_f,
+              "alpaca_headlines": sum(r["alpaca"] for r in rows), "matched": total_m,
+              "share_of_finnhub_matched": total_m / total_f if total_f else None, "rows": rows}
+    out.write_text(json.dumps(record, indent=1) + "\n", "utf-8")
+    print(json.dumps({k: v for k, v in record.items() if k != "rows"}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
+```
+
+### `run_exp024.ps1`
+
+The runner: `pwsh -NoProfile -File run_exp024.ps1 -Stage fetch|prescore|pilot|scored`.
+
+```powershell
+# EXP-024's runs (DL-316): one stage at a time, detached, the machine kept awake, priority BelowNormal.
+#   pwsh -NoProfile -File run_exp024.ps1 -Stage fetch|prescore|pilot|scored
+param(
+    [Parameter(Mandatory)][ValidateSet('fetch', 'prescore', 'pilot', 'scored')][string]$Stage,
+    [string]$Tree = 'C:\Users\yury_\Downloads\project\ta-exp024',
+    [string]$Repo = 'C:\Users\yury_\Downloads\project\trading-agents',
+    [string]$Python = 'C:\Users\yury_\Downloads\project\trading-agents\.venv\Scripts\python.exe',
+    [string]$Data = 'C:\Users\yury_\OneDrive\trading-agents-data',
+    [string]$Kit = 'C:\Users\yury_\OneDrive\trading-agents-data\exp024-2026-10-23'
+)
+$ErrorActionPreference = 'Stop'
+$log = Join-Path $Kit 'exp024_run.log'
+function Say([string]$text) { "$((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) $text" | Add-Content -Path $log -Encoding utf8 }
+
+Add-Type -Namespace Win -Name Power -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);'
+[void][Win.Power]::SetThreadExecutionState([uint32]2147483649)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
+try {
+    $news = Join-Path $Data 'news-alpaca'
+    $out = Join-Path $Data 'experiments\EXP-024'
+    if ($Stage -eq 'fetch') {
+        $script = Join-Path $Kit 'exp024_news.py'
+        $argv = @('-B', '-I', $script, $Repo, $news)
+        $wd = $Kit
+    } else {
+        $script = Join-Path $Kit 'exp024_score.py'
+        $argv = @('-B', $script, $Tree, $Data, (Join-Path $Data 'experiments\EXP-015'), $news, $out)
+        if ($Stage -eq 'pilot') { $argv += '--pilot' }
+        if ($Stage -eq 'prescore') { $argv += '--prescore' }
+        $wd = $Tree
+        Say "commit $(git -C $Tree rev-parse HEAD) dirty_lines $((git -C $Tree status --porcelain --untracked-files=no | Measure-Object).Count)"
+    }
+    Say "START $Stage script_sha256 $((Get-FileHash $script -Algorithm SHA256).Hash.ToLower())"
+    $stdout = Join-Path $Kit "exp024_${Stage}_stdout.txt"
+    $stderr = Join-Path $Kit "exp024_${Stage}_stderr.txt"
+    $p = Start-Process -FilePath $Python -ArgumentList $argv -WorkingDirectory $wd `
+        -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -PassThru
+    $null = $p.Handle  # cache the handle, or ExitCode reads empty after the exit
+    $p.PriorityClass = 'BelowNormal'
+    Start-Sleep -Seconds 5
+    Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | ForEach-Object {
+        (Get-Process -Id $_.ProcessId).PriorityClass = 'BelowNormal'  # the venv launcher's child
+    }
+    $p.WaitForExit()
+    $tail = (Get-Content $stdout -Tail 3) -join ' | '
+    Say "END $Stage exit=$($p.ExitCode) $tail"
+} catch {
+    Say "ERROR $Stage $($_.Exception.Message)"
+} finally {
+    [void][Win.Power]::SetThreadExecutionState([uint32]2147483648)
+}
+```

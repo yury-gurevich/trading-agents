@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md); work-queue 138; amends [DL-315](design-log.md) D3
+## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked
 whether anything in it gives an edge. The planner's reading: models that understand trading
@@ -129,7 +129,8 @@ the trading pack has no demonstrated stock-picking skill.
 **Amended 2026-10-23 ([DL-316](design-log.md)):** D3's sentiment half is visible to the replay
 after all, through Alpaca's historical news, and is tested in
 [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md).
-Fundamentals stay on the forward route.
+Fundamentals stay on the forward route. **Result, 2026-10-23:** neither the lexicon nor FinBERT
+carries at 10 sessions on Benzinga's news; D3's sentiment half is answered for the replay.
 
 ## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); run 2026-10-23, nothing carries; pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
 

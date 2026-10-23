@@ -16,6 +16,20 @@ tags: [sentiment, finbert, analyst, forecaster, p12]
 > `feed[].ticker_sentiment[].ticker_sentiment_score`). Pending a real-key live verification (the
 > Finnhub lesson); **Marketaux** (free 100/day entity sentiment) is the documented fallback if AV's
 > endpoint proves premium. Read `ticker_sentiment_score` ∈ [-1, 1] → `50 + 50·score` to align 0–100.
+>
+> **Amendment 2026-10-24 (measured; licence; pin).**
+> [EXP-024](../research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) tested
+> the champion and the FinBERT challenger, read as the fleet reads them, on Benzinga's news from 2017
+> to 2026. Neither carries 10-session ranking information among the scanner's survivors: the
+> lexicon's IC is +0.0022 [−0.0101, +0.0206] and FinBERT's −0.0050 [−0.0168, +0.0108]. FinBERT is not
+> better than the lexicon: −0.0091 [−0.0289, +0.0030]. **The operator, 2026-10-24: nothing changes.**
+> The lexicon stays binding at weight 0.20 and FinBERT stays the advisory challenger; there is no
+> evidence for a promotion. Two facts this ADR now carries:
+>
+> - FinBERT's weights (`ProsusAI/finbert`) are licensed **CC BY-NC-SA 4.0, non-commercial**, by the
+>   model card's terms since 2026-10-12. Commercial use of the system re-opens this choice.
+> - The forecaster's `model_ref` names no revision. It is pinned to `4556d130`, the 2023 revision
+>   EXP-024 measured, by work-queue 139.
 
 ## Context
 

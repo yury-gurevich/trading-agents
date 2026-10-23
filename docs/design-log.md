@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; amends [DL-315](design-log.md) D3
+## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked
 whether anything in it gives an edge. The planner's reading: models that understand trading
@@ -78,6 +78,20 @@ replay cannot see"*, to be measured forward over years.
 **What it does not touch.** The fleet: `agents/analyst/` is a fidelity decision path, so nothing
 changes before the PASS on any result. EXP-014 and EXP-022 stay sealed.
 
+**Decided 2026-10-24 08:20 AEDT (the operator, on EXP-024 section 8's recommendation: *"yes, I agree
+go for it"*):** nothing changes in the code.
+
+- The sentiment pillar keeps its weight of 0.20 and the lexicon stays binding.
+- FinBERT stays the advisory challenger.
+- Sentiment is no longer an edge line; its shadow readings stay.
+- The ADR that closes DL-315's line records the pillar's weight.
+- FinBERT's non-commercial licence is recorded in ADR-0002 (amendment 2026-10-24).
+- Its revision pin (`4556d130`) is work-queue 139. `agents/forecaster/` is not a fidelity decision
+  path, so the pin waits only for GitHub Actions to unlock.
+
+**Ruled out by the operator:** setting the pillar's weight to 0, since that is a decision-path change
+that restarts the fidelity count, for no measured gain.
+
 ## DL-315 - If EXP-014 finds no edge, the price-only ranking stays in the code and its research line closes - status: DECIDED (the operator, 2026-10-23 07:11 AEDT, on the planner's recommendation: *"no edge → keep the code, close the line."*); applies when EXP-014 scores (work-queue 82); follows [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md)
 
 **Why.** EXP-023 section 7 left the price-only ranking's future to the operator once EXP-014
@@ -131,6 +145,9 @@ after all, through Alpaca's historical news, and is tested in
 [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md).
 Fundamentals stay on the forward route. **Result, 2026-10-23:** neither the lexicon nor FinBERT
 carries at 10 sessions on Benzinga's news; D3's sentiment half is answered for the replay.
+**Decided 2026-10-24 (the operator, [DL-316](design-log.md)):** sentiment is no longer an edge line,
+though its shadow readings stay. D2's closing ADR also records that the sentiment pillar keeps its
+weight of 0.20.
 
 ## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); run 2026-10-23, nothing carries; pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
 

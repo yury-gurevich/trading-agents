@@ -320,8 +320,19 @@ Three calls go to the operator, and none is urgent:
    - pin `model_ref` to revision `4556d130`;
    - record the weights' non-commercial licence (CC BY-NC-SA 4.0) in ADR-0002.
 
-   Together they are a small chore after the PASS: a `revision` setting passed to the pipeline, and
-   a line in the ADR.
+   Together they are a small chore: a `revision` setting passed to the pipeline, and a line in the
+   ADR.
+
+**Decided 2026-10-24 ([DL-316](../../design-log.md), the operator, on the planner's
+recommendation):** nothing changes in the code.
+
+- The sentiment pillar keeps its weight of 0.20.
+- Sentiment is no longer an edge line, though its shadow readings stay.
+- FinBERT stays the advisory challenger.
+- The ADR that closes DL-315's line records the pillar's weight.
+- The licence is recorded in [ADR-0002](../../decisions/0002-sentiment-champion-challenger.md).
+- The pin is work-queue 139. `agents/forecaster/` is not a fidelity decision path, so the pin waits
+  only for GitHub Actions (locked until 2026-10-25), not for the PASS.
 
 ## Appendix P — Pre-registration (frozen)
 

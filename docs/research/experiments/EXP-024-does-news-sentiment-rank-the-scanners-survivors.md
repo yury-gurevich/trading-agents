@@ -7,6 +7,43 @@ complete*
 historical news"* · **Cost:** $0 (Alpaca's news on the account the fleet already uses; FinBERT on
 this machine's CPU; no LLM).
 
+**Amendment 1 — 2026-10-23 17:25 AEDT, the planner (technical decisions are delegated), recorded
+before the pilot; no scored session has been read.** A dev pilot on 2016-10 → 2016-12 found two
+things the pre-registration got wrong. Appendix P stays as frozen; this overrides it in the four
+respects below, and changes nothing about what is tested or how it is read.
+
+1. **The symbol news carried.** Section 3 says a line's membership episode gives the ticker news
+   carried that day. It does not: the file names a line by today's ticker throughout (META in 2016).
+   In the dev pilot, 32 survivor tickers were served no headline, most of them renamed since (FB →
+   META, UTX → RTX, BBT → TFC). The fix is `exp024_renames.py`, which takes each line's symbol of the
+   day from three sources, the first that covers the line winning:
+   - S235's own symbol map (`scripts/sp500_symbol_map.csv`);
+   - Alpaca's `name_change` corporate actions, chained back from the line. Measured: they are
+     complete from 2020 only, with 2 in 2017, 2 in 2018, 53 in 2019 and 304 in 2020. A chain is
+     refused when the rename into the line's symbol came after the line left the index, because
+     the symbol then belongs to another issuer (BBBY, LLL and XL). CCL is refused by review: CUK is
+     Carnival plc's own listing;
+   - eleven hand rows for 2016–2019: TSO, COH, PCLN, CBG, HCN, LUK, KORS, HRS, TMK, BHGE and SYMC.
+     Each switch date is the first item tagged with the new symbol, where the old symbol's items stop
+     (0 to 5 items overlap). Each was found as a line with no tagged item for a year, or whose news
+     began more than 60 days after its first survivor row.
+
+   The company-table lookup stays on the line, since the analyst's table is keyed by today's ticker.
+   A class-share tag written `BRK-B` or `BF/B` counts as its dotted ticker; Benzinga uses all three.
+   **Ruled out:** FMP's symbol-change history (402 on the fleet's plan), and serving one share class
+   another's news (DISCK is mostly tagged DISCA; that is thin coverage, not a rename).
+2. **FinBERT's check tolerance is 1e-5, not 1e-6.** On 3,000 real pilot headlines, batch composition
+   alone moves a score by up to 1.22e-6 (float32 arithmetic). The 1e-6 was set from 256 synthetic
+   headlines (2.1e-7). The check exists to catch batching that changes a score materially, and
+   1e-5 still does.
+3. **The check reads the scores the run uses.** It compares the scores the run actually used for the
+   first 1,000 pilot headlines with one-at-a-time scores. It stops the pilot, as pre-registered, and
+   the scored run reports it.
+4. **Batches of 32, ordered by token length.** The batch size is unchanged; the order cuts padding
+   (14 → 17.7 headlines a second, measured). Distinct headlines may be scored in passes as the fetch
+   lands, into one cache, each headline once. The run time becomes about 6.5 hours of fetching and
+   8 to 11 hours of FinBERT *[estimate: about 520,000 distinct headlines]*.
+
 ## 1. Why we needed this experiment
 
 [DL-315](../../design-log.md) D3 moved the edge question to the exits and to *"what the replay

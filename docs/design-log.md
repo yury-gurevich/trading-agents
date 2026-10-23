@@ -12,6 +12,72 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md); work-queue 138; amends [DL-315](design-log.md) D3
+
+**Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked
+whether anything in it gives an edge. The planner's reading: models that understand trading
+vocabulary give none, because every competitor has that and the fleet's debaters already run on
+`gpt-5.5` ([EXP-020](research/experiments/EXP-020-on-the-same-cases-does-gpt-5-5-know-the-hinge-as-opus-does.md),
+[EXP-021](research/experiments/EXP-021-does-the-corrected-first-line-read-as-well-as-the-measured-one.md)).
+One thing in it was usable: FinBERT, already the forecaster's challenger. With a historical news feed,
+it and the lexicon champion can be tested in the replay. DL-315 D3 had put sentiment among *"what the
+replay cannot see"*, to be measured forward over years.
+
+**Measured, 2026-10-23:**
+
+- **The feed:** Alpaca's News API (Benzinga) on the provider's key. A probe that counted and read no return, on 22 sessions two a year
+  (2016-10 → 2026-08): each 7-day window held 2,429 to 8,364 items; 64 % of the survivors were
+  served a headline and the lexicon's pillar would form on 33 %. The API's window
+  admits items created before its start, so visibility must be decided on `created_at`. 1.0 % of items were updated more than an hour after creation (4.4 % at
+  most in one week), and an item carries its latest headline.
+  The provider does not read this feed today (`AlpacaDataSource.fetch_news` returns nothing).
+- **The scorers:**
+  - the lexicon: `subject_sentiment`, 7-day window, 20 newest headlines, min own 2, batch weights;
+    the company table lists 99 tickers;
+  - FinBERT: `FinBERTModel(model_ref="ProsusAI/finbert")` with no revision pinned; the cached
+    revision is `4556d130` (2023-05-23). The Hub's 2026-10-12 commits add licence text, a README and
+    safetensors. The weights are **CC BY-NC-SA 4.0, non-commercial**.
+- **On this CPU:** FinBERT scores 35.6 headlines a second in batches of 32; batched and one at a time
+  agree within 2.1e-7.
+- **The panel:** the scored window 2017-01-03 → 2026-09-25 holds 2,446 sessions and 696,537 survivor
+  rows.
+
+**Decided (the operator; the design delegated to the planner):**
+
+1. **D1 — test both scorers as the fleet reads them**, on EXP-015's survivors and target, with
+   EXP-023's interval and test. H1 is the lexicon, H2 FinBERT, H3 FinBERT minus the lexicon, with Holm
+   across the three.
+2. **D2 — the scored window is 2017-01-03 → 2026-09-25.** No recorded experiment or scorecard has
+   read either scorer against returns: S57's `sentiment_scorecard` compares them on live Finnhub
+   news, and no reading of it is recorded in STATE, the work queue or the ledger. So no window is held
+   back. The pilot is 2016-10-17 → 2016-12-30.
+3. **D3 — FinBERT is pinned at `4556d130`** through the local snapshot. The fleet's unpinned
+   reference is named, not changed.
+4. **D4 — a planner's read-only scripts in the kit**, as in [DL-314](design-log.md) D4. The news and
+   the scores stay in OneDrive and never go in the repo.
+5. **D5 — what each outcome leads to is fixed before the run** (EXP-024 section 2). A lexicon that
+   points the wrong way is a fix that outranks a feature. A FinBERT that beats the lexicon puts
+   ADR-0002's promotion, and its non-commercial licence, before the operator.
+6. **D6 — DL-315 D3 is amended:** the replay can see sentiment. Fundamentals stay on the forward
+   route.
+
+**Ruled out:**
+
+- **A finance LLM as the scorer (FinMA, FinGPT, Qwen finance fine-tunes, the conversation's
+  shortlist).** Its training text covers the window, so a backtest is biased by look-ahead and by
+  the company's name (Glasserman and Lin, 2023). Only a forward test could measure one. Its
+  vocabulary is what `gpt-5.5` already has.
+- **Article bodies.** The live scorers read headlines only (`_parse_news`); scoring bodies would test
+  a pillar the fleet does not have.
+- **The vendor's sentiment number (Alpha Vantage, ADR-0002's amendment).** It is the vendor's method,
+  and its history was not measured.
+- **Waiting for the forward claims ledger alone.** It takes years, and this costs $0.
+- **Filing text ("Lazy Prices", Cohen, Malloy and Nguyen, 2020).** Named as the next candidate. It
+  needs a new source (EDGAR) and works at a quarterly horizon, so it is not this experiment.
+
+**What it does not touch.** The fleet: `agents/analyst/` is a fidelity decision path, so nothing
+changes before the PASS on any result. EXP-014 and EXP-022 stay sealed.
+
 ## DL-315 - If EXP-014 finds no edge, the price-only ranking stays in the code and its research line closes - status: DECIDED (the operator, 2026-10-23 07:11 AEDT, on the planner's recommendation: *"no edge → keep the code, close the line."*); applies when EXP-014 scores (work-queue 82); follows [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md)
 
 **Why.** EXP-023 section 7 left the price-only ranking's future to the operator once EXP-014
@@ -59,6 +125,11 @@ applies the rule without a second discussion, and the rule cannot lean on what t
 **What it does not touch.** The etalon bar (unattended trading, an evidence discipline that
 catches its own defects): this finding is the discipline working and blocks nothing. It does mean
 the trading pack has no demonstrated stock-picking skill.
+
+**Amended 2026-10-23 ([DL-316](design-log.md)):** D3's sentiment half is visible to the replay
+after all, through Alpaca's historical news, and is tested in
+[EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md).
+Fundamentals stay on the forward route.
 
 ## DL-314 - The technical score's near-zero IC is followed up by taking it apart, not by changing it - status: DECIDED (planner, 2026-10-23 01:30 AEDT); run 2026-10-23, nothing carries; pre-registered as [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md); work-queue 137 (the operator, 2026-10-23, on EXP-015's reading of the technical score: *"yes it is"*, worth a follow-up for the edge question)
 

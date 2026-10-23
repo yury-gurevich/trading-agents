@@ -281,7 +281,52 @@ Frozen at the commit that adds this file (`git log --diff-filter=A` on this path
 
 ## Appendix R — Run record
 
-*Written during the run.*
+- **Code:** the runs import from a detached worktree (`../ta-exp024`). The prescore ran at `410a79c1`;
+  the pilot and the scored run ran at `095cf8e7` (Amendment 1), clean. The two commits differ in
+  docs only.
+- **Environment:** the main venv's Python 3.13.2, numpy 2.5.3, torch 2.14.0+cpu, transformers
+  5.17.0; i7-7660U. Every stage ran detached through `run_exp024.ps1` at BelowNormal priority,
+  keeping the machine awake.
+- **The fetch:** 2026-10-23 04:46 → 09:22 UTC, with no error and no pause needed. It holds 121 month
+  files, 2016-10-01 → 2026-10-23 09:15 UTC: **1,998,632 items from 40,037 calls**. Manifest
+  SHA-256 `c345c53647ed77f14f5f2c4b85ac556a15f61c79acad5c430cec07d1301f1c2f`.
+- **The dev pilot (before Amendment 1):** the whole chain on 2016-10 → 2016-12. It found the two
+  defects Amendment 1 records: 32 tickers never served, and the 1e-6 check passing at only
+  8.6e-7. It also found that Benzinga writes class shares `BRK.B`, `BRK-B` and `BF/B`. Its output
+  sits in a scratch folder and was not used.
+- **The rename table:** `exp024_renames.py` on the full fetch. 46 lines carry spans; 4 chains were
+  refused (BBBY, LLL and XL after leaving the index, and CCL by review); 11 hand rows; **0 line-years**
+  with survivor rows and no tagged item. Six lines start their news more than 60 days after their
+  first survivor row, all thin coverage rather than renames: AN, AOS, DRE and TEL (62–76 days),
+  DISCK and BF.B. `renames.json` SHA-256
+  `b1bdac87e3a3e16b892e012d388b04bde1654799c3dee231b4ad337aa3cafff3`; Alpaca's `name_changes.json`
+  (3,703 records) `f6196a828f6ccc9d844954323323f503d0d32d9303e1cee42622e2c771ab9354`.
+- **The prescore (Amendment 1):** 06:22 → 08:11 UTC, run on the 61 months fetched by then. It scored
+  122,682 distinct headlines of the scored window in 6,473 s (19 a second on average, 0 over 512
+  tokens) into `finbert_scores.jsonl`. No target was read.
+- **The pilot:** 09:24 → 09:29 UTC. Every stop passed:
+  - 19,315 rows over 53 sessions, 1,181 of them on a renamed symbol;
+  - no month missing or thin (median month 16,350.5 items);
+  - FinBERT's used scores within **1.8e-7** of one at a time (limit 1e-5);
+  - the weights' SHA-256 and min own 2 as pre-registered;
+  - 6,649 distinct headlines, 6,388 scored then.
+
+  Coverage: 58.5 % of rows served a headline, 29.4 % with a lexicon reading. Eight tickers were
+  never served in the pilot: AN, BF.B, DISCK, DPS, EQR, HBI, TEL and VFC. **The pilot's IC, reported
+  as section 5 requires and read for nothing:** H1 −0.0133 (p 0.005), H2 −0.0132 (p 0.19), H3
+  −0.0221 (p 0.04). Each rests on 6 bootstrap sessions. `pilot.json` SHA-256
+  `48b89c20cc238f135ae8fbf9bfbe069a0bd7b593381950d4936b666c4c9d8cc5`.
+- **Feed overlap (step 9, reported):** in the week of 2026-10-13 → 2026-10-19, for the 99
+  company-table tickers, Finnhub served **8,541** distinct headlines and Alpaca **1,736**. 1,167 match
+  exactly: **13.7 % of Finnhub's** and 67 % of Alpaca's. Finnhub aggregates about five times as many
+  headlines, so this experiment reads Benzinga's slice of what the live pillar reads.
+- **Frozen before the scored run** (SHA-256):
+  - `exp024_score.py` `9d41667b989fb3de38e64c937adc64b47fc21d99a48f425a52024134eb688f0b`
+  - `exp024_renames.py` `0bf26c5b28b02ff40a20492aac18bffe219fc57a8d769240dd9c080eee4a8d5e`
+  - `exp024_news.py` `4f79ede5bdef0254f2be342a0cd83ee8297b67c3c0352b539d200436b068feaf`
+  - `exp024_overlap.py` `ea0ac8d8afeb2c23541ea449614e58c0719d242390545c3f8781a9ac633de6fd`
+  - `exp024_coverage_probe.py` `d6bfa0ce535b411a8a0325615e2c104bea322024626a2e39df8ead13e809daea`
+  - `run_exp024.ps1` `70dc8af5c7b8c149dae6fafbe0b281c3587d74b0f087a2ab39a5bf542a3de401`
 
 ## Appendix S — Scripts
 

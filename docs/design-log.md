@@ -12,6 +12,32 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-318 - Look outside single-stock picking: nine published strategies, each scored only after its publication - status: DECIDED (the operator, 2026-10-24: *"search promising strategies OUTSIDE THIS PROJECTS MENTALITY. need promising paths investigated, tests/experiments done and methods adopted/rejected"*; design delegated to the planner); pre-registered as [EXP-026](research/experiments/EXP-026-do-published-strategies-outside-stock-picking-still-work-after-publication.md)
+
+**Why.** Every test so far sat in one frame (daily picking of single S&P 500 stocks), where nothing
+carries and the literature says nothing should ([R011](research/where-an-edge-can-exist/INDEX.md)).
+The operator asked for paths outside it, tested, with a verdict each.
+
+**Decided (planner, delegated):**
+
+1. **D1 — nine families, one strategy each, as published:** multi-asset trend (Faber), dual momentum
+   (Antonacci), the Halloween calendar, long-only time-series momentum (Moskowitz, Ooi, Pedersen),
+   industry momentum (Moskowitz, Grinblatt), leveraged trend (Gayed, Bilello), short volatility with a
+   term-structure filter (after Simon, Campasano), crypto weekly momentum (Liu, Tsyvinski), unlevered
+   risk parity (Asness, Frazzini, Pedersen).
+2. **D2 — scored only after each one's publication**, with its published rules: out of sample by
+   construction, nothing tuned, no holdout spent.
+3. **D3 — three verdicts by code:** EDGE (Sharpe above its benchmark's, Bonferroni interval over nine,
+   both halves, CAGR not lower), DEFENCE (drawdown at most 0.6 of the benchmark's for at most 3 points
+   of CAGR), REJECT.
+4. **D4 — free data only** (Tiingo ETFs, Cboe VIX/VIX3M, Coinbase BTC/ETH); a planner kit script,
+   $0. An EDGE or DEFENCE result is built only as a paper-traded pack after the operator's word.
+
+**Ruled out:** options strategies other than a filtered short-volatility ETF (no options history;
+BXM/PUT already trailed SPY in EXP-025); futures carry and managed futures (Alpaca trades neither);
+FOMC pre-announcement drift (needs a hand-built meeting calendar: a later candidate); tuning any
+rule on these windows (it would spend the out-of-sample the publication dates give).
+
 ## DL-317 - With no skill in the entries, a management rule changes the shape of outcomes, not their mean; what is left is defence and cost - status: PROPOSED (planner, 2026-10-24 12:30 AEDT), the operator to decide; measured in [EXP-025](research/experiments/EXP-025-which-way-of-managing-a-position-guards-against-a-bad-future.md), an exploration, not a pre-registered test (the operator, 2026-10-24: *"what is left to do is to minimise risk of catastrophic losses. I want to explore managing funds via SEVERAL different methods to see what would win"*)
 
 **Why.** After EXP-015, EXP-023 and EXP-024 no prediction carries. The operator asked what is left:

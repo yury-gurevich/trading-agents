@@ -124,6 +124,19 @@ about viability of this project."*** Researched in [R011](research/where-an-edge
 - **Blocked on the operator:** the SEC refuses anonymous bulk downloads (403 measured); its fair-access
   policy needs a User-Agent naming a contact address, and only the operator may let one be sent.
 
+🔁 **Amendment 2, 2026-10-24 ~13:10 AEDT — DECIDED by the operator.** Asked, after EXP-026 found no
+edge in nine published strategies outside stock picking, whether to run the insider test as the last
+attempt or stop now, and whether their address may go in the SEC header: *"ok on both"*.
+
+- **The kill rule is agreed:** if no cell of the insider screen ([EXP-027](research/experiments/EXP-027-do-insiders-open-market-purchases-predict-the-next-month.md), 2017–2021) clears its bar, or
+  its confirmation (EXP-028, 2022–2026, insider data not downloaded until pre-registered) fails, the
+  search for a trading edge ends.
+- **The SEC header** carries the operator's address for sec.gov only.
+- **The screen widens R011's design by one universe**, stated before any outcome: beside S&P 500
+  members, every issuer with a close of at least $5 and a 20-session median dollar volume of at least
+  $2 million (benchmark IWM), because the literature finds the effect strongest in smaller firms; a
+  test of the S&P 500 alone would test the idea where it is weakest.
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

@@ -48,7 +48,8 @@ after its training cutoff.
 | 4a. Events in headlines | analyst calls, price targets, initiations, buybacks, dividends, splits, guidance, beats, misses, CEO exits, FDA approvals, legal trouble | the Benzinga archive | [EXP-031](../experiments/EXP-031-do-corporate-events-in-headlines-predict-the-next-month.md): **done**, 0 of 14 pass discovery |
 | 4b. The FOMC cycle | announcement day, the day before, even weeks | the Fed's pages, SPY | [EXP-032](../experiments/EXP-032-does-the-fomc-cycle-still-move-the-market.md): **done**, reproduces in-sample, gone after |
 | 4. Events and filings (rest) | FOMC days (done, 4b), earnings-announcement premium, 13F copying, congressional trades, short interest, filing text changes | Fed calendar, SEC EDGAR, FINRA, House and Senate disclosures | queued |
-| 5. Other markets | crypto weekday and weekend, crypto–equity spillover, commodity seasonality, currency carry with ETFs | Coinbase, Tiingo ETFs | queued |
+| 5a. Crypto calendar | weekend, Monday, turn of month, Moon, Halloween, after ±5 % days | Coinbase BTC | [EXP-033](../experiments/EXP-033-do-calendar-and-strange-signals-move-bitcoin.md): **done**, 0 of 7 |
+| 5. Other markets (rest) | crypto weekday and weekend (done, 5a), crypto–equity spillover, commodity seasonality, currency carry with ETFs | Coinbase, Tiingo ETFs | queued |
 | Excluded until defined | the Super Bowl indicator (which teams count as "NFC" is ambiguous before 1970; 60 yearly observations); Mercury retrograde (needs an ephemeris: queued for batch 3) | — | — |
 
 **Already settled** (not re-tested): price-only stock ranking (EXP-015, EXP-023), news tone by lexicon

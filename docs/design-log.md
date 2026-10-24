@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-318 - Look outside single-stock picking: nine published strategies, each scored only after its publication - status: DECIDED (the operator, 2026-10-24: *"search promising strategies OUTSIDE THIS PROJECTS MENTALITY. need promising paths investigated, tests/experiments done and methods adopted/rejected"*; design delegated to the planner); pre-registered as [EXP-026](research/experiments/EXP-026-do-published-strategies-outside-stock-picking-still-work-after-publication.md)
+## DL-318 - Look outside single-stock picking: nine published strategies, each scored only after its publication - status: DECIDED (the operator, 2026-10-24: *"search promising strategies OUTSIDE THIS PROJECTS MENTALITY. need promising paths investigated, tests/experiments done and methods adopted/rejected"*; design delegated to the planner); **run 2026-10-24: no edge after publication in any of the nine; S1 and S4 DEFENCE, seven REJECTED**; pre-registered as [EXP-026](research/experiments/EXP-026-do-published-strategies-outside-stock-picking-still-work-after-publication.md)
 
 **Why.** Every test so far sat in one frame (daily picking of single S&P 500 stocks), where nothing
 carries and the literature says nothing should ([R011](research/where-an-edge-can-exist/INDEX.md)).

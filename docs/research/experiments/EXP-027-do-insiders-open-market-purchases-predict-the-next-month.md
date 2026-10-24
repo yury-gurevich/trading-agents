@@ -5,6 +5,8 @@ and Appendix P. · **COMPLETE 2026-10-24: no cell passes (net 20-session excess 
 operator's kill rule applies and the search for a trading edge ends.** This is the **screen** on 2017–2021; the confirmation on 2022–2026 is a separate
 pre-registration (EXP-028), whose insider data is not downloaded until that pre-registration is
 committed.
+**Note, 2026-10-24:** "EXP-028" in this record names the insider confirmation, which was never
+registered; the id went to [EXP-028](EXP-028-does-an-llm-reading-headlines-after-its-cutoff-predict-the-next-day.md), the headline test.
 **Decision / origin:** [R011](../where-an-edge-can-exist/INDEX.md) §5 · [DL-317](../../design-log.md)
 Amendments 1–2 · the operator, 2026-10-24, asked whether to run this last test or stop, and whether
 their address may go in the SEC header: *"ok on both"* · **Cost:** $0 (SEC and Alpaca data).

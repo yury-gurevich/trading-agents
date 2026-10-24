@@ -173,6 +173,18 @@ set aside by the operator who agreed it; option (c) is ruled out.
   headlines after both the cutoff and the paper (May 2023 →), traded as the fleet can (the next open
   to that day's close). A paid run: waits on the operator's approval of a spend cap.
 
+🔁 **Amendment 5, 2026-10-24 (the operator) — the headline test approved.** Asked whether the fleet's
+next-open entry and the cost of one-day trades can be changed, then *"let's see if it works"* and
+*"yes, i approve $20 for OpenAI"*. Pre-registered as [EXP-028](research/experiments/EXP-028-does-an-llm-reading-headlines-after-its-cutoff-predict-the-next-day.md).
+
+- **Both can change, and the test locates the return first.** Alpaca takes closing-auction orders
+  (`cls`) and extended-hours limit orders; a run before the close or an event-driven run could use
+  them. The labels are read against four windows (overnight, the next day, from the close, from the
+  open after an early read), so a build follows only where a return sits.
+- **The model changed before any call was scored:** every GPT-3.5 model is retired on the fleet's key
+  (404 measured); `gpt-4o-mini-2024-07-18` (training data to October 2023) is scored on headlines from
+  2024-01-01. Estimate $1.40 via the Batch API.
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

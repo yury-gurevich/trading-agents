@@ -12,6 +12,25 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-319 - Every idea is tested, strange ones included, through one funnel: state it first, discover with the false-discovery rate controlled, confirm on untouched data, then an economic bar - status: DECIDED (the operator, 2026-10-24: *"You should be able to come up with a theoretical foundation for testing. Let's test every idea (no matter how strange it may sound at first glance)"*; method by the planner, delegated); [R012](research/idea-testing-foundation/INDEX.md); batch 1 pre-registered as [EXP-029](research/experiments/EXP-029-do-calendar-and-natural-signals-move-the-us-market-over-a-century.md)
+
+**Why.** Testing many ideas one by one, each at 5 %, guarantees false discoveries: of 100 ideas with no
+effect, about five pass by luck. The operator wants breadth, so the bar has to scale with it.
+
+**Decided:**
+
+1. **D1 — the theory:** an edge comes from a risk premium, behaviour, flows, information or
+   microstructure; cost, publication and luck kill it (R012 §1). The source sets the prior, not the bar.
+2. **D2 — the funnel:** each batch is stated before its returns are computed; Benjamini–Hochberg at
+   q = 10 % across the batch on a discovery period; Holm at 5 % on a confirmation period the discovery
+   never touched; then a trade that must beat holding the market after a realistic cost.
+3. **D3 — the catalogue in batches** by data (R012 §3): calendar and nature on a century of the US
+   market first ($0), then the cross-section, events and filings, other markets.
+
+**Ruled out:** a lower bar for plausible ideas (the operator asked that strange ideas be tested on equal
+terms; the prior can rank what is tested next, never the bar); testing ideas one at a time at 5 %
+(false discoveries grow with the number tested); reusing a confirmation period for a second look.
+
 ## DL-318 - Look outside single-stock picking: nine published strategies, each scored only after its publication - status: DECIDED (the operator, 2026-10-24: *"search promising strategies OUTSIDE THIS PROJECTS MENTALITY. need promising paths investigated, tests/experiments done and methods adopted/rejected"*; design delegated to the planner); **run 2026-10-24: no edge after publication in any of the nine; S1 and S4 DEFENCE, seven REJECTED**; pre-registered as [EXP-026](research/experiments/EXP-026-do-published-strategies-outside-stock-picking-still-work-after-publication.md)
 
 **Why.** Every test so far sat in one frame (daily picking of single S&P 500 stocks), where nothing

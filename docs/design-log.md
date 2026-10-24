@@ -137,6 +137,22 @@ attempt or stop now, and whether their address may go in the SEC header: *"ok on
   $2 million (benchmark IWM), because the literature finds the effect strongest in smaller firms; a
   test of the S&P 500 alone would test the idea where it is weakest.
 
+🔁 **Amendment 3, 2026-10-24 13:50 AEDT — the kill rule applies.** [EXP-027](research/experiments/EXP-027-do-insiders-open-market-purchases-predict-the-next-month.md)'s screen: no
+cell passes (net 20-session excess −0.52 % to +0.36 %; the nearest, S&P 500 clusters, +0.36 %
+[−0.57, +1.40]). By the rule the operator agreed in Amendment 2, **the search for a trading edge
+ends**: no EXP-028, no further signal tests. The 2022–2026 insider data was never downloaded.
+
+- **What is settled:** across EXP-015, EXP-023, EXP-024, EXP-025, EXP-026, EXP-027 and R011, no rule
+  built from public prices, news, exits, calendars, published allocations or insider filings showed an
+  edge over holding the index after costs. The one robust finding is defence: a trend guard halves
+  the worst drawdowns at 3–4 points of CAGR.
+- **Still open, the operator's:** what the project is for now. The planner's reading of the options:
+  (a) keep the fleet as a paper research harness, no capital (DL-317 D); (b) run capital, if any, as SPY
+  with the 200-day guard (DL-317 A), a rule that needs one check and one order; (c) pause the fleet to
+  stop its running costs; (d) keep the repository as the method's etalon, whose bar never required an
+  edge. EXP-014's and EXP-022's sealed arms cost nothing to read on the fidelity PASS; reading them
+  is not a new search.
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

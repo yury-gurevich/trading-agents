@@ -2,6 +2,13 @@
 
 **Status:** PRE-REGISTERED 2026-10-24 (planner). Sections 1–5 and Appendix P are fixed before any
 minute price is read.
+**Amendment 1 — 2026-10-24, before any return was read (planner).** The coverage pilot found that many
+stocks do not trade in the minutes after an evening headline: no minute bar starts after τ by τ + 1
+minute for 65 % of events, by τ + 5 for 49 %, by τ + 15 for 38 %, by τ + 60 for 25 %. Section 5.2's
+rule would price those entries at the last trade *before* the headline, a price no order placed after
+the news could get. **The primary is therefore computed on the events with a trade after the headline
+by τ + 5 minutes** (the entry bar starts at or after τ's minute); the as-registered all-events figure
+is reported beside it. Nothing else changes.
 **Decision / origin:** [EXP-028](EXP-028-does-an-llm-reading-headlines-after-its-cutoff-predict-the-next-day.md)
 §7.4 and §8; the operator, 2026-10-24, on the fleet's next-open entry: *"Is this something that can be
 changed?"* · [DL-319](../../design-log.md) · **Cost:** $0 (Alpaca market data; no new LLM call).

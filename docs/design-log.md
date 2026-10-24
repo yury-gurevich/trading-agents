@@ -12,6 +12,68 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-317 - With no skill in the entries, a management rule changes the shape of outcomes, not their mean; what is left is defence and cost - status: PROPOSED (planner, 2026-10-24 12:30 AEDT), the operator to decide; measured in [EXP-025](research/experiments/EXP-025-which-way-of-managing-a-position-guards-against-a-bad-future.md), an exploration, not a pre-registered test (the operator, 2026-10-24: *"what is left to do is to minimise risk of catastrophic losses. I want to explore managing funds via SEVERAL different methods to see what would win"*)
+
+**Why.** After EXP-015, EXP-023 and EXP-024 no prediction carries. The operator asked what is left:
+manage each ticket by hard rules so that a bad future cannot do catastrophic damage, try several ways
+of doing it (sell at +1 %, sell after 7 days, buy a correlated ticket, hold Friday to Monday), and say
+whether the project can be better than similar apps.
+
+**Measured (EXP-025, $0; every S&P 500 member on every session as an entry, 2017–2026, plus SPY,
+Cboe BXM/PUT and VIX back to 1993):**
+
+- **No management rule earns more than holding.** The +1 % take-profit wins 79 % of trades and nets
+  0.3 % a year at 5 bps against 11.8 % for a 20-session hold (difference [−17.2, −5.8]): its average
+  loss is −3.43 % against a +1.04 % win. Selling after 7 days is neutral before cost.
+- **A −5 % stop is the cheap guard for a ticket:** the worst 1 % of trades −33 % → −12 %, the worst
+  day's batch −35 % → −7 %, at −3.2 points a year that the decade cannot tell from zero ([−7.1, +1.1]).
+  It does not cap a gap (−46 % behind it); only a ticket's size does.
+- **A trend guard is the guard for the book:** out while SPY closes below its 200-day average, it cut
+  1994–2026's worst drawdown from −55 % to −28 % (dot-com −45 % → −22 %, 2008 −54 % → −13 %) at about
+  2.7 points of CAGR a year, Sharpe 0.70 against 0.65. A VIX guard is not one (dot-com −53 %).
+- **Overnight holding is the one pattern significant in both halves** (94 % of SPY's 1993–2026 log
+  return came between close and open): at zero cost the market's return at 57 % of its volatility; at
+  1 bp a side 4.6 % a year. A fund built on it (NSPY) closed after 13 months at −6.9 %, which our series
+  reproduces.
+- **The operator's other ideas do not carry:** Friday to Monday ≈ 0 since 2017 (its 1993–2016 premium
+  has gone), correlated catch-up crosses zero and faded, the turn of the month adds nothing.
+
+**Discovered constraint: the replay's decade rewards buying weakness, and the decade before it did
+not.** SPY entries below the 200-day average returned +2.28 % over 20 sessions in 2017–2026 against
++0.24 % in 1994–2016. EXP-012's and EXP-013's gradients, EXP-023's weakness lean and the coming verdicts
+of EXP-014 and EXP-022 all come from 2017–2026. A replay win that rests on buying dips is untested
+against 2000–02 or 2008 and is not built on that window alone. EXP-022's arms stay sealed and unread:
+no pipeline entry was used.
+
+**Options (the planner's ranking):**
+
+1. **A — defence as the goal (recommended).** The aim becomes *the market's return with half its
+   crash*, not *beat the market*. First step: pre-register the trend guard on data nobody here has
+   read (the S&P 500 1975–1993, non-US index histories), then measure its cost to this book in a replay
+   arm after the fidelity PASS. The stop stays; a cap on each ticket's size bounds the gaps.
+2. **B — the overnight hold, cost first.** Measure what SPY's opening and closing auctions cost against
+   the bars, from Alpaca's trade prints ($0), before any capital decision.
+3. **C — measure the fleet's real slippage.** Useful under every option: each verdict in EXP-025 turns
+   on 5 against 25 bps a side.
+4. **D — accept that there is no edge:** keep the fleet as a paper research harness and commit no
+   capital.
+
+**Ruled out (measured in EXP-025):**
+
+- **Selling at +1 %, alone or with a stop:** behind holding, interval below zero.
+- **A forced sale after 7 days:** neutral before cost, behind after it.
+- **A Friday-to-Monday hold:** about nothing since 2017 and a loss after cost. DL-240 step 5's weekend
+  holding profile is not worth building on this evidence.
+- **Buying the laggard of a correlated pair:** does not carry, and its one lean faded between halves.
+- **The turn of the month and a VIX guard:** nothing added; the VIX guard fails in a slow bear.
+- **Selling options premium, as BXM and PUT do:** VIX overstated the next month 84 % of the time, yet
+  both trailed SPY by 3.6–4.9 points a year since 2007 and still fell 35–39 % in 2008.
+- **The pre-holiday session:** +20.7 bps [5.1, 35.6], but about ten sessions a year (+1 % a year net)
+  and one of about 45 comparisons, the kind that passes by chance.
+
+**Stays the operator's:** the goal (A against D) and every capital-risk rule (the guard, a size cap,
+the overnight profile).
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

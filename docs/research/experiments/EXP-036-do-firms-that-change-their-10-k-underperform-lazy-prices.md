@@ -1,6 +1,6 @@
 # EXP-036 — Do S&P 500 firms that change their annual report's wording underperform those that do not ("Lazy Prices")?
 
-**Status:** PRE-REGISTERED 2026-10-24 (planner, `62771916`) · **COMPLETE 2026-10-25: H0 on the primary (the
+**Status:** PRE-REGISTERED 2026-10-24 (planner, `62771916`) · **COMPLETE 2026-10-24: H0 on the primary (the
 next month: +0.14 %, t 1.15), with a lead: in months 2–6 the changers lag the universe by 1.04 % (t −4.2,
 post-hoc), the paper's slow drift. Not built; a confirmation needs data not yet seen.**
 **Decision / origin:** [R011](../where-an-edge-can-exist/INDEX.md), [R012](../idea-testing-foundation/INDEX.md)
@@ -121,7 +121,7 @@ avoid filter in the scanner (a Codex sprint, full cycle).
 
 ## Appendix R — Run record
 
-- 2026-10-24/25, planner. Downloader tested on 3 firms (35 filings), then run in full (about 20:10 →
+- 2026-10-24, planner. Downloader tested on 3 firms (35 filings), then run in full (about 20:10 →
   22:50 AEDT): 7,335 10-Ks, 687 CIKs, 0 failed; text 681 MB kept outside the repo and OneDrive. 721 S&P
   500 lines, 700 mapped to a CIK (690 distinct).
 - Coverage pilot (no return): 6,626 similarities, 485–490 members a month with one.

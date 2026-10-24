@@ -153,6 +153,26 @@ ends**: no EXP-028, no further signal tests. The 2022–2026 insider data was ne
   edge. EXP-014's and EXP-022's sealed arms cost nothing to read on the fidelity PASS; reading them
   is not a new search.
 
+🔁 **Amendment 4, 2026-10-24 (the operator) — the fleet keeps running and the search reopens.** Shown
+the paper book (+2.07 % since its first trade on 2026-07-08, SPY +1.89 %; worst fall −6.56 % against
+−3.38 %) and the options of Amendment 3: *"no, we are not pausing the fleet. We will have to find
+another way. What about training an LLM with all the data we have?"* The kill rule of Amendment 2 is
+set aside by the operator who agreed it; option (c) is ruled out.
+
+- **Training an LLM on our data: the planner's answer, no.** (1) A model pretrained through 2024–2026
+  has read the news and prices of the whole replay window, so any backtest on it is contaminated
+  (R011: lookahead bias). (2) There is no signal for it to learn: the data's measured predictive
+  content is about zero (EXP-015's LightGBM, EXP-023, EXP-024's FinBERT); a larger model fits noise.
+  (3) The fleet's own record is about 75 sessions and some 100 closed trades, too few to train on.
+- **The one LLM test with evidence behind it, proposed:** a model scoring headlines published after
+  its training cutoff, as Lopez-Lira and Tang did with ChatGPT-3.5, still significant on 2024 news
+  after the cutoff (R011). `gpt-3.5-turbo-0125` (training data to September 2021) and
+  `gpt-4o-mini-2024-07-18` (to October 2023) are still served on the fleet's key *[measured
+  2026-10-24, the models list]*; the Benzinga archive holds about 80,000 headlines a year naming
+  S&P 500 members (2023: 82,811; 2024: 84,058; 2025: 82,319; 2026 to 10-23: 69,541). Scored on
+  headlines after both the cutoff and the paper (May 2023 →), traded as the fleet can (the next open
+  to that day's close). A paid run: waits on the operator's approval of a spend cap.
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

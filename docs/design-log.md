@@ -74,6 +74,30 @@ no pipeline entry was used.
 **Stays the operator's:** the goal (A against D) and every capital-risk rule (the guard, a size cap,
 the overnight profile).
 
+🔁 **Amendment 1, 2026-10-24 ~13:00 AEDT (planner), after the operator: *"actively research methods
+that may work for us … what do people know that we do not"*, then *"I need a path that is at least
+promising, otherwise we should abandon the project … for the first time I am having serious doubts
+about viability of this project."*** Researched in [R011](research/where-an-edge-can-exist/INDEX.md).
+
+- **The arena, not the method.** Chen and Welch (2026): published anomalies earned a median 7 bp a
+  month in non-micro stocks after 2005, gone after costs. Microsoft's RD-Agent(Q), the automated form
+  of this work, reads IC 0.016 on the NASDAQ 100 in 2024–2025 (its strong result is on Chinese large
+  caps, 2017–2020). Our nulls are what the S&P 500 on public prices and news should give.
+- **Option E, added and ranked first: the information path.** Insider open-market purchases (SEC Form
+  4, free 2006 Q1 → 2026 Q3), then filing changes (*Lazy Prices*, EDGAR); possibly in mid and small
+  caps. Never tested here; a different mechanism (insiders know more; inattention); what an agent fleet
+  is for. Evidence strongest in smaller firms, thin for US large caps after 2010.
+- **Test design.** Explore insider purchases on 2017–2021 only (2022–2026 neither downloaded nor read);
+  pre-register EXP-026 on the sealed half only if a mean 20-session excess of at least +1 % after
+  25 bps a side, positive in at least 4 of 5 years. **Proposed kill rule, to agree before anything is
+  read:** a miss at either stage ends the search for a trading edge.
+- **Ruled out, added:** adopting RD-Agent in this universe (more candidates in the same exhausted
+  arena; no intervals, no correction for its loops); PEAD in large caps (Martineau: gone since 2006,
+  contested); a better model of the same large-cap prices (Avramov, Cheng and Metzker: ML profits
+  −62 % without micro caps).
+- **Blocked on the operator:** the SEC refuses anonymous bulk downloads (403 measured); its fair-access
+  policy needs a User-Agent naming a contact address, and only the operator may let one be sent.
+
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 
 **Why.** The operator brought a conversation about finance-tuned models on Hugging Face and asked

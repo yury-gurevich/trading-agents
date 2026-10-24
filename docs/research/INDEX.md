@@ -17,6 +17,7 @@ look in the "Outcome" column for the ADR or sprint it produced.
 | [R008](survivorship-free-universe/) | Survivorship-free S&P 500 universe — point-in-time membership + delisted bars (P17 E17.1) | 2026-09-25 | ✅ Measured | Can we source point-in-time S&P 500 membership and removed-name bars on our plans? Is ~90 % member-day coverage met? | [DL-226](../design-log.md): Wikipedia change log + Alpaca SIP, 95.3 % (≈99 % with renames); FMP/Finnhub ruled out | data, backtest, survivorship |
 | [R009](dspy/) | DSPy — a full study (modules, optimisers, adapters, API reference), aimed at the three deliberators | 2026-09-30 | 📚 Studied | How does DSPy work end to end? What does this repo use of it, and what not? Do all three deliberators read and argue from quant and sentiment evidence? What does 3.4 change, and what would a GEPA run cost? | Measured baseline: the judge names a quant metric in 40 % of 229 rulings, and 38 % rest on process alone; S246 guides only the two debaters. 3.4 renders S246 byte-identically. Sequence proposed in `three-roles-goal.md`. **2026-10-07: [ADR-0032](../decisions/0032-dspy-runs-the-llm-roles-at-run-time.md) puts DSPy in the deliberator's process (S254); the DSPy-free runtime these notes describe is reversed** | `dspy` `gepa` `deliberator` `prompt-optimization` `adr-0010` `dl-250` |
 | [R010](debate-pipeline-prototype/) | A generic debate-pipeline prototype (proponent, opponent, a judge that issues directives, a revision loop) — what to take and what not | 2026-10-06 | 📚 Studied | What does a typical debate-pipeline sketch offer that ours lacks? Which parts fit our rules (the model may subtract, never originate) and which do not? | **2026-10-07 (operator): adapt it to our needs, do not copy it. Each part's adapted form is in the folder's INDEX; the order of work is [DL-264](../design-log.md) amendment 5.** First reading, 2026-10-06: two ideas carried to DL-264: a ruling whose directives someone must answer, and risk figures computed in code and shown in the packet. Not taken: a model that writes the plan, a judge that does the arithmetic, the generic parameter list. Nothing built | `deliberator` `debate` `judge` `risk-metrics` `dl-264` |
+| [R011](where-an-edge-can-exist/) | Where can an edge still exist for this project? What the field knows, and Microsoft's RD-Agent(Q) beside us | 2026-10-24 | 📚 Studied | Is there a promising path to a trading edge? What do people know that we do not? How does RD-Agent differ, and do its results change anything? | US large caps on public prices and news hold no edge after costs (our experiments; Chen and Welch 2026: 7 bp/month for non-micro anomalies after 2005; RD-Agent(Q) IC 0.016 on the NASDAQ 100). The one promising untested path: information slow to be priced (insider purchases, then filing changes), possibly in mid/small caps; a kill rule proposed. Feeds [DL-317](../design-log.md) | `edge` `anomalies` `rd-agent` `insider-trading` `lazy-prices` `dl-317` |
 
 ## Folder structure — read this before adding an entry
 
@@ -38,6 +39,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | [code-quality-tooling/](code-quality-tooling/INDEX.md) | R006 | PyExamine + test-effectiveness methods — nothing adopted; defect-detection-rate analysis carried forward. |
 | [textgrad/](textgrad/INDEX.md) | R003 | TextGrad evaluated for continuous improvement — not adopted; ADR-0010 bake-off candidate. |
 | [survivorship-free-universe/](survivorship-free-universe/INDEX.md) | R008 | E17.1 measurement: membership source, bar coverage, identity check, and what E17.2 must build. |
+| [where-an-edge-can-exist/](where-an-edge-can-exist/INDEX.md) | R011 | Where an edge can still exist: the field's evidence, RD-Agent(Q) beside us, paths ranked, a test design with a kill rule. |
 | [a2a-boundary/](a2a-boundary/INDEX.md) | R004 | A2A interop standard — convergent principles, no internal adoption; boundary adapter behind triggers. |
 | [debate-pipeline-prototype/](debate-pipeline-prototype/INDEX.md) | R010 | The operator's prototype of a debate pipeline as received, and each part of it adapted to this system. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
@@ -58,7 +60,7 @@ imported/supporting material without an R-number.
 
 ## Adding a new research document
 
-1. Next number is `R011`.
+1. Next number is `R012`.
 2. Create a **folder** `docs/research/<slug>/` (not a loose file). Put the document at
    `<slug>/<slug>.md`, opening with the standard header block:
 

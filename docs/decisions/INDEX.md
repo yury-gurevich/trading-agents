@@ -47,8 +47,9 @@ for the rationale instead of re-deriving it.
 | [0030](0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) | The correlation gate is a ramp, not a cliff | ✅ Accepted | Should the PM's correlation cluster stay a binary test at ρ ≥ 0.70, become a ramp, or weight every positive correlation? | `portfolio-manager` `concentration` `correlation` `risk-gate` `adr-0025` `exp-008` |
 | [0031](0031-regime-scales-the-risk-budget-atr-keeps-the-stop.md) | The regime scales the risk budget; ATR keeps the stop — 🚨 **middle row void, see Correction 2026-09-22** | ✅ Accepted, corrected | ADR-0025 ruled volatility should scale position risk but authorised no implementation, because the bracket is already ATR-scaled. Which risk number does the regime own? | `portfolio-manager` `regime` `sizing` `volatility` `adr-0025` `adr-0028` `exp-009` |
 | [0032](0032-dspy-runs-the-llm-roles-at-run-time.md) | DSPy runs the LLM roles at run time; it is not an offline text generator | ✅ Accepted | Does DSPy run inside the deployed agents, or only offline to produce prompt text that the runtime copies? | `llm` `dspy` `deliberator` `runtime` `images` `adr-0010` `dl-184` `dl-252` `dl-266` | amends [ADR-0010](0010-llm-interaction-quality-gate.md) (where DSPy runs; the gate is unchanged) |
+| [0033](0033-the-fleet-is-a-paper-test-bed.md) | The fleet is a paper test bed: it trades paper, with no capital | ✅ Accepted | What is the project for, now that no trading edge was found: a paper test bed, capital, a pause, or the etalon alone? | `direction` `paper` `capital` `edge` `etalon` `dl-317` `dl-315` `exp-014` `exp-022` |
 
-1. Next number is `0033`.
+1. Next number is `0034`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

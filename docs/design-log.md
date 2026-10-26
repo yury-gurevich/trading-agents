@@ -57,7 +57,7 @@ BXM/PUT already trailed SPY in EXP-025); futures carry and managed futures (Alpa
 FOMC pre-announcement drift (needs a hand-built meeting calendar: a later candidate); tuning any
 rule on these windows (it would spend the out-of-sample the publication dates give).
 
-## DL-317 - With no skill in the entries, a management rule changes the shape of outcomes, not their mean; what is left is defence and cost - status: PROPOSED (planner, 2026-10-24 12:30 AEDT), the operator to decide; measured in [EXP-025](research/experiments/EXP-025-which-way-of-managing-a-position-guards-against-a-bad-future.md), an exploration, not a pre-registered test (the operator, 2026-10-24: *"what is left to do is to minimise risk of catastrophic losses. I want to explore managing funds via SEVERAL different methods to see what would win"*)
+## DL-317 - With no skill in the entries, a management rule changes the shape of outcomes, not their mean; what is left is defence and cost - status: DECIDED (the operator, 2026-10-26: *"a paper test bed"*, Amendment 6, [ADR-0033](decisions/0033-the-fleet-is-a-paper-test-bed.md)); proposed by the planner 2026-10-24 12:30 AEDT; measured in [EXP-025](research/experiments/EXP-025-which-way-of-managing-a-position-guards-against-a-bad-future.md), an exploration, not a pre-registered test (the operator, 2026-10-24: *"what is left to do is to minimise risk of catastrophic losses. I want to explore managing funds via SEVERAL different methods to see what would win"*)
 
 **Why.** After EXP-015, EXP-023 and EXP-024 no prediction carries. The operator asked what is left:
 manage each ticket by hard rules so that a bad future cannot do catastrophic damage, try several ways
@@ -203,6 +203,12 @@ next-open entry and the cost of one-day trades can be changed, then *"let's see 
 - **The model changed before any call was scored:** every GPT-3.5 model is retired on the fleet's key
   (404 measured); `gpt-4o-mini-2024-07-18` (training data to October 2023) is scored on headlines from
   2024-01-01. Estimate $1.40 via the Batch API.
+
+🔁 **Amendment 6, 2026-10-26 15:23 AEDT — DECIDED by the operator: *"a paper test bed"*.** Shown EXP-014 (NO EDGE: the book earned what SPY earns at its exposure) and EXP-022 (CHAMPION HOLDS), both scored early and provisional until the fidelity PASS, and asked what the project is for, the operator chose option (a) of Amendment 3. Closed by [ADR-0033](decisions/0033-the-fleet-is-a-paper-test-bed.md).
+
+- **Decided:** the fleet keeps trading the Alpaca paper account with no capital; the measure of done is the etalon bar (unattended, evidence that catches its own defects); the trading code stays (DL-315, EXP-022).
+- **The planner's reading, for the operator to correct:** the search for an edge is no longer the goal; an edge experiment runs when the operator asks for one, so EXP-036's confirmation and the rest of R012 stay unbuilt until then.
+- **Ruled out:** (b) capital as SPY with the 200-day guard, until a new ADR; (c) a pause (already ruled out, Amendment 4); (d) the etalon alone is not a rival and is folded in.
 
 ## DL-316 - News sentiment is visible to the replay after all: the lexicon and FinBERT are tested on Alpaca's historical news, 2017-2026 - status: DECIDED (the operator, 2026-10-23 ~14:45 AEDT: *"pre-register this as EXP-024: FinBERT and the word-list scores, tested over 2017–2026 on Alpaca's historical news"*); pre-registered as [EXP-024](research/experiments/EXP-024-does-news-sentiment-rank-the-scanners-survivors.md) (Amendment 1 before the pilot); **run 2026-10-23: nothing carries, no code changes**; work-queue 138 closed; **section 8 decided by the operator 2026-10-24: no change**; amends [DL-315](design-log.md) D3
 

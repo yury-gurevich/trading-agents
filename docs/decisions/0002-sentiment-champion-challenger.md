@@ -28,8 +28,12 @@ tags: [sentiment, finbert, analyst, forecaster, p12]
 >
 > - FinBERT's weights (`ProsusAI/finbert`) are licensed **CC BY-NC-SA 4.0, non-commercial**, by the
 >   model card's terms since 2026-10-12. Commercial use of the system re-opens this choice.
-> - The forecaster's `model_ref` names no revision. It is pinned to `4556d130`, the 2023 revision
->   EXP-024 measured, by work-queue 139.
+> - `FinBERTModel` loads `4556d130`, the 2023 revision EXP-024 measured, since `0.131.04`
+>   (work-queue 139, 2026-10-26).
+> - **Correction 2026-10-26: the challenger has never run.** No production path constructs
+>   `FinBERTModel`; the fleet's and the local pipeline's forecaster score sentiment with the fake
+>   model. "Stays the advisory challenger" names a class, not a running leg
+>   ([DRIFT-116](../laws/drift-register.md), work-queue 141).
 
 ## Context
 

@@ -1,6 +1,6 @@
 # EXP-022 — Does an exit besides the stop make the book earn more than stops alone, at the same cost?
 
-**Status:** PRE-REGISTERED 2026-10-16 (planner). **No scored run exists under this design.** Sections
+**Status:** PRE-REGISTERED 2026-10-16 (planner). **Scored 2026-10-26 under Amendment 2, provisional until the fidelity PASS: CHAMPION HOLDS.** Sections
 1–5 and Appendix P are fixed before the first one; a change of design after it is a new experiment.
 **Decision / origin:** work-queue **92** · direction [DL-240](../../design-log.md) step 3 (the operator,
 2026-09-28: *"we need to sell at profit"*) · the replay's exits [DL-304](../../design-log.md),
@@ -196,7 +196,21 @@ deliberator (the replay is price-only); today's sectors; four Alpaca adjustment 
 
 ## 6. Results
 
-*Pending — written from the recorded run.*
+*Provisional (Amendment 2): final only on the fidelity PASS.* Scored 2026-10-26 13:30–13:43 AEDT by
+`scripts/exit_verdict.py` at `v0.128.06` over the sealed arms (72 of 72 re-hashed identical just
+before); `verdict.md` SHA-256 `5f2ffe0c…`, `verdict.json` `e00e568e…`, beside the arms in OneDrive
+`exp022-2026-10-21/arms/`. The control passed (largest deviation 0).
+
+- **Verdict: CHAMPION HOLDS.** Every exit earns less than stops alone. At 25 bps all five are
+  *behind*: the take-profit dR = −10.90 pts a year [−21.72, −0.89], the 10-session time exit −10.88,
+  the trailing stop −10.56, both together −11.33, the 5-run cool-down −1.26 [−2.47, −0.08]; each is
+  behind in both halves. At 10 bps the four exits are *indistinguishable* (dR about −9.4, upper bounds
+  +0.55 to +0.85) and the cool-down is behind (−1.40).
+- **Why:** the exits cut the average exposure from 75.8 % to 19–23 % and raise the buys from 70 to
+  550–870 a year. Stops alone earn from a few long holds: 13 round trips closed by a limit sale averaged
+  +158.7 % over a median 862 sessions, while its 604 stops averaged −5.7 %.
+- `stops-25`: R = +10.64 % a year and A = −0.02, the same arm as EXP-014's `base-25`.
+- **What follows:** the fleet's exit, the stop alone, stays; nothing changes in the code.
 
 ## 7. Conclusions
 

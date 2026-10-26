@@ -1,6 +1,6 @@
 # EXP-014 — Does the price-only pipeline earn more than SPY held at the same exposure, over the index as it stood?
 
-**Status:** PRE-REGISTERED 2026-10-01 (planner). **No scored run exists under this design.** Sections
+**Status:** PRE-REGISTERED 2026-10-01 (planner). **Scored 2026-10-26 under Amendment 2, provisional until the fidelity PASS: NO EDGE (indistinguishable).** Sections
 1–5 and Appendix P are fixed before the first one. A change of design after it is a new experiment.
 **Decision / origin:** next-leg plan E17.5 ([next-leg-plan.md](../../next-leg-plan.md)), work-queue
 **82** · scope [DL-232](../../design-log.md) · fidelity gate [DL-237](../../design-log.md) · this design
@@ -196,7 +196,23 @@ session; Finnhub sectors for 724 lines *[measured 2026-10-01]*.
 
 ## 6. Results
 
-*Pending — written from the recorded run.*
+*Provisional (Amendment 2): final only on the fidelity PASS.* Scored 2026-10-26 13:43–13:50 AEDT by
+`scripts/replay_verdict.py` at `v0.128.06` over the sealed arms (30 of 30 re-hashed identical just
+before); `verdict.md` SHA-256 `33a32fa6…`, `verdict.json` `169df1e0…`, beside the arms in OneDrive
+`exp014-2026-10-21/arms/`. The control passed (A = 0, interval [0, 0]).
+
+- **Verdict: NO EDGE, indistinguishable.** `base-25`: A = −0.02 pts a year, 95 % interval
+  [−3.85, +4.16], over 2,445 session pairs.
+- **The book earned what SPY earns at its exposure:** +166.60 % against +167.13 % for exposure-matched
+  SPY (SPY held whole: +297.07 %), at an average exposure of 75.8 % and a maximum drawdown of −22.9 %;
+  about 10.6 % a year against SPY's 15.3 % *[annualised from the table over 2,445 sessions]*.
+- **Slippage sweep:** A = +0.32 at 5 bps and +0.31 at 10.
+- **H2 fails for both ablations.** `technical-only-25`: A = +1.80 [−2.75, +7.08], paired difference
+  from `base-25` +1.83 [+0.00, +4.05]; neither lower bound is above 0, and the lead is 2025 (+11.6) and
+  2026 (+40.6, partial). `relative-strength-only-25`: A = −1.27 [−3.14, +0.62], at 24 % exposure.
+- **Years:** `base-25` has positive excess in 4 of 10; the first half reads −1.34, the second +1.33.
+- **What follows ([DL-315](../../design-log.md), fixed 2026-10-23 before the score):** the ranking code
+  stays, and the line closes in an ADR written with the verdict, on the PASS.
 
 ## 7. Conclusions
 

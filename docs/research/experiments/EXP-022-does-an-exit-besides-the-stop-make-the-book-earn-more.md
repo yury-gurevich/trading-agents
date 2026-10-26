@@ -31,6 +31,13 @@ gate moves from *running* the arms to *reading* them. Appendix P stays as frozen
   **Ruled out:** scoring now (knowing the result would colour any later call on the fidelity count);
   waiting (the same computation, 17 hours later).
 
+**Amendment 2 — 2026-10-26 13:29 AEDT, the operator's word, recorded before anything is scored.** The operator lifted the seal before the fidelity PASS: *"whatever file. i want to see results"*. The fidelity read of 2026-10-26 (through `sched-2026-10-23`, replayed from `v0.128.06`) was INSUFFICIENT on the PM's floor alone: 8 of 10 judged recommendations, with 4 of 4 clean sessions, scanner 100 / 100, analyst 151 / 151 and PM 8 / 8 in agreement and 0 unexplained (OneDrive `fidelity/2026-10-26/`). Earlier the same day the operator opened one sealed file (which one was not said); just before scoring, every sealed file re-hashed identical to the seal (72 of 72 here; 30 of 30 in EXP-014).
+
+- **Scored now,** by section 5 steps 4–8 unchanged, from `../ta-exp022` at `v0.128.06`.
+- **The verdict is provisional until the fidelity PASS.** It becomes final only if the count reads PASS on decision paths equal to `v0.128.06`'s, under DL-237's rule unchanged. On FAIL, or if the count restarts on other decision paths, the verdict is void and recorded as void; the arms are no longer deleted unread, because they have been read.
+- **What it costs.** The result is now known, so every call left on the fidelity count (its floor, the timing of a retag, a restart) is made by the written rule alone.
+- **Ruled out:** waiting for the PASS, expected within one or two sessions (the operator chose not to wait).
+
 ## 1. Why we needed this experiment
 
 **The decision that waits.** Which exit, if any, the fleet builds first (DL-240 step 4). Today the only

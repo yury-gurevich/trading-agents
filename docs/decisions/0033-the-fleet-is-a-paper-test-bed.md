@@ -44,12 +44,12 @@ costs; (d) keep the repository as the method's etalon. The operator ruled out (c
 2. **The measure of done is the etalon bar** (the operator, 2026-08-20): the pack trades unattended
    for a sustained stretch, and its evidence catches its own defects without the operator. An edge was
    never part of that bar.
-3. **The search for an edge is no longer the goal.** An edge experiment runs when the operator asks
-   for one; the open leads (EXP-036's confirmation, the rest of R012's catalogue) stay unbuilt until
-   then.
-4. **The trading code stays as it is:** the ranking by [DL-315](../design-log.md), the stop-only exit
-   by EXP-022. A decision-path change is made for the bar (running unattended, honest evidence), not
-   for return.
+3. **The search for an edge continues.** The operator, correcting the planner's reading the same
+   day: *"NO, no, no .. we have not found it yet, so we are working on something else while we will find an edge"*.
+   The paper fleet is what the project works on meanwhile; the open lead is EXP-036's confirmation.
+4. **The trading code stays as it is** until an experiment shows an edge: the ranking by
+   [DL-315](../design-log.md), the stop-only exit by EXP-022. Until then a decision-path change is made
+   for the bar (running unattended, honest evidence).
 
 ## Consequences
 
@@ -60,8 +60,9 @@ costs; (d) keep the repository as the method's etalon. The operator ruled out (c
   they close the research line.
 - The work queue ranks first what stops the fleet running unattended or its evidence catching its own
   defects.
+- Edge experiments keep running beside the test bed, pre-registered as before.
 - Capital needs a new ADR. Should the operator reopen it, the evidence points at DL-317 A: SPY with
-  the 200-day guard, one check and one order a day.
+  the 200-day guard, one check and one order a day, unless an edge is found first.
 
 ## Alternatives considered
 
@@ -70,5 +71,5 @@ costs; (d) keep the repository as the method's etalon. The operator ruled out (c
 - **(c) Pause the fleet.** Ruled out by the operator on 2026-10-24 (DL-317 Amendment 4).
 - **(d) The repository as the method's etalon, alone.** Not a rival: the bar is the etalon's, and a
   paper fleet running unattended is how it is proven. Folded into decision 2.
-- **Keep searching for an edge as the goal.** Not chosen: 130-plus ideas came back null, and the
-  fleet's own pipeline earns what the index earns at its exposure.
+- **Stop searching for an edge.** Ruled out by the operator on 2026-10-26: none has been found yet,
+  so the search goes on beside the test bed.

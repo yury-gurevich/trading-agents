@@ -1,6 +1,6 @@
 # EXP-014 — Does the price-only pipeline earn more than SPY held at the same exposure, over the index as it stood?
 
-**Status:** PRE-REGISTERED 2026-10-01 (planner). **Scored 2026-10-26 under Amendment 2, provisional until the fidelity PASS: NO EDGE (indistinguishable).** Sections
+**Status:** PRE-REGISTERED 2026-10-01 (planner). **Scored 2026-10-26 under Amendment 2: NO EDGE (indistinguishable). FINAL 2026-10-27: the fidelity count read PASS.** Sections
 1–5 and Appendix P are fixed before the first one. A change of design after it is a new experiment.
 **Decision / origin:** next-leg plan E17.5 ([next-leg-plan.md](../../next-leg-plan.md)), work-queue
 **82** · scope [DL-232](../../design-log.md) · fidelity gate [DL-237](../../design-log.md) · this design
@@ -196,7 +196,7 @@ session; Finnhub sectors for 724 lines *[measured 2026-10-01]*.
 
 ## 6. Results
 
-*Provisional (Amendment 2): final only on the fidelity PASS.* Scored 2026-10-26 13:43–13:50 AEDT by
+*Final (Amendment 2's condition met): the fidelity count read PASS on 2026-10-27 through `sched-2026-10-26` from `v0.128.06` (5 of 5 clean sessions, PM 16 of 10 judged recommendations, 0 unexplained; OneDrive `fidelity/2026-10-27/`).* Scored 2026-10-26 13:43–13:50 AEDT by
 `scripts/replay_verdict.py` at `v0.128.06` over the sealed arms (30 of 30 re-hashed identical just
 before); `verdict.md` SHA-256 `33a32fa6…`, `verdict.json` `169df1e0…`, beside the arms in OneDrive
 `exp014-2026-10-21/arms/`. The control passed (A = 0, interval [0, 0]).

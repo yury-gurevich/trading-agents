@@ -1,6 +1,6 @@
 # EXP-022 — Does an exit besides the stop make the book earn more than stops alone, at the same cost?
 
-**Status:** PRE-REGISTERED 2026-10-16 (planner). **Scored 2026-10-26 under Amendment 2, provisional until the fidelity PASS: CHAMPION HOLDS.** Sections
+**Status:** PRE-REGISTERED 2026-10-16 (planner). **Scored 2026-10-26 under Amendment 2: CHAMPION HOLDS. FINAL 2026-10-27: the fidelity count read PASS.** Sections
 1–5 and Appendix P are fixed before the first one; a change of design after it is a new experiment.
 **Decision / origin:** work-queue **92** · direction [DL-240](../../design-log.md) step 3 (the operator,
 2026-09-28: *"we need to sell at profit"*) · the replay's exits [DL-304](../../design-log.md),
@@ -196,7 +196,7 @@ deliberator (the replay is price-only); today's sectors; four Alpaca adjustment 
 
 ## 6. Results
 
-*Provisional (Amendment 2): final only on the fidelity PASS.* Scored 2026-10-26 13:30–13:43 AEDT by
+*Final (Amendment 2's condition met): the fidelity count read PASS on 2026-10-27 through `sched-2026-10-26` from `v0.128.06` (5 of 5 clean sessions, PM 16 of 10 judged recommendations, 0 unexplained; OneDrive `fidelity/2026-10-27/`).* Scored 2026-10-26 13:30–13:43 AEDT by
 `scripts/exit_verdict.py` at `v0.128.06` over the sealed arms (72 of 72 re-hashed identical just
 before); `verdict.md` SHA-256 `5f2ffe0c…`, `verdict.json` `e00e568e…`, beside the arms in OneDrive
 `exp022-2026-10-21/arms/`. The control passed (largest deviation 0).

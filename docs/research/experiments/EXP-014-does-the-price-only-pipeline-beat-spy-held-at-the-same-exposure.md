@@ -1,6 +1,6 @@
 # EXP-014 — Does the price-only pipeline earn more than SPY held at the same exposure, over the index as it stood?
 
-**Status:** PRE-REGISTERED 2026-10-01 (planner). **Scored 2026-10-26 under Amendment 2: NO EDGE (indistinguishable). FINAL 2026-10-27: the fidelity count read PASS.** Sections
+**Status:** PRE-REGISTERED 2026-10-01 (planner). **Scored 2026-10-26 under Amendment 2: NO EDGE (indistinguishable). FINAL 2026-10-27: the fidelity count read PASS; the line closes in [ADR-0034](../../decisions/0034-the-price-only-ranking-stays-and-its-line-closes.md).** Sections
 1–5 and Appendix P are fixed before the first one. A change of design after it is a new experiment.
 **Decision / origin:** next-leg plan E17.5 ([next-leg-plan.md](../../next-leg-plan.md)), work-queue
 **82** · scope [DL-232](../../design-log.md) · fidelity gate [DL-237](../../design-log.md) · this design
@@ -216,12 +216,18 @@ before); `verdict.md` SHA-256 `33a32fa6…`, `verdict.json` `169df1e0…`, besid
 
 ## 7. Conclusions
 
-*Pending.*
+The price-only pipeline has no edge over 2017-01-03 → 2026-09-25: its book earned what SPY earns at
+the same exposure (A = −0.02 pts a year [−3.85, +4.16]), and neither pillar alone carries (H2 fails).
+With EXP-015, EXP-023 and EXP-024, the ranking shows no stock-picking skill at 10 sessions. The
+`technical-only` arm's paired lead (+1.83 [+0.00, +4.05]) comes from 2025 and the partial 2026; it is
+reported, not tested further.
 
 ## 8. Recommended code changes, and how to implement them
 
-*Pending. The verdict goes into an ADR, and the planner brings the operator one recommendation for
-G-EDGE.*
+None. By [DL-315](../../design-log.md), fixed before the score, the ranking code stays and its
+research line closes: [ADR-0034](../../decisions/0034-the-price-only-ranking-stays-and-its-line-closes.md). The G-EDGE recommendation this section owed
+is answered by the operator's [ADR-0033](../../decisions/0033-the-fleet-is-a-paper-test-bed.md): a
+paper test bed, no capital.
 
 ## Appendix P — Pre-registration (frozen)
 

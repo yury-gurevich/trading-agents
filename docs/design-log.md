@@ -12,6 +12,27 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-320 - Test the take-profit in falling markets on EXP-022's own arms, not on 2000-2009 stocks - status: DECIDED (planner, on the operator's *"that wud be great if we run an experiment"*, 2026-10-27); pre-registered as [EXP-037](research/experiments/EXP-037-does-a-take-profit-earn-more-than-the-stop-alone-in-falling-markets.md)
+
+**Why.** EXP-022 found the take-profit behind the stop alone over 2017-2026, a mostly rising window.
+The open question is whether falling markets turn the sign.
+
+**Decided:** score EXP-022's sealed `target-25` against `stops-25` on the sessions whose previous SPY
+close sits below its 200-session mean (404 of 2,445), with EXP-022's bootstrap; $0, no new run.
+
+**Ruled out:**
+
+- **A stock-level replay of 2000-02 and 2007-09.** The replay cache starts 2016-01-04, and Tiingo
+  serves no prices for the names that failed then (LEH, BSC, ENRNQ answer with no dates; `WM` is now
+  Waste Management): the test would drop the worst losers. Measured 2026-10-27.
+- **Industry or ETF portfolios over 1926-2016.** Unseen and survivorship-free, but not the fleet's
+  positions: their volatility and the fleet's stop and target widths do not carry over.
+- **A new regime-switched arm now.** It needs harness code, and the cache is fully read; it follows
+  only on H1.
+
+**Limit, stated in the record:** EXP-022's per-year table was read on 2026-10-26, and 2022 holds half
+the falling sessions, so the reading is not blind.
+
 ## DL-319 - Every idea is tested, strange ones included, through one funnel: state it first, discover with the false-discovery rate controlled, confirm on untouched data, then an economic bar - status: DECIDED (the operator, 2026-10-24: *"You should be able to come up with a theoretical foundation for testing. Let's test every idea (no matter how strange it may sound at first glance)"*; method by the planner, delegated); [R012](research/idea-testing-foundation/INDEX.md); batch 1 pre-registered as [EXP-029](research/experiments/EXP-029-do-calendar-and-natural-signals-move-the-us-market-over-a-century.md); **run 2026-10-24: one of 28 confirms (January small caps), none economic**
 
 **Why.** Testing many ideas one by one, each at 5 %, guarantees false discoveries: of 100 ideas with no

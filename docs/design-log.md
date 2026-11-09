@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-321 - Screen every published stock predictor at once on Open Source Asset Pricing, not QuantConnect's ports one by one - status: DECIDED (planner, delegated; the operator, 2026-11-09: *"Would something like this … be beneficial for us? Maybe inspire us to test them?"*, then *"fix first, then the rest"*); pre-registered as [EXP-038](research/experiments/EXP-038-do-published-stock-predictors-still-earn-after-publication-outside-micro-caps.md)
+## DL-321 - Screen every published stock predictor at once on Open Source Asset Pricing, not QuantConnect's ports one by one - status: DECIDED (planner, delegated; the operator, 2026-11-09: *"Would something like this … be beneficial for us? Maybe inspire us to test them?"*, then *"fix first, then the rest"*); pre-registered as [EXP-038](research/experiments/EXP-038-do-published-stock-predictors-still-earn-after-publication-outside-micro-caps.md); **run 2026-11-09: NONE, 0 of 25 discovery passers confirm on 2016–2025**
 
 **Why.** The operator found QuantConnect's library (more than 400 strategies with code; a small-cap
 turnover long-short among them) and asked whether to test them. Most are published academic predictors;

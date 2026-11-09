@@ -12,6 +12,33 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-321 - Screen every published stock predictor at once on Open Source Asset Pricing, not QuantConnect's ports one by one - status: DECIDED (planner, delegated; the operator, 2026-11-09: *"Would something like this … be beneficial for us? Maybe inspire us to test them?"*, then *"fix first, then the rest"*); pre-registered as [EXP-038](research/experiments/EXP-038-do-published-stock-predictors-still-earn-after-publication-outside-micro-caps.md)
+
+**Why.** The operator found QuantConnect's library (more than 400 strategies with code; a small-cap
+turnover long-short among them) and asked whether to test them. Most are published academic predictors;
+OSAP (Chen and Zimmermann) replicates 212 of them as monthly portfolios through 2025-12, with each
+paper's publication year, so one pass covers most of the library.
+
+**Decided:**
+
+1. **D1 — one batch, R012's funnel:** each predictor's ex-micro long-short after publication;
+   Benjamini–Hochberg at q = 10 % on the months through 2015, Holm at 5 % on 2016–2025, then the long
+   leg against the market (+0.25 % a month, t 1.645) as a gate to a replay on the fleet's own data.
+2. **D2 — ex-micro as the primary:** the fleet trades S&P 500 names; the original-paper, value-weighted
+   and decile versions are reported, not barred.
+3. **D3 — $0, a planner kit script,** run once after this pre-registration; nothing is built from it.
+
+**Ruled out:**
+
+- **QuantConnect's strategies one by one.** Weeks of work, each needing data this project lacks
+  (survivorship-free small caps, point-in-time fundamentals), to re-measure what OSAP already gives.
+- **Running them on QuantConnect's cloud with its data.** Needs an account in the operator's name, and
+  its engine and fill model are not the fleet's.
+- **Picking the library's best recent performers.** Its 3-month column is an out-of-sample Sharpe over
+  one quarter, uncertain by about ±2; the best of 400 such numbers is the luckiest.
+- **Jensen, Kelly and Pedersen's factor data** (R011's other source): a download form, and the same
+  papers; OSAP is a direct download.
+
 ## DL-320 - Test the take-profit in falling markets on EXP-022's own arms, not on 2000-2009 stocks - status: DECIDED (planner, on the operator's *"that wud be great if we run an experiment"*, 2026-10-27); pre-registered as [EXP-037](research/experiments/EXP-037-does-a-take-profit-earn-more-than-the-stop-alone-in-falling-markets.md)
 
 **Why.** EXP-022 found the take-profit behind the stop alone over 2017-2026, a mostly rising window.

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `chore-forecaster-image-without-torch`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** 0.131.06 (uv.lock re-lock owed)
 **Effort:** S
 **Decisions:** work-queue 141 option A (the operator, 2026-10-26: *"do 141 A for CODEX"*) ·
@@ -248,7 +248,7 @@ model test double gained a ref to continue satisfying the amended sentiment port
 
 ## Closeout — evidence
 
-**Status:** BUILT — implementation and focused proof complete; lock, F1 and full CI unproven.
+**Status:** MERGED — `0.131.06` (`3956050c`, tag `v0.131.06`, GATE PROVEN), deployed as `s289a` 2026-11-12. Codex's handback read: implementation and focused proof complete; lock, F1 and full CI unproven (the planner ran them, below).
 
 **Tree the proofs ran in (and `.env` present?):**
 `C:/Users/yury_/Downloads/project/ta-chore-forecaster-slim`, branch
@@ -727,6 +727,16 @@ run by the planner in the same worktree:
 - **Return notes accepted:** the return leg's `Model` node labels `FakeReturnModel`'s readings
   `lightgbm-gbdt` (`agent.py:119`); recorded, not fixed, per the spec. Filed as the next drift row
   at merge.
+- **Merge:** CodeQL set-diff against `sprint-289-…` by (rule, path): 137 = 137, no new pair, 0 errors;
+  `make gate-ran` from this worktree `GATE PROVEN 3956050c…` (CI, CodeQL, Security Findings);
+  fast-forward to `main`, tag `v0.131.06`, pushed 2026-11-12 21:48 AEDT.
+- **Deploy (the operator: *"depoy it"*):** the three injected packs unchanged against `83c4da27`
+  (`s288`), so an image-only retag; build `43204223360` from `main` at `3956050c`, 15 of 15; tag
+  `s289a` (a chore after S289, DL-106); 17 of 17 `Succeeded`; 16 apps on `s289a`, 16 `Succeeded`,
+  one KEDA rule each, the debaters' 3 replicas and the manager's concurrency 3 intact, the job's
+  cron `*/10 22-23 * * 1-5`; `DeployRecord deploy:2026-11-12T11:02:53…:s289a:3956050c…`.
+  Forecaster image, amd64 manifest: **344 → 117 MB compressed**, 7 layers both. Rollback `s288`.
+- **Owed:** F2 on `sched-2026-11-12`; DRIFT-117 (the return leg's label) filed at merge.
 
 ## Return notes
 

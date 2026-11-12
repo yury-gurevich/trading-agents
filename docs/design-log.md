@@ -344,6 +344,8 @@ that restarts the fidelity count, for no measured gain.
 
 **Builder record 2026-11-12 (same chore):** choose `neutral-fake-sentiment` as the fake's structural ref; keep settings.model_ref as the FinBERT load name. Reject changing that default as a provenance fix: injected scorers may differ. No contracts or return-label change; add ref to the existing raising test double to preserve its port conformance. Offline lock/cache and closure results are reported in the chore, never inferred from the all-extras venv.
 
+**Merged and deployed 2026-11-12 (the planner; the operator: *"depoy it"*):** `0.131.06` (`3956050c`, tag `v0.131.06`, GATE PROVEN), deployed as `s289a` (image-only retag, packs unchanged, rollback `s288`); the forecaster image reads 344 → 117 MB compressed. DRIFT-116 CORRECTED; the return leg's twin filed as DRIFT-117. Work-queue 141 CLOSED.
+
 ## DL-315 - If EXP-014 finds no edge, the price-only ranking stays in the code and its research line closes - status: CLOSED 2026-10-27 by [ADR-0034](decisions/0034-the-price-only-ranking-stays-and-its-line-closes.md) (EXP-014 final on the fidelity PASS: NO EDGE); DECIDED (the operator, 2026-10-23 07:11 AEDT, on the planner's recommendation: *"no edge → keep the code, close the line."*); applies when EXP-014 scores (work-queue 82); follows [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) and [EXP-023](research/experiments/EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md)
 
 **Why.** EXP-023 section 7 left the price-only ranking's future to the operator once EXP-014

@@ -16,6 +16,8 @@ from agents.forecaster.domain.sentiment import NEUTRAL
 class SentimentModel(Protocol):
     """Boundary for a per-headline 0-1 sentiment scorer."""
 
+    ref: str
+
     def score_headlines(self, headlines: tuple[str, ...]) -> tuple[float, ...]:
         """Score each headline in 0-1 (1 most positive), aligned to input order."""
         ...  # pragma: no cover - protocol declaration only.
@@ -23,6 +25,8 @@ class SentimentModel(Protocol):
 
 class FakeSentimentModel:
     """Deterministic per-headline scorer used by the unit gate."""
+
+    ref: str = "neutral-fake-sentiment"
 
     def __init__(
         self,

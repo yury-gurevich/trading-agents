@@ -35,6 +35,15 @@ tags: [sentiment, finbert, analyst, forecaster, p12]
 >   model. "Stays the advisory challenger" names a class, not a running leg
 >   ([DRIFT-116](../laws/drift-register.md), work-queue 141).
 
+> **Amendment 2026-10-26 (work-queue 141 option A; built by
+> [chore-forecaster-image-without-torch](../sprints/chore-forecaster-image-without-torch.md)).**
+> FinBERT is an offline research scorer (EXP-024); no fleet path runs it and the fleet image
+> does not carry it. The deployed forecaster loop runs only the barrier leg. The local
+> sentiment leg uses the neutral fake unless a caller injects a model, and its Model node
+> records that scorer's own ref. The challenger seat is empty until a sprint wires a model.
+> Option B, wiring FinBERT into the fleet, was not chosen: its fleet cost is unmeasured and
+> EXP-024 found no signal. The offline forecaster extra and adapters remain available.
+
 ## Context
 
 The analyst's composite score reserves a third **sentiment** pillar (weight 0.20) alongside the

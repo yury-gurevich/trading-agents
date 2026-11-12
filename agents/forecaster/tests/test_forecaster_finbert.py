@@ -41,6 +41,17 @@ def test_finbert_requires_transformers(monkeypatch: pytest.MonkeyPatch) -> None:
         FinBERTModel()
 
 
+def test_finbert_ref_names_the_model_it_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FORE-PERF-01: an injected FinBERT identifies its locally loaded model."""
+    calls: list[dict[str, str]] = []
+    monkeypatch.setattr(
+        importlib, "import_module", lambda _name: _fake_transformers(calls)
+    )
+    model = FinBERTModel(model_ref="m")
+    assert model.ref == "m"
+    assert calls[0]["model"] == model.ref
+
+
 def test_finbert_scores_and_aligns_each_headline(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

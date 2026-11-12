@@ -3679,7 +3679,7 @@ wheels = [
 
 [[package]]
 name = "trading-agents"
-version = "0.131.5"
+version = "0.131.6"
 source = { virtual = "." }
 dependencies = [
     { name = "cryptography" },
@@ -3693,6 +3693,9 @@ azure = [
     { name = "azure-identity" },
     { name = "azure-keyvault-secrets" },
     { name = "azure-servicebus" },
+]
+barrier = [
+    { name = "arch" },
 ]
 forecaster = [
     { name = "arch" },
@@ -3746,6 +3749,7 @@ dev = [
 requires-dist = [
     { name = "alembic", marker = "extra == 'postgres'", specifier = ">=1.13" },
     { name = "anthropic", marker = "extra == 'llm'", specifier = ">=0.120.2" },
+    { name = "arch", marker = "extra == 'barrier'", specifier = ">=8.0.0" },
     { name = "arch", marker = "extra == 'forecaster'", specifier = ">=8.0.0" },
     { name = "azure-identity", marker = "extra == 'azure'", specifier = ">=1.16" },
     { name = "azure-keyvault-secrets", marker = "extra == 'azure'", specifier = ">=4.8" },
@@ -3765,7 +3769,7 @@ requires-dist = [
     { name = "torch", marker = "extra == 'forecaster'", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "transformers", marker = "extra == 'forecaster'", specifier = ">=5.14.1" },
 ]
-provides-extras = ["runtime", "postgres", "mcp", "forecaster", "llm", "azure", "optimizer"]
+provides-extras = ["runtime", "postgres", "mcp", "forecaster", "barrier", "llm", "azure", "optimizer"]
 
 [package.metadata.requires-dev]
 dev = [

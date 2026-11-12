@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.12 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -13,7 +13,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Identity & purpose (`IDN`)
 
 - **FORE-IDN-01** — The forecaster's single job is advisory ML signal production over **four
-  legs**: the sentiment model (`forecast`, FinBERT-class), the return model (`forecast_return`,
+  legs**: the injected sentiment model (`forecast`; no fleet path injects one, so the leg
+  scores with the neutral fake, and the deployed loop does not fire it, `FORE-TRG-01`;
+  FinBERT is an offline research scorer, EXP-024), the return model (`forecast_return`,
   LightGBM), the approved-factor shadow (`forecast_factor`), and the barrier model
   (`forecast_barrier`, EXP-018's GARCH barrier claim, `FORE-OUT-07`). Each leg returns a
   `ShadowPrediction` whose `shadow=True` flag is always set. It produces evidence; it never decides.
@@ -302,7 +304,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Performance envelope (`PERF`)
 
-- **FORE-PERF-01** — FinBERT model is injected (no network call at inference); latency is
+- **FORE-PERF-01** — An injected sentiment model runs locally (no network call at inference); latency is
   CPU-bound on the inference batch.
 - **FORE-PERF-02** — LightGBM model loads from disk on first call (`bars_for_full_confidence=60`
   bars minimum for full confidence).
@@ -481,3 +483,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   stated them settles). `FORE-OUT-07` and `FORE-OUT-08` name the new fields. Why: DL-240 reads each
   name as a distribution, the chance of each outcome and the return in each case; the claim stated the
   chances only, and the PM's sizing over distributions needs the return. 28 / 55 → 30 / 57.
+- v1.13 — chore-forecaster-image-without-torch / work-queue 141 option A (2026-11-12):
+  FORE-IDN-01 names the injected sentiment model and neutral fallback; FinBERT is offline
+  research, never run by a fleet path. FORE-PERF-01 names local injected-model inference.
+  The barrier-only image and the sentiment Model ref now reflect the scorer. DRIFT-116
+  corrected; no contracts change, no new clause; whole-purpose partial proofs stay gray.

@@ -8,13 +8,38 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+
 from agents.forecaster.model import FakeSentimentModel
+from agents.forecaster.settings import ForecasterSettings
 from agents.forecaster.tests.helpers import (
     forecast_message,
     scorecard_message,
     wire_forecaster,
 )
 from contracts.forecaster import Scorecard, ShadowPrediction
+
+
+@pytest.mark.parametrize("injected", [False, True])
+def test_sentiment_model_record_names_the_scorer(injected: bool) -> None:
+    """FORE-IDN-01 / FORE-OUT-05: the Model ref identifies the actual scorer."""
+    model = FakeSentimentModel(default=0.8) if injected else None
+    if model is not None:
+        model.ref = "x"
+    settings = ForecasterSettings(model_ref="setting-is-not-the-scorer")
+    bus, graph, sink = wire_forecaster(
+        news={"AAPL": ("headline",)}, model=model, settings=settings
+    )
+    prediction = ShadowPrediction.model_validate(
+        bus.request(forecast_message("AAPL")).payload
+    )
+    node = graph.get_node("Model", settings.model_id)
+    assert node is not None
+    assert node.props["ref"] == ("x" if injected else "neutral-fake-sentiment")
+    assert node.props["ref"] == (model.ref if model else FakeSentimentModel.ref)
+    assert node.props["ref"] != settings.model_ref
+    assert prediction.value == (0.8 if injected else 0.5)
+    assert sink.faults == []
 
 
 def _key_of(graph_node_id: str) -> str:
@@ -81,6 +106,8 @@ def test_forecast_handles_a_provider_error_response() -> None:
 
 
 class _RaisingModel:
+    ref = "raising-test-model"
+
     def score_headlines(self, headlines: tuple[str, ...]) -> tuple[float, ...]:
         del headlines
         raise RuntimeError("model down")

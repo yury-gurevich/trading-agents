@@ -91,7 +91,7 @@ class ForecasterAgent(AgentBase):
         provenance = write_forecast(
             self._graph,
             model_id=self._settings.model_id,
-            model_ref=self._settings.model_ref,
+            model_ref=self._model.ref,
             subject_kind=forecast.subject_kind,
             subject_ref=forecast.subject_ref,
             reading=reading,

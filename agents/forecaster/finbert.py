@@ -37,6 +37,7 @@ class FinBERTModel:
         self._pipeline = transformers.pipeline(
             "sentiment-analysis", model=model_ref, revision=revision
         )
+        self.ref = model_ref
 
     def score_headlines(self, headlines: tuple[str, ...]) -> tuple[float, ...]:
         """Run FinBERT over each headline and align each result to a 0-1 score."""

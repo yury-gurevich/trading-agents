@@ -7,6 +7,8 @@ External I/O: reads local Dockerfiles only.
 
 from __future__ import annotations
 
+import re
+import tomllib
 from pathlib import Path
 
 from scripts.served_agent_roster import (
@@ -15,6 +17,23 @@ from scripts.served_agent_roster import (
 )
 
 from kernel.serve_transport import request_topic
+
+
+def test_forecaster_image_installs_only_the_barrier_extra() -> None:
+    """FORE-PERF-01: the deployed barrier leg needs no offline ML stack."""
+    text = Path("agents/forecaster/Dockerfile").read_text(encoding="utf-8")
+    sync = next(line for line in text.splitlines() if line.startswith("RUN uv sync"))
+    assert "--extra barrier" in sync
+    assert "--extra forecaster" not in sync
+
+
+def test_barrier_extra_contains_arch_without_the_offline_models() -> None:
+    """FORE-IDN-01: the image's barrier extra excludes the unused model legs."""
+    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    requirements = project["project"]["optional-dependencies"]["barrier"]
+    names = {re.split(r"[<>=!~\[\s;]", item, maxsplit=1)[0] for item in requirements}
+    assert "arch" in names
+    assert names.isdisjoint({"torch", "transformers", "lightgbm"})
 
 
 def test_served_agent_images_install_azure_extra() -> None:

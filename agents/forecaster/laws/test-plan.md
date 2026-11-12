@@ -2,7 +2,7 @@
 
 | Clause | Status | Test |
 | --- | --- | --- |
-| FORE-IDN-01 | ⬜ | four-leg purpose statement (sentiment, return, factor, barrier, each `shadow=True`); per-leg duties are proven by `FORE-OUT-01/02/07` and the factor test; no single boundary proof of the whole purpose; _tbd_ |
+| FORE-IDN-01 | ⬜ | four-leg purpose statement (injected sentiment or neutral fake, return, factor, barrier, each `shadow=True`); partial: `test_sentiment_model_record_names_the_scorer`, `tests/test_served_agent_images.py::test_barrier_extra_contains_arch_without_the_offline_models`; per-leg duties are proven by `FORE-OUT-01/02/07` and the factor test; no single boundary proof of the whole purpose; _tbd_ |
 | FORE-IDN-02 | 🟩 | `test_a_successful_call_writes_one_complete_claim`, `test_the_claim_passes_the_packs_vocabulary_guard`, `test_a_settlement_records_every_field_the_ledger_needs`, `test_the_settlement_passes_the_packs_vocabulary_guard` |
 | FORE-IN-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
 | FORE-IN-02 | ⬜ | Demoted S156: `test_forecast_return_persists_and_returns_a_shadow_prediction` proves a shadow prediction is returned and persisted, not that forecast_return ignores request features while fetching OHLCV via the provider bus. |
@@ -17,7 +17,7 @@
 | FORE-OUT-02 | 🟩 | `test_every_forecast_is_a_shadow_signal`, `test_served_forecast_is_request_triggered_shadow_only` |
 | FORE-OUT-03 | 🟩 | `test_scorecard_reports_samples_and_never_promotes`, `test_generic_scorecard_covers_factor_predictions_and_never_promotes`, `test_the_scorecard_reports_the_ledger_as_exp018_scores_it` |
 | FORE-OUT-04 | 🟩 | `test_scorecard_is_never_promotion_eligible`, `test_scorecard_reports_samples_and_never_promotes`, `test_generic_scorecard_covers_factor_predictions_and_never_promotes`, `test_the_scorecard_reports_the_ledger_as_exp018_scores_it`, `test_an_empty_ledger_reports_counts_and_no_scores` |
-| FORE-OUT-05 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
+| FORE-OUT-05 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction`, `test_sentiment_model_record_names_the_scorer` |
 | FORE-OUT-06 | 🟩 | `test_forecast_with_no_news_is_neutral_zero_confidence` |
 | FORE-OUT-07 | 🟩 | `test_a_rising_history_reaches_the_target_first`, `test_a_falling_history_reaches_the_stop_first`, `test_a_flat_history_with_wide_barriers_reaches_neither`, `test_a_session_touching_both_barriers_counts_as_the_stop`, `test_the_simulation_equals_exp018`, `test_a_successful_call_writes_one_complete_claim`, `test_a_full_pass_never_reaches_the_decision_path`, `test_a_deployed_forecaster_claims_from_the_provider_written_history`, `test_the_local_pipeline_claims_from_the_provider_written_history` |
 | FORE-OUT-08 | 🟩 | `test_the_outcome_is_exp018s`, `test_the_settlement_equals_the_test_beds_outcome_on_random_paths`, `test_the_entry_is_the_settling_series_own_close`, `test_a_settlement_records_every_field_the_ledger_needs`, `test_a_split_settles_void_with_no_brier`, `test_the_settlement_passes_the_packs_vocabulary_guard`, `test_the_oracle_is_the_records_run`, `test_the_scorecard_reports_the_ledger_as_exp018_scores_it`, `test_fewer_than_two_settled_dates_give_no_interval`, `test_an_empty_ledger_reports_counts_and_no_scores`, `test_another_models_ledger_is_its_own`, `orchestration/tests/test_forecaster_settlement_stage.py::test_the_local_pipeline_settles_an_older_claim`, `test_a_pass_lists_no_claim_and_settles_the_open_ones` |
@@ -55,7 +55,7 @@
 | FORE-OBS-01 | ⬜ | Partial: one `ShadowPrediction` (+ `Model`) per sentiment and factor reading (`test_forecast_persists_and_returns_a_shadow_prediction`, `test_forecast_factor_enabled_writes_shadow_only_prediction`) and one `BarrierForecast`, no `ShadowPrediction`, per barrier claim (`test_a_successful_call_writes_one_complete_claim`); uncovered: the return leg's node; _tbd_ |
 | FORE-OBS-02 | ⬜ | — |
 | FORE-OBS-03 | ⬜ | — |
-| FORE-PERF-01 | ⬜ | — |
+| FORE-PERF-01 | ⬜ | Partial: `tests/test_served_agent_images.py::test_forecaster_image_installs_only_the_barrier_extra`, `test_finbert_ref_names_the_model_it_loaded`; image selection and loaded model identity proven, no whole inference/network boundary proof |
 | FORE-PERF-02 | ⬜ | — |
 | FORE-PERF-03 | ⬜ | — |
 | FORE-PERF-04 | 🟩 | `test_a_runs_claims_read_its_history_once`, `test_a_history_the_provider_writes_later_is_read_when_it_lands`, `test_a_pass_lists_no_claim_and_settles_the_open_ones` |

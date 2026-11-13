@@ -736,7 +736,9 @@ run by the planner in the same worktree:
   one KEDA rule each, the debaters' 3 replicas and the manager's concurrency 3 intact, the job's
   cron `*/10 22-23 * * 1-5`; `DeployRecord deploy:2026-11-12T11:02:53…:s289a:3956050c…`.
   Forecaster image, amd64 manifest: **344 → 117 MB compressed**, 7 layers both. Rollback `s288`.
-- **Owed:** F2 on `sched-2026-11-12`; DRIFT-117 (the return leg's label) filed at merge.
+- **F2 PASSED, read 2026-11-13** on `sched-2026-11-12` (8 / 8, `ACCEPTANCE PASS`): 41 barrier claims and 39 settlements
+  from the slim image, two designed refusals at `warning`, no forecaster `error`
+  ([functionality-checks](../laws/functionality-checks.md)). DRIFT-117 (the return leg's label) is work-queue 142.
 
 ## Return notes
 

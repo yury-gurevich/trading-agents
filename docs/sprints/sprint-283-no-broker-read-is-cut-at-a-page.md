@@ -276,10 +276,14 @@ output.
       suppressed: the same writes digest and the same faults on both; the built tree's head-of-run
       order listings are the `open` and the windowed `all`, each one page, and its broker answer
       bytes are less than a sixth of `main`'s; the pending buys are untouched.
-- [ ] **F2 (the planner's, after deploy):** the first weekday night on the new tag runs 8 / 8 with
+- [x] **F2 (the planner's, after deploy):** the first weekday night on the new tag runs 8 / 8 with
       no new fault from the reads; execution's first five minutes read under S279's 5 MB; every
       waiting Fill that night is settled as on any night. The first old stop that fills or expires
       (2026-11-10 at the latest) settles and its position carries a stop again by the next run.
+      **PASSED:** four limbs 2026-10-20 on `sched-2026-10-19`; the last 2026-11-13: the broker ended the
+      four stops of 2026-08-12 (AAPL, KO, MDT, DIS) at 2026-11-10 21:05:30 UTC as `canceled`, and
+      `sched-2026-11-10` settled each and placed it again as `<stop key>#1`
+      ([functionality-checks](../laws/functionality-checks.md), [DL-306](../design-log.md) amendment 1).
 
 ---
 

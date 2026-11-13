@@ -10,5 +10,6 @@
 | [closed-2026-10-10.md](closed-2026-10-10.md) | 5 closed rows of the queue table | Table rows: 112, 111, 121, 124, 106 | 2026-10-10 |
 | [closed-2026-10-12.md](closed-2026-10-12.md) | 7 closed rows of the queue table | Table rows: 103, 115, 125, 126, 128, 129, 117 | 2026-10-12 |
 | [closed-2026-10-17.md](closed-2026-10-17.md) | 9 closed rows of the queue table | Table rows: 135, 133, 122, 132, 123, 130, 116, 119, 101 | 2026-10-17 |
+| [closed-2026-11-13.md](closed-2026-11-13.md) | 9 closed rows of the queue table | Table rows: 134, 108, 90, 138, 137, 139, 140, 141, 82 | 2026-11-13 |
 
 🪤 **"Verbatim" means the text, not the links.** A moved row's relative links resolved from `docs/`; here each one carries one more `../`. Nothing else differs from what the queue said. Text inside backticks is not a link and is not re-based.

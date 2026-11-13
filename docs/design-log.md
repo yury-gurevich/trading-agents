@@ -740,6 +740,8 @@ loop a pass would feed; live shadowing (work-queue 89).
 
 **Fidelity.** Every changed file is under `agents/execution/` and none is `order_tolerance.py`; nothing in `contracts/` or the packs changes, so a deploy does not restart the count (`scripts/replay_fidelity_git.py::DECISION_PATHS`).
 
+**Amendment 1 — the first old stops ended, and F2's last limb passed (planner, 2026-11-13).** Measured on the paper account: Alpaca ended the four stops still resting from 2026-08-12 (AAPL, KO, MDT, DIS) at 2026-11-10 21:05:30 UTC, five minutes after the `expires_at` this entry measured, and it reports that end as status `canceled` with `canceled_at` set and `expired_at` null, **not `expired`**. Four, not five: NVDA's stop filled 2026-10-30. `sched-2026-11-10` settled each stop's `Fill` `broker_status: rejected` and its stop pass placed each again as `<stop key>#1` at the decided price, so the code treats the broker's `canceled` as it treats `expired`; nothing changes. *Consequence for a reader:* a test double or a query that looks for `expired` stops will find none on this account; a stop the broker cancels at 90 days and one the fleet cancels itself are told apart only by who asked. Between 21:05 UTC and that night's stop pass the four positions had no resting stop, after the close; named, not built against. Work-queue 134 closed ([functionality-checks](laws/functionality-checks.md)).
+
 ## DL-305 - EXP-022 is pre-registered before the fidelity verdict, and its scorer pairs each exit arm with stops-only at the same slippage on the same resampled days - status: DECIDED (planner, 2026-10-16 18:05 AEDT); built as [S282](sprints/sprint-282-each-exit-arm-is-scored-against-stops-only-on-the-same-days.md), MERGED 2026-10-16 (`50d29eee`); **amended 2026-10-21** (the operator approved): the arms run before PASS, blind and sealed, and are scored only on PASS (EXP-022 Amendment 1, which records the roads not taken); work-queue 92, [DL-240](design-log.md) step 3 (the operator, 2026-10-16: *"create next sprint for 92"*)
 
 **Question.** S281 gave the replay its exits. DL-240's next step is the pre-registered exit
@@ -1989,26 +1991,6 @@ before snapshots; without evidence the retry names its conservative scope and re
 non-master pack targets. Ruled out: infer the changed set from missing activations (that would erase
 the very failure being checked), or write a new graph property. No D1-D10 decision is reversed.
 
-## DL-281 - S260's command defaults to the four measured concurrencies - status: DECIDED (builder, 2026-10-09)
-
-D9 lists every argument default except the concurrency list. The Goal says the bare command runs
-several debates at once, and the required command compares one through four. Default `--concurrency`
-to `1 2 3 4`, keeping an explicit list authoritative. Requiring the flag or choosing only four was
-ruled out: either would make the bare command miss the stated comparison. This is a tooling default;
-no production setting or pack changes. All other choices implement D1-D9, including real first-poll
-startup, without changing the Appendix's production calls.
-
-**Proof constraint found during the build.** Main advanced independently after the sprint tree was
-cut from `10770f91`, including STATE trimming and tracker updates. The requested two-tip
-`git diff main --stat` therefore includes reverse STATE changes even though this branch never edits
-STATE. Retain that actual output and assess this sprint's protected-path edits against its original
-base and merge base, naming the literal empty-output check as failing. Rebasing solely to make that
-check print nothing was ruled out: it would import unrelated history into the proving tree without
-changing the harness. Do not alter STATE or main to manufacture an empty result. The sprint's Return
-notes record the measured refs and all three comparisons.
-
----
-
 ## DL-280 - the judge has ruled `revise` on every order since the reward-to-risk floor went to 0, and `revise` changes no order; the causes are in the packet and in the judge's prompt - status: MEASURED; fix PROPOSED (planner, 2026-10-09 10:20 AEDT), told to the operator, not yet confirmed
 
 **The question.** On `sched-2026-10-08` the judge ruled `revise` on TMO because *"the live reward-risk gate
@@ -2134,41 +2116,6 @@ once, stands and is the operator's call. The dial stays at 1.
 
 ---
 
-## DL-278 - a build with a re-run job cannot be proven to the deploy record, and a tag the fleet has pulled is not pushed again - status: DECIDED (planner, 2026-10-08 22:50 AEDT); the reader's fix is work-queue 115
-
-**What happened.** The `s259` build (run `37767377219`) pushed fifteen images and failed one job: the
-scanner image's vulnerability scan could not download its database, so the image was never scanned or
-smoke-tested. I re-ran that one job (`gh run rerun --failed`); it passed and the run read `success`, 15 of
-15. The fleet was retagged to `s259` and verified. Then `scripts/record_deploy.py` refused: "GitHub build
-evidence is required before recording a deploy".
-
-**Measured.** `surfaces/dashboard/github_tag_builds.py` proves that a run published a tag by finding
-`trading-agents-master:<tag>` in the run's log archive. GitHub's archive for a run is the latest attempt's.
-Attempt 1's archive is 953 KB over 15 jobs and names the master image ten times. The latest is 56 KB, the
-scanner job alone, with no mention. A read-only call of the same reader gave 0 qualifying builds for `s259`.
-
-**Why the record could not be skipped.** `scripts/fidelity_export_helpers.py` takes a session's deployed
-commit from the `DeployRecord` in force when its scan ran. With no record for this deploy every session
-would be compared against `s257`'s commit, and the three law books S259 rewrote would make each one
-unclean. The deploy existed to prevent exactly that.
-
-**Decided.** A fresh build of the same commit in one attempt, under a new tag, `s259a` (run `37770503860`,
-15 of 15; the reader finds it), and a second retag onto it, verified and recorded. `s259` was live from
-11:09 UTC until that retag, with no record.
-
-**Ruled out.** Re-running every job of the first run, or a fresh build under `s259`: either pushes fifteen
-images again under a tag the fleet had already pulled, so what was verified would no longer be what runs.
-Recording by assertion: the skill forbids it, and the record's worth is that it is not asserted. Leaving
-the deploy unrecorded: above.
-
-**Changed.** The deploy-fleet skill says to dispatch a fresh run when a job fails and never to re-run it.
-The reader is unchanged; reading every attempt's archive is work-queue 115.
-
-**Not decided.** Whether `s259a` is the right name. The convention suffixes a chore to the sprint it
-follows; this is a second build of the same sprint. The `DeployRecord`'s commit is what is authoritative.
-
----
-
 ## DL-277 - parallel debates were built in September and left off because one replica took the whole queue; S256 removed that, measured at no cost - status: MEASURED (planner, 2026-10-08 19:33 AEDT); one clean fleet run at three at once on 2026-10-09 (amendment 1); **three at once is LIVE on the fleet since 2026-10-09 (amendment 2, operator)**; **the debaters' three replicas were lost 2026-10-11, the F2 NOT met, three restored 2026-10-17 (amendment 3)**; work-queue 113
 
 **The question.** DL-274 lists three ways out of a night's capacity. The third, more than one debate at a
@@ -2270,125 +2217,6 @@ night still does not fit.
 
 ---
 
-## DL-276 - a law row's default and bounds are compared with the code; twelve rows state bounds the code does not enforce, and eight of them cannot be rewritten yet - status: DECIDED (planner, 2026-10-08 19:16 AEDT); BUILT and MERGED as [S258](sprints/sprint-258-a-law-rows-numbers-are-compared-with-the-code.md) `0.123.03` (2026-10-08); the eight rows rewritten as [S259](sprints/sprint-259-the-eight-excused-law-rows-state-the-codes-bounds.md) `0.123.04` and deployed `s259a` the same night; work-queue 114 closed
-
-**The question.** DL-275 found that the parameter step of `make ci` compares a `PARAM` row's name and
-its Tunable cell and nothing else. What should it compare, and what does it find when it does?
-
-**Measured (2026-10-08, `main` `60a19e29`, a worktree with no `.env`; a prototype on no branch).** The
-step covers 16 books and 235 rows that have a settings field. Value cells are written four ways (177 in
-backticks, 45 in backticks and double quotes, 9 a dash for a secret, 4 the bare word `empty`), and all 235
-agree with the code's default once each form is read. Bounds are written four ways: `≥` and `≤`, `>=` and
-`<=`, `>` and `<`, and intervals such as `[0.0, 1.0]` and `(0, 1]`. 164 rows have a bound in code. 152
-state the same bounds. **12 do not:** 8 state a different number or strictness, 3 state one side where the
-code has two, 1 states none. Four are in the execution book (`slippage_bps`, `min_promotion_runs`,
-`min_approval_rate`, `alpaca_timeout`), six in the portfolio manager's (`starting_cash`,
-`max_position_pct`, `max_positions`, `cash_buffer_pct`, `min_order_quantity`, `price_lookback_days`), one
-in the scanner's (`min_average_volume`) and one in the analyst's (`scaled_stop_atr_multiplier`). The
-prototype exits 1 on today's books naming exactly the four execution rows, exits 0 once they are
-rewritten, and exits 1 on each of six planted wrong rows, the first of them the row S257's builder
-planted. Against the whole suite it fails exactly one existing test, which pins the number of warnings;
-the gate self-test passes 31 of 31. Printing a law's `≥` raises `UnicodeEncodeError` on this machine when
-stdout is redirected (`cp1252`), which is how `make ci` is always run.
-
-**Correction of my amendment to DL-275.** I wrote there that 23 rows state a numeric bound, 41 bounds in
-all, that all 41 equal the code's, and that a widened step would pass as the books stand. The script
-behind it read one notation of the four. It reported no disagreement because it could not read the rows
-that disagree. The Value half of that amendment stands.
-
-**Decisions.**
-
-- **D1.** The Value cell is compared with the field's default for every row with a settings field, by
-  reading rules that cover every form in use. A cell that cannot be read is a failure, not a skip.
-- **D2.** The Type cell's bounds are compared with the field's, in every notation in use. The set of
-  bounds stated must be the set the field has, each number equal.
-- **D3.** For the twelve rows the law follows the code. No settings file changes. The four execution
-  rows are rewritten by S258.
-- **D4.** The other eight are excused by a recorded list: a row's Type cell exactly as written today. An
-  entry excuses a bounds disagreement only while the cell equals the record, and an entry that is no
-  longer needed fails the gate. They are rewritten, and the entries deleted, at the first deploy that
-  restarts the fidelity count or after [DL-237](design-log.md)'s verdict.
-- **D5.** A failure names the row, what the law states and what the code has, and no line may raise on a
-  console that cannot encode a law's symbols.
-- **D6.** Work-queue 114 stays open until the eight rows are rewritten.
-
-**Why eight rows wait.** The fidelity check calls a session clean only when no file differs under its
-decision paths between the deployed commit and the replayed one, and it counts every file under
-`agents/portfolio_manager/`, `agents/scanner/` and `agents/analyst/`, a law book included
-(`scripts/replay_fidelity_git.py`). The count restarted on 2026-10-08 and needs four clean sessions and
-ten judged recommendations. A row of text is not worth that.
-
-**Ruled out.** Rewriting all twelve now (above). Teaching the fidelity check to ignore law books: it
-narrows a rule fixed before its result was known. Changing the code's bounds to match the books: it
-changes what a setting may be set to, on no evidence. Comparing only the bounds a row states: three rows
-state one side of two. A warning that leaves the gate green: work-queue 33 removed a baseline of 57
-divergences for that reason. A case in the gate self-test: its file is frozen at its size.
-
-**Not measured.** Whether each code bound is the intended rail. The tunables' `why` texts do not say. A
-rail that looks wrong is a drift-register row and its own decision, not part of this.
-
-**Built as decided (2026-10-08 20:55 AEDT, S258 merged as `0.123.03`).** D1 to D5 were built with no
-departure, and the planner's own count over the built reader gives the numbers above. Three limits of
-the reader are accepted, and no row meets any of them today: a rail enforced by a validator function
-is not seen; a Type cell that states the same side twice is read by its last statement; and two
-numbers written with no space after the comma read as one grouped number, which fails against a field
-that has bounds and would pass against a field that has none.
-
-**Amendment (2026-10-08 21:35 AEDT): the eight rows are rewritten the same night, as
-[S259](sprints/sprint-259-the-eight-excused-law-rows-state-the-codes-bounds.md).** D6 left them for
-the first deploy that restarts the fidelity count. The operator asked what clearing them takes and
-chose "tonight". The count's first session is `sched-2026-10-08`, which had not run: a session is
-clean when no decision path differs between the deployed commit and the commit the replay runs from
-(`scripts/replay_fidelity_git.py`, read whole), so a deploy before that run spends nothing, and the
-rewritten books are part of the code the count starts on. **Ruled out.** Waiting for the next deploy
-that restarts the count, or for the verdict: one to three weeks, and each night adds a session a later
-rewrite would discard. Merging without deploying: the next retag, whatever it carried, would then
-restart the count. Removing the excusing mechanism: its tests still prove it and the repository test
-now holds the list empty, so an entry cannot arrive quietly. **Not decided.** Whether the code's
-limits are the right ones. The books now state them (up to 500 positions, a cash buffer up to 0.95, a
-single-name cap from 0); tightening one is a change to decision code and its own decision.
-
----
-
-## DL-275 - S257's numeric PARAM proof belongs to its literal tests; the shared gate checks names and tunable declarations - status: MEASURED and DECIDED (builder, 2026-10-08); confirmed by the planner, the gap measured and filed as work-queue 114
-
-**Found while planting guards.** S257 says the PARAM gate fails until the two numeric rows follow the
-settings. With the implemented settings unchanged, reverting only the `max_tokens` row to default
-8,192 and upper bound 8,192 made A1 fail, but `python scripts/check_param_law_sync.py` still exited 0.
-The mutation was restored byte for byte. Evidence: `.tools/s257/guards.txt` from the initial run
-(preserved as `.tools/s257/guards-initial.txt`), G07. Read `scripts/param_law_sync_sources.py`:
-`ParamRow` stores the name and Tunable cell, not Value or Type; `scripts/param_law_sync.py` compares
-name presence and the tunable family, with separate default/envelope warnings.
-
-**Decision.** Keep the gate unchanged. A1 and A4 pin the two complete numeric row prefixes, and their
-plants must fail on old values; B2 still runs the shared checker and plants a tunable-declaration
-mismatch that the checker actually enforces. Record the spec correction in Return notes. This changes
-no guarantee and needs no law clause or contract change.
-
-**Ruled out.** Widening the repository-wide checker to compare numeric defaults and bounds would
-change proof for every agent, discover unrelated old-row divergences and exceed S257's settings-only
-scope. Treating its exit 0 as numeric proof would hide the observed survivor. The scoped literal tests
-already supply that proof without changing a production decision.
-
-**Amendment (planner, 2026-10-08 16:27 AEDT): confirmed, and the gap is measured.** The same plant
-on the built tree: with the cap's law row back at 8,192, `scripts/check_param_law_sync.py` exits 0. The
-claim in S257's spec was the planner's, and it was never run in its failing direction: the prototype ran
-the step only with the rows already changed. Then every cell the step skips was read on `main`
-(`7309b858`), in all 16 law books it covers. Of 235 `PARAM` rows that have a settings field, the Value
-cell equals the code's default in 220; the other 15 are written in a form a number comparison cannot read
-(four `Decimal`s, one `Decimal(...)` literal, one date, nine secrets shown as a dash) and each equals the
-code when read by eye. 23 rows state a numeric bound in the Type cell, 41 bounds in all, and all 41 equal
-the code's. So the second reason above for leaving the step alone, that widening it would find old
-disagreements, is not borne out: there is none today, and a widened step would pass as the books stand.
-The first reason holds: it is a change to a shared gate and was not S257's to make. Filed as work-queue
-114.
-
-🩹 **Corrected the same evening (DL-276).** The count of bounds above read one notation of the four the
-books use. Read in all of them, twelve rows state bounds the code does not enforce. The conclusion that a
-widened step would pass as the books stand is withdrawn; the builder's second reason was right.
-
----
-
 ## DL-274 - the output cap, the manager's wait and execution's grace are one chain; the cap goes to 16,384, and a night with more debated buys than fit in the grace places none of them - status: DECIDED for the cap and the wait (planner, 2026-10-08 14:09 AEDT); BUILT and MERGED as [S257](sprints/sprint-257-a-debaters-turn-may-write-16384-output-tokens.md) `0.123.02` (`b0831f64`, 2026-10-08), F1a and F1b passed, deployed `s257` 2026-10-08 with the manager's wait at 240 seconds, work-queue 111; MEASURED and open for the grace (work-queue 113)
 
 **The question.** Work-queue 111 offered two fixes for the output cap on `gpt-5.5`: raise the cap, or lower
@@ -2469,59 +2297,6 @@ snapshots. The manager activated on that revision; the code before S257 refuses 
 start-up. The value is live only. The tunables pack still says 120, so a full `up` puts 120 back, and a
 rollback to an older image must set 120 first. The two debaters keep 120: the setting bounds the manager's
 wait for a served reply.
-
----
-
-## DL-272 - a served request is settled when it is taken, one at a time, and a second completion is its own ledger row - status: DECIDED (planner, 2026-10-08 13:11 AEDT); BUILT and MERGED as [S256](sprints/sprint-256-a-served-request-is-settled-when-it-is-taken.md) `0.123.01` (`b3f1ee1f`, 2026-10-08), F1 passed, deployed `s257` 2026-10-08; work-queue 112
-
-**The question.** DL-271 measured the defect and listed four parts of a fix without
-choosing between them: an explicit lock, a renewal or an early settlement, a caught lost lock, a visible
-repeat. This entry chooses.
-
-**Measured, 2026-10-08, no LLM call.**
-
-- **The whole mechanism, read.** `serve_once` polls, runs the handler, then replies; `reply` publishes and
-  only then completes the message. One poll takes up to ten requests, all locked from the moment they are
-  received and handled one after another, so the third has waited two turns before it starts. A reply that
-  cannot be published abandons the request, which is then delivered and served again. `write_llm_call`
-  returns the first row for a key that exists.
-- **A reproduction with no network** (the Appendix of the spec) prints all five of these on `main`.
-- **A prototype of the decisions below, on the live namespace:** disposable topics, the default one-minute
-  lock, a 70-second handler. The request is served once, with no error and one reply, and a second
-  consumer is given nothing. `main`'s code on the same check raised `MessageLockLostError` and served the
-  request twice (DL-271).
-- **The prototype against the whole suite:** five existing tests fail and 4,298 pass. The five assert the
-  behaviour being removed.
-- **Who is served.** Only the deliberator's manager sends to a request topic, to its two peers. The
-  supervisor, the operator, the researcher and the forecaster run the same loop and receive nothing.
-- **The record.** 4 of 1,130 debater calls took more than 60 seconds, all on 2026-08-19 on `gpt-5.5`. The
-  manager has recorded no reply that nobody was waiting for, in 90 runs.
-
-**Decided.**
-
-| # | Decision | Ruled out, and why |
-| --- | --- | --- |
-| D1 | A served request is settled when it is taken, before its handler runs. `reply` only publishes | **Renewing the lock** (the vendor's `AutoLockRenewer`): a second thread on a synchronous receiver's connection, provable only on the live service, and it keeps the redelivery that makes the second paid call. **An explicit five-minute lock alone:** the vendor's maximum, not applied to a subscription that exists, and a batch still ages under it. **Catching the lost lock:** the request is still served again |
-| D2 | One request a pass: `receive_max_messages` defaults to 1 | **Settling each request just before its own handler:** a third method on the consumer protocol, for a batch that buys nothing when requests are handled in turn. **Deleting the tunable:** more surface for no gain |
-| D3 | A reply that cannot be published is a `Fault`, and the loop serves the next request. The two debater peers pass a graph sink; the other served agents keep the in-memory one | **Letting the error end the process:** the next request waits for a restart. **Swallowing it, as today:** silent |
-| D4 | A completion under a ledger key that exists is its own row, under that key plus `:repeat-N`. No new property | **One row with a repeat count and summed tokens:** rewrites an audit row and loses the second call's hash and latency. **Keying by the bus message's id:** changes every key and reader. **A `repeat_of` property:** new graph vocabulary for what the key already says |
-| D5 | Nothing changes on any subscription. The five-minute lock set by hand on 2026-10-08 stays | **Setting it back:** it costs nothing where it is, and it protects the older code after a rollback |
-| D6 | `OPR-IDM-02` is rewritten to what the code does: duplicate commands share one `CommandAudit` and one `Intent`, and each model call is its own `LLMCall` row | **Leaving it:** the clause said two of each, the code has always written one, and the test that proves `OPR-IDM-03` counted one `LLMCall` for two paid calls |
-
-**What D1 gives up.** The bus no longer serves a turn again after its peer stopped mid-call or its reply
-could not be published. That order fails open when the manager's wait ends, as a timed-out turn does
-today. With the five-minute lock on the live subscriptions a redelivery already arrives after the
-manager's 120-second wait, so the fleet as it stands gives up nothing. *[ASSUMED, from the vendor's
-documentation, not measured]* A locked message is not freed when its receiver disconnects; nothing above
-depends on it.
-
-**Found on the way, not fixed here.** A request message has no time to live: the manager sets none and the
-subscriptions keep a message forever. A request whose caller has stopped waiting is served whenever a peer
-next takes it, a paid call with no reader. No instance is recorded. It is noted on work-queue 111, which
-changes the wait.
-
-**Not decided.** Whether the other four served agents should record their failed replies: nothing sends to
-them today.
 
 ---
 
@@ -3082,83 +2857,6 @@ answer H1, about $10.50 for all 52. It can run now, because that account is fund
 counts as an unread answer, as the pre-registration already says.
 
 ---
-
-## DL-257 - EXP-014 scores five replays from 2017 with a block bootstrap through the reporter's own metric, and the harness holds a line back until it has the history the fleet's analyst is given - status: DECIDED (planner, 2026-10-01; work-queue 82, S250); **amended 2026-10-21** (the operator approved): the arms run before PASS from the fidelity pin, blind and sealed, and are scored only on PASS (EXP-014 Amendment 1)
-
-**Question.** E17.5 owes a verdict on the price-only pipeline (DL-232): edge, no edge, or edge in one
-pillar. What exactly is scored, by what rule, and what must the harness stop doing first?
-
-**Measured (2026-10-01).**
-
-- **The one ten-year replay decides on history the fleet never has.** The cache's first bar is
-  2016-01-04 and the replay starts there, so **113 of its 552 buys** were decided on fewer than 200
-  bars: 103 in 2016, 10 on lines that had just joined the index, 57 on fewer than 50, the least on 11.
-  The analyst's own floor is `min_history_bars` = 2 (bounded at 60); `required_history_bars` is 200,
-  and a fleet run's names arrive with 203 bars.
-- **187 of 721 lines** have their first bar after 2016: the cache holds a line's bars from the day it
-  joined, not before.
-- Stocks and SPY both carry `adjustment=all`, so both sides are total return.
-- The drop-one ablation is one analyst setting: `relative_strength_weight` 0.0 or 1.0 (live 0.20).
-- A series rebuilt from resampled session pairs and passed through `calculate_performance` reproduces
-  the original to 3 × 10⁻¹⁴; one call over ten years costs 3.2 ms, so 10,000 resamples of five arms is
-  under three minutes without numpy, which the gate's environment does not have.
-
-**Decision.**
-
-1. **A history rule in the harness, off by default.** With it on, a line that is not held is offered
-   to the pipeline only when its visible window holds `required_history_bars(settings.analyst)` bars.
-   Held lines stay visible. The member-sessions removed are counted.
-2. **The scored window is 2017-01-03 → the cache's last session** (2,446 sessions). 2016 is history
-   only, so every line present since the cache began has 252 bars on the first scored day.
-3. **One statistic:** annualised excess over exposure-matched SPY, computed from
-   `calculate_performance`'s outputs.
-4. **One interval:** a stationary block bootstrap over session pairs (mean block 20, 10,000
-   resamples, seed 0), the same draws for every arm, each resampled series scored by
-   `calculate_performance`.
-5. **Calendar years are evaluation blocks.** Nothing is fitted, so there is no training window and
-   nothing to purge. The plan's phrase "purged, non-overlapping test windows" was written for a fitted
-   model; EXP-015 is the one that fits.
-6. **Five arms:** the fleet's settings at 5, 10 and 25 bps, and the two ablations at 25 bps.
-7. **The verdict is the plan's rule** (lower bound above 0 at 25 bps). An ablation counts only if it
-   also beats the full pipeline on the same resampled days.
-8. **The run waits for E17.4's PASS.** The tooling does not.
-9. **The split.** A cloud session builds the rule, the arms command and the scorer against synthetic
-   series ([S250](sprints/sprint-250-a-replays-excess-return-comes-with-an-interval-and-a-verdict.md)). The planner runs
-   [EXP-014](research/experiments/EXP-014-does-the-price-only-pipeline-beat-spy-held-at-the-same-exposure.md) on the licensed cache and writes the result.
-
-**Ruled out.**
-
-- *Fetch each late line's earlier bars.* The right repair, and the only one that keeps a joiner in the
-  universe from its first day. It is a cache rebuild over the network in a file at 199 lines. Holding
-  the line back and counting it gives a valid verdict now; revisit if the count is large.
-- *Raise `ANALYST_MIN_HISTORY_BARS`.* Bounded at 60, and a setting the fleet does not run.
-- *Start the replay on 2016-01-04 with the rule on.* Ten months of cash inside the scored window.
-- *Chain the daily ratios inside the bootstrap.* A second definition of return, the thing the plan's
-  one-metric rule forbids.
-- *An i.i.d. bootstrap.* Daily excess returns of a book that carries positions are not independent.
-- *A fresh replay per year.* Each starts in cash and spends weeks deploying; that is another strategy.
-- *A t-test on the ten yearly numbers.* Ten observations, the last one partial.
-- *Ablation arms at 10 bps too.* The bar is at 25; two more 84-minute runs would decide nothing.
-- *Score the existing smoke replay.* It predates five merged fixes and contains the short-history buys.
-- *Hold out the last two years.* No setting is chosen inside this experiment, so a holdout has nothing
-  to protect. The honest limit is stated instead: the pack's settings were chosen with this decade in
-  view, which biases toward finding an edge.
-
-**Not claimed.** Anything about the full pipeline (fundamentals, sentiment, the deliberator), or about
-the fleet's 99-name book at 22 % invested.
-
-**Amendment (planner, 2026-10-01, at S250's first return).** Decision 1 was written against a window
-the planner assumed held about 203 sessions and never measured by year. The builder measured it: the
-provider's holiday table covered 2024–2027 only, so before 2024 every weekday counted as a session
-and the declared lookback came out about a week short. *[verified on the cache]* The window held
-194–198 sessions on all 1,760 sessions of 2017–2023, so the rule as specified would have kept every
-arm in cash until 2024, and every earlier replay on this harness (S235's smoke run included) gave the
-analyst at most 198 bars before 2024, with no 200-day average. **Repair:** the table now holds every
-NYSE closure from 2016 and 2025-01-09 (DL-258's amendment); the calendar equals the cache's sessions
-on every day from 2016-01-04 to 2026-09-25, and the window holds 203 on all 2,446 scored sessions.
-*Ruled out:* cutting the harness window from the cache's own sessions, which leaves the calendar
-wrong and stops the harness calling the fleet's own function. The live fleet's lookback is unchanged
-for any as-of after 2025-10-29. Appendix P is untouched: it says only that the rule is on.
 
 ## DL-252 - each debater turn is a DSPy-rendered guided turn, reproduced without DSPy, parsed strictly, and recorded with its packet - status: DECIDED (builder, 2026-09-30; S246)
 
@@ -3830,32 +3528,6 @@ between.
 **Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
 
 ---
-
-## DL-236 - a price-only ensemble is measured on the replay cache now, and built only if it wins - status: DECIDED (operator, 2026-09-27)
-
-**Question.** With ten years of the point-in-time index cached (S235), should shadow-prediction
-ensembles start now, or wait for P18A.3 after the G-EDGE decision, where the plan put new signals?
-
-**Decision (operator: "I like your recommendations and would like to follow it").** Pull it forward **as a measurement,
-not a build**: **EXP-015**, offline on the replay cache, $0 LLM. Does a small price-and-volume
-ensemble beat the analyst's current technical score out of sample: rank IC, decile spread and decay,
-purged walk-forward windows, a final holdout, and 25 bps costs? The hypothesis and the pass bar are
-written before any model is fitted. It runs alongside E17.4. Only a clear win enters the forecaster's
-existing shadow loop (`shadow=True`, never gates; promotion through the registry, ADR-0010). A loss
-costs one experiment and builds nothing.
-
-**Why now.** The harness that can say no exists (S235). The forecaster already owns shadow models,
-return labels and a return scorecard. The measurement touches no live path.
-
-**Bounds.** Price and volume only (DL-232: no point-in-time fundamentals or news). Sector labels are
-today's (a mild look-ahead; 13 % of symbols have none). The SIP bars stay out of the repo; models and
-scores may not embed them. Item 89 (the live scanner reads IEX volume) must be fixed before any
-shadow model is fed by the live pipeline, or it will see the wrong universe.
-
-**Ruled out.** *Build a shadow ensemble now:* many fitted variants over ~2,700 sessions will find
-something by chance; the experiment's pre-registered bar is the guard. *Wait for G-EDGE:* the
-measurement is free and informs the verdict. *Train on the live graph's history:* six weeks, one
-configuration, IEX volume.
 
 ## DL-230 - the daily brief may carry P&L amounts to the operator's Telegram chat - status: DECIDED (operator, 2026-09-26)
 

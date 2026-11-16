@@ -12,6 +12,37 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-324 - Test the buy side at the operator's horizon on mid and small companies, on a universe built from public filings - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"I guess yes"* to a $0 buy-side test at one to two weeks); pre-registered as [EXP-041](research/experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md)
+
+**Decided (planner):** four events (a 10 % fall in five sessions; the same without and with a results
+release; a results reaction 5 points above the bucket) on companies ranked 501–1000 and 1001–2000 by
+dollar volume, bought at the next open and held ten sessions, through R012's funnel (discovery
+2017–2021, confirmation from 2022-02, then 25 bps a side). The universe is every US issuer whose insiders
+filed with the SEC in 2016q4–2021q4 (files on disk since EXP-027), priced by Alpaca's free SIP bars with
+each ticker resolved as of a date the issuer was listed, delisted companies kept; results dates are
+8-K item 2.02 acceptance times from `data.sec.gov`.
+
+**Measured while building, each fixed before a return was read:** a blank ticker was read as "NAN"; an
+`asof` after a mid-quarter delisting made the vendor answer with a later holder of the ticker (NetSuite's
+"N"; an over-the-counter company's "MRNA" came back as Moderna); 122 series sat under two issuers; bankrupt companies'
+last ticker is an over-the-counter one, so their listed history needed their earlier ticker.
+
+**Ruled out:**
+
+- *S&P 400 and 600 membership, as first offered.* The fund sponsor's holdings pages now answer a script
+  with the web page, and Wikipedia's S&P 600 list begins in 2019. Rank by dollar volume is the same
+  population by a rule that needs no vendor.
+- *The SEC's files for 2022 onwards.* `www.sec.gov` refuses a client without a contact address (403)
+  and the session's privacy guard refuses to send the operator's; `data.sec.gov` answers a generic
+  client. Cost: companies first listed after 2021 are absent. The operator can lift it by setting the
+  address in an environment variable.
+- *Today's constituents only.* A list of survivors makes "buy after a sharp fall" look good by
+  construction: the companies that fell and never came back are not on it.
+- *Earnings surprise against analysts' estimates.* No free point-in-time estimates; the market's own
+  reaction is the surprise measure with the stronger record (Brandt et al. 2008) and EXP-038's lead.
+- *A book simulation now.* The funnel first; a simulation is pre-registered only for a cell that
+  passes, as in EXP-038.
+
 ## DL-323 - Test "sell what we would not buy today" as its own replay arm: the thesis exit's floor raised from 0.50 to the buy floor - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"would i buy it today? … If not then we have to sell to minimise loss. Am i right?"*, then *"check that this can run at $0 with the existing harness and pre-register it"*); pre-registered as [EXP-040](research/experiments/EXP-040-does-selling-what-the-analyst-would-not-buy-today-beat-the-stop-alone.md); **run 2026-11-16: BEHIND, dR −9.47 pts a year [−17.31, −2.14]; the floor stays 0.50 and the rule is closed for the price-only pipeline**
 
 **Found while checking: DL-240 recorded the thesis exit's floor as 0; it is 0.50** (code default and pack).

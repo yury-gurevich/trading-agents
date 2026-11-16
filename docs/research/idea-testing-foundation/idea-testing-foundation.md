@@ -52,6 +52,7 @@ after its training cutoff.
 | 5a. Crypto calendar | weekend, Monday, turn of month, Moon, Halloween, after ±5 % days | Coinbase BTC | [EXP-033](../experiments/EXP-033-do-calendar-and-strange-signals-move-bitcoin.md): **done**, 0 of 7 |
 | 5. Other markets (rest) | crypto weekday and weekend (done, 5a), crypto–equity spillover, commodity seasonality, currency carry with ETFs | Coinbase, Tiingo ETFs | queued |
 | 6. Published stock predictors, all at once | the 212 predictors Open Source Asset Pricing replicates (most of QuantConnect's library), the turnover effect among them | OSAP release 2026.10 | [EXP-038](../experiments/EXP-038-do-published-stock-predictors-still-earn-after-publication-outside-micro-caps.md): **done**, 0 of 25 confirm; the turnover effect gone since 1998 |
+| 7. Short-horizon events, mid and small companies | a sharp five-session fall (with and without a results release), a strong results reaction; ten sessions | Alpaca SIP bars for 7,092 US companies (delisted kept), SEC 8-K item 2.02 | [EXP-041](../experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md): pre-registered |
 | Excluded until defined | the Super Bowl indicator (which teams count as "NFC" is ambiguous before 1970; 60 yearly observations); Mercury retrograde (needs an ephemeris: queued for batch 3) | — | — |
 
 **Already settled** (not re-tested): price-only stock ranking (EXP-015, EXP-023), news tone by lexicon

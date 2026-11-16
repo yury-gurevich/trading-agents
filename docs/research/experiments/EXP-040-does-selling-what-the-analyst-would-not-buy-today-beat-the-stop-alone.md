@@ -1,6 +1,6 @@
 # EXP-040 — Does selling a held stock the analyst would not buy today earn more, or lose less, than the stop alone?
 
-**Status:** PRE-REGISTERED 2026-11-16 (planner)
+**Status:** PRE-REGISTERED 2026-11-16 (planner, `e33e5108`) · COMPLETE 2026-11-16 · **BEHIND: selling what the analyst would not buy today earns 9.47 pts a year less than the stop alone, 95 % interval [−17.31, −2.14], behind in both halves; the floor stays 0.50**
 **Decision / origin:** the operator, 2026-11-16: *"for the stock i have purchased in the past - would i buy
 it today? Does it trend in the growth direction? If not then we have to sell to minimise loss. Am i
 right?"*, then *"check that this can run at $0 with the existing harness and pre-register it"*;
@@ -100,15 +100,96 @@ technical score carries trend, but that rule alone would need a new arm kind.
 
 ## 6. Results
 
-*To be written after the run.*
+All MEASURED, `exp040.json` (SHA-256 `4cb85e200c55…`), one scored run over 2,445 session pairs,
+2017-01-03 → 2026-09-25. The control reproduced the sealed `stops-25` byte for byte.
+
+- **Primary: BEHIND.** `thesis60-25` earned **+1.17 % a year** against `stops-25`'s **+10.64 %**:
+  **dR = −9.47 pts a year, 95 % interval [−17.31, −2.14]**; first half −7.28, second half −11.69.
+- **Secondaries, no bar:** both also lie below zero.
+
+  | Pair | dR, pts a year | 95 % interval | First half | Second half |
+  | --- | --- | --- | --- | --- |
+  | `thesis60-25` − `stops-25` (primary) | **−9.47** | [−17.31, −2.14] | −7.28 | −11.69 |
+  | `thesis55-25` − `stops-25` | −6.17 | [−12.07, −0.83] | −4.87 | −7.49 |
+  | `thesis60-10` − `stops-10` | −8.43 | [−16.14, −1.18] | −6.29 | −10.61 |
+
+- **The arms:**
+
+  | Arm | Return a year | Average exposure | Maximum drawdown | Buys a year | Round trips | Share losing | Mean trip |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | `stops-25` (floor 0.50) | +10.64 % | 75.8 % | −22.92 % | 70 | 629 | 96.5 % | −1.77 % |
+  | `thesis55-25` | +4.47 % | 44.2 % | −13.98 % | 150 | 1,418 | 79.3 % | +1.83 % |
+  | `thesis60-25` | +1.17 % | 23.5 % | −11.45 % | 475 | 4,595 | 56.8 % | +0.24 % |
+  | `stops-10` (floor 0.50) | +11.01 % | 76.1 % | −23.14 % | 68 | 608 | 96.5 % | −1.50 % |
+  | `thesis60-10` | +2.58 % | 23.8 % | −8.51 % | 470 | 4,541 | 53.4 % | +0.55 % |
+
+- **Round trips by what closed them** (25 bps arms; `limit` is the thesis sale):
+
+  | Arm | Closed by | Trips | Share losing | Mean return | Mean loss of the losers | Worst | Median sessions held |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | `stops-25` | stop | 604 | 100 % | −5.69 % | −5.69 % | −24.91 % | 18 |
+  | `stops-25` | thesis sale | 13 | 0 % | +158.68 % | none | +2.56 % | 862 |
+  | `thesis55-25` | stop | 1,106 | 100 % | −6.06 % | −6.06 % | −30.22 % | 11 |
+  | `thesis55-25` | thesis sale | 296 | 4.1 % | +31.22 % | −0.84 % | −2.49 % | 161.5 |
+  | `thesis60-25` | stop | 1,802 | 100 % | −5.85 % | −5.85 % | −24.91 % | 5 |
+  | `thesis60-25` | thesis sale | 2,781 | 28.9 % | +4.18 % | −1.35 % | −6.78 % | 5 |
+
+  The remaining trips of each arm (index removals and positions open at the end of the data, 12 to 16 an
+  arm) are in Appendix R.
+
+- **Loss, the operator's question.** The rule did not sell losers: **71 % of the 2,781 thesis sales at
+  0.60 were at a gain**, and the ones at a loss averaged −1.35 %. The losses still left through the
+  stop, at the same average (−5.85 % against −5.69 %) and the same worst trip (−24.91 %), and there were
+  **three times as many of them** (1,802 against 604), because the freed money bought again and each
+  new buy could stop out. At 0.55 the worst trip was deeper (−30.22 %).
+- **The drawdown is the smaller book, not protection** (derived after the run by division, not
+  pre-registered). `thesis60-25`'s drawdown is half the stop arm's on less than a third of the
+  exposure: per unit of exposure it is deeper (11.45 / 23.5 = 0.49 against 22.92 / 75.8 = 0.30), and so
+  is `thesis55-25`'s (0.32). By the sentence fixed in section 2 this is not counted as protection.
+- **Unexpected:** the size of the turnover. At 0.60 the median holding fell from 18 sessions to 5 and
+  the buys rose from 70 to 475 a year, yet the book sat 76 % in cash. *[not investigated]* why the
+  freed cash was not re-spent faster. Cost is not the cause of the verdict: at 10 bps a side the gap
+  is −8.43 pts.
 
 ## 7. Conclusions
 
-*To be written after the run.*
+Selling a held name the analyst would not buy today earns less than the stop alone, by about nine and a
+half points a year, in both halves of the decade, at both floors and at both costs. The rule is closed
+for the price-only pipeline, as section 2 fixed.
+
+Why, in the stop arm's own figures: 604 of its 629 trips end at the stop for −5.69 %, and its whole
+profit comes from the few it never sells, 13 names held a median 862 sessions for +158.68 %. A name's
+confidence falls below 0.60 within days of the buy, so the rule sells those names too, at +4.18 % after
+five sessions. It turns the book into the operator's intended style (hold about a week, take a small
+gain) and that book is close to flat: six trips in ten take +4.18 %, four in ten stop at −5.85 %, and
+the mean trip is +0.24 % after cost.
+
+The answer to the operator's question is in two parts. *Cap the loss:* the stop already does it, and
+this rule did not make the loss smaller, per trip or at worst. *Would I buy it today:* the question is
+sound, but the analyst's confidence is not a measure that answers it. It does not rank names
+([EXP-023](EXP-023-which-of-the-technical-scores-rules-carry-its-rank-ic.md)), so a fall below 0.60 says
+little about what the stock does next, and acting on it sells what was working.
+
+With [EXP-022](EXP-022-does-an-exit-besides-the-stop-make-the-book-earn-more.md) (take-profit and time
+exit, both behind) and
+[EXP-037](EXP-037-does-a-take-profit-earn-more-than-the-stop-alone-in-falling-markets.md) (a take-profit
+in falling markets, H0), every exit rule the replay can run has now been measured behind or level with
+the stop alone. An exit reshapes what the buys earn; it does not add to it. A week-long, small-gain
+style needs buys that win clearly more often than the six in ten measured here (break-even at these
+sizes is 58 in 100), which is an entry signal the fleet does not have.
+
+What this does not say: nothing about the live confidence, which also reads fundamentals and sentiment;
+nothing about a rule on the stock's own trend alone; and one decade that rewarded holding.
 
 ## 8. Recommended code changes, and how to implement them
 
-*To be written after the run.*
+None. By the rule fixed in section 2, on BEHIND `ANALYST_EXIT_CONFIDENCE_FLOOR` stays 0.50 in the pack
+and the code default, and no sprint follows. The live exit stays as it is: reachable only by a
+confidence the fleet has not yet produced (lowest live hold 0.509).
+
+The next measurement is on the buy side, at the operator's horizon: whether any signal available at $0
+picks names that rise over the next five to ten sessions. That is a new experiment and the operator's
+call to start.
 
 ## Appendix P — Pre-registration (frozen)
 
@@ -125,7 +206,86 @@ operator decides; H0 or BEHIND → the floor stays 0.50. SHA-256: `exp040_arms.j
 
 ## Appendix R — Run record
 
-*To be written after the run.*
+2026-11-16, this laptop. Pilot and scorer self-test ran before the pre-registration (section 3).
+
+**Arms.** `run_exp040_arms.ps1` from the pinned checkout (`f7e7ac21bf7c…`, clean), one arm at a time.
+Runner START 03:12:25Z, SEALED 07:38:11Z (4 h 26 min), exit 0; every arm exit 0 on its first attempt,
+2,446 sessions each.
+
+| Arm | Started (UTC) | Ended (UTC) | Replay seconds |
+| --- | --- | --- | --- |
+| `stops-25` (control) | 03:12:25 | 04:21:21 | 4,120 |
+| `thesis60-25` | 04:21:21 | 05:24:47 | 3,792 |
+| `thesis55-25` | 05:24:47 | 06:32:03 | 4,022 |
+| `thesis60-10` | 06:32:03 | 07:38:11 | 3,948 |
+
+**Seal.** `seal.txt`, 24 files, SHA-256 `878d1b0f236e03cb9b8136f006f5d112395cdb4990d53d3028f94fe14869ad63`;
+all 24 re-hashed against it before scoring, none differed. EXP-022's seal (`020ebb5ed68cedc6…`, 72
+lines): the twelve lines of `stops-25` and `stops-10` re-hashed, all equal.
+
+**Control.** The re-run `stops-25` equals the sealed arm in `equity.csv` (`47ae6f5c79cf…`),
+`fills.csv`, `sessions.csv`, `summary.json` and `benchmark.csv`; `arm.json` differs only in the
+experiment's name. The replay is deterministic at this commit and cache.
+
+**Kit.** `exp040_arms.json`, `exp040_score.py` and `run_exp040_arms.ps1` re-hashed after the arms and
+before scoring: the three SHA-256 of Appendix P, unchanged. No defect, no re-run, no edit.
+
+**Score.** `python -I exp040_score.py score --sealed ../exp022-2026-10-21/arms --arms arms --out
+exp040.json`, run once, exit 0. `exp040.json` SHA-256
+`4cb85e200c55395c608e0709403dd1f1bb301dd36c08c987bf00c9fd4966d117`, `score.log`
+`549d2b6234f874682c826d79462b1875761f21dbec86107f2b08495166624a07`, both in OneDrive
+`trading-agents-data/exp040-2026-11-16/`. The content of `exp040.json`, laid out one row a line (checked
+equal to the file after parsing):
+
+```json
+{
+ "control_stops25_equity_identical": true,
+ "verdict": "BEHIND",
+ "sessions": 2445,
+ "pairs": {
+  "thesis60-25 - stops-25": {"dR_pts": -9.47, "interval_95": [-17.31, -2.14], "first_half": -7.28, "second_half": -11.69, "verdict": "BEHIND"},
+  "thesis55-25 - stops-25": {"dR_pts": -6.17, "interval_95": [-12.07, -0.83], "first_half": -4.87, "second_half": -7.49, "verdict": "BEHIND"},
+  "thesis60-10 - stops-10": {"dR_pts": -8.43, "interval_95": [-16.14, -1.18], "first_half": -6.29, "second_half": -10.61, "verdict": "BEHIND"}
+ },
+ "arms": {
+  "stops-25": {"R_pct_a_year": 10.64, "exposure_pct": 75.8, "max_drawdown_pct": -22.92, "buys_a_year": 70, "round_trips": {
+    "data_end": {"trips": 6, "share_losing": 0.333, "mean_return_pct": 25.68, "mean_loss_of_losers_pct": -0.33, "worst_pct": -0.38, "median_sessions": 187.0},
+    "limit": {"trips": 13, "share_losing": 0.0, "mean_return_pct": 158.68, "mean_loss_of_losers_pct": null, "worst_pct": 2.56, "median_sessions": 862},
+    "membership_end": {"trips": 6, "share_losing": 0.167, "mean_return_pct": 17.66, "mean_loss_of_losers_pct": -2.51, "worst_pct": -2.51, "median_sessions": 32.5},
+    "stop": {"trips": 604, "share_losing": 1.0, "mean_return_pct": -5.69, "mean_loss_of_losers_pct": -5.69, "worst_pct": -24.91, "median_sessions": 18.0},
+    "all": {"trips": 629, "share_losing": 0.965, "mean_return_pct": -1.77, "worst_pct": -24.91}
+  }},
+  "stops-10": {"R_pct_a_year": 11.01, "exposure_pct": 76.1, "max_drawdown_pct": -23.14, "buys_a_year": 68, "round_trips": {
+    "data_end": {"trips": 6, "share_losing": 0.333, "mean_return_pct": 26.77, "mean_loss_of_losers_pct": -0.17, "worst_pct": -0.21, "median_sessions": 237.0},
+    "limit": {"trips": 12, "share_losing": 0.0, "mean_return_pct": 170.55, "mean_loss_of_losers_pct": null, "worst_pct": 2.87, "median_sessions": 902.0},
+    "membership_end": {"trips": 6, "share_losing": 0.167, "mean_return_pct": 18.22, "mean_loss_of_losers_pct": -2.37, "worst_pct": -2.37, "median_sessions": 32.5},
+    "stop": {"trips": 584, "share_losing": 1.0, "mean_return_pct": -5.53, "mean_loss_of_losers_pct": -5.53, "worst_pct": -24.69, "median_sessions": 18.0},
+    "all": {"trips": 608, "share_losing": 0.965, "mean_return_pct": -1.5, "worst_pct": -24.69}
+  }},
+  "thesis60-25": {"R_pct_a_year": 1.17, "exposure_pct": 23.5, "max_drawdown_pct": -11.45, "buys_a_year": 475, "round_trips": {
+    "data_end": {"trips": 6, "share_losing": 0.5, "mean_return_pct": 1.65, "mean_loss_of_losers_pct": -1.53, "worst_pct": -4.15, "median_sessions": 5.5},
+    "limit": {"trips": 2781, "share_losing": 0.289, "mean_return_pct": 4.18, "mean_loss_of_losers_pct": -1.35, "worst_pct": -6.78, "median_sessions": 5},
+    "membership_end": {"trips": 6, "share_losing": 0.167, "mean_return_pct": 2.74, "mean_loss_of_losers_pct": -4.41, "worst_pct": -4.41, "median_sessions": 14.0},
+    "stop": {"trips": 1802, "share_losing": 1.0, "mean_return_pct": -5.85, "mean_loss_of_losers_pct": -5.85, "worst_pct": -24.91, "median_sessions": 5.0},
+    "all": {"trips": 4595, "share_losing": 0.568, "mean_return_pct": 0.24, "worst_pct": -24.91}
+  }},
+  "thesis55-25": {"R_pct_a_year": 4.47, "exposure_pct": 44.2, "max_drawdown_pct": -13.98, "buys_a_year": 150, "round_trips": {
+    "data_end": {"trips": 9, "share_losing": 0.444, "mean_return_pct": 3.93, "mean_loss_of_losers_pct": -1.25, "worst_pct": -4.15, "median_sessions": 54},
+    "limit": {"trips": 296, "share_losing": 0.041, "mean_return_pct": 31.22, "mean_loss_of_losers_pct": -0.84, "worst_pct": -2.49, "median_sessions": 161.5},
+    "membership_end": {"trips": 7, "share_losing": 0.286, "mean_return_pct": 1.94, "mean_loss_of_losers_pct": -3.46, "worst_pct": -4.41, "median_sessions": 17},
+    "stop": {"trips": 1106, "share_losing": 1.0, "mean_return_pct": -6.06, "mean_loss_of_losers_pct": -6.06, "worst_pct": -30.22, "median_sessions": 11.0},
+    "all": {"trips": 1418, "share_losing": 0.793, "mean_return_pct": 1.83, "worst_pct": -30.22}
+  }},
+  "thesis60-10": {"R_pct_a_year": 2.58, "exposure_pct": 23.8, "max_drawdown_pct": -8.51, "buys_a_year": 470, "round_trips": {
+    "data_end": {"trips": 6, "share_losing": 0.5, "mean_return_pct": 1.81, "mean_loss_of_losers_pct": -1.38, "worst_pct": -4.01, "median_sessions": 5.5},
+    "limit": {"trips": 2799, "share_losing": 0.247, "mean_return_pct": 4.42, "mean_loss_of_losers_pct": -1.29, "worst_pct": -6.5, "median_sessions": 5},
+    "membership_end": {"trips": 6, "share_losing": 0.167, "mean_return_pct": 2.89, "mean_loss_of_losers_pct": -4.26, "worst_pct": -4.26, "median_sessions": 14.0},
+    "stop": {"trips": 1730, "share_losing": 1.0, "mean_return_pct": -5.72, "mean_loss_of_losers_pct": -5.72, "worst_pct": -24.69, "median_sessions": 5.0},
+    "all": {"trips": 4541, "share_losing": 0.534, "mean_return_pct": 0.55, "worst_pct": -24.69}
+  }}
+ }
+}
+```
 
 ## Appendix S — Scripts
 

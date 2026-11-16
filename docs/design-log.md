@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-323 - Test "sell what we would not buy today" as its own replay arm: the thesis exit's floor raised from 0.50 to the buy floor - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"would i buy it today? … If not then we have to sell to minimise loss. Am i right?"*, then *"check that this can run at $0 with the existing harness and pre-register it"*); pre-registered as [EXP-040](research/experiments/EXP-040-does-selling-what-the-analyst-would-not-buy-today-beat-the-stop-alone.md)
+## DL-323 - Test "sell what we would not buy today" as its own replay arm: the thesis exit's floor raised from 0.50 to the buy floor - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"would i buy it today? … If not then we have to sell to minimise loss. Am i right?"*, then *"check that this can run at $0 with the existing harness and pre-register it"*); pre-registered as [EXP-040](research/experiments/EXP-040-does-selling-what-the-analyst-would-not-buy-today-beat-the-stop-alone.md); **run 2026-11-16: BEHIND, dR −9.47 pts a year [−17.31, −2.14]; the floor stays 0.50 and the rule is closed for the price-only pipeline**
 
 **Found while checking: DL-240 recorded the thesis exit's floor as 0; it is 0.50** (code default and pack).
 The exit is live and has never been reachable: the lowest confidence on 2,396 live holds is 0.509. DL-240

@@ -12,6 +12,34 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-322 - Test a sticky bull / sideways / bear regime on the forecast's calibration first, at $0, before it reaches any decision - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"how about introduction of a regime. There were three regimes in trading from my memory"*, then *"run it as a $0 experiment"*); pre-registered as [EXP-039](research/experiments/EXP-039-does-a-trend-regime-make-the-barrier-forecast-more-accurate.md)
+
+**Question.** Should the fleet carry a trend regime (bull, sideways, bear), as the project's earlier
+system did, beside today's VIX-only label ([ADR-0028](decisions/0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md))?
+
+**Where it would act first: the forecast, not sizing or exits.** EXP-013 already ruled out sizing by
+regime (stressed markets earned more), and EXP-037 found no sign that a take-profit helps below SPY's
+trend. What waits now is work-queue 92's step 5, which needs calibrated claims: on 2026-11-16 the buy
+claims read skill −7.1 % and a return bias of +3.26 %. So the regime is tested as a correction to the
+barrier probabilities.
+
+**Decided (planner):** SPY's close against its 200-close mean plus a ±2 % band on its 20-session return
+(the earlier system's trend axis, with the long mean added), changed only after 3 consecutive closes
+(EXP-011's finding that a raw label flips too fast); a realised-minus-declared shift per label against
+the same shift pooled, so the test isolates the regime from plain recalibration; on EXP-018's saved
+`G_756` decisions, so no simulation is re-run.
+
+**Ruled out:**
+
+- *A hidden Markov model fitted to SPY returns.* More parameters, labels that move when refitted, and
+  a fit that must itself be kept out of sample; the rule-based label answers the same first question.
+- *Re-simulating GARCH per regime.* Hours of compute for a question the shift answers first; only
+  worth it on H1.
+- *Testing on the live ledger's 65 buy claims.* 23 dates, almost one regime; the ten-year cache is
+  the only place the three labels each occur.
+- *VIX in the label.* The fleet already carries VIX; the trend axis is what is missing. The VIX shift
+  is reported as a secondary (R2).
+
 ## DL-321 - Screen every published stock predictor at once on Open Source Asset Pricing, not QuantConnect's ports one by one - status: DECIDED (planner, delegated; the operator, 2026-11-09: *"Would something like this … be beneficial for us? Maybe inspire us to test them?"*, then *"fix first, then the rest"*); pre-registered as [EXP-038](research/experiments/EXP-038-do-published-stock-predictors-still-earn-after-publication-outside-micro-caps.md); **run 2026-11-09: NONE, 0 of 25 discovery passers confirm on 2016–2025**
 
 **Why.** The operator found QuantConnect's library (more than 400 strategies with code; a small-cap

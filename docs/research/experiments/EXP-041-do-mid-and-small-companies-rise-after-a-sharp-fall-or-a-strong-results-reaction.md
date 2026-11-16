@@ -1,6 +1,6 @@
 # EXP-041 — Do mid and small companies rise in the ten sessions after a sharp fall or a strong results reaction?
 
-**Status:** PRE-REGISTERED 2026-11-16 (planner)
+**Status:** PRE-REGISTERED 2026-11-16 (planner, `ff107361`) · COMPLETE 2026-11-16 · **NONE: no cell passes discovery (smallest p 0.51); after a sharp fall or a strong results reaction a mid or small company's next ten sessions are a coin flip against its peers**
 **Decision / origin:** the operator, 2026-11-16: *"I was hoping to keep stock for a week or two or when
 win reaches certain percentage and then sell. Short term and small reward"*, then *"I guess yes"* to a
 buy-side test at that horizon on smaller companies; [DL-324](../../design-log.md);
@@ -152,15 +152,128 @@ is the S&P 500, so any lead needs a universe change before it can trade. One dec
 
 ## 6. Results
 
-*To be written after the run.*
+All MEASURED, `exp041.json` (SHA-256 `301f18c1d7ae…`), one scored run: 7,092 companies, 3,967 ever in a
+bucket, 2,723 sessions.
+
+- **Verdict: NONE. No cell passes discovery.** The smallest of the eight two-sided p-values is 0.51
+  (Benjamini–Hochberg needed 0.0125 for the first). Confirmation was therefore not entered; its figures
+  are shown for the record.
+
+  | Idea | Bucket | Discovery events | Mean excess | t | p | Median excess | Later events | Mean excess, 2022-02 → | t | Less 50 bps |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | D1 sharp fall | MID | 7,750 | +0.18 % | +0.54 | 0.59 | −0.10 % | 8,142 | −0.04 % | −0.14 | −0.54 % |
+  | D1 sharp fall | SMALL | 18,912 | −0.04 % | −0.11 | 0.91 | −0.32 % | 20,691 | +0.14 % | +0.35 | −0.36 % |
+  | D2 fall, no results | MID | 6,448 | +0.27 % | +0.66 | 0.51 | +0.10 % | 6,686 | +0.41 % | +1.00 | −0.09 % |
+  | D2 fall, no results | SMALL | 15,874 | +0.13 % | +0.26 | 0.79 | −0.36 % | 17,491 | +0.33 % | +0.74 | −0.17 % |
+  | D3 fall around results | MID | 2,018 | +0.19 % | +0.45 | 0.65 | −0.42 % | 2,096 | +0.18 % | +0.46 | −0.32 % |
+  | D3 fall around results | SMALL | 4,834 | +0.13 % | +0.33 | 0.74 | −0.23 % | 5,258 | −0.73 % | −1.97 | −1.23 % |
+  | E1 strong results reaction | MID | 1,876 | −0.67 % | −0.64 | 0.52 | +0.06 % | 2,165 | +0.12 % | +0.42 | −0.38 % |
+  | E1 strong results reaction | SMALL | 4,313 | −0.04 % | −0.17 | 0.87 | −0.55 % | 4,563 | +0.17 % | +0.49 | −0.33 % |
+
+  No mean excess is larger than its own noise in either period except D3 SMALL after 2022 (−0.73 %,
+  t −1.97), which was +0.13 % in discovery. Net of 50 bps every cell is below zero in both periods.
+
+- **The operator's trade shape, both periods together (reported, no bar).** After every kind of event
+  the trade is close to a coin flip:
+
+  | Idea | Bucket | Events | Ended up | +5 % touched first | −5 % touched first | Mean raw return | Winsorised mean excess |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | D1 sharp fall | MID | 15,892 | 53 % | 49 % | 46 % | +1.02 % | +0.28 % |
+  | D1 sharp fall | SMALL | 39,603 | 51 % | 48 % | 49 % | +0.76 % | −0.10 % |
+  | D1 sharp fall | LARGE | 12,719 | 54 % | 49 % | 44 % | +1.16 % | +0.29 % |
+  | D2 fall, no results | MID | 13,134 | 54 % | 50 % | 47 % | +1.22 % | +0.44 % |
+  | D2 fall, no results | SMALL | 33,365 | 51 % | 49 % | 49 % | +0.86 % | −0.10 % |
+  | D2 fall, no results | LARGE | 10,403 | 55 % | 51 % | 45 % | +1.25 % | +0.36 % |
+  | D3 fall around results | MID | 4,114 | 51 % | 47 % | 44 % | +0.07 % | −0.06 % |
+  | D3 fall around results | SMALL | 10,092 | 50 % | 46 % | 48 % | +0.19 % | +0.02 % |
+  | D3 fall around results | LARGE | 3,279 | 52 % | 45 % | 43 % | +0.54 % | +0.04 % |
+  | E1 strong results reaction | MID | 4,041 | 52 % | 41 % | 40 % | +0.62 % | +0.17 % |
+  | E1 strong results reaction | SMALL | 8,876 | 49 % | 42 % | 46 % | −0.00 % | −0.17 % |
+  | E1 strong results reaction | LARGE | 3,586 | 53 % | 40 % | 35 % | +0.66 % | +0.16 % |
+
+- **Is it a smaller-company effect? No** (LARGE, reported; mean excess and t, discovery then later):
+
+  | Idea | Discovery | 2022-02 → |
+  | --- | --- | --- |
+  | D1 sharp fall | +0.24 % (+0.61) | +0.16 % (+0.46) |
+  | D2 fall, no results | +0.38 % (+0.84) | +0.23 % (+0.53) |
+  | D3 fall around results | −0.25 % (−0.66) | +0.44 % (+1.29) |
+  | E1 strong results reaction | +0.47 % (+1.59) | +0.34 % (+0.91) |
+
+- **Other variants (reported, no bar;** mean excess with t, then the winsorised mean**):**
+
+  | Variant | Cell | Discovery | Winsorised | 2022-02 → | Winsorised |
+  | --- | --- | --- | --- | --- | --- |
+  | Five-session hold | D1 MID | +3.12 % (+1.01) | +0.27 % | −0.03 % (−0.14) | +0.12 % |
+  | Five-session hold | D1 SMALL | +0.16 % (+0.54) | +0.05 % | −0.07 % (−0.28) | −0.00 % |
+  | Five-session hold | D2 MID | +4.11 % (+0.98) | +0.34 % | +0.15 % (+0.63) | +0.18 % |
+  | Five-session hold | D2 SMALL | +0.13 % (+0.36) | +0.04 % | +0.06 % (+0.21) | −0.00 % |
+  | Five-session hold | D3 MID | +0.40 % (+1.67) | +0.07 % | −0.04 % (−0.13) | +0.07 % |
+  | Five-session hold | D3 SMALL | +0.09 % (+0.43) | +0.10 % | −0.77 % (−3.29) | +0.04 % |
+  | Five-session hold | E1 MID | −0.88 % (−1.12) | −0.09 % | +0.18 % (+0.86) | +0.26 % |
+  | Five-session hold | E1 SMALL | +0.20 % (+0.66) | −0.26 % | +0.01 % (+0.06) | −0.15 % |
+  | Deeper fall (20 %), ten sessions | D1 MID | +15.35 % (+1.02) | −0.11 % | −0.30 % (−0.47) | +0.32 % |
+  | Deeper fall (20 %), ten sessions | D1 SMALL | −1.19 % (−2.45) | −0.26 % | −0.07 % (−0.05) | −0.29 % |
+  | Stronger reaction (10 points), ten sessions | E1 MID | −1.87 % (−1.17) | −0.12 % | +0.27 % (+0.64) | +0.37 % |
+  | Stronger reaction (10 points), ten sessions | E1 SMALL | +0.21 % (+0.51) | −0.26 % | −0.12 % (−0.29) | −0.26 % |
+
+- **Unexpected: one vendor bad print, found after the run** (`exp041_outlier.py`, Appendix R). AquaBounty
+  (AQB) closes at $528.00, then **$0.14** on 2017-01-09 and $3.33 the next day, then $529.80: two wrong
+  bars. They make one "fall" of 99.97 % and one "gain" of 15,080 %, which is the whole of the deep-fall
+  MID cell's +15.35 % in discovery (without its three largest events that cell's mean raw return is
+  −0.72 %) and of the five-session D1 and D2 MID means of +3 % and +4 %. No barred cell contains the
+  event: AquaBounty's D1 and D2 event of 2016-12-27 blocks a new one through 2017-01-11. Bad prints can
+  also inflate a
+  cell's noise; the medians and winsorised means, fixed as reported measures before the run, are the
+  check: across the eight barred cells and both periods they lie between −0.63 % and +0.46 %. A scan of
+  the panel (`exp041_aqb.py`) finds 23 one-session close ratios beyond 50×, and only AquaBounty's two fall
+  on a company that is in a bucket that session.
 
 ## 7. Conclusions
 
-*To be written after the run.*
+Buying a mid or small company after a sharp fall, or after a strong reaction to its results, and
+holding ten sessions earns nothing over its peers: none of the eight cells is distinguishable from zero
+on 2017–2021, so nothing was carried to the later years, and those years agree. The four rules are
+closed at this horizon, as section 2 fixed.
+
+The nearest thing to an effect is the fall with no results release in mid and large companies: a
+winsorised mean of +0.35 % to +0.46 % in both periods, the direction the literature gives it. It is not
+significant and it is smaller than the 50 bps a round trip costs, so it is not a lead. In the SMALL
+bucket, where the literature places the effect, the typical such fall loses to its peers (median −0.36 % and
+−0.63 %).
+
+For the operator's style the trade-shape table is the plain answer. In the MID and SMALL buckets
+49 % to 54 % of the trades end up. After a fall, +5 % comes before −5 % in
+46 % to 50 % of them and −5 % first in 44 % to 49 %; after a strong results
+reaction, 41 % to 42 % and 40 % to 46 %. There is no tilt to take a small gain from.
+
+Smaller companies are not easier at this horizon: LARGE reads the same as MID and SMALL.
+
+What this does not say: nothing about other entry rules (this is two families, four rules), about
+horizons under a week, about intraday entries, or about the companies first listed after 2021; and it
+is a test of means, not of a managed book. One vendor bad print was found by its size; smaller wrong
+bars would pass unseen, which is why the medians are read beside the means.
+
+With EXP-015, EXP-023, EXP-030, EXP-031 and EXP-038, the public price, news and filing signals this
+project has tested now cover a month and a fortnight, in large, mid and small companies, and none
+carries. What is left untested is information the market does not already hold in public
+form at the close, or a horizon shorter than the fleet's daily cycle.
 
 ## 8. Recommended code changes, and how to implement them
 
-*To be written after the run.*
+None. By the rule fixed in section 2, on NONE nothing is built and no simulation is pre-registered; the
+fleet's universe stays the S&P 500.
+
+For the operator, not a build: the one-to-two-week, small-gain style has now been tested from both
+sides (exits in EXP-022 and EXP-040, entries here) and has no measured source of profit in public daily
+data. The choices that remain are the operator's: keep the fleet as the paper test bed it is, holding
+what it buys ([ADR-0033](../../decisions/0033-the-fleet-is-a-paper-test-bed.md)); or name a different
+source of information to test.
+
+Data worth keeping: the kit's 7,092-company daily panel with delisted companies and results dates is
+the first survivorship-free universe beyond the S&P 500 this project has, and a later experiment can
+reuse it at $0. The SEC's 2022 → 2026 insider files would add the companies listed since 2021; they
+need the operator to set a contact address for `www.sec.gov` in an environment variable.
 
 ## Appendix P — Pre-registration (frozen)
 
@@ -181,7 +294,218 @@ shares are reported without a bar. SHA-256: `exp041_score.py` `28e2dcb68909c9155
 
 ## Appendix R — Run record
 
-*To be written after the run.*
+2026-11-16, this laptop.
+
+**Build, and the defects fixed before any return was read.** The first build (kept as `bars_v1/`,
+`registry_v1.csv`) set each issuer's `asof` to the end of its last quarter. The pilot checks showed
+four defects, each from dates, names and row counts:
+
+1. *A blank ticker became "NAN".* The reader turned empty and "N/A" ticker fields into a missing value
+   that printed as `NAN`, a real ticker. 21 issuers were priced as one closed-end fund and about 200
+   were dropped as collisions with it. Fixed in `exp041_registry.py` (missing values are read as text and
+   rejected).
+2. *An `asof` after a delisting.* A company bought in mid-quarter was asked for as of the quarter's
+   end; the vendor answered with a later holder of the ticker (132 groups of issuers shared one series:
+   NetSuite's "N" with a later company's). Fixed by the registry's `asof` rule (section 3).
+3. *Bankruptcies named by their over-the-counter ticker.* 1,366 issuers had no bars under their last
+   ticker; `exp041_fallback.py` tried the earlier ones and recovered 96 (Vanguard Natural Resources,
+   Westmoreland, Willbros, Orchids Paper, Orexigen among them).
+4. *A later holder's history for an unlisted issuer.* An over-the-counter "MRNA" came back as Moderna.
+   A first rule (a bar within 14 days of `asof`) dropped 684 rows; `exp041_asof_check.py` showed that
+   551 of them began after `asof`, mostly blank-cheque companies whose shares started trading about 55
+   days after their first filing, and 127 ended before it (companies that had left their exchange). The
+   rule was narrowed to "first bar more than 100 days after `asof`": 153 rows dropped.
+
+After the fixes `exp041_dupes.py` finds no series under two kept companies. Bars: main pass 7,271
+companies, 13.2 million rows; earlier-ticker passes 86 and 10 companies. Releases: 8,656 issuers asked,
+none missing from EDGAR.
+
+**Self-test** (`selftest.log`): no effect planted, D1 MID −0.091 % (t −0.47), verdict NONE; +0.3 % a
+session planted, +2.742 % (t 13.73), verdict LEAD; the Newey–West, Benjamini–Hochberg and Holm checks
+pass.
+
+**Pre-registration** `ff107361`. `frozen.sha256` verified immediately before scoring: its eleven entries
+unchanged (the 54 bar files against `bars.sha256` after the run: all equal).
+
+**Score.** `python -I exp041_score.py score …`, run once, 77 s, exit 0. `exp041.json` SHA-256
+`301f18c1d7ae4618c502b158797dbc0accb885e6a8e9160c9567579abcecd133`, `score.log`
+`bc87ae9e204ade04c2f4720b059426c3b732b01f77d1e55373f35543b8f34aae`. No defect in the scorer, no re-run.
+
+**After the run** (`exp041_outlier.py`, `outlier.log`): the deep-fall MID cell's discovery events sorted
+by return. AquaBounty 2017-01-09, closes t−5 … t+2: 486.00, 496.20, 520.60, 516.60, 528.00, **0.14**,
+**3.33**, 529.80; entry open 2.00; return +15,080 %. Next: Hertz 2020-05-26 +359 % (its bankruptcy
+rally, real), Tilray 2020-03-13 +156 % (real). 1,534 events, mean raw return +9.45 %; without the top
+three −0.72 %. `exp041_aqb.py` (`aqb.log`): AquaBounty's D1 and D2 events fall on 2016-12-27, its
+deep-fall event on 2017-01-09; 23 one-session close ratios beyond 50× in the panel, two on a bucketed
+company, both AquaBounty's. The scored output was not changed.
+
+The content of `exp041.json`, laid out one cell a line (checked equal to the file after parsing):
+
+```json
+{
+ "sessions": ["2016-01-04", "2026-10-30", 2723], "companies": 3967,
+ "build": {"registry_rows_with_bars": 7367, "dropped_not_listed_at_asof": 153, "price_series": 7214, "distinct_price_series": 7092},
+ "verdict": "NONE",
+ "funnel": {
+  "D1 MID": {"p_discovery": 0.5892, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "D1 SMALL": {"p_discovery": 0.91241, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "D2 MID": {"p_discovery": 0.50925, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "D2 SMALL": {"p_discovery": 0.79486, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "D3 MID": {"p_discovery": 0.65271, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "D3 SMALL": {"p_discovery": 0.7414, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "E1 MID": {"p_discovery": 0.52217, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null},
+  "E1 SMALL": {"p_discovery": 0.86501, "passed_discovery": false, "direction": null, "p_confirmation": null, "confirmed": false, "economic": null}
+ },
+ "hold_10": {
+  "D1 LARGE": {
+   "discovery": {"events": 5803, "sessions": 931, "mean_excess_pct": 0.236, "t": 0.61, "net_mean_excess_pct": -0.264, "net_t": -0.68, "event_mean_excess_pct": 0.378, "event_median_excess_pct": 0.073, "event_winsorised_mean_excess_pct": 0.251, "mean_raw_return_pct": 1.004, "share_up": 0.548, "share_target_first": 0.493, "share_stop_first": 0.443},
+   "confirmation": {"events": 6916, "sessions": 961, "mean_excess_pct": 0.157, "t": 0.46, "net_mean_excess_pct": -0.343, "net_t": -1.0, "event_mean_excess_pct": 0.438, "event_median_excess_pct": 0.051, "event_winsorised_mean_excess_pct": 0.325, "mean_raw_return_pct": 1.29, "share_up": 0.542, "share_target_first": 0.496, "share_stop_first": 0.442}
+  },
+  "D1 MID": {
+   "discovery": {"events": 7750, "sessions": 1061, "mean_excess_pct": 0.182, "t": 0.54, "net_mean_excess_pct": -0.318, "net_t": -0.95, "event_mean_excess_pct": 0.373, "event_median_excess_pct": -0.104, "event_winsorised_mean_excess_pct": 0.288, "mean_raw_return_pct": 0.856, "share_up": 0.528, "share_target_first": 0.484, "share_stop_first": 0.474},
+   "confirmation": {"events": 8142, "sessions": 1030, "mean_excess_pct": -0.043, "t": -0.14, "net_mean_excess_pct": -0.543, "net_t": -1.73, "event_mean_excess_pct": 0.366, "event_median_excess_pct": -0.094, "event_winsorised_mean_excess_pct": 0.278, "mean_raw_return_pct": 1.181, "share_up": 0.537, "share_target_first": 0.497, "share_stop_first": 0.451}
+  },
+  "D1 SMALL": {
+   "discovery": {"events": 18912, "sessions": 1229, "mean_excess_pct": -0.042, "t": -0.11, "net_mean_excess_pct": -0.542, "net_t": -1.42, "event_mean_excess_pct": 0.241, "event_median_excess_pct": -0.317, "event_winsorised_mean_excess_pct": -0.049, "mean_raw_return_pct": 0.732, "share_up": 0.513, "share_target_first": 0.47, "share_stop_first": 0.496},
+   "confirmation": {"events": 20691, "sessions": 1145, "mean_excess_pct": 0.136, "t": 0.35, "net_mean_excess_pct": -0.364, "net_t": -0.94, "event_mean_excess_pct": 0.1, "event_median_excess_pct": -0.595, "event_winsorised_mean_excess_pct": -0.145, "mean_raw_return_pct": 0.794, "share_up": 0.503, "share_target_first": 0.486, "share_stop_first": 0.479}
+  },
+  "D2 LARGE": {
+   "discovery": {"events": 4745, "sessions": 774, "mean_excess_pct": 0.382, "t": 0.84, "net_mean_excess_pct": -0.118, "net_t": -0.26, "event_mean_excess_pct": 0.503, "event_median_excess_pct": 0.174, "event_winsorised_mean_excess_pct": 0.381, "mean_raw_return_pct": 1.035, "share_up": 0.548, "share_target_first": 0.507, "share_stop_first": 0.45},
+   "confirmation": {"events": 5658, "sessions": 826, "mean_excess_pct": 0.233, "t": 0.53, "net_mean_excess_pct": -0.267, "net_t": -0.6, "event_mean_excess_pct": 0.465, "event_median_excess_pct": 0.098, "event_winsorised_mean_excess_pct": 0.348, "mean_raw_return_pct": 1.432, "share_up": 0.552, "share_target_first": 0.505, "share_stop_first": 0.452}
+  },
+  "D2 MID": {
+   "discovery": {"events": 6448, "sessions": 976, "mean_excess_pct": 0.267, "t": 0.66, "net_mean_excess_pct": -0.233, "net_t": -0.57, "event_mean_excess_pct": 0.558, "event_median_excess_pct": 0.099, "event_winsorised_mean_excess_pct": 0.463, "mean_raw_return_pct": 1.058, "share_up": 0.538, "share_target_first": 0.495, "share_stop_first": 0.479},
+   "confirmation": {"events": 6686, "sessions": 946, "mean_excess_pct": 0.406, "t": 1.0, "net_mean_excess_pct": -0.094, "net_t": -0.23, "event_mean_excess_pct": 0.502, "event_median_excess_pct": -0.063, "event_winsorised_mean_excess_pct": 0.421, "mean_raw_return_pct": 1.379, "share_up": 0.539, "share_target_first": 0.501, "share_stop_first": 0.461}
+  },
+  "D2 SMALL": {
+   "discovery": {"events": 15874, "sessions": 1201, "mean_excess_pct": 0.134, "t": 0.26, "net_mean_excess_pct": -0.366, "net_t": -0.72, "event_mean_excess_pct": 0.318, "event_median_excess_pct": -0.364, "event_winsorised_mean_excess_pct": -0.021, "mean_raw_return_pct": 0.832, "share_up": 0.516, "share_target_first": 0.477, "share_stop_first": 0.5},
+   "confirmation": {"events": 17491, "sessions": 1129, "mean_excess_pct": 0.33, "t": 0.74, "net_mean_excess_pct": -0.17, "net_t": -0.38, "event_mean_excess_pct": 0.124, "event_median_excess_pct": -0.632, "event_winsorised_mean_excess_pct": -0.174, "mean_raw_return_pct": 0.881, "share_up": 0.504, "share_target_first": 0.493, "share_stop_first": 0.478}
+  },
+  "D3 LARGE": {
+   "discovery": {"events": 1511, "sessions": 573, "mean_excess_pct": -0.252, "t": -0.66, "net_mean_excess_pct": -0.752, "net_t": -1.98, "event_mean_excess_pct": -0.278, "event_median_excess_pct": -0.303, "event_winsorised_mean_excess_pct": -0.316, "mean_raw_return_pct": 0.147, "share_up": 0.536, "share_target_first": 0.449, "share_stop_first": 0.428},
+   "confirmation": {"events": 1768, "sessions": 608, "mean_excess_pct": 0.444, "t": 1.29, "net_mean_excess_pct": -0.056, "net_t": -0.16, "event_mean_excess_pct": 0.386, "event_median_excess_pct": -0.228, "event_winsorised_mean_excess_pct": 0.339, "mean_raw_return_pct": 0.884, "share_up": 0.503, "share_target_first": 0.458, "share_stop_first": 0.428}
+  },
+  "D3 MID": {
+   "discovery": {"events": 2018, "sessions": 602, "mean_excess_pct": 0.187, "t": 0.45, "net_mean_excess_pct": -0.313, "net_t": -0.75, "event_mean_excess_pct": -0.095, "event_median_excess_pct": -0.424, "event_winsorised_mean_excess_pct": -0.164, "mean_raw_return_pct": -0.591, "share_up": 0.486, "share_target_first": 0.454, "share_stop_first": 0.457},
+   "confirmation": {"events": 2096, "sessions": 594, "mean_excess_pct": 0.18, "t": 0.46, "net_mean_excess_pct": -0.32, "net_t": -0.82, "event_mean_excess_pct": 0.06, "event_median_excess_pct": -0.143, "event_winsorised_mean_excess_pct": 0.044, "mean_raw_return_pct": 0.706, "share_up": 0.535, "share_target_first": 0.48, "share_stop_first": 0.43}
+  },
+  "D3 SMALL": {
+   "discovery": {"events": 4834, "sessions": 864, "mean_excess_pct": 0.128, "t": 0.33, "net_mean_excess_pct": -0.372, "net_t": -0.96, "event_mean_excess_pct": 0.102, "event_median_excess_pct": -0.225, "event_winsorised_mean_excess_pct": -0.015, "mean_raw_return_pct": -0.334, "share_up": 0.496, "share_target_first": 0.46, "share_stop_first": 0.474},
+   "confirmation": {"events": 5258, "sessions": 835, "mean_excess_pct": -0.728, "t": -1.97, "net_mean_excess_pct": -1.228, "net_t": -3.32, "event_mean_excess_pct": 0.154, "event_median_excess_pct": -0.446, "event_winsorised_mean_excess_pct": 0.048, "mean_raw_return_pct": 0.677, "share_up": 0.502, "share_target_first": 0.456, "share_stop_first": 0.49}
+  },
+  "E1 LARGE": {
+   "discovery": {"events": 1628, "sessions": 618, "mean_excess_pct": 0.471, "t": 1.59, "net_mean_excess_pct": -0.029, "net_t": -0.1, "event_mean_excess_pct": 0.376, "event_median_excess_pct": 0.05, "event_winsorised_mean_excess_pct": 0.299, "mean_raw_return_pct": 0.891, "share_up": 0.55, "share_target_first": 0.373, "share_stop_first": 0.342},
+   "confirmation": {"events": 1958, "sessions": 611, "mean_excess_pct": 0.339, "t": 0.91, "net_mean_excess_pct": -0.161, "net_t": -0.43, "event_mean_excess_pct": 0.133, "event_median_excess_pct": -0.018, "event_winsorised_mean_excess_pct": 0.048, "mean_raw_return_pct": 0.465, "share_up": 0.518, "share_target_first": 0.421, "share_stop_first": 0.356}
+  },
+  "E1 MID": {
+   "discovery": {"events": 1876, "sessions": 604, "mean_excess_pct": -0.672, "t": -0.64, "net_mean_excess_pct": -1.172, "net_t": -1.12, "event_mean_excess_pct": -0.466, "event_median_excess_pct": 0.056, "event_winsorised_mean_excess_pct": -0.007, "mean_raw_return_pct": 0.426, "share_up": 0.519, "share_target_first": 0.387, "share_stop_first": 0.409},
+   "confirmation": {"events": 2165, "sessions": 567, "mean_excess_pct": 0.12, "t": 0.42, "net_mean_excess_pct": -0.38, "net_t": -1.32, "event_mean_excess_pct": 0.451, "event_median_excess_pct": 0.169, "event_winsorised_mean_excess_pct": 0.323, "mean_raw_return_pct": 0.795, "share_up": 0.528, "share_target_first": 0.439, "share_stop_first": 0.394}
+  },
+  "E1 SMALL": {
+   "discovery": {"events": 4313, "sessions": 814, "mean_excess_pct": -0.045, "t": -0.17, "net_mean_excess_pct": -0.545, "net_t": -2.01, "event_mean_excess_pct": -0.213, "event_median_excess_pct": -0.55, "event_winsorised_mean_excess_pct": -0.285, "mean_raw_return_pct": -0.188, "share_up": 0.487, "share_target_first": 0.399, "share_stop_first": 0.461},
+   "confirmation": {"events": 4563, "sessions": 771, "mean_excess_pct": 0.173, "t": 0.49, "net_mean_excess_pct": -0.327, "net_t": -0.92, "event_mean_excess_pct": 0.039, "event_median_excess_pct": -0.125, "event_winsorised_mean_excess_pct": -0.071, "mean_raw_return_pct": 0.172, "share_up": 0.495, "share_target_first": 0.446, "share_stop_first": 0.45}
+  },
+  "D1_deep LARGE": {
+   "discovery": {"events": 1083, "sessions": 360, "mean_excess_pct": -0.122, "t": -0.15, "net_mean_excess_pct": -0.622, "net_t": -0.74, "event_mean_excess_pct": 0.614, "event_median_excess_pct": 0.451, "event_winsorised_mean_excess_pct": 0.447, "mean_raw_return_pct": 0.853, "share_up": 0.554, "share_target_first": 0.423, "share_stop_first": 0.56},
+   "confirmation": {"events": 1175, "sessions": 436, "mean_excess_pct": 0.506, "t": 0.64, "net_mean_excess_pct": 0.006, "net_t": 0.01, "event_mean_excess_pct": 1.025, "event_median_excess_pct": 0.377, "event_winsorised_mean_excess_pct": 0.971, "mean_raw_return_pct": 2.257, "share_up": 0.548, "share_target_first": 0.517, "share_stop_first": 0.473}
+  },
+  "D1_deep MID": {
+   "discovery": {"events": 1534, "sessions": 501, "mean_excess_pct": 15.347, "t": 1.02, "net_mean_excess_pct": 14.847, "net_t": 0.99, "event_mean_excess_pct": 9.926, "event_median_excess_pct": -0.529, "event_winsorised_mean_excess_pct": -0.111, "mean_raw_return_pct": 9.447, "share_up": 0.502, "share_target_first": 0.411, "share_stop_first": 0.576},
+   "confirmation": {"events": 1413, "sessions": 529, "mean_excess_pct": -0.299, "t": -0.47, "net_mean_excess_pct": -0.799, "net_t": -1.27, "event_mean_excess_pct": 0.469, "event_median_excess_pct": -0.09, "event_winsorised_mean_excess_pct": 0.32, "mean_raw_return_pct": 1.791, "share_up": 0.544, "share_target_first": 0.498, "share_stop_first": 0.488}
+  },
+  "D1_deep SMALL": {
+   "discovery": {"events": 4128, "sessions": 892, "mean_excess_pct": -1.19, "t": -2.45, "net_mean_excess_pct": -1.69, "net_t": -3.48, "event_mean_excess_pct": -0.184, "event_median_excess_pct": -0.449, "event_winsorised_mean_excess_pct": -0.258, "mean_raw_return_pct": -0.699, "share_up": 0.49, "share_target_first": 0.411, "share_stop_first": 0.578},
+   "confirmation": {"events": 4227, "sessions": 927, "mean_excess_pct": -0.068, "t": -0.05, "net_mean_excess_pct": -0.568, "net_t": -0.46, "event_mean_excess_pct": 0.133, "event_median_excess_pct": -1.146, "event_winsorised_mean_excess_pct": -0.293, "mean_raw_return_pct": 1.111, "share_up": 0.489, "share_target_first": 0.476, "share_stop_first": 0.517}
+  },
+  "E1_big LARGE": {
+   "discovery": {"events": 534, "sessions": 334, "mean_excess_pct": 0.593, "t": 1.39, "net_mean_excess_pct": 0.093, "net_t": 0.22, "event_mean_excess_pct": 0.893, "event_median_excess_pct": 0.555, "event_winsorised_mean_excess_pct": 0.821, "mean_raw_return_pct": 1.436, "share_up": 0.567, "share_target_first": 0.451, "share_stop_first": 0.393},
+   "confirmation": {"events": 772, "sessions": 407, "mean_excess_pct": 0.962, "t": 1.47, "net_mean_excess_pct": 0.462, "net_t": 0.7, "event_mean_excess_pct": 0.53, "event_median_excess_pct": 0.132, "event_winsorised_mean_excess_pct": 0.394, "mean_raw_return_pct": 0.845, "share_up": 0.51, "share_target_first": 0.482, "share_stop_first": 0.404}
+  },
+  "E1_big MID": {
+   "discovery": {"events": 693, "sessions": 390, "mean_excess_pct": -1.867, "t": -1.17, "net_mean_excess_pct": -2.367, "net_t": -1.48, "event_mean_excess_pct": -0.853, "event_median_excess_pct": -0.457, "event_winsorised_mean_excess_pct": -0.123, "mean_raw_return_pct": 0.33, "share_up": 0.511, "share_target_first": 0.427, "share_stop_first": 0.421},
+   "confirmation": {"events": 953, "sessions": 423, "mean_excess_pct": 0.267, "t": 0.64, "net_mean_excess_pct": -0.233, "net_t": -0.56, "event_mean_excess_pct": 0.474, "event_median_excess_pct": 0.332, "event_winsorised_mean_excess_pct": 0.37, "mean_raw_return_pct": 0.851, "share_up": 0.509, "share_target_first": 0.467, "share_stop_first": 0.43}
+  },
+  "E1_big SMALL": {
+   "discovery": {"events": 1861, "sessions": 593, "mean_excess_pct": 0.209, "t": 0.51, "net_mean_excess_pct": -0.291, "net_t": -0.71, "event_mean_excess_pct": -0.189, "event_median_excess_pct": -0.902, "event_winsorised_mean_excess_pct": -0.261, "mean_raw_return_pct": -0.113, "share_up": 0.477, "share_target_first": 0.423, "share_stop_first": 0.484},
+   "confirmation": {"events": 2326, "sessions": 609, "mean_excess_pct": -0.119, "t": -0.29, "net_mean_excess_pct": -0.619, "net_t": -1.5, "event_mean_excess_pct": -0.126, "event_median_excess_pct": -0.562, "event_winsorised_mean_excess_pct": -0.26, "mean_raw_return_pct": 0.013, "share_up": 0.485, "share_target_first": 0.454, "share_stop_first": 0.481}
+  }
+ },
+ "hold_5": {
+  "D1 LARGE": {
+   "discovery": {"events": 6878, "sessions": 962, "mean_excess_pct": 0.112, "t": 0.49, "net_mean_excess_pct": -0.388, "net_t": -1.71, "event_mean_excess_pct": 0.465, "event_median_excess_pct": 0.089, "event_winsorised_mean_excess_pct": 0.394, "mean_raw_return_pct": 0.91, "share_up": 0.55, "share_target_first": 0.415, "share_stop_first": 0.43},
+   "confirmation": {"events": 8027, "sessions": 996, "mean_excess_pct": 0.163, "t": 0.72, "net_mean_excess_pct": -0.337, "net_t": -1.48, "event_mean_excess_pct": 0.526, "event_median_excess_pct": 0.022, "event_winsorised_mean_excess_pct": 0.488, "mean_raw_return_pct": 1.117, "share_up": 0.534, "share_target_first": 0.429, "share_stop_first": 0.401}
+  },
+  "D1 MID": {
+   "discovery": {"events": 9224, "sessions": 1093, "mean_excess_pct": 3.121, "t": 1.01, "net_mean_excess_pct": 2.621, "net_t": 0.85, "event_mean_excess_pct": 2.147, "event_median_excess_pct": 0.009, "event_winsorised_mean_excess_pct": 0.273, "mean_raw_return_pct": 2.531, "share_up": 0.531, "share_target_first": 0.425, "share_stop_first": 0.454},
+   "confirmation": {"events": 9436, "sessions": 1057, "mean_excess_pct": -0.029, "t": -0.14, "net_mean_excess_pct": -0.529, "net_t": -2.52, "event_mean_excess_pct": 0.189, "event_median_excess_pct": -0.058, "event_winsorised_mean_excess_pct": 0.12, "mean_raw_return_pct": 0.791, "share_up": 0.535, "share_target_first": 0.436, "share_stop_first": 0.412}
+  },
+  "D1 SMALL": {
+   "discovery": {"events": 22721, "sessions": 1241, "mean_excess_pct": 0.16, "t": 0.54, "net_mean_excess_pct": -0.34, "net_t": -1.14, "event_mean_excess_pct": 0.273, "event_median_excess_pct": -0.146, "event_winsorised_mean_excess_pct": 0.054, "mean_raw_return_pct": 0.496, "share_up": 0.514, "share_target_first": 0.426, "share_stop_first": 0.471},
+   "confirmation": {"events": 24620, "sessions": 1167, "mean_excess_pct": -0.075, "t": -0.28, "net_mean_excess_pct": -0.575, "net_t": -2.13, "event_mean_excess_pct": 0.13, "event_median_excess_pct": -0.363, "event_winsorised_mean_excess_pct": -0.004, "mean_raw_return_pct": 0.662, "share_up": 0.506, "share_target_first": 0.441, "share_stop_first": 0.446}
+  },
+  "D2 LARGE": {
+   "discovery": {"events": 5647, "sessions": 809, "mean_excess_pct": 0.213, "t": 0.72, "net_mean_excess_pct": -0.287, "net_t": -0.97, "event_mean_excess_pct": 0.641, "event_median_excess_pct": 0.183, "event_winsorised_mean_excess_pct": 0.582, "mean_raw_return_pct": 1.088, "share_up": 0.556, "share_target_first": 0.432, "share_stop_first": 0.446},
+   "confirmation": {"events": 6524, "sessions": 870, "mean_excess_pct": 0.37, "t": 1.26, "net_mean_excess_pct": -0.13, "net_t": -0.44, "event_mean_excess_pct": 0.568, "event_median_excess_pct": 0.082, "event_winsorised_mean_excess_pct": 0.538, "mean_raw_return_pct": 1.209, "share_up": 0.538, "share_target_first": 0.443, "share_stop_first": 0.413}
+  },
+  "D2 MID": {
+   "discovery": {"events": 7620, "sessions": 1002, "mean_excess_pct": 4.106, "t": 0.98, "net_mean_excess_pct": 3.606, "net_t": 0.86, "event_mean_excess_pct": 2.612, "event_median_excess_pct": 0.089, "event_winsorised_mean_excess_pct": 0.341, "mean_raw_return_pct": 3.043, "share_up": 0.539, "share_target_first": 0.432, "share_stop_first": 0.468},
+   "confirmation": {"events": 7683, "sessions": 974, "mean_excess_pct": 0.155, "t": 0.63, "net_mean_excess_pct": -0.345, "net_t": -1.39, "event_mean_excess_pct": 0.254, "event_median_excess_pct": -0.037, "event_winsorised_mean_excess_pct": 0.176, "mean_raw_return_pct": 0.849, "share_up": 0.533, "share_target_first": 0.448, "share_stop_first": 0.421}
+  },
+  "D2 SMALL": {
+   "discovery": {"events": 18927, "sessions": 1210, "mean_excess_pct": 0.127, "t": 0.36, "net_mean_excess_pct": -0.373, "net_t": -1.06, "event_mean_excess_pct": 0.306, "event_median_excess_pct": -0.167, "event_winsorised_mean_excess_pct": 0.045, "mean_raw_return_pct": 0.58, "share_up": 0.517, "share_target_first": 0.431, "share_stop_first": 0.483},
+   "confirmation": {"events": 20500, "sessions": 1154, "mean_excess_pct": 0.061, "t": 0.21, "net_mean_excess_pct": -0.439, "net_t": -1.53, "event_mean_excess_pct": 0.145, "event_median_excess_pct": -0.348, "event_winsorised_mean_excess_pct": -0.0, "mean_raw_return_pct": 0.695, "share_up": 0.509, "share_target_first": 0.45, "share_stop_first": 0.446}
+  },
+  "D3 LARGE": {
+   "discovery": {"events": 1516, "sessions": 574, "mean_excess_pct": 0.185, "t": 0.7, "net_mean_excess_pct": -0.315, "net_t": -1.2, "event_mean_excess_pct": -0.115, "event_median_excess_pct": -0.436, "event_winsorised_mean_excess_pct": -0.156, "mean_raw_return_pct": 0.249, "share_up": 0.513, "share_target_first": 0.369, "share_stop_first": 0.358},
+   "confirmation": {"events": 1781, "sessions": 613, "mean_excess_pct": 0.571, "t": 2.08, "net_mean_excess_pct": 0.071, "net_t": 0.26, "event_mean_excess_pct": 0.646, "event_median_excess_pct": -0.091, "event_winsorised_mean_excess_pct": 0.571, "mean_raw_return_pct": 1.114, "share_up": 0.521, "share_target_first": 0.386, "share_stop_first": 0.361}
+  },
+  "D3 MID": {
+   "discovery": {"events": 2023, "sessions": 605, "mean_excess_pct": 0.398, "t": 1.67, "net_mean_excess_pct": -0.102, "net_t": -0.43, "event_mean_excess_pct": 0.06, "event_median_excess_pct": -0.201, "event_winsorised_mean_excess_pct": 0.07, "mean_raw_return_pct": 0.175, "share_up": 0.494, "share_target_first": 0.403, "share_stop_first": 0.401},
+   "confirmation": {"events": 2112, "sessions": 601, "mean_excess_pct": -0.035, "t": -0.13, "net_mean_excess_pct": -0.535, "net_t": -2.04, "event_mean_excess_pct": 0.05, "event_median_excess_pct": -0.104, "event_winsorised_mean_excess_pct": 0.065, "mean_raw_return_pct": 0.67, "share_up": 0.539, "share_target_first": 0.405, "share_stop_first": 0.377}
+  },
+  "D3 SMALL": {
+   "discovery": {"events": 4857, "sessions": 864, "mean_excess_pct": 0.091, "t": 0.43, "net_mean_excess_pct": -0.409, "net_t": -1.93, "event_mean_excess_pct": 0.13, "event_median_excess_pct": -0.094, "event_winsorised_mean_excess_pct": 0.103, "mean_raw_return_pct": -0.051, "share_up": 0.493, "share_target_first": 0.412, "share_stop_first": 0.417},
+   "confirmation": {"events": 5286, "sessions": 842, "mean_excess_pct": -0.771, "t": -3.29, "net_mean_excess_pct": -1.271, "net_t": -5.43, "event_mean_excess_pct": 0.096, "event_median_excess_pct": -0.372, "event_winsorised_mean_excess_pct": 0.038, "mean_raw_return_pct": 0.694, "share_up": 0.505, "share_target_first": 0.416, "share_stop_first": 0.443}
+  },
+  "E1 LARGE": {
+   "discovery": {"events": 1630, "sessions": 618, "mean_excess_pct": 0.177, "t": 0.94, "net_mean_excess_pct": -0.323, "net_t": -1.72, "event_mean_excess_pct": 0.154, "event_median_excess_pct": 0.041, "event_winsorised_mean_excess_pct": 0.141, "mean_raw_return_pct": 0.462, "share_up": 0.526, "share_target_first": 0.294, "share_stop_first": 0.27},
+   "confirmation": {"events": 1972, "sessions": 615, "mean_excess_pct": -0.09, "t": -0.41, "net_mean_excess_pct": -0.59, "net_t": -2.7, "event_mean_excess_pct": -0.068, "event_median_excess_pct": -0.056, "event_winsorised_mean_excess_pct": -0.116, "mean_raw_return_pct": 0.249, "share_up": 0.514, "share_target_first": 0.307, "share_stop_first": 0.281}
+  },
+  "E1 MID": {
+   "discovery": {"events": 1878, "sessions": 605, "mean_excess_pct": -0.883, "t": -1.12, "net_mean_excess_pct": -1.383, "net_t": -1.76, "event_mean_excess_pct": -0.489, "event_median_excess_pct": -0.047, "event_winsorised_mean_excess_pct": -0.094, "mean_raw_return_pct": 0.038, "share_up": 0.501, "share_target_first": 0.301, "share_stop_first": 0.342},
+   "confirmation": {"events": 2182, "sessions": 572, "mean_excess_pct": 0.177, "t": 0.86, "net_mean_excess_pct": -0.323, "net_t": -1.57, "event_mean_excess_pct": 0.33, "event_median_excess_pct": -0.121, "event_winsorised_mean_excess_pct": 0.257, "mean_raw_return_pct": 0.669, "share_up": 0.535, "share_target_first": 0.357, "share_stop_first": 0.328}
+  },
+  "E1 SMALL": {
+   "discovery": {"events": 4322, "sessions": 815, "mean_excess_pct": 0.203, "t": 0.66, "net_mean_excess_pct": -0.297, "net_t": -0.96, "event_mean_excess_pct": -0.148, "event_median_excess_pct": -0.421, "event_winsorised_mean_excess_pct": -0.257, "mean_raw_return_pct": -0.154, "share_up": 0.471, "share_target_first": 0.345, "share_stop_first": 0.397},
+   "confirmation": {"events": 4583, "sessions": 776, "mean_excess_pct": 0.014, "t": 0.06, "net_mean_excess_pct": -0.486, "net_t": -1.89, "event_mean_excess_pct": -0.061, "event_median_excess_pct": -0.236, "event_winsorised_mean_excess_pct": -0.154, "mean_raw_return_pct": 0.256, "share_up": 0.499, "share_target_first": 0.39, "share_stop_first": 0.395}
+  },
+  "D1_deep LARGE": {
+   "discovery": {"events": 1274, "sessions": 379, "mean_excess_pct": 0.437, "t": 0.73, "net_mean_excess_pct": -0.063, "net_t": -0.11, "event_mean_excess_pct": 1.347, "event_median_excess_pct": 0.424, "event_winsorised_mean_excess_pct": 1.269, "mean_raw_return_pct": 1.354, "share_up": 0.519, "share_target_first": 0.385, "share_stop_first": 0.575},
+   "confirmation": {"events": 1249, "sessions": 445, "mean_excess_pct": 0.708, "t": 1.3, "net_mean_excess_pct": 0.208, "net_t": 0.38, "event_mean_excess_pct": 1.67, "event_median_excess_pct": 0.534, "event_winsorised_mean_excess_pct": 1.679, "mean_raw_return_pct": 2.733, "share_up": 0.552, "share_target_first": 0.508, "share_stop_first": 0.453}
+  },
+  "D1_deep MID": {
+   "discovery": {"events": 1786, "sessions": 514, "mean_excess_pct": 16.865, "t": 1.03, "net_mean_excess_pct": 16.365, "net_t": 1.0, "event_mean_excess_pct": 10.366, "event_median_excess_pct": 0.24, "event_winsorised_mean_excess_pct": 0.77, "mean_raw_return_pct": 9.955, "share_up": 0.49, "share_target_first": 0.373, "share_stop_first": 0.586},
+   "confirmation": {"events": 1500, "sessions": 552, "mean_excess_pct": 0.554, "t": 0.91, "net_mean_excess_pct": 0.054, "net_t": 0.09, "event_mean_excess_pct": 1.063, "event_median_excess_pct": -0.055, "event_winsorised_mean_excess_pct": 0.553, "mean_raw_return_pct": 2.153, "share_up": 0.55, "share_target_first": 0.479, "share_stop_first": 0.472}
+  },
+  "D1_deep SMALL": {
+   "discovery": {"events": 4735, "sessions": 928, "mean_excess_pct": -0.782, "t": -2.09, "net_mean_excess_pct": -1.282, "net_t": -3.42, "event_mean_excess_pct": 0.751, "event_median_excess_pct": 0.141, "event_winsorised_mean_excess_pct": 0.604, "mean_raw_return_pct": -0.034, "share_up": 0.493, "share_target_first": 0.377, "share_stop_first": 0.591},
+   "confirmation": {"events": 4554, "sessions": 955, "mean_excess_pct": 0.264, "t": 0.28, "net_mean_excess_pct": -0.236, "net_t": -0.25, "event_mean_excess_pct": 0.328, "event_median_excess_pct": -0.533, "event_winsorised_mean_excess_pct": 0.015, "mean_raw_return_pct": 1.132, "share_up": 0.503, "share_target_first": 0.464, "share_stop_first": 0.508}
+  },
+  "E1_big LARGE": {
+   "discovery": {"events": 534, "sessions": 334, "mean_excess_pct": 0.425, "t": 1.26, "net_mean_excess_pct": -0.075, "net_t": -0.22, "event_mean_excess_pct": 0.508, "event_median_excess_pct": 0.423, "event_winsorised_mean_excess_pct": 0.543, "mean_raw_return_pct": 0.859, "share_up": 0.549, "share_target_first": 0.388, "share_stop_first": 0.331},
+   "confirmation": {"events": 772, "sessions": 407, "mean_excess_pct": 0.142, "t": 0.39, "net_mean_excess_pct": -0.358, "net_t": -0.97, "event_mean_excess_pct": 0.06, "event_median_excess_pct": -0.04, "event_winsorised_mean_excess_pct": 0.007, "mean_raw_return_pct": 0.226, "share_up": 0.504, "share_target_first": 0.381, "share_stop_first": 0.341}
+  },
+  "E1_big MID": {
+   "discovery": {"events": 693, "sessions": 390, "mean_excess_pct": -1.623, "t": -1.35, "net_mean_excess_pct": -2.123, "net_t": -1.76, "event_mean_excess_pct": -0.798, "event_median_excess_pct": -0.342, "event_winsorised_mean_excess_pct": -0.234, "mean_raw_return_pct": 0.034, "share_up": 0.489, "share_target_first": 0.354, "share_stop_first": 0.371},
+   "confirmation": {"events": 961, "sessions": 426, "mean_excess_pct": 0.517, "t": 1.56, "net_mean_excess_pct": 0.017, "net_t": 0.05, "event_mean_excess_pct": 0.401, "event_median_excess_pct": 0.008, "event_winsorised_mean_excess_pct": 0.346, "mean_raw_return_pct": 0.721, "share_up": 0.531, "share_target_first": 0.409, "share_stop_first": 0.373}
+  },
+  "E1_big SMALL": {
+   "discovery": {"events": 1862, "sessions": 593, "mean_excess_pct": 0.662, "t": 1.52, "net_mean_excess_pct": 0.162, "net_t": 0.37, "event_mean_excess_pct": 0.064, "event_median_excess_pct": -0.52, "event_winsorised_mean_excess_pct": -0.188, "mean_raw_return_pct": 0.087, "share_up": 0.469, "share_target_first": 0.383, "share_stop_first": 0.434},
+   "confirmation": {"events": 2332, "sessions": 613, "mean_excess_pct": -0.4, "t": -1.48, "net_mean_excess_pct": -0.9, "net_t": -3.33, "event_mean_excess_pct": -0.19, "event_median_excess_pct": -0.321, "event_winsorised_mean_excess_pct": -0.305, "mean_raw_return_pct": 0.177, "share_up": 0.495, "share_target_first": 0.416, "share_stop_first": 0.435}
+  }
+ }
+}
+```
 
 ## Appendix S — Scripts
 

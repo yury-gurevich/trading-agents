@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-324 - Test the buy side at the operator's horizon on mid and small companies, on a universe built from public filings - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"I guess yes"* to a $0 buy-side test at one to two weeks); pre-registered as [EXP-041](research/experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md)
+## DL-324 - Test the buy side at the operator's horizon on mid and small companies, on a universe built from public filings - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"I guess yes"* to a $0 buy-side test at one to two weeks); pre-registered as [EXP-041](research/experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md); **run 2026-11-16: NONE, no cell passes discovery (smallest p 0.51); the four rules are closed at ten sessions**
 
 **Decided (planner):** four events (a 10 % fall in five sessions; the same without and with a results
 release; a results reaction 5 points above the bucket) on companies ranked 501–1000 and 1001–2000 by

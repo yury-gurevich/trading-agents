@@ -12,6 +12,27 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-323 - Test "sell what we would not buy today" as its own replay arm: the thesis exit's floor raised from 0.50 to the buy floor - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"would i buy it today? … If not then we have to sell to minimise loss. Am i right?"*, then *"check that this can run at $0 with the existing harness and pre-register it"*); pre-registered as [EXP-040](research/experiments/EXP-040-does-selling-what-the-analyst-would-not-buy-today-beat-the-stop-alone.md)
+
+**Found while checking: DL-240 recorded the thesis exit's floor as 0; it is 0.50** (code default and pack).
+The exit is live and has never been reachable: the lowest confidence on 2,396 live holds is 0.509. DL-240
+carries a correction. The planner repeated the wrong figure to the operator on 2026-11-16 before reading
+the pack, and corrected it in the same conversation.
+
+**Decided (planner):** two floors, 0.60 (the buy floor: the operator's rule exactly) and 0.55 (a margin
+against selling and re-buying the same name), as overrides on the S281 harness from the pinned `v0.128.06`
+checkout, scored against EXP-022's sealed stops arms, with a re-run of `stops-25` as the control.
+
+**Ruled out:**
+
+- *Scoring it from EXP-023's rank test alone.* That test says the score does not rank names; it does not
+  run the exit, whose effect also depends on turnover, cost and what the freed capital buys.
+- *Running at today's `main`.* The comparison needs EXP-022's commit and cache so the sealed stops arms
+  are the baseline; a new commit would mean re-running them too.
+- *A separate "the stock's own trend turned down" exit.* A new arm kind, so a Codex sprint on the replay
+  tooling; the technical score already carries trend, so this arm is the cheaper first reading.
+- *Testing on the live book.* 317 hold-days below 0.60 in two months, no counterfactual.
+
 ## DL-322 - Test a sticky bull / sideways / bear regime on the forecast's calibration first, at $0, before it reaches any decision - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"how about introduction of a regime. There were three regimes in trading from my memory"*, then *"run it as a $0 experiment"*); pre-registered as [EXP-039](research/experiments/EXP-039-does-a-trend-regime-make-the-barrier-forecast-more-accurate.md); **run 2026-11-16: H0, R1 over R0 −0.20 % [−0.97, +0.48]; no trend regime in the forecast**
 
 **Question.** Should the fleet carry a trend regime (bull, sideways, bear), as the project's earlier
@@ -3282,6 +3303,10 @@ full, what the book sells decides what it can buy.
 - **A sell is always a full exit** (`portfolio_manager/domain/exits.py`); nothing trims or adds.
 
 So losses are realised automatically and gains never are.
+
+**Correction, 2026-11-16 ([DL-323](design-log.md)):** the thesis exit's floor is **0.50**, not 0 (code
+default and `ANALYST_EXIT_CONFIDENCE_FLOOR` in the pack; ADR-0027's Correction 2 concerns the reward-risk
+floor). It never fires because no held name has scored below it: the lowest of 2,396 live holds is 0.509.
 
 **"The portfolio as a distribution" — the planner's reading, to be confirmed:**
 

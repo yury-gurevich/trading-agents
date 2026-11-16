@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-322 - Test a sticky bull / sideways / bear regime on the forecast's calibration first, at $0, before it reaches any decision - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"how about introduction of a regime. There were three regimes in trading from my memory"*, then *"run it as a $0 experiment"*); pre-registered as [EXP-039](research/experiments/EXP-039-does-a-trend-regime-make-the-barrier-forecast-more-accurate.md)
+## DL-322 - Test a sticky bull / sideways / bear regime on the forecast's calibration first, at $0, before it reaches any decision - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"how about introduction of a regime. There were three regimes in trading from my memory"*, then *"run it as a $0 experiment"*); pre-registered as [EXP-039](research/experiments/EXP-039-does-a-trend-regime-make-the-barrier-forecast-more-accurate.md); **run 2026-11-16: H0, R1 over R0 −0.20 % [−0.97, +0.48]; no trend regime in the forecast**
 
 **Question.** Should the fleet carry a trend regime (bull, sideways, bear), as the project's earlier
 system did, beside today's VIX-only label ([ADR-0028](decisions/0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md))?

@@ -1,6 +1,6 @@
 # EXP-039 — Does a sticky bull / sideways / bear regime make the barrier forecast more accurate?
 
-**Status:** PRE-REGISTERED 2026-11-16 (planner)
+**Status:** PRE-REGISTERED 2026-11-16 (planner, `48344da7`) · COMPLETE 2026-11-16 · **H0: the trend regime adds nothing to the forecast; R1 over R0 −0.20 % [−0.97, +0.48], the halves disagree (−0.90 %, +0.37 %)**
 **Decision / origin:** the operator, 2026-11-16, on how far the book is from being managed as a
 distribution: *"how about introduction of a regime. There were three regimes in trading from my
 memory"*, then *"run it as a $0 experiment"*; [DL-322](../../design-log.md); work-queue 92 (DL-240) ·
@@ -96,15 +96,59 @@ method). Shifted probabilities are clipped at 0.001 and renormalised.
 
 ## 6. Results
 
-*To be written after the run.*
+All MEASURED, `exp039.json` (SHA-256 `d7e248a78bff…`), one scored run: 32,737 decisions on 335 dates,
+2020-01-03 → 2026-08-27.
+
+- **Primary: H0.** R1's Brier skill over R0 = **−0.20 %, 95 % interval [−0.97, +0.48]**; by half,
+  2020–2022 **−0.90 %**, 2023–2026 **+0.37 %**. Brier R1 0.62202, R0 0.62079.
+- **Secondaries, no bar:**
+
+  | Comparison | Skill | 95 % interval |
+  | --- | --- | --- |
+  | R0 (pooled shift) over raw `G_756` | −0.26 % | [−0.54, +0.01] |
+  | R1 (trend shift) over raw `G_756` | −0.46 % | [−1.27, +0.26] |
+  | R2 (VIX shift) over R0 | −0.09 % | [−0.46, +0.27] |
+  | Raw `G_756` over climatology | **+2.64 %** | [+1.81, +3.53] |
+  | Climatology per trend label over pooled climatology | +0.28 % | [−0.58, +1.08] |
+
+- **Per label** (stop first / target first / neither):
+
+  | Label | Cases | Realised | `G_756` declared | R1 over R0 |
+  | --- | --- | --- | --- | --- |
+  | bull | 14,163 | 0.311 / 0.422 / 0.268 | 0.305 / 0.444 / 0.251 | +0.35 % |
+  | sideways | 15,051 | 0.281 / 0.498 / 0.221 | 0.276 / 0.479 / 0.245 | −0.77 % |
+  | bear | 3,523 | 0.289 / 0.600 / 0.111 | 0.240 / 0.550 / 0.210 | −0.12 % |
+
+- **Unexpected:** in bull markets the target was reached *less* often than declared (42.2 % against
+  44.4 %), and in bear markets *more* often (60.0 % against 55.0 %), with fewer names ending between the
+  barriers (11.1 % against 21.0 %). Each label's shift learned from earlier years did not carry into the
+  next: bear years differ from one another (2020's crash and rebound, 2022's grind, April 2025).
 
 ## 7. Conclusions
 
-*To be written after the run.*
+A trend regime does not make the barrier forecast more accurate. The production model already clears
+climatology by +2.64 % on these years, and even a single pooled shift makes it slightly worse, so on
+average it is calibrated; splitting the shift three ways only adds noise. GARCH's volatility state and
+S211's per-stock target, set from each name's own recent rises, already carry what the regime knows.
+The VIX label as a shift does no better (R2).
+
+So the live buy claims' bias (realised +3.26 % above declared, skill −7.1 %, read 2026-11-16) is not a
+regime effect by this test. The live window's last cached label (2026-09-25) is sideways, where the
+model's declared and realised shares sit within two points. *[not measured]* The likelier causes are
+that the live claims are the analyst's selected buys, where the test bed scores every name every fifth
+session, and that 65 claims on 23 dates is a small sample of one market stretch.
+
+What this does not say: it tests the regime as a correction to probabilities, not as a switch for
+strategies, sizing (EXP-013) or exits (EXP-037); nor a long decline like 2000–02 or 2007–09, absent
+from the cache; nor a fitted hidden Markov model (ruled out in DL-322).
 
 ## 8. Recommended code changes, and how to implement them
 
-*To be written after the run.*
+None. By the rule fixed in section 2, on H0 the forecast takes no trend regime, and the buy claims'
+bias is looked for elsewhere. The next measurement (planner, $0): score the test bed's `G_756` on the
+decisions the analyst would have approved, to see whether selection, not the market, is what the live
+buy claims' bias reflects. That question waits until the buy ledger has more dates; it is a re-read, not
+a build.
 
 ## Appendix P — Pre-registration (frozen)
 
@@ -120,12 +164,123 @@ or WORSE → no trend regime in the forecast. Script SHA-256
 
 ## Appendix R — Run record
 
-*To be written after the run.*
+2026-11-16, this laptop. `count` ran before the pre-registration (output `count.log`, section 3).
+
+**Defect found at the first `score` run, fixed before any score was printed.** The run raised in the
+line that formats the scored date range (`str(d.min())` on a numpy string array: `_UFuncNoLoopError`),
+after the arithmetic and before any output; nothing was printed or written (`score-crash-1.log` holds
+the traceback). Fixed by one line, `str(d.min()), str(d.max())` → `str(ud[0]), str(ud[-1])` (the sorted
+unique dates). The rule, the arms and the statistics are unchanged. Script SHA-256 before the fix
+`89f09195…` (= Appendix P), after `fac95d3ef03b1da3fd941f220e5954b40fc6c353dc56b2cf92bc65ec7851714b`
+(Appendix S).
+
+`score` then ran once in 3 s, exit 0; `exp039.json` SHA-256 `d7e248a78bffa452…` and `score.log`, in
+OneDrive `trading-agents-data/exp039-2026-11-16/`. Full output:
+
+```json
+{
+ "scored": [
+  32737,
+  335,
+  "2020-01-03",
+  "2026-08-27"
+ ],
+ "brier": {
+  "R0": 0.62079,
+  "R1": 0.62202,
+  "R2": 0.62135,
+  "clim": 0.63599,
+  "clim_trend": 0.63423,
+  "G": 0.6192
+ },
+ "primary_R1_over_R0_pct": [
+  -0.199,
+  -0.969,
+  0.482
+ ],
+ "halves_R1_over_R0_pct": {
+  "2020-2022": -0.904,
+  "2023-2026": 0.372
+ },
+ "verdict": "H0",
+ "secondary_pct": {
+  "R1_over_G": [
+   -0.456,
+   -1.267,
+   0.255
+  ],
+  "R0_over_G": [
+   -0.257,
+   -0.541,
+   0.009
+  ],
+  "R2_over_R0": [
+   -0.091,
+   -0.462,
+   0.271
+  ],
+  "G_over_clim": [
+   2.641,
+   1.812,
+   3.526
+  ],
+  "clim_trend_over_clim": [
+   0.277,
+   -0.578,
+   1.08
+  ]
+ },
+ "per_label": {
+  "bull": {
+   "n": 14163,
+   "realised": [
+    0.311,
+    0.422,
+    0.268
+   ],
+   "G_declared": [
+    0.305,
+    0.444,
+    0.251
+   ],
+   "R1_over_R0_pct": 0.352
+  },
+  "sideways": {
+   "n": 15051,
+   "realised": [
+    0.281,
+    0.498,
+    0.221
+   ],
+   "G_declared": [
+    0.276,
+    0.479,
+    0.245
+   ],
+   "R1_over_R0_pct": -0.768
+  },
+  "bear": {
+   "n": 3523,
+   "realised": [
+    0.289,
+    0.6,
+    0.111
+   ],
+   "G_declared": [
+    0.24,
+    0.55,
+    0.21
+   ],
+   "R1_over_R0_pct": -0.116
+  }
+ }
+}
+```
 
 ## Appendix S — Scripts
 
 `exp039_score.py`, OneDrive `trading-agents-data/exp039-2026-11-16/`; run from that folder with the
-repo's venv:
+repo's venv (the version that scored, SHA-256 `fac95d3e…`; Appendix R names the one-line fix):
 `python -I exp039_score.py count --sim ../exp018/exp018_sim.pkl --spy ../sp500_benchmark.csv.gz`, then
 `python -I exp039_score.py score --sim ../exp018/exp018_sim.pkl --spy ../sp500_benchmark.csv.gz --out exp039.json`.
 
@@ -284,7 +439,7 @@ def score(cases, lab):
                         "G_declared": P[idx][s].mean(0).round(3).tolist(),
                         "R1_over_R0_pct": sk("R1", "R0", np.where(s)[0])}
     return {
-        "scored": [int(len(idx)), int(len(ud)), str(d.min()), str(d.max())],
+        "scored": [int(len(idx)), int(len(ud)), str(ud[0]), str(ud[-1])],
         "brier": {k: round(float(v.mean()), 5) for k, v in loss.items()},
         "primary_R1_over_R0_pct": primary, "halves_R1_over_R0_pct": halves, "verdict": verdict,
         "secondary_pct": {"R1_over_G": sk("R1", "G"), "R0_over_G": sk("R0", "G"),

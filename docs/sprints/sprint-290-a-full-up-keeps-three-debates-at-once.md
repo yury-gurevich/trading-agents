@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-290-a-full-up-keeps-three-debates-at-once`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.07`)
 **Effort:** S
 **Decisions:** [DL-325](../design-log.md) (this sprint's six decisions, made and measured) · [DL-277](../design-log.md) amendment 2 (the operator's three debates at once, live since 2026-10-09) · [DL-274](../design-log.md) D4 (the manager's wait of 240 seconds, live since 2026-10-08) · [work-queue 113](../work-queue.md)
@@ -208,14 +208,14 @@ No existing test changes, and none fails on the prototype.
 
 ## Success factors
 
-- [ ] The pack's `deliberator-manager` entry holds `"3"` and `"240"`; the file's blob id is Appendix B's.
-- [ ] No other app's entry and no other key changed: `git diff` of the pack shows three changed lines.
-- [ ] The six tests exist under the names given and pass; A1, A3, A5 and A6 were seen failing first.
-- [ ] No existing test, no law file, no script and no code file changed.
-- [ ] The law-cycle question is answered No, with the reason, in the Law reading record.
-- [ ] Each of the fifteen breaks was planted, seen red on its named test, and restored.
-- [ ] Every touched module is under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
+- [x] The pack's `deliberator-manager` entry holds `"3"` and `"240"`; the file's blob id is Appendix B's.
+- [x] No other app's entry and no other key changed: `git diff` of the pack shows three changed lines.
+- [x] The six tests exist under the names given and pass; A1, A3, A5 and A6 were seen failing first.
+- [x] No existing test, no law file, no script and no code file changed.
+- [x] The law-cycle question is answered No, with the reason, in the Law reading record.
+- [x] Each of the fifteen breaks was planted, seen red on its named test, and restored.
+- [x] Every touched module is under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
 
 ---
 
@@ -377,15 +377,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to be filled by the builder* | | | |
+| Pack manager values and note | agents/deliberator/laws/laws.md and test-plan.md (whole); docs/laws/conventions.md and drift-register.md (whole), read 2026-11-17 before this first edit | PARAM bounds; DLIB-DEP-04; DLIB-IDM-04 for the one-request premise | Values fit bounds; cite DLIB-IDM-04 in A5; no law edit |
+| New pack tests | docs/laws/conventions.md | Section 7 citations; DLIB-IDM-04 for A5 | Fixed pack values cite DL-325 / DL-277 / DL-274; A5 also cites the existing request guarantee |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to be filled by the builder*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. No contracts, agent code, code defaults or PARAM rows change; only existing bounded pack values and their evidence change. No new agent guarantee and no law cycle owed.
 
-**Contradictions found between a law and this spec:** *to be filled by the builder*
+**Contradictions found between a law and this spec:** None. DLIB-IDM-04 already governs the one-request premise; the pack values remain decisions rather than new guarantees.
 
-**Laws found silent where a decision was needed:** *to be filled by the builder*
+**Laws found silent where a decision was needed:** No new decision needed. Exact pack values are fixed by DL-325, DL-277 and DL-274; PARAM declares defaults and bounds, not app pack values. DRIFT-041 deliberator records the operator value as pack data.
 
-**Clauses that were ⬜ and are now proven:** *to be filled by the builder*
+**Clauses that were ⬜ and are now proven:** None; this sprint adds pack guards, not a full new clause proof.
 
 ---
 
@@ -393,58 +394,167 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to be filled by the builder* | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_a_full_up_keeps_three_debates_at_once` | `tests/test_pack_debate_lanes.py` | PASS; red first | DL-325 / DL-277 |
+| A2 | `test_only_the_manager_declares_the_lanes` | `tests/test_pack_debate_lanes.py` | PASS before and after | DL-325 |
+| A3 | `test_a_full_up_keeps_the_managers_wait_of_240_seconds` | `tests/test_pack_debate_lanes.py` | PASS; red first | DL-325 / DL-274 |
+| A4 | `test_the_debaters_keep_their_wait_of_120_seconds` | `tests/test_pack_debate_lanes.py` | PASS before and after | DL-325 |
+| A5 | `test_more_than_one_lane_takes_one_request_a_pass` | `tests/test_pack_debate_lanes.py` | PASS; red first | DLIB-IDM-04 (configuration premise only); DL-325 |
+| A6 | `test_the_packs_note_records_both_moves` | `tests/test_pack_debate_lanes.py` | PASS; red first | DL-325 |
 
-**Tests added beyond the plan:** *to be filled by the builder*
+**Tests added beyond the plan:** None.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC — not built yet; every field below is the builder's.
+**Status:** BUILT — all 16 local CI steps pass (exit 0), 100.00% coverage; 15 breaks red/restored; not pushed or merged.
 
-**Tree the proofs ran in (and `.env` present?):** *to be filled by the builder*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s290`, branch `sprint-290-a-full-up-keeps-three-debates-at-once`; `Test-Path .env` printed `False`. Base: `3ff3d0a61bb82306e88fcd7dbfb0e7e6419ce2cf`.
 
-**Result:** *to be filled by the builder*
+**Result:** Appendix B applied with all three exact blobs. Six new tests pass after the expected 4-failed/2-passed red run; both existing files pass (90 tests). All 15 named mutation tests went red and were restored. All 16 local CI steps pass, exit 0, 5,333 passed / 9 skipped, 100.00% coverage. Remote proof, merge, deploy, F1 and F2 not done.
 
-**Files changed:** *to be filled by the builder*
+**Files changed:** exactly the six scoped files. `git diff --stat 3ff3d0a61bb82306e88fcd7dbfb0e7e6419ce2cf` (base to built tree):
+
+```text
+ docs/sprints/README.md                             |   2 +-
+ ...nt-290-a-full-up-keeps-three-debates-at-once.md | 176 +++++++++++++++++----
+ orchestration/packs/trading_tunables.json          |   6 +-
+ pyproject.toml                                     |   2 +-
+ tests/test_pack_debate_lanes.py                    |  70 ++++++++
+ uv.lock                                            |   2 +-
+ 6 files changed, 219 insertions(+), 39 deletions(-)
+```
 
 **Design decisions:** recorded by the planner as [`DL-325`](../design-log.md); the builder adds none.
 
 **Proof — the red run first:**
 
+Command: `uv run --no-sync pytest tests/test_pack_debate_lanes.py --no-cov -q -p no:cacheprovider` (exit 1; pack unchanged).
+
 ```text
-to be filled by the builder
+F.F.FF                                                                   [100%]
+================================== FAILURES ===================================
+_________________ test_a_full_up_keeps_three_debates_at_once __________________
+tests\test_pack_debate_lanes.py:32: in test_a_full_up_keeps_three_debates_at_once
+    assert _APPS["deliberator-manager"][_LANES] == "3"
+E   AssertionError: assert '1' == '3'
+E
+E     - 3
+E     + 1
+____________ test_a_full_up_keeps_the_managers_wait_of_240_seconds ____________
+tests\test_pack_debate_lanes.py:44: in test_a_full_up_keeps_the_managers_wait_of_240_seconds
+    assert _APPS["deliberator-manager"][_WAIT] == "240"
+E   AssertionError: assert '120' == '240'
+E
+E     - 240
+E     + 120
+______________ test_more_than_one_lane_takes_one_request_a_pass _______________
+tests\test_pack_debate_lanes.py:59: in test_more_than_one_lane_takes_one_request_a_pass
+    assert int(_APPS["deliberator-manager"][_LANES]) > 1
+E   AssertionError: assert 1 > 1
+E    +  where 1 = int('1')
+___________________ test_the_packs_note_records_both_moves ____________________
+tests\test_pack_debate_lanes.py:68: in test_the_packs_note_records_both_moves
+    assert "DELIBERATOR_DEBATE_CONCURRENCY 1->3" in note
+E   assert 'DELIBERATOR_DEBATE_CONCURRENCY 1->3' in "Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. STAGED 2026-08-20: DELIBER...hich is DL-76's refusal rate measured on our own book. Operator chose this over closing the item as decided-by-design."
+=========================== short test summary info ===========================
+FAILED tests/test_pack_debate_lanes.py::test_a_full_up_keeps_three_debates_at_once
+FAILED tests/test_pack_debate_lanes.py::test_a_full_up_keeps_the_managers_wait_of_240_seconds
+FAILED tests/test_pack_debate_lanes.py::test_more_than_one_lane_takes_one_request_a_pass
+FAILED tests/test_pack_debate_lanes.py::test_the_packs_note_records_both_moves
+4 failed, 2 passed in 1.81s
 ```
 
 **Proof — the green run:**
 
+`uv run --no-sync pytest tests/test_pack_debate_lanes.py --no-cov -q -p no:cacheprovider` (exit 0):
+
 ```text
-to be filled by the builder
+......                                                                   [100%]
+6 passed in 1.35s
 ```
 
-**Blob ids after `git apply`:** *to be filled by the builder*
+`uv run --no-sync pytest tests/test_deploy_tunables_pack.py tests/test_pack_files.py --no-cov -q -p no:cacheprovider` (exit 0):
 
-**Guards planted:** *to be filled by the builder, one line a break*
+```text
+........................................................................ [ 80%]
+..................                                                       [100%]
+90 passed in 3.35s
+```
 
-**Module line counts:** *to be filled by the builder*
+**Blob ids after `git apply`:** `git hash-object orchestration/packs/trading_tunables.json pyproject.toml uv.lock` printed, in that order:
 
-**`make ci`:** *to be filled by the builder: the file, the exit code, each step's verdict, totals, coverage*
+```text
+d276a8600359172313654f3c4a5af01a475f5d25
+5192763ac41793a1b86de964c08df997cb54f4bb
+a0eca83dcccf706d5c06947c2627f0c0d2a1d930
+```
+
+**Guards planted:** one at a time; built pack saved outside the worktree and staged before planting, so `git checkout -- <file>` restored its built index contents. Kernel/script restored to HEAD. Byte comparison after every restore. Each named test run with `uv run --no-sync pytest <file>::<test> --no-cov -q -p no:cacheprovider`. Logs: `C:/Users/yury_/Downloads/project/s290-break-B1.txt` through `s290-break-B15.txt`.
+
+- B1: tests/test_pack_debate_lanes.py::test_a_full_up_keeps_three_debates_at_once — red (exit 1), restored
+- B2: tests/test_pack_debate_lanes.py::test_a_full_up_keeps_three_debates_at_once — red (exit 1), restored
+- B3: tests/test_pack_debate_lanes.py::test_a_full_up_keeps_three_debates_at_once — red (exit 1), restored
+- B4: tests/test_pack_debate_lanes.py::test_only_the_manager_declares_the_lanes — red (exit 1), restored
+- B5: tests/test_pack_debate_lanes.py::test_a_full_up_keeps_the_managers_wait_of_240_seconds — red (exit 1), restored
+- B6: tests/test_pack_debate_lanes.py::test_a_full_up_keeps_the_managers_wait_of_240_seconds — red (exit 1), restored
+- B7: tests/test_pack_debate_lanes.py::test_the_debaters_keep_their_wait_of_120_seconds — red (exit 1), restored
+- B8: tests/test_pack_debate_lanes.py::test_more_than_one_lane_takes_one_request_a_pass — red (exit 1), restored
+- B9: tests/test_pack_debate_lanes.py::test_more_than_one_lane_takes_one_request_a_pass — red (exit 1), restored
+- B10: tests/test_pack_debate_lanes.py::test_more_than_one_lane_takes_one_request_a_pass — red (exit 1), restored
+- B11: tests/test_pack_debate_lanes.py::test_the_packs_note_records_both_moves — red (exit 1), restored
+- B12: tests/test_pack_debate_lanes.py::test_the_packs_note_records_both_moves — red (exit 1), restored
+- B13: tests/test_pack_debate_lanes.py::test_the_packs_note_records_both_moves — red (exit 1), restored
+- B14: tests/test_deploy_tunables_pack.py::test_peer_replica_count_follows_the_pack_and_not_a_literal — red (exit 1), restored
+- B15: tests/test_deploy_tunables_pack.py::test_peer_replica_count_follows_the_pack_and_not_a_literal — red (exit 1), restored
+
+**Module line counts:** `tests/test_pack_debate_lanes.py`: 70 lines (under 200); pack: 47 lines.
+
+**`make ci`:** `make ci > C:/Users/yury_/Downloads/project/s290-make-ci.txt 2>&1`, exit **0** (stored in `s290-make-ci.exit`). Ran in the named tree with `UV_NO_SYNC=1`, `UV_FROZEN=1`; no pipe. Read the redirected file. Counted **16** commands from the Makefile and log. No CI step is not done. Silent steps have no printed verdict; reaching the next command and final exit 0 proves their exit 0.
+
+| Step | Command as printed | Verdict / output |
+| --- | --- | --- |
+| 1 | `uv run ruff check . --output-format=github` | PASS; silent success, next step ran |
+| 2 | `uv run ruff format --check .` | PASS; `1845 files already formatted` |
+| 3 | `uv run mypy kernel contracts agents orchestration surfaces` | PASS; `Success: no issues found in 1300 source files` |
+| 4 | `uv run lint-imports` | PASS; `Contracts: 5 kept, 0 broken.` |
+| 5 | `uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts` | PASS; exit 0 (existing WARN/LEGACY lines remain) |
+| 6 | `uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts` | PASS; silent success, next step ran |
+| 7 | `uv run python scripts/check_law_coverage.py` | PASS; silent success, next step ran |
+| 8 | `uv run python scripts/check_param_law_sync.py` | PASS; exit 0 (existing envelope warnings remain) |
+| 9 | `uv run python scripts/check_sprint_status.py` | PASS; `docs_seen=296 SPEC=10 BUILT=1 MERGED=285 UNMAPPED=0 MISSING=0` |
+| 10 | `uv run python scripts/check_tracker_size.py` | PASS; exit 0 (README size warning at 94%, below limit) |
+| 11 | `uv run python scripts/check_markdown_links.py` | PASS; silent success, next step ran |
+| 12 | `uv run python scripts/check_version_scheme.py` | PASS; silent success, next step ran |
+| 13 | `uv run pytest` | PASS; `5333 passed, 9 skipped, 2470 warnings in 503.53s (0:08:23)`; 100.00% coverage |
+| 14 | `uv run python scripts/check_dependency_audit.py` | PASS; `No unaccepted vulnerabilities; 1 accepted advisory re-checked` |
+| 15 | `uv run pre-commit run detect-secrets --all-files` | PASS; `Detect secrets...........................................................Passed` |
+| 16 | `uv run python scripts/check_untracked_secrets.py` | PASS; `detect-secrets (untracked): no untracked files to scan` |
+
+Final pytest / coverage lines pasted from the file:
+
+```text
+TOTAL                                                           21956      0   4700      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5333 passed, 9 skipped, 2470 warnings in 503.53s (0:08:23) ==========
+```
+
+The nine skips are the environment-dependent cases printed by pytest (optional dependencies, local secrets, database/network opt-ins, and link privilege); no test failed. The accepted audit advisory is `PYSEC-2026-2447` for `diskcache 5.6.3`, re-checked by the gate. `.secrets.baseline` unchanged.
 
 **`make gate-ran`:** the planner's, after the push.
 
-**Not met / verified failing:** *to be filled by the builder*
+**Not met / verified failing:** No local build criterion failing. Remote gate (`make gate-ran`), push, merge, deploy, F1 and F2: **not done**, planner-owned. Live settings in Appendix A are planner evidence, not re-measured here.
 
 ---
 
 ## Return notes
 
-- *to be filled by the builder*
+- No scope or Appendix corrections needed. The explicit one-request guarantee in DLIB-IDM-04 is additionally cited in A5, which proves only its configuration premise; no claim of a newly green clause.
+- Law reading record was the first edit, before the new test or Appendix application. No laws, existing tests, design log or state trackers edited. No uv lock/sync, Azure command or deploy executed.
+- Appendix B patch and all evidence logs live outside the worktree in `C:/Users/yury_/Downloads/project/`.
+- All local CI steps completed; no sandbox exception needed. Planner retains remote gates, merge, F1 and F2.
+- Commit pending immediately after this prepared closeout; its SHA will be recorded in the follow-up handback commit. No push or merge.
+- The first commit attempt was rejected by markdownlint MD012 for an extra blank line introduced in the closeout edit; that blank line was removed before retry.
 
 ---
 

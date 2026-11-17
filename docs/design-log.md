@@ -12,6 +12,29 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-325 - the pack declares three debates at once and the manager's wait of 240 seconds, the two values the fleet has run live since October; a test fixes each number - status: MEASURED and DECIDED (planner, delegated, 2026-11-17 17:53 AEDT; the operator: *"prepare 113 for codex"*); specced as [S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md); work-queue 113
+
+**Why.** Three debates at once ([DL-277](design-log.md) amendment 2, 2026-10-09) and the manager's wait of 240 seconds ([DL-274](design-log.md) D4, 2026-10-08) were set by hand on the live apps, because `orchestration/packs/trading_tunables.json` is a fidelity decision path and an edit would have restarted the clean-session count. The count read PASS on 2026-10-27. The pack still says 1 and 120.
+
+**Measured, 2026-11-17.** The deploy script's own `Up`, run with every `az` call and credential a stand-in, sends the manager 1 lane and 120 seconds from `main` and gives each debater one replica: 4 of the 20 lines it prints for the three deliberator apps differ from the live apps read the same hour; with the edit, 20 of 20 are equal. `Assert-EnvPreserved` compares env names and never a value, so nothing stops that `up`. On the live graph: 27 nightly debate records since 2026-10-09, 0 orders failed open, 0 orphaned replies; six nights debated more than one order, the largest seven in 662 seconds (2026-10-26), where one debate on its own took 217 to 347 seconds on twelve nights. Seven of those one after another is 1,519 to 2,429 seconds against execution's 1,800. Only the manager reads the wait (`agents/deliberator/entrypoint.py::build_manager`).
+
+**Decided.**
+
+- **D1 - the pack declares three lanes on `deliberator-manager`.** The script gives each debater as many replicas as that value, so the same number is each debater's replicas in the nightly window.
+- **D2 - the manager's wait of 240 seconds goes into the pack in the same edit; the two debaters keep 120**, which is what their apps hold and bounds nothing.
+- **D3 - a test fixes each number, and one test fixes the condition lanes above one rest on:** each replica takes one request a pass (the kernel's default since S256; nothing in the pack or the script raises it). `tests/test_deploy_tunables_pack.py` leaves the lane number free on purpose and is not changed; the new file says why these two numbers are fixed: they are recorded decisions, and with the number free a pack that says 1 again passes every test.
+- **D4 - the pack's own note records both moves** and says it supersedes the 2026-09-04 sentence that the dial ships at 1.
+- **D5 - PATCH, and the two version lines are carried in the spec.** The lock was last written by a newer `uv` than this machine's 0.8.14: `uv lock --offline` also moves `virtualenv` 21.14.13 back to 21.14.12, and `uv lock` with a network rewrites 54 lines. One hand-edited line is accepted by `uv lock --check`.
+- **D6 - no deploy.** The fleet holds the values. The fidelity count restarts at the first deploy that carries the commit; nothing waits on the count today. F2 is read at the next full `up`.
+
+**Ruled out.** *The lanes alone* - the same file, deploy and count restart, and an `up` that kept three lanes with a 120-second wait would cut off slow turns (about 190 seconds at the output cap, DL-274 D3). *Bounds in place of the number* - 2 would pass. *A capacity test, lanes times execution's wait against the largest night* - no honest constant: 18 buys (the largest night on record, August) times the slowest single debate (347 s) exceeds three lanes of 1,800 s, while the one seven-order night ran at 95 s an order. *Four lanes, the code's default* - the fleet has run three and the vendor's limit above three calls in flight is not measured. *The values as parameters of `up`* - the first `up` that forgets one moves it ([DL-295](design-log.md)). *The debaters' wait to 240* - it bounds nothing and would change two apps at the next `up`.
+
+**Named, not built.** The five-minute message lock on the two debater subscriptions is still live only: the deploy script sets no lock at all. The pack's three `DELIBERATOR_LLM_PROVIDER` lines still say `anthropic` while `Up` sends `openai` from the LLM pack (work-queue 109). *[assumed]* three lanes fit about 18 orders into 1,800 seconds at the 95 seconds an order of the one seven-order night; no night since 2026-10-09 has debated more than seven.
+
+**On the prototype** (`proto-s290`, local only). Six new tests: four fail on the unchanged tree and two pass by design; all pass with the edit; no existing test changes or fails. `make ci` exit 0 in one run with the bump applied, sixteen steps: 5,333 passed, 9 skipped, 100.00 % coverage, the dependency audit clean but the one accepted advisory. Fifteen planted breaks, fifteen red, each on the test named for it.
+
+Evidence outside the repo: OneDrive `trading-agents-data/wq113pack-2026-11-17/`.
+
 ## DL-324 - Test the buy side at the operator's horizon on mid and small companies, on a universe built from public filings - status: DECIDED (planner, delegated; the operator, 2026-11-16: *"I guess yes"* to a $0 buy-side test at one to two weeks); pre-registered as [EXP-041](research/experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md); **run 2026-11-16: NONE, no cell passes discovery (smallest p 0.51); the four rules are closed at ten sessions**
 
 **Decided (planner):** four events (a 10 % fall in five sessions; the same without and with a results

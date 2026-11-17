@@ -411,18 +411,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s290`, branch `sprint-290-a-full-up-keeps-three-debates-at-once`; `Test-Path .env` printed `False`. Base: `3ff3d0a61bb82306e88fcd7dbfb0e7e6419ce2cf`.
 
-**Result:** Appendix B applied with all three exact blobs. Six new tests pass after the expected 4-failed/2-passed red run; both existing files pass (90 tests). All 15 named mutation tests went red and were restored. All 16 local CI steps pass, exit 0, 5,333 passed / 9 skipped, 100.00% coverage. Remote proof, merge, deploy, F1 and F2 not done.
+**Result:** Law reading record was the first edit, before code and Appendix B. Law-cycle answer No: no contracts or new agent guarantee. Appendix B applied with all three exact blobs. Six new tests pass after the expected 4-failed/2-passed red run; both existing files pass (90 tests). All 15 named mutation tests went red and were restored. All 16 local CI steps pass, exit 0, 5,333 passed / 9 skipped, 100.00% coverage. Remote proof, merge, deploy, F1 and F2 not done.
 
 **Files changed:** exactly the six scoped files. `git diff --stat 3ff3d0a61bb82306e88fcd7dbfb0e7e6419ce2cf` (base to built tree):
 
 ```text
  docs/sprints/README.md                             |   2 +-
- ...nt-290-a-full-up-keeps-three-debates-at-once.md | 176 +++++++++++++++++----
+ ...nt-290-a-full-up-keeps-three-debates-at-once.md | 180 +++++++++++++++++----
  orchestration/packs/trading_tunables.json          |   6 +-
  pyproject.toml                                     |   2 +-
  tests/test_pack_debate_lanes.py                    |  70 ++++++++
  uv.lock                                            |   2 +-
- 6 files changed, 219 insertions(+), 39 deletions(-)
+ 6 files changed, 222 insertions(+), 40 deletions(-)
 ```
 
 **Design decisions:** recorded by the planner as [`DL-325`](../design-log.md); the builder adds none.
@@ -541,7 +541,9 @@ Required test coverage of 100.0% reached. Total coverage: 100.00%
 
 The nine skips are the environment-dependent cases printed by pytest (optional dependencies, local secrets, database/network opt-ins, and link privilege); no test failed. The accepted audit advisory is `PYSEC-2026-2447` for `diskcache 5.6.3`, re-checked by the gate. `.secrets.baseline` unchanged.
 
-**`make gate-ran`:** the planner's, after the push.
+**Commit:** Implementation and completed local evidence committed on the requested branch as `2adf7f7e3667ceee028a209fe950b8edf6debc41`; all applicable commit hooks passed. A following handback-only commit records this SHA and the final diff stat; its SHA is returned in chat.
+
+**`make gate-ran`:** **not done**; the planner's, after the push.
 
 **Not met / verified failing:** No local build criterion failing. Remote gate (`make gate-ran`), push, merge, deploy, F1 and F2: **not done**, planner-owned. Live settings in Appendix A are planner evidence, not re-measured here.
 
@@ -553,7 +555,7 @@ The nine skips are the environment-dependent cases printed by pytest (optional d
 - Law reading record was the first edit, before the new test or Appendix application. No laws, existing tests, design log or state trackers edited. No uv lock/sync, Azure command or deploy executed.
 - Appendix B patch and all evidence logs live outside the worktree in `C:/Users/yury_/Downloads/project/`.
 - All local CI steps completed; no sandbox exception needed. Planner retains remote gates, merge, F1 and F2.
-- Commit pending immediately after this prepared closeout; its SHA will be recorded in the follow-up handback commit. No push or merge.
+- Implementation and evidence committed as `2adf7f7e3667ceee028a209fe950b8edf6debc41` with all applicable commit hooks passing; follow-up handback-only commit records that SHA and the final stat. No push or merge.
 - The first commit attempt was rejected by markdownlint MD012 for an extra blank line introduced in the closeout edit; that blank line was removed before retry.
 
 ---

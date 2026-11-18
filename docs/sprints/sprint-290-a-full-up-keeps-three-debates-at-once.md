@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-290-a-full-up-keeps-three-debates-at-once`
-**Status:** BUILT
+**Status:** MERGED 2026-11-18 — `0.131.07`, `f1665f6e`, tag `v0.131.07`, GATE PROVEN; F1 passed; not deployed, F2 at the next full `up`
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.07`)
 **Effort:** S
 **Decisions:** [DL-325](../design-log.md) (this sprint's six decisions, made and measured) · [DL-277](../design-log.md) amendment 2 (the operator's three debates at once, live since 2026-10-09) · [DL-274](../design-log.md) D4 (the manager's wait of 240 seconds, live since 2026-10-08) · [work-queue 113](../work-queue.md)
@@ -546,6 +546,23 @@ The nine skips are the environment-dependent cases printed by pytest (optional d
 **`make gate-ran`:** **not done**; the planner's, after the push.
 
 **Not met / verified failing:** No local build criterion failing. Remote gate (`make gate-ran`), push, merge, deploy, F1 and F2: **not done**, planner-owned. Live settings in Appendix A are planner evidence, not re-measured here.
+
+**Planner's review, 2026-11-18 (Sequencing after merge, steps 1 to 4):**
+
+- The three production blobs equal Appendix B's (`d276a860`, `5192763a`, `a0eca83d`).
+- The planner's test file run in place of the builder's on the built tree: 96 passed with the two
+  existing files.
+- `s290_breaks.py` against the builder's tests alone: **15 of 15 red**, tree clean after.
+- Pushed; **`make gate-ran` exit 0: GATE PROVEN for `f1665f6ea2a1e7ff2001d1664a743b0bf6ee94b1`**
+  (CI, CodeQL, Security Findings, attempt 1), run from `../ta-s290` whose `HEAD` is that SHA. No
+  local `make ci` re-run: the remote gate for this SHA is the proof (CLAUDE.md).
+- Open CodeQL alerts by rule, path and severity: 137 on the branch = 137 on `main`, none new, 0 errors.
+- `main` fast-forwarded `3ff3d0a6..f1665f6e`, tag `v0.131.07`, both pushed.
+- **F1 passed:** on merged `main`, `up_debate_lanes.ps1 infra/deploy-agents.ps1` (every call a
+  stand-in) and `live_debate_lanes.py` (subscription `payg-@Office`), both read 2026-11-18 02:38 UTC,
+  are identical on 20 of 20 lines (kit `wq113pack-2026-11-17/up_lanes_main_f1665f6e.txt`,
+  `live_lanes_2026-11-18.txt`).
+- Not done: a deploy (none is owed); **F2 at the next full `up`**.
 
 ---
 

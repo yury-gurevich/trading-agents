@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-11-17 17:53 AEDT · **Version:** **0.131.06 on `main`** (`3956050c`, tag `v0.131.06`, GATE PROVEN) · **[S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md) is specced for Codex: the pack declares three debates at once and the manager's 240-second wait, so a full `up` no longer puts one debate at a time back (work-queue 113). The fleet is on `s289a` (rollback `s288`); the edge search's next test is the operator's call.**
+**Last updated:** 2026-11-18 13:50 AEDT · **Version:** **0.131.07 on `main`** (`f1665f6e`, tag `v0.131.07`, GATE PROVEN) · **[S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md) is merged: the pack declares three debates at once and the manager's 240-second wait, and the script's own `Up` now equals the live apps (F1, 20 of 20 lines); work-queue 113 is closed. The fleet is on `s289a` (rollback `s288`); the edge search's next test is the operator's call.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…24.md` + git). **LAW-02:** an item is "shipped" only when
@@ -44,8 +44,10 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   `OPERATOR_LLM_PROVIDER=openai` and no model or effort, so the chat asks `gpt-5.5` at `xhigh`
   ([S263](sprints/sprint-263-the-operators-chat-makes-its-tool-call-on-openai.md)). To go back, set the value to `anthropic`. It is a local setting: the
   fleet's operator container binds the fake client.
-- **The manager's wait is 240 seconds, live only** on `deliberator-manager`; the pack says 120. A full
-  `up` puts 120 back, and a rollback to `s255` or older must set 120 first.
+- **The manager's wait is 240 seconds and debates run three at once**, live since October and in the
+  pack since `0.131.07` ([S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md)), so a
+  full `up` keeps both (F1 2026-11-18); a rollback to `s255` or older must set the wait to 120 first.
+  F2 is owed at the next full `up`. What lifts it: F2 passes.
 - **The five-minute message lock is live only** on the two debater subscriptions; a re-created
   subscription reverts to one minute.
 - **The fidelity count restarts at `sched-2026-10-20` on `s284`**; read 2026-10-26 through `sched-2026-10-23`: INSUFFICIENT, PM 8 of 10 judged recommendations, all else met; **read 2026-10-27 through `sched-2026-10-26`: PASS** (5 of 5 clean, scanner 125 / 125, analyst 193 / 193, PM 16 / 16 against 10, 0 unexplained); no session was missed (every trading day from 10-01 has its `sched-` run), and re-firing a past day cannot add to the count, ruled out 2026-10-26: the export takes `sched-YYYY-MM-DD` runs only (`scripts/fidelity_exporter.py`), and a re-run would decide on today's book and place paper orders (replay from a worktree pinned at
@@ -53,19 +55,16 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   exit experiment may start ([DL-237](design-log.md)); a deploy that changes a decision path restarts
   it. The 10-08 to 10-15 window read **INSUFFICIENT on 9 of 10** PM recommendations, 100 % agreement,
   0 unexplained ([DL-304](design-log.md)); `s279` had changed `contracts/`.
-- **Debates run three at once, live only** (operator, 2026-10-09; [DL-277](design-log.md) amendment 2):
-  the manager's `DELIBERATOR_DEBATE_CONCURRENCY` is 3 and each debater app has three replicas in the
-  nightly window, **restored 2026-10-17 11:01 AEDT** on the operator's word after one replica a night since
-  the 2026-10-11 wake-window change (amendment 3). The pack says 1, so a full `up` puts 1 back on all
-  three. Work-queue 113's F2 PASSED on `sched-2026-10-20` (two debates at once, clean); the pack edit waits for the fidelity count.
 - **[EXP-019](research/experiments/EXP-019-do-the-debaters-know-what-an-order-hinges-on.md) is
   interrupted** at 31 of 52 calls; $2.80 is approved for the rest, on Opus, after 2026-10-11.
 
 ## Now
 
-🟦 **2026-11-17 — [S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md) (work-queue 113, [DL-325](design-log.md)) is SPECCED for Codex; its worktree `../ta-s290` is ready and the operator starts the builder.** INTENT: the tunables pack declares three debates at once and the manager's wait of 240 seconds, the values the fleet has run live since October. Success factors: the pack's blob equals the prototype's; six tests under the spec's names pass, four of them seen red first; fifteen planted breaks red against the builder's tests; `make ci` exit 0 and GATE PROVEN for the merged SHA; F1 at no cost: the deploy script's own `Up` prints for the three deliberator apps what the live apps hold (20 of 20 lines). No deploy; the fidelity count restarts at the first deploy that carries the commit; F2 at the next full `up`. Other coding candidates, none specced: 136, 120, 118, 110 and 98, 105, 142, and 109's pack edit. The edge search continues beside the paper test bed ([ADR-0033](decisions/0033-the-fleet-is-a-paper-test-bed.md)); the open lead is EXP-036's confirmation, the operator's call.
+⬜ **2026-11-18 — nothing in flight.** Coding candidates, none specced (each needs a prototype and a line here first): 136, 120, 118, 110 and 98, 105, 142, and 109's pack edit. The fidelity count restarts at the first deploy that carries `0.131.07` (the pack is a decision path). The edge search continues beside the paper test bed ([ADR-0033](decisions/0033-the-fleet-is-a-paper-test-bed.md)); the open lead is EXP-036's confirmation, the operator's call.
 
 ## Recent (most recent first — detail in each sprint doc)
+
+🟩 **2026-11-18 — [S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md) (work-queue 113, [DL-325](design-log.md)) merged as `0.131.07` (`f1665f6e`, tag `v0.131.07`); work-queue 113 closed.** INTENT: the tunables pack declares three debates at once and the manager's wait of 240 seconds, the values the fleet has run live since October; success = the pack's blob equals the prototype's, six tests under the spec's names pass with four seen red first, fifteen planted breaks red against the builder's tests, GATE PROVEN for the merged SHA, and F1: the deploy script's own `Up` prints what the live apps hold. PROVEN RESULT: built by Codex; the three production blobs equal the prototype's; the builder's red run 4 failed / 2 passed, then 6 passed; the planner's tests pass in place of the builder's (96 with the two existing files); 15 of 15 breaks red against the builder's tests alone; the builder's `make ci` exit 0 (5,333 passed, 100.00 %); **GATE PROVEN `f1665f6e`** (CI, CodeQL, Security Findings, attempt 1); CodeQL 137 = 137 against `main`; **F1 passed**: 20 of 20 lines equal, both read 2026-11-18 02:38 UTC. Not deployed; F2 at the next full `up` ([functionality-checks](laws/functionality-checks.md)).
 
 🟥 **2026-11-16 — [EXP-041](research/experiments/EXP-041-do-mid-and-small-companies-rise-after-a-sharp-fall-or-a-strong-results-reaction.md) ([DL-324](design-log.md)): no short-horizon buy signal in mid and small companies.** INTENT: on the operator's yes to a buy-side test at one to two weeks, measure at $0 whether a company ranked 501–2000 by dollar volume beats its peers over the ten sessions after a 10 % five-session fall (all, without and with a results release) or a strong results reaction; success = a universe that keeps delisted companies, pre-registration before any return is read, one scored run, verdict by R012's funnel. PROVEN RESULT: 7,092 companies built from SEC insider filings and Alpaca's free bars (four build defects found and fixed before any return was read: Appendix R); pre-registered `ff107361`; self-test finds a planted effect and none where none is planted; one `score` run read **NONE**: no cell of eight passes discovery (smallest p 0.51), every mean excess within ±0.7 %, all below zero net of 50 bps; about half the trades end up. One vendor bad print (AQB) found after the run, in no barred cell. No code change. Not done: companies listed after 2021 (the SEC's file host needs a contact address).
 
@@ -94,7 +93,7 @@ second ranking.
 
 1. **F2 of three debates at once** (work-queue 113, [DL-277](design-log.md) amendment 2): **PASSED 2026-10-21** on
    `sched-2026-10-20`: CL and SBUX debated at once on three replicas of each debater, 0 failed open, 0 orphaned.
-   Left: the pack edit once the fidelity count allows it.
+   The pack edit is merged as `0.131.07` (S290, 2026-11-18); left: its F2 at the next full `up`.
 2. **Anthropic's account accepts paid calls again** (measured 2026-10-11: one call of one output
    token answered HTTP 200; S264's F1b on Anthropic passed the same day, *Now*): EXP-019's
    remainder on Opus, then the debate workflow in the order of

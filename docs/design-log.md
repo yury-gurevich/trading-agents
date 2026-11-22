@@ -12,6 +12,36 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-326 - the judge rules on what distinguishes this order, and the reward-to-risk ratio is printed as a figure, not a passed gate - status: MEASURED and DECIDED (planner, 2026-11-22 13:50 AEDT); specced as [S291](sprints/sprint-291-the-judge-rules-on-what-distinguishes-the-order.md) for Codex; work-queue 118; the operator, 2026-11-22: *"sure, let's do 118"*, told the proof costs about $8 from the fleet's balance
+
+**Why.** [DL-280](design-log.md) found the judge ruling `revise` on every order, for a reason shared by every order, and `revise` changes no order. Re-measured before building: it is still true, and the packet line behind it breaks a locked clause (`DLIB-NEV-08`, DRIFT-118).
+
+**Measured, 2026-11-22 (kit OneDrive `wq118-2026-11-22/`).**
+
+- Since `e6b26b90` (2026-09-18) stopped treating `revise` as a block: **65 of 65 rulings `revise`, on 29 nights, 0 orders blocked.** Of the 43 debates that store their packet, 43 of 43 rationales name reward-to-risk.
+- The renderer of the prototype, on the live graph, equals each of the **43** stored packets with only the sprint's two line changes, so the paid proof ran on what production will print.
+- Fixed before any paid call (`prereg.md`, SHA-256 `f47d31a3549576c4…`): 7 development orders (judge only, the wording may change twice), 6 held-out orders (full debates, run once), five bars.
+- Development: the first wording read 7 `uphold` (passing the gates read as enough); the second 5 `revise`, 2 `uphold`, two leaning on the ratio; the third, frozen, 3 `revise`, 4 `uphold`, each `revise` on evidence about that name.
+- **Held-out: PASS.** 3 `revise`, 2 `uphold`, 0 `overturn` on 5 debates (the money cap stopped the sixth before it started; the bar allowed five); none of the `revise` rests on the ratio; the firewall's four Class-1 cases pass. Each cited fact was read back from its packet. **$6.54** of the approved $8.
+- Prototype `proto-s291` (never pushed): `make ci` exit 0 (5,350 passed, 8 skipped, 100.00 %), 15 of 15 breaks red.
+
+**Correction to DL-280.** It says none of the 35 orders from 2026-09-17 was vetoed. Three were (USB, AMZN, WFC, the run of 2026-09-17 22:47 UTC): the code still treated `revise` as a block until `e6b26b90` the next day. Counted from that commit, the claim holds (65 of 65, none blocked).
+
+**Decided (technical, delegated).**
+
+1. The ratio prints as `PM disclosed figure, not a gate`, with its value and detail and no threshold or verdict.
+2. One rule line states why, with ADR-0027's numbers, each pinned to the ADR by a test (`DLIB-NEV-09`).
+3. Only the exact field `comparison=DISCLOSURE_ONLY` on a gate that passed drops the verdict.
+4. The judge rules on what distinguishes this order: a design property true of every order cannot decide the ruling unless this order's case relies on it, and passing every gate does not earn an `uphold`. New clause `DLIB-OUT-09`.
+5. Five contrast examples, the judge's only: two `uphold`, one `revise`, two `overturn`.
+6. The judge's constant moves to `kernel/deliberation_judge_prompt.py`, because the new text passes the 200-line block.
+
+**Ruled out.** *Raising the floor:* ADR-0027 Correction 2 measured that the ratio does not predict returns. *Removing the ratio from the packet:* the debaters would lose the stop and target geometry. *Dropping `revise`:* it could move every ruling to `overturn`, which blocks a buy. *The packet line alone:* other properties shared by every order would decide instead. *The stop-out fact in this sprint, which DL-280 proposed:* it needs a new read of past fills, which is work-queue 98. *Ten full debates:* at $0.69 median and $1.08 at the 90th percentile they could pass the approved $8.
+
+**Not measured.** Whether the new rulings are **right**: there are no outcome labels, and the proof is 5 debates run once. The new prompt on the declared fallback `claude-opus-5` (ADR-0010 decision 4): owed before the deploy, on the operator's word, since it spends from the Anthropic balance.
+
+**Next.** Codex builds S291; the planner verifies and merges; the deploy is the operator's word. F2 over the first five debated orders after it.
+
 ## DL-325 - the pack declares three debates at once and the manager's wait of 240 seconds, the two values the fleet has run live since October; a test fixes each number - status: MEASURED and DECIDED (planner, delegated, 2026-11-17 17:53 AEDT; the operator: *"prepare 113 for codex"*); specced as [S290](sprints/sprint-290-a-full-up-keeps-three-debates-at-once.md); work-queue 113
 
 **Why.** Three debates at once ([DL-277](design-log.md) amendment 2, 2026-10-09) and the manager's wait of 240 seconds ([DL-274](design-log.md) D4, 2026-10-08) were set by hand on the live apps, because `orchestration/packs/trading_tunables.json` is a fidelity decision path and an edit would have restarted the clean-session count. The count read PASS on 2026-10-27. The pack still says 1 and 120.
@@ -2158,6 +2188,9 @@ the judge's choices now:* under the instruction not to uphold, the rulings may a
 buy would be placed; not measured, so not done blind. *The packet line alone:* the same rationales also name
 fixed-fraction sizing (a distinction the prompt teaches) and the stop's gap risk on most orders, so the
 ruling would probably stay `revise` for another reason shared by every order (not measured).
+
+**Correction, 2026-11-22 ([DL-326](design-log.md)).** Three of the 35 orders were vetoed (USB, AMZN, WFC, the run of
+2026-09-17 22:47 UTC), because the code still treated `revise` as a block until `e6b26b90` the next day.
 
 ---
 

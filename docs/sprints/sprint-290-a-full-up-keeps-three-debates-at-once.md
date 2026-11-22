@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-290-a-full-up-keeps-three-debates-at-once`
-**Status:** MERGED 2026-11-18 — `0.131.07`, `f1665f6e`, tag `v0.131.07`, GATE PROVEN; F1 passed; deployed as `s290` by a full `up` 2026-11-18 (F2's first limb passed; the last owed on a night with more than one debated buy)
+**Status:** MERGED 2026-11-18 — `0.131.07`, `f1665f6e`, tag `v0.131.07`, GATE PROVEN; F1 passed; deployed as `s290` by a full `up` 2026-11-18 (F2 passed; its last limb on `sched-2026-11-20`)
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.07`)
 **Effort:** S
 **Decisions:** [DL-325](../design-log.md) (this sprint's six decisions, made and measured) · [DL-277](../design-log.md) amendment 2 (the operator's three debates at once, live since 2026-10-09) · [DL-274](../design-log.md) D4 (the manager's wait of 240 seconds, live since 2026-10-08) · [work-queue 113](../work-queue.md)

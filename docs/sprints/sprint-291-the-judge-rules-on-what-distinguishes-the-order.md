@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-291-the-judge-rules-on-what-distinguishes-the-order`
-**Status:** BUILT
+**Status:** MERGED 2026-11-25 — `0.131.08`, `c0e19409`, tag `v0.131.08`, GATE PROVEN; F1 passed; not deployed: the firewall on the fallback `claude-opus-5` and the deploy are the operator's word, then F2
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.08`)
 **Effort:** M
 **Decisions:** [DL-326](../design-log.md) (this sprint's decisions, made and measured) · [DL-280](../design-log.md) (the finding) · [ADR-0010](../decisions/0010-llm-interaction-quality-gate.md) (a prompt change passes the golden set) · [ADR-0027](../decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md) Correction 2 (the ratio is disclosed, not enforced) · [ADR-0029](../decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) (`revise` blocks nothing) · DRIFT-118 (this sprint corrects it)
@@ -554,6 +554,31 @@ Eight skips: local `.env` proofs (2), Celery broker (1), link privilege (1), Pos
 **`make gate-ran`:** the planner's, after the push.
 
 **Not met / verified failing:** No failing local gate. Remote `make gate-ran`, push, merge, deployment, F1/F2 and fallback-vendor firewall: **not done**, as assigned to the planner/operator.
+
+**Planner's review, 2026-11-25 (Sequencing after merge, steps 1 to 4):**
+
+- The 17 blobs at `c0e19409` equal both Appendix B's list and the prototype `proto-s291` (`652e80e3`);
+  the branch changes exactly the planned 21 files.
+- The planner's two test files run in place of the builder's on the built tree: **69 passed** (16 new,
+  53 in the seven existing files); the builder's files restored after.
+- `s291_breaks.py` against the builder's tests alone: **15 of 15 red**, tree clean after; no `.env` in
+  the worktree.
+- Pushed; **`make gate-ran` exit 0: GATE PROVEN for `c0e194094bd9fb49c03f8252d68d9ff3564c41b7`**
+  (CI, CodeQL, Security Findings, attempt 1), run from `../ta-s291` whose `HEAD` is that SHA. No
+  local `make ci` re-run: the remote gate for this SHA is the proof (CLAUDE.md).
+- Open CodeQL alerts by rule, path and severity: 138 on the branch against 137 on the last baseline
+  (`sprint-289-…`), 0 errors. The one added is a **note**, `py/unused-import` on
+  `kernel/deliberation_prompts.py:13`, the deliberate re-export `JUDGE_SYSTEM as JUDGE_SYSTEM` that
+  keeps every existing import working; `main` holds 29 open notes of the same rule. Accepted, not
+  dismissed; the new baseline is this branch at 138.
+- `main` fast-forwarded `85a9e4bf..c0e19409`, tag `v0.131.08`, both pushed.
+- **F1 passed:** on merged `main`, `f1_render.py` rebuilt each stored debate packet from its `PMRun`
+  in the live graph (read 2026-11-25 07:24 UTC): **43 of 43** equal the stored packet with only the
+  two line changes, 0 differ, 0 rendered lines name the ratio as `PASSED` (kit
+  `wq118-2026-11-22/f1_main_c0e19409.txt`).
+- Not done, in order: the firewall on the fallback `claude-opus-5` (ADR-0010 decision 4; it spends the
+  Anthropic balance, so the operator's word); the deploy (the operator's word: an `overturn` blocks a
+  paper buy); **F2** over the first five debated orders after it.
 
 ---
 

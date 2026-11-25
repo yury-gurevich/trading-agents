@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.18 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.19 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -74,6 +74,10 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   evidence packet states it: the rule, this order's numbers and the regime rule, computed only from
   recorded values, and only when that rule reproduces the recorded confidence. Otherwise the packet
   says in one line why it is withheld.
++ **DLIB-OUT-09** -- The judge's champion prompt tells it to rule on what
+  distinguishes this order: a design property true of every order cannot decide
+  the ruling unless this order's own case relies on it. Its examples demonstrate
+  each of `uphold`, `revise` and `overturn`.
 
 ## Prohibitions (`NEV`)
 
@@ -367,3 +371,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   candidate left), `DLIB-OUT-02` (`llm_switches`) and `DLIB-DEP-05` (the
   fallbacks are handed over too). PARAM: `llm_fallbacks` added, `llm_provider`
   reworded.
++ v1.19 -- S291 / DL-326 (2026-11-22). Adds and proves `DLIB-OUT-09`. The packet
+  stops rendering the disclosure-only reward-to-risk ratio as a passed gate, which
+  `DLIB-NEV-08` forbade and its test could not see (DRIFT-118). One clause added
+  and proven: 35 / 66 -> 36 / 67.

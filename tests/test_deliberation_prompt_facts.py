@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from scripts.deliberation_eval import _CLASS1, _CLASS2
+from scripts.deliberation_prompt_sources import JUDGE_CONTRAST_CASES
 from tests.deliberation_fact_probes import (
     anomalous,
     buy,
@@ -135,14 +136,16 @@ CASE_PINS: dict[str, Callable[[], None]] = {
 )
 def test_every_stated_fact_has_a_pin(prompt: str) -> None:
     """DLIB-NEV-09 (A7): the distinctions the prompt states are exactly the pinned
-    ones, every worked example is a Class-2 hypothetical or a pinned Class-1 case,
+    ones, every worked example is a Class-2 or contrast hypothetical or a pinned
+    Class-1 case,
     every Class-1 case is pinned, and every pin is a test in this module."""
     class1 = {str(case[0]) for case in _CLASS1}
     class2 = {str(case[0]) for case in _CLASS2}
+    contrast = {str(case[0]) for case in JUDGE_CONTRAST_CASES}
 
     assert distinctions(prompt) == set(DISTINCTION_PINS)
     assert set(CASE_PINS) == class1
-    assert set(_CASE.findall(prompt)) <= class2 | set(CASE_PINS)
+    assert set(_CASE.findall(prompt)) <= class2 | contrast | set(CASE_PINS)
     pins = [*DISTINCTION_PINS.values(), *CASE_PINS.values()]
     assert all(globals().get(pin.__name__) is pin for pin in pins)
     assert all(pin.__name__.startswith("test_") for pin in pins)

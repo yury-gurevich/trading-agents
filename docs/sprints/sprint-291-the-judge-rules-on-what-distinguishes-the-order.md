@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-291-the-judge-rules-on-what-distinguishes-the-order`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.08`)
 **Effort:** M
 **Decisions:** [DL-326](../design-log.md) (this sprint's decisions, made and measured) · [DL-280](../design-log.md) (the finding) · [ADR-0010](../decisions/0010-llm-interaction-quality-gate.md) (a prompt change passes the golden set) · [ADR-0027](../decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md) Correction 2 (the ratio is disclosed, not enforced) · [ADR-0029](../decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) (`revise` blocks nothing) · DRIFT-118 (this sprint corrects it)
@@ -196,15 +196,15 @@ The names are exact: the law step and the break script read them. Build fixtures
 
 ## Success factors
 
-- [ ] A disclosure-only ratio prints as a figure with no threshold and no verdict; any other gate keeps its line (A1, A3, A4).
-- [ ] The rule is printed once, after the gates, and its code facts and numbers are pinned (A2, A5, A6, A7).
-- [ ] The judge's champion carries the order rule and shows each ruling; the debaters' prompts carry none of its cases (A8 to A11).
-- [ ] The 17 files equal Appendix B's blob ids, so the champion is the compile's output byte for byte.
-- [ ] No file under `agents/execution/`, `contracts/`, or `agents/deliberator/review_batch.py` changed.
-- [ ] Law cycle done: `DLIB-OUT-09` proven, rollups 36 / 67, DRIFT-118 recorded.
-- [ ] 15 of 15 breaks red, stated per break.
-- [ ] Every touched module under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage, or each step your sandbox cannot run named "not done".
+- [x] A disclosure-only ratio prints as a figure with no threshold and no verdict; any other gate keeps its line (A1, A3, A4).
+- [x] The rule is printed once, after the gates, and its code facts and numbers are pinned (A2, A5, A6, A7).
+- [x] The judge's champion carries the order rule and shows each ruling; the debaters' prompts carry none of its cases (A8 to A11).
+- [x] The 17 files equal Appendix B's blob ids, so the champion is the compile's output byte for byte.
+- [x] No file under `agents/execution/`, `contracts/`, or `agents/deliberator/review_batch.py` changed.
+- [x] Law cycle done: `DLIB-OUT-09` proven, rollups 36 / 67, DRIFT-118 recorded.
+- [x] 15 of 15 breaks red, stated per break.
+- [x] Every touched module under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage, or each step your sandbox cannot run named "not done".
 
 ---
 
@@ -335,15 +335,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| PM disclosure renderer | `agents/deliberator/laws/laws.md` (whole), `test-plan.md` (whole); `docs/laws/conventions.md`, `drift-register.md` (whole) | DLIB-NEV-08, DLIB-NEV-09 | Yes: only exact disclosure field on a passed outcome loses its verdict. |
+| Judge sources, compiler, champion and recipe | Same law book and test plan; ADR-0010 | DLIB-OUT-04, DLIB-OBS-07, new DLIB-OUT-09 | Keep verdict effects unchanged; use Appendix B alone for the amendment and compiled text. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, one guarantee (DLIB-OUT-09), no contract. Appendix B performs the v1.19 amendment and rollups; tests precede it.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None. The explicitly authorized Appendix B amendment governs this sprint.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** The existing book has no order-specific judge-prompt guarantee; the spec resolves this with new DLIB-OUT-09. No further undecided silence found.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** New DLIB-OUT-09 is proven by A8-A10. Existing DLIB-NEV-08, DLIB-NEV-09, DLIB-OUT-04 and DLIB-OBS-07 already had green rows; this sprint strengthens the disclosure and recipe evidence. Rollups now 36 / 67.
+
+Reading recorded before any code change, 2026-11-25. Clean branch: `sprint-291-the-judge-rules-on-what-distinguishes-the-order`; base `85a9e4bf85b7c3566b593e519aad1eaa4949638e`.
 
 ---
 
@@ -351,43 +354,217 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *to fill* | | | | |
+| A1 | `test_a_disclosed_ratio_is_not_a_passed_gate` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS | DLIB-NEV-08 |
+| A2 | `test_the_rule_is_stated_once_after_the_gates` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS | DLIB-NEV-08 |
+| A3 | `test_an_enforced_ratio_keeps_its_verdict` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS (parametrized) | DLIB-NEV-08 |
+| A4 | `test_a_gate_that_did_not_pass_is_never_recast` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS (parametrized) | DLIB-NEV-08 |
+| A5 | `test_the_whole_packet_states_the_rule_before_the_pm_run` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS | DLIB-NEV-08 |
+| A6 | `test_the_rule_states_what_the_code_does` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS | DLIB-NEV-09 |
+| A7 | `test_the_rules_evidence_is_adr_0027s` | `tests/test_reward_risk_is_a_disclosed_figure.py` | PASS | DLIB-NEV-09 |
+| A8 | `test_the_judge_is_told_to_rule_on_this_order` | `tests/test_judge_rules_on_the_order.py` | PASS | DLIB-OUT-09 |
+| A9 | `test_every_ruling_is_demonstrated` | `tests/test_judge_rules_on_the_order.py` | PASS | DLIB-OUT-09 |
+| A10 | `test_each_contrast_case_shows_its_ruling` | `tests/test_judge_rules_on_the_order.py` | PASS | DLIB-OUT-09 |
+| A11 | `test_the_contrast_cases_reach_only_the_judge` | `tests/test_judge_rules_on_the_order.py` | PASS (parametrized) | DLIB-OUT-09 |
+| A12 | `test_the_judge_prompt_is_in_the_recipe` | `tests/test_judge_rules_on_the_order.py` | PASS | DLIB-OBS-07 |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** None; A1-A12 produce 16 cases.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT — all 16 local CI steps pass; no remote/merge/deploy proof.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s291`, branch `sprint-291-the-judge-rules-on-what-distinguishes-the-order`. No `.env` present; confirmed before tests and after breaks.
 
-**Result:** *to fill*
+**Result:** Appendix B applied unchanged; 17 exact blob matches. Initial red: two intended collection errors. New tests: 16 passed. Required existing tests: 53 passed. All 15 named breaks red and restored. `make ci` exit 0: all 16 steps passed; 5,350 passed, 8 skipped, 100.00 % coverage.
 
-**Files changed:** *to fill*
+**Files changed:** Exactly Appendix B's 17, two new test files, this spec and `docs/sprints/README.md` (21 total). No excluded paths changed. `git diff --stat` against base `85a9e4bf85b7c3566b593e519aad1eaa4949638e`:
+
+```text
+agents/deliberator/context_pm.py                   |  29 ++++-
+ agents/deliberator/laws/laws.md                    |  10 +-
+ agents/deliberator/laws/test-plan.md               |   5 +-
+ agents/deliberator/prompt_recipe.py                |   2 +
+ docs/laws/INDEX.md                                 |   2 +-
+ docs/laws/drift-register.md                        |   1 +
+ docs/laws/ledger.md                                |   2 +-
+ docs/sprints/README.md                             |   2 +-
+ ...-judge-rules-on-what-distinguishes-the-order.md | 138 ++++++++++++++++++--
+ kernel/deliberation_judge_prompt.py                | 124 ++++++++++++++++++
+ kernel/deliberation_prompts.py                     |  66 +---------
+ orchestration/tests/test_veto_stage.py             |   2 +-
+ pyproject.toml                                     |   2 +-
+ scripts/compile_deliberation_prompts.py            |  22 +++-
+ scripts/deliberation_judge_prompt.json             |  56 +++++++-
+ scripts/deliberation_prompt_sources.py             |  70 +++++++++-
+ tests/test_deliberation_prompt_artifacts.py        |   2 +-
+ tests/test_deliberation_prompt_facts.py            |   7 +-
+ tests/test_judge_rules_on_the_order.py             |  81 ++++++++++++
+ tests/test_reward_risk_is_a_disclosed_figure.py    | 144 +++++++++++++++++++++
+ uv.lock                                            |   2 +-
+ 21 files changed, 669 insertions(+), 100 deletions(-)
+```
 
 **Design decisions:** recorded as [`DL-326`](../design-log.md) by the planner.
 
-**Proof — the red run first:** *to fill*
+**Proof — the red run first:** production unchanged, exit 2.
 
-**Proof — the green run:** *to fill*
+```text
+=================================== ERRORS ====================================
+______ ERROR collecting tests/test_reward_risk_is_a_disclosed_figure.py _______
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s291\tests\test_reward_risk_is_a_disclosed_figure.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_reward_risk_is_a_disclosed_figure.py:19: in <module>
+    from agents.deliberator.context_pm import REWARD_RISK_RULE, order_lines
+E   ImportError: cannot import name 'REWARD_RISK_RULE' from 'agents.deliberator.context_pm' (C:\Users\yury_\Downloads\project\ta-s291\agents\deliberator\context_pm.py)
+___________ ERROR collecting tests/test_judge_rules_on_the_order.py ___________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s291\tests\test_judge_rules_on_the_order.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_judge_rules_on_the_order.py:15: in <module>
+    from scripts.deliberation_prompt_sources import JUDGE_CONTRAST_CASES, JUDGE_ORDER_RULE
+E   ImportError: cannot import name 'JUDGE_CONTRAST_CASES' from 'scripts.deliberation_prompt_sources' (C:\Users\yury_\Downloads\project\ta-s291\scripts\deliberation_prompt_sources.py)
+=========================== short test summary info ===========================
+ERROR tests/test_reward_risk_is_a_disclosed_figure.py
+ERROR tests/test_judge_rules_on_the_order.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+2 errors in 30.09s
+```
 
-**Guards planted:** *to fill*
+**Proof — the green run:** new tests, exit 0.
 
-**Module line counts:** *to fill*
+```text
+................                                                         [100%]
+16 passed in 2.75s
+```
 
-**`make ci`:** *to fill*
+Seven required existing test files, exit 0:
+
+```text
+.....................................................                    [100%]
+53 passed in 12.60s
+```
+
+Appendix B exit 0; all 17 `git hash-object` values matched:
+
+```text
+192a8e3957d3335ce7556bd7c44dcd0718705f31 agents/deliberator/context_pm.py
+22ba8999d40a031b24be5c925b1fa1cc3ea19d70 agents/deliberator/laws/laws.md
+3c01cc3c67b85bfe72826c3cfdb496d9cf2b836d agents/deliberator/laws/test-plan.md
+f0f6337dadc2dca175623a084aa7030ec8289df1 agents/deliberator/prompt_recipe.py
+23107d0d5f8a69148f64d57a13f2176c50ebe337 docs/laws/INDEX.md
+43db0327e87c70b8428e3abe7b85de0032290040 docs/laws/drift-register.md
+3536d77c660267b35f43f67a4798070966f717fd docs/laws/ledger.md
+9cd3186328928f99e681537910af257b13654eda kernel/deliberation_judge_prompt.py
+dfffa695b4093646ac57c3e802ef4b11f9f5a622 kernel/deliberation_prompts.py
+3669fb10922f38090119f554d15fbe778022978e orchestration/tests/test_veto_stage.py
+6f12b92fc6a7d6323c8f8359381188d73797f871 pyproject.toml
+6e75a80c5f8c28e7da68452d56ce684657479577 scripts/compile_deliberation_prompts.py
+4b2426c1e472a4079f5840ab2191bccb5f59c1e9 scripts/deliberation_judge_prompt.json
+97a7150f217e0182bd2a2d4eff64570219ce69e6 scripts/deliberation_prompt_sources.py
+6e9921c3029ad731098ee68201cc0b4a2c3d8b8e tests/test_deliberation_prompt_artifacts.py
+441bfeefc984a692dbe3e739dcc36519eb227d98 tests/test_deliberation_prompt_facts.py
+ba64b9e85da0a2f8573ff8e3674f80ddbc607562 uv.lock
+```
+
+**Guards planted:** Appendix C exit 0. All 15 named tests went red; every planted file restored byte for byte, and `git status --short` is identical before/after.
+
+```text
+B1 RED expected test_a_disclosed_ratio_is_not_a_passed_gate; failed: ['test_a_disclosed_ratio_is_not_a_passed_gate', 'test_the_whole_packet_states_the_rule_before_the_pm_run']
+B2 RED expected test_the_rule_is_stated_once_after_the_gates; failed: ['test_the_rule_is_stated_once_after_the_gates', 'test_the_whole_packet_states_the_rule_before_the_pm_run']
+B3 RED expected test_the_rule_is_stated_once_after_the_gates; failed: ['test_the_rule_is_stated_once_after_the_gates', 'test_the_whole_packet_states_the_rule_before_the_pm_run']
+B4 RED expected test_a_gate_that_did_not_pass_is_never_recast; failed: ['test_a_gate_that_did_not_pass_is_never_recast[failed-FAILED]', 'test_a_gate_that_did_not_pass_is_never_recast[not_evaluated-NOT-EVALUATED]']
+B5 RED expected test_an_enforced_ratio_keeps_its_verdict; failed: ['test_an_enforced_ratio_keeps_its_verdict[DISCLOSURE_ONLY_DRAFT]']
+B6 RED expected test_a_disclosed_ratio_is_not_a_passed_gate; failed: ['test_a_disclosed_ratio_is_not_a_passed_gate']
+B7 RED expected test_the_rules_evidence_is_adr_0027s; failed: ['test_the_rules_evidence_is_adr_0027s']
+B8 RED expected test_the_rules_evidence_is_adr_0027s; failed: ['test_the_rules_evidence_is_adr_0027s']
+B9 RED expected test_the_rule_states_what_the_code_does; failed: ['test_the_rule_states_what_the_code_does']
+B10 RED expected test_the_judge_is_told_to_rule_on_this_order; failed: ['test_the_judge_is_told_to_rule_on_this_order']
+B11 RED expected test_the_champion_is_its_sources_rebuilt; failed: ['test_the_champion_is_its_sources_rebuilt']
+B12 RED expected test_every_ruling_is_demonstrated; failed: ['test_every_ruling_is_demonstrated', 'test_each_contrast_case_shows_its_ruling']
+B13 RED expected test_the_champion_is_its_sources_rebuilt; failed: ['test_the_champion_is_its_sources_rebuilt']
+B14 RED expected test_the_contrast_cases_reach_only_the_judge; failed: ['test_the_contrast_cases_reach_only_the_judge[shared-sizing-rule']
+B15 RED expected test_the_judge_prompt_is_in_the_recipe; failed: ['test_the_judge_prompt_is_in_the_recipe']
+15 of 15 breaks red on their named test
+```
+
+**Module line counts:**
+
+```text
+agents/deliberator/context_pm.py: 156
+agents/deliberator/prompt_recipe.py: 79
+kernel/deliberation_judge_prompt.py: 124
+kernel/deliberation_prompts.py: 93
+orchestration/tests/test_veto_stage.py: 193
+scripts/compile_deliberation_prompts.py: 188
+scripts/deliberation_prompt_sources.py: 116
+tests/test_deliberation_prompt_artifacts.py: 168
+tests/test_deliberation_prompt_facts.py: 151
+tests/test_reward_risk_is_a_disclosed_figure.py: 144
+tests/test_judge_rules_on_the_order.py: 81
+```
+
+**`make ci`:** exit **0**, redirected to `C:/Users/yury_/.codex/tmp/s291-evidence-20261125/ci.txt`; exit recorded separately in `ci-exit.txt`. `UV_NO_SYNC=1`; output never piped. No local step is not done. Silent checks exited 0, evidenced by the next recipe executing and final make exit 0.
+
+| Step | Check | Verdict |
+| --- | --- | --- |
+| 1 | ruff | PASS (exit 0) |
+| 2 | format | PASS (exit 0) |
+| 3 | mypy | PASS (exit 0) |
+| 4 | import-linter | PASS (exit 0) |
+| 5 | module size | PASS (exit 0) |
+| 6 | module header | PASS (exit 0) |
+| 7 | law coverage | PASS (exit 0) |
+| 8 | PARAM/settings sync | PASS (exit 0) |
+| 9 | sprint status | PASS (exit 0) |
+| 10 | tracker size | PASS (exit 0) |
+| 11 | markdown links | PASS (exit 0) |
+| 12 | version scheme | PASS (exit 0) |
+| 13 | pytest / coverage | PASS (exit 0) |
+| 14 | dependency audit | PASS (exit 0) |
+| 15 | detect-secrets | PASS (exit 0) |
+| 16 | untracked secrets | PASS (exit 0) |
+
+Selected real verdict lines (full log retained at the path above):
+
+```text
+1848 files already formatted
+Success: no issues found in 1301 source files
+Contracts: 5 kept, 0 broken.
+docs_seen=297 SPEC=10 BUILT=1 MERGED=286 UNMAPPED=0 MISSING=0
+TOTAL                                                           21969      0   4704      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5350 passed, 8 skipped, 2470 warnings in 855.45s (0:14:15) ==========
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+detect-secrets (untracked): no untracked files to scan
+make ci exit: 0
+```
+
+Eight skips: local `.env` proofs (2), Celery broker (1), link privilege (1), Postgres DSN (2), optional Finnhub/Stooq network probes (2). Pytest reported 2,470 warnings.
 
 **`make gate-ran`:** the planner's, after the push.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:** No failing local gate. Remote `make gate-ran`, push, merge, deployment, F1/F2 and fallback-vendor firewall: **not done**, as assigned to the planner/operator.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- Appendix B and C were extracted unchanged from the fenced blocks. No `uv lock`, `uv sync`, Azure/deploy command or LLM call was run. `UV_NO_SYNC=1` is set for `make ci` because its recipes use plain `uv run`.
+- All production/law changes came solely from Appendix B. The two new test modules have the exact planned test names and clause citations. A7 uses the Python escape `\u2212`; A10 uses a typed cast.
+- No change to verdict effects, execution, contracts, review_batch, debater prompts, baseline, STATE or design log. The handover's narrower scope overrides the memory skill's local-state recommendation.
+- Scratch was removed after copying its break log outside the worktree. No extra worktree files remain.
+- Remote `make gate-ran`, push/merge, CodeQL comparison, F1, fallback-vendor firewall and F2 are not done by the builder; owed to the planner/operator as specified. No deployment or live-success claim.
+- Local CI is complete and green. Commit on the requested branch follows this completed handback; resulting build SHA is recorded below after committing.
 
 ---
 

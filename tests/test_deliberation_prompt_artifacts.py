@@ -149,7 +149,7 @@ def test_promoted_judge_prompt_matches_committed_artifact() -> None:
     artifact = load_prompt_artifact(_JUDGE_ARTIFACT)
 
     assert artifact.task == "deliberation.judge"
-    assert artifact.version == "2026-09-30-s245-v6-judge-claude-opus-5"
+    assert artifact.version == "2026-11-22-s291-v7-judge-gpt-5.5"
     assert DEFAULT_DELIBERATION_PROMPTS.judge == artifact.system_prompt
 
 

@@ -140,7 +140,7 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
     assert "close_usd=106" in prompt
     assert "base_min_confidence_score=" in prompt
     assert "PM gate outcome: name=sizing" in prompt
-    assert "PM gate outcome: name=reward_risk" in prompt
+    assert "PM disclosed figure, not a gate: name=reward_risk" in prompt
     assert "confidence_floor gate: enforced_by=analyst" in prompt
     assert "stop_target_regime basis:" in prompt
     assert "PASSED" in prompt

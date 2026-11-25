@@ -23,6 +23,16 @@ if TYPE_CHECKING:
     from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntent
     from contracts.provider import RegimeContext
 
+_DISCLOSURE_ONLY = "comparison=DISCLOSURE_ONLY"
+REWARD_RISK_RULE = (
+    "Reward-to-risk, the rule for every order: min_reward_risk_ratio is 0, so this "
+    "ratio is printed and rejects no order at any value. ADR-0027 chose this on "
+    "47,485 decisions from 2017 to 2026: names at or above a ratio of 0.80 earned "
+    "+0.03 % a trade more than names below it (95 % CI -0.17 % to +0.23 %). That "
+    "it is not enforced is true of every order and is a recorded design decision, "
+    "not a flaw of this order."
+)
+
 
 def order_lines(intent: OrderIntent) -> list[str]:
     """Render the PM order shell plus the additive PM gate report."""
@@ -87,7 +97,24 @@ def _pm_gate_lines(intent: OrderIntent) -> list[str]:
         return [
             f"PM gate report unavailable: no gate outcomes emitted for {intent.ticker}."
         ]
-    return [f"PM gate outcome: {_gate_line(gate)}" for gate in intent.gate_report]
+    lines = [_gate_report_line(gate) for gate in intent.gate_report]
+    if any(_is_disclosure_only(gate) for gate in intent.gate_report):
+        lines.append(REWARD_RISK_RULE)
+    return lines
+
+
+def _gate_report_line(gate: GateOutcome) -> str:
+    if not _is_disclosure_only(gate):
+        return f"PM gate outcome: {_gate_line(gate)}"
+    value_label, _ = gate_value_labels(gate.name)
+    return (
+        f"PM disclosed figure, not a gate: name={gate.name} "
+        f"{value_label}={gate.value:.4g} ({gate.detail})"
+    )
+
+
+def _is_disclosure_only(gate: GateOutcome) -> bool:
+    return gate.outcome == "passed" and _DISCLOSURE_ONLY in gate.detail.split("; ")
 
 
 def _gate_line(gate: GateOutcome) -> str:

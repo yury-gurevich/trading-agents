@@ -23,7 +23,8 @@ from scripts.deliberation_prompt_sources import (  # noqa: E402
     CHALLENGER_CALIBRATION,
     CLASS1_CALIBRATION,
     JUDGE_BASE,
-    JUDGE_GROUNDED_FLAW_RULE,
+    JUDGE_CONTRAST_CASES,
+    JUDGE_ORDER_RULE,
 )
 
 from kernel import (  # noqa: E402
@@ -42,7 +43,7 @@ from kernel.dspy_optimizer import DSPyPromptOptimizer  # noqa: E402
 _ROLE_INSTRUCTIONS = {
     "defender": DEFENDER_SYSTEM + CLASS1_CALIBRATION,
     "challenger": CHALLENGER_BASE + CLASS1_CALIBRATION + CHALLENGER_CALIBRATION,
-    "judge": JUDGE_BASE + JUDGE_GROUNDED_FLAW_RULE + CLASS1_CALIBRATION,
+    "judge": JUDGE_BASE + JUDGE_ORDER_RULE + CLASS1_CALIBRATION,
 }
 
 
@@ -77,7 +78,24 @@ def build_prompt_examples(role: str) -> tuple[PromptExample, ...]:
                 rationale=str(flaw),
             )
         )
+    if role == "judge":
+        examples.extend(_contrast_example(*case) for case in JUDGE_CONTRAST_CASES)
     return tuple(examples)
+
+
+def _contrast_example(
+    name: str, decision: str, context: str, ruling: str, rationale: str
+) -> PromptExample:
+    return PromptExample(
+        inputs={
+            "case": name,
+            "decision": decision,
+            "context": context,
+            "flaw_keywords": [],
+        },
+        output=json.dumps({"ruling": ruling, "rationale": rationale}, sort_keys=True),
+        rationale=rationale,
+    )
 
 
 def _artifact_model(role: str, debate_model: str, judge_model: str) -> str:

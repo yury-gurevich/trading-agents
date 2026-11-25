@@ -382,7 +382,7 @@ Reading recorded before any code change, 2026-11-25. Clean branch: `sprint-291-t
 **Files changed:** Exactly Appendix B's 17, two new test files, this spec and `docs/sprints/README.md` (21 total). No excluded paths changed. `git diff --stat` against base `85a9e4bf85b7c3566b593e519aad1eaa4949638e`:
 
 ```text
-agents/deliberator/context_pm.py                   |  29 ++++-
+agents/deliberator/context_pm.py                   |  29 ++-
  agents/deliberator/laws/laws.md                    |  10 +-
  agents/deliberator/laws/test-plan.md               |   5 +-
  agents/deliberator/prompt_recipe.py                |   2 +
@@ -390,20 +390,20 @@ agents/deliberator/context_pm.py                   |  29 ++++-
  docs/laws/drift-register.md                        |   1 +
  docs/laws/ledger.md                                |   2 +-
  docs/sprints/README.md                             |   2 +-
- ...-judge-rules-on-what-distinguishes-the-order.md | 138 ++++++++++++++++++--
- kernel/deliberation_judge_prompt.py                | 124 ++++++++++++++++++
- kernel/deliberation_prompts.py                     |  66 +---------
+ ...-judge-rules-on-what-distinguishes-the-order.md | 236 ++++++++++++++++++---
+ kernel/deliberation_judge_prompt.py                | 124 +++++++++++
+ kernel/deliberation_prompts.py                     |  66 +-----
  orchestration/tests/test_veto_stage.py             |   2 +-
  pyproject.toml                                     |   2 +-
- scripts/compile_deliberation_prompts.py            |  22 +++-
- scripts/deliberation_judge_prompt.json             |  56 +++++++-
- scripts/deliberation_prompt_sources.py             |  70 +++++++++-
+ scripts/compile_deliberation_prompts.py            |  22 +-
+ scripts/deliberation_judge_prompt.json             |  56 ++++-
+ scripts/deliberation_prompt_sources.py             |  70 +++++-
  tests/test_deliberation_prompt_artifacts.py        |   2 +-
  tests/test_deliberation_prompt_facts.py            |   7 +-
- tests/test_judge_rules_on_the_order.py             |  81 ++++++++++++
- tests/test_reward_risk_is_a_disclosed_figure.py    | 144 +++++++++++++++++++++
+ tests/test_judge_rules_on_the_order.py             |  81 +++++++
+ tests/test_reward_risk_is_a_disclosed_figure.py    | 144 +++++++++++++
  uv.lock                                            |   2 +-
- 21 files changed, 669 insertions(+), 100 deletions(-)
+ 21 files changed, 752 insertions(+), 115 deletions(-)
 ```
 
 **Design decisions:** recorded as [`DL-326`](../design-log.md) by the planner.
@@ -564,7 +564,8 @@ Eight skips: local `.env` proofs (2), Celery broker (1), link privilege (1), Pos
 - No change to verdict effects, execution, contracts, review_batch, debater prompts, baseline, STATE or design log. The handover's narrower scope overrides the memory skill's local-state recommendation.
 - Scratch was removed after copying its break log outside the worktree. No extra worktree files remain.
 - Remote `make gate-ran`, push/merge, CodeQL comparison, F1, fallback-vendor firewall and F2 are not done by the builder; owed to the planner/operator as specified. No deployment or live-success claim.
-- Local CI is complete and green. Commit on the requested branch follows this completed handback; resulting build SHA is recorded below after committing.
+- Build committed on the requested branch as `60c4634b72bf446fc42599b90203e44b8f9cda77`. A subsequent handback-only commit records this SHA and the final diff. The full local gate ran before the build commit; all commit hooks passed.
+- Final completed-document checks: markdown links exit 0; sprint status exit 0. Remote proof remains not done.
 
 ---
 

@@ -166,6 +166,13 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    from inference. If the command refuses, fix the evidence mismatch or GitHub token/read problem
    before recording; do not work around it with an asserted record.
 
+   🪤 **A refusal can be GitHub's index, not the evidence** (S291, 2026-11-25). The reader lists
+   runs with `status=success&head_sha=<sha>`, and that filter kept counting the finished tag build
+   `45569855743` as `in_progress` for 81 minutes: `?head_sha=<sha>` alone listed it `completed
+   success`, `?status=in_progress&head_sha=<sha>` counted it and returned no row. Compare those two
+   queries; if only the filter is behind, poll it every few minutes and record once the run is
+   listed. Never re-run the build to nudge the index: that pushes a tag the fleet has pulled.
+
 Full re-provisioning (env/secret/scale changes, new apps) is **not** this skill — that is
 `pwsh infra/deploy-agents.ps1 up -Tag <tag>`, which re-runs alembic + Service Bus routes too.
 

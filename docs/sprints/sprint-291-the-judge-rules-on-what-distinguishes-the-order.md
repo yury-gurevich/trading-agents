@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-291-the-judge-rules-on-what-distinguishes-the-order`
-**Status:** MERGED 2026-11-25 — `0.131.08`, `c0e19409`, tag `v0.131.08`, GATE PROVEN; F1 passed; not deployed: the firewall on the fallback `claude-opus-5` and the deploy are the operator's word, then F2
+**Status:** MERGED 2026-11-25 — `0.131.08`, `c0e19409`, tag `v0.131.08`, GATE PROVEN; F1 passed; firewall on the fallback `claude-opus-5` 4 of 4; deployed as `s291` 2026-11-25 by an image-only retag (rollback `s290`), every app read back unchanged; F2 owed over the first five debated orders
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.08`)
 **Effort:** M
 **Decisions:** [DL-326](../design-log.md) (this sprint's decisions, made and measured) · [DL-280](../design-log.md) (the finding) · [ADR-0010](../decisions/0010-llm-interaction-quality-gate.md) (a prompt change passes the golden set) · [ADR-0027](../decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md) Correction 2 (the ratio is disclosed, not enforced) · [ADR-0029](../decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) (`revise` blocks nothing) · DRIFT-118 (this sprint corrects it)

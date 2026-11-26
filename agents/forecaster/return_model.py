@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 class ReturnModel(Protocol):
     """Boundary for a price/return scorer over a feature row."""
 
+    ref: str
+
     def predict(self, features: FeatureRow) -> float:
         """Return a raw expected-return score for the feature row."""
         ...  # pragma: no cover - protocol declaration only.
@@ -26,6 +28,8 @@ class ReturnModel(Protocol):
 
 class FakeReturnModel:
     """Deterministic return scorer used by the unit gate."""
+
+    ref: str = "fixed-fake-return"
 
     def __init__(
         self,

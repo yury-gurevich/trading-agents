@@ -8,8 +8,11 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+
 from agents.forecaster.domain.features import squash
 from agents.forecaster.return_model import FakeReturnModel
+from agents.forecaster.settings import ForecasterSettings
 from agents.forecaster.tests.helpers import make_bars, wire_forecaster
 from agents.forecaster.tests.return_helpers import forecast_return_message
 from contracts.forecaster import ShadowPrediction
@@ -69,6 +72,8 @@ def test_forecast_return_survives_a_provider_fault() -> None:
 
 
 class _RaisingReturnModel:
+    ref = "raising-test-model"
+
     def predict(self, features: object) -> float:
         del features
         raise RuntimeError("model down")
@@ -96,3 +101,25 @@ def test_forecast_return_handles_a_provider_error_response() -> None:
     )
     assert prediction.value == 0.5
     assert prediction.confidence == 0.0
+
+
+@pytest.mark.parametrize("injected", [False, True])
+def test_return_model_record_names_the_scorer(injected: bool) -> None:
+    """FORE-IDN-01 / FORE-OUT-05: a return Model names the actual scorer."""
+    model = FakeReturnModel(raw=0.05) if injected else None
+    if model is not None:
+        model.ref = "x"
+    settings = ForecasterSettings(return_model_ref="setting-is-not-the-scorer")
+    bars = make_bars("AAPL", tuple(100.0 + index for index in range(30)))
+    bus, graph, sink = wire_forecaster(bars=bars, return_model=model, settings=settings)
+
+    prediction = ShadowPrediction.model_validate(
+        bus.request(forecast_return_message("AAPL")).payload
+    )
+    node = graph.get_node("Model", settings.return_model_id)
+    assert node is not None
+    assert node.props["ref"] == ("x" if injected else "fixed-fake-return")
+    assert node.props["ref"] != settings.return_model_ref
+    assert node.props["kind"] == "return"
+    assert prediction.value == squash(0.05 if injected else 0.0, scale=0.05)
+    assert sink.faults == []

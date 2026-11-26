@@ -24,6 +24,8 @@ class ConfigurationError(RuntimeError):
 class LightGBMModel:
     """A trained lightgbm Booster behind the return-model port."""
 
+    ref: str = "lightgbm-gbdt"
+
     def __init__(self, *, model_path: str) -> None:
         """Load the trained booster, failing early if lightgbm is absent."""
         try:

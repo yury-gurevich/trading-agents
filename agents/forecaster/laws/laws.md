@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.13 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.14 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -15,8 +15,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **FORE-IDN-01** — The forecaster's single job is advisory ML signal production over **four
   legs**: the injected sentiment model (`forecast`; no fleet path injects one, so the leg
   scores with the neutral fake, and the deployed loop does not fire it, `FORE-TRG-01`;
-  FinBERT is an offline research scorer, EXP-024), the return model (`forecast_return`,
-  LightGBM), the approved-factor shadow (`forecast_factor`), and the barrier model
+  FinBERT is an offline research scorer, EXP-024), the injected return model
+  (`forecast_return`; no fleet path injects one, so the leg scores with the fixed fake, and
+  the deployed loop does not fire it, `FORE-TRG-01`; LightGBM is the adapter for a trained
+  booster, which no fleet path builds), the approved-factor shadow (`forecast_factor`), and the barrier model
   (`forecast_barrier`, EXP-018's GARCH barrier claim, `FORE-OUT-07`). Each leg returns a
   `ShadowPrediction` whose `shadow=True` flag is always set. It produces evidence; it never decides.
   *(DRIFT-081; was: the sentiment and return models only.)*
@@ -488,3 +490,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   research, never run by a fleet path. FORE-PERF-01 names local injected-model inference.
   The barrier-only image and the sentiment Model ref now reflect the scorer. DRIFT-116
   corrected; no contracts change, no new clause; whole-purpose partial proofs stay gray.
+- v1.14 — S292 / work-queue 142 / DL-327 (2026-11-26): FORE-IDN-01 names the injected
+  return model and its fixed-fake fallback; LightGBM is an adapter no fleet path builds. A
+  return `Model` node now names the model that scored, not `return_model_ref`. DRIFT-117
+  corrected; no contracts change, no new clause; 30 / 57 unchanged.

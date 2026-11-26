@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor`
-**Status:** BUILT
+**Status:** MERGED 2026-11-26 — `0.131.09`, `0e2a155c`, tag `v0.131.09`, GATE PROVEN; F1 passed (a and b); no deploy: it rides the next one
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.09`)
 **Effort:** S
 **Decisions:** [DL-327](../design-log.md) (this sprint's five decisions, made and measured) · [DRIFT-117](../laws/drift-register.md) (the row this closes) · [DL-282](../design-log.md) decision 8 (the pack's provider lines, held back until the fidelity count allowed) · [work-queue 142 and 109](../work-queue.md)
@@ -615,6 +615,40 @@ STATUS_EXIT=0
 **`make gate-ran`:** not done; the planner's, after the push.
 
 **Not met / verified failing:** No local build requirement is unmet or verified failing. Push, remote CI, `make gate-ran`, CodeQL comparison, merge and F1: **not done**, assigned to the planner by the sequencing section. Deployment: **not done**, explicitly excluded. The eight pytest skips and their reasons are pasted above; they are not represented as live proofs.
+
+**Planner's review, 2026-11-26 (Sequencing after merge, steps 1 to 4):**
+
+- The 11 blobs at `dd16c8e3` equal Appendix B's list and the prototype `proto-s292` (`d238b30d`); the
+  branch changes exactly the planned 16 files.
+- The planner's three test files run in place of the builder's on the built tree, with
+  `tests/test_deploy_llm_pack.py`: **15 passed**; the builder's files restored after. The builder's
+  tests are its own wording of the same assertions under the same names and cases.
+- `s292_breaks.py` against the builder's tests alone: **15 of 15 red**, the unbroken tree passes, the
+  tree clean after; no `.env` in the worktree.
+- The planner's own `make ci` on `dd16c8e3` (Windows, with a network): exit 0, all sixteen steps,
+  5,348 passed, 8 skipped, 100.00 %, the dependency audit clean.
+- Pushed; **GATE PROVEN for `dd16c8e3`** (CI, CodeQL, Security Findings, attempt 1). Open CodeQL
+  alerts by rule, severity and path: **138 on the branch against 138** on the last baseline
+  (`sprint-291-…`): 0 added, 0 removed, 0 errors. The new baseline is this branch at 138.
+- `main` had moved by one docs-only commit (`c3d4aba7`, the weekly trim), so `main` was merged into
+  the branch as `0e2a155c` (no conflict; its diff from `dd16c8e3` is exactly the trim's 8 docs files),
+  pushed, and **GATE PROVEN for `0e2a155cdc2f651c8213ff35a97c0a3b82674781`** (CI, CodeQL, Security
+  Findings, attempt 1), run from `../ta-s292` whose `HEAD` is that SHA. `main` fast-forwarded
+  `c3d4aba7..0e2a155c`, tag `v0.131.09`, both pushed. `main`'s own runs on `0e2a155c`: CI, CodeQL, Security Findings and the image build all `success`, 0 open error-level alerts.
+- **F1 passed.** (a) On merged `main` the deploy script's own `Up`, every call a stand-in
+  (`up_deliberator_env.ps1`), prints 20 lines equal to the live apps read the same minutes
+  (`live_debate_lanes.py`, 2026-11-26 07:46 to 07:47 UTC) and equal to `Up` on `main` before
+  (`d0def753`): `DELIBERATOR_LLM_PROVIDER=openai` still reaches the three apps, now from the LLM pack
+  alone. (b) On merged `main` the return leg, fired on a forecaster built as the fleet builds it,
+  writes `Model lgbm-return-v1 ref='fixed-fake-return' kind='return'` with 0 faults (on `main`
+  before: `ref='lightgbm-gbdt'`).
+- Evidence in the kit `wq109-142-2026-11-26/`: `s292_ci.txt`, `planner_tests.txt`,
+  `breaks_builder.txt`, `s292_gate.txt`, `s292_gate2.txt`, `codeql_open_sprint292_138.txt`,
+  `up_main_0e2a155c.txt`, `live_2026-11-26_after_s292.txt`, `f1_return_main_0e2a155c.txt`. The
+  builder's own logs, written beside the worktree as `../s292-*` (28 files, cited in its Return
+  notes), were moved to the kit's `codex_handback/`.
+- **No deploy** (step 4). Work-queues 142 and 109 close at this F1; DRIFT-117 reads CORRECTED. The
+  commit rides the next deploy, which restarts the fidelity count and is recorded as doing so.
 
 ---
 

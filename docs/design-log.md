@@ -12,7 +12,7 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
-## DL-327 - a return record names the model that scored, and the tunables pack stops naming an LLM vendor the fleet does not run - status: MEASURED and DECIDED (planner, delegated, 2026-11-26 13:40 AEDT; the operator, asked whether to package work-queue 142 and 109's last step together for Codex: *"go ahead"*); specced as [S292](sprints/sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor.md); work-queues 142 and 109
+## DL-327 - a return record names the model that scored, and the tunables pack stops naming an LLM vendor the fleet does not run - status: MEASURED and DECIDED (planner, delegated, 2026-11-26 13:40 AEDT; the operator, asked whether to package work-queue 142 and 109's last step together for Codex: *"go ahead"*); specced as [S292](sprints/sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor.md); **MERGED 2026-11-26 as `0.131.09` (`0e2a155c`, GATE PROVEN), F1 passed; work-queues 142 and 109 closed**
 
 **Why.** Two records say something false, and each was found and parked. [DRIFT-117](laws/drift-register.md): the return leg's `Model` node says `lightgbm-gbdt` whatever model scored. [DL-282](design-log.md) decision 8: the tunables pack's three `DELIBERATOR_LLM_PROVIDER` lines say `anthropic` while the fleet runs `openai`; they were held back only by the fidelity count, which read PASS on 2026-10-27. Neither moves a decision, so one PATCH carries both.
 
@@ -851,7 +851,7 @@ loop a pass would feed; live shadowing (work-queue 89).
 
 **Named, not built.** The debaters' packet still lists every served headline; a provider sentiment shadow and the forecaster's challengers keep their own inputs; a headline about two universe companies counts for both; universe changes need a table entry (D3's test says which).
 
-## DL-307 - a test lane beside the fleet: a run that cannot touch the live account, graph or bus - status: MEASURED, OPEN (planner, 2026-10-17 12:40 AEDT); work-queue 136; the operator, 2026-10-17: *"why can't we have a test db on existing infrastructure and use it for testing?"*, then *"yes write it up"*
+## DL-307 - a test lane beside the fleet: a run that cannot touch the live account, graph or bus - status: MEASURED, OPEN (planner, 2026-10-17 12:40 AEDT; amendment 1 2026-11-26: the second paper account exists, keys in `.env`, not in the vault); work-queue 136; the operator, 2026-10-17: *"why can't we have a test db on existing infrastructure and use it for testing?"*, then *"yes write it up"*
 
 **Why.** A test run today is a run of the live fleet: the planner widens the KEDA window and fires a `RunRequest` (the work queue's standing operational notes). It was declined twice in two days (2026-10-16 and 2026-10-17) because the run's first step, the drop sweep, cancels any order still pending from an earlier run (JNJ, then CAT and MDLZ, each waiting for the open). The operator asks why a test database is not enough.
 
@@ -877,6 +877,24 @@ loop a pass would feed; live shadowing (work-queue 89).
 **Ruled out.** *A test database alone*: the broker and the bus are still shared (above). *Pointing the live fleet at a branch for a test*: the nightly run would write there.
 
 **Next.** The operator creates the second paper account (only they can: their login), then A is a planner-sized sprint; B is decided after A has been used.
+
+**Amendment 1, 2026-11-26 (planner; the operator created the account).** *The first step is done.* The
+operator opened a second Alpaca paper account from the dashboard, funded $100,000 and **not** synced to
+the live account's balance (the planner's advice: a test run then sizes on a fixed number no real-money
+balance can move, on the scale of the fleet's paper account). Its keys were given in chat and placed in
+the main checkout's `.env` (gitignored) as `ALPACA_TEST_API_KEY`, `ALPACA_TEST_API_SECRET` and
+`ALPACA_TEST_ENDPOINT`. *[measured 2026-11-26, read-only GETs of the account, positions and open
+orders]* both accounts answer HTTP 200; the test account is ACTIVE with equity $100,000, 0 positions and
+0 open orders, and its account id differs from the fleet's (equity $102,030.89, 40 positions, 40 open
+orders). **Decided (planner, delegated; the operator asked *"do we put alpaca info in the vault"*): not in
+Key Vault for option A.** A runs as one process on the planner's machine and reads `.env`; nothing in
+Azure needs the keys, and the vault and its seed pack (`orchestration/packs/trading_vault_seed.json`,
+`alpaca-key-id` and `alpaca-secret-key`) are shared with the fleet, so a wrong name there is how test keys
+could drive the fleet's account or the reverse. *Revisit if B is chosen:* that sprint seeds them under
+their own names (`alpaca-test-key-id`, `alpaca-test-secret-key`) and proves no fleet app maps them.
+*Ruled out:* syncing the test account to the live balance (a test's sizing would follow a real-money
+number that moves); a vault entry now (a second copy to keep in step, and a production-state change with
+no consumer).
 
 ## DL-306 - no broker read is cut at a page: run-start reconciliation reads every order the graph waits on, by id where no listing shows it; the sweep and the realign read the open and the recent orders - status: MEASURED and DECIDED (planner, 2026-10-17 11:55 AEDT); built as [S283](sprints/sprint-283-no-broker-read-is-cut-at-a-page.md), MERGED 2026-10-17 (`0.128.04`, `b8ba4b32`); work-queue 134; follows [DL-302](design-log.md) (which found it)
 

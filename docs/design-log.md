@@ -12,6 +12,36 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-327 - a return record names the model that scored, and the tunables pack stops naming an LLM vendor the fleet does not run - status: MEASURED and DECIDED (planner, delegated, 2026-11-26 13:40 AEDT; the operator, asked whether to package work-queue 142 and 109's last step together for Codex: *"go ahead"*); specced as [S292](sprints/sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor.md); work-queues 142 and 109
+
+**Why.** Two records say something false, and each was found and parked. [DRIFT-117](laws/drift-register.md): the return leg's `Model` node says `lightgbm-gbdt` whatever model scored. [DL-282](design-log.md) decision 8: the tunables pack's three `DELIBERATOR_LLM_PROVIDER` lines say `anthropic` while the fleet runs `openai`; they were held back only by the fidelity count, which read PASS on 2026-10-27. Neither moves a decision, so one PATCH carries both.
+
+**Measured, 2026-11-26 (kit OneDrive `wq109-142-2026-11-26/`).**
+
+- On `main` (`d0def753`), a forecaster built as `agents/forecaster/entrypoint.py:33` and `orchestration/local_pipeline.py:85` build it, with no return model, writes `Model lgbm-return-v1 ref='lightgbm-gbdt'` for the fixed fake's reading (`f1_return_record.py`, no `.env`).
+- The live graph holds one `Model` node (`finbert-sentiment`, ref `ProsusAI/finbert`) and 0 `ShadowPrediction` nodes, and the local demonstrator writes none: no stored record names a return model, so the fix corrects no row. No production path builds `LightGBMModel`.
+- The deploy script's own `Up`, every `az` call a stand-in, prints the same 20 lines for the three deliberator apps on `main` and on the prototype, and both equal the live apps read at 02:12 UTC: `DELIBERATOR_LLM_PROVIDER=openai` on all three, every time. `Get-AgentEnv` drops a tunables line for any key the LLM pack names before it appends the pack's value, and the master hands the vendor again at every activation (DL-289).
+- Prototype `proto-s292` (never pushed): the seven new tests red on `main`'s code and green after; 15 of 15 planted breaks red; `make ci` in the spec's Appendix B.
+
+**Decided (technical, delegated).**
+
+1. **D1** `ReturnModel` declares `ref`, as `SentimentModel` does since the forecaster image chore: `FakeReturnModel` `fixed-fake-return`; `LightGBMModel` `lightgbm-gbdt`, the setting's default, so a real booster's record keeps today's name. `agent.py` writes the scorer's `ref`. `FORE-IDN-01` amended, forecaster laws v1.14, DRIFT-117 CORRECTED, 30 / 57 unchanged.
+2. **D2** The three provider lines leave the tunables pack; every other key of the three entries stays.
+3. **D3** The pack's `_measured` gains one amendment: where the vendor lives, and that it supersedes the sentence of 2026-08-20.
+4. **D4** PATCH; both version lines carried in the spec; `uv lock` not run (the lock was written by a newer `uv`).
+5. **D5** No deploy at merge. The pack is a fidelity decision path, so the first deploy carrying the commit restarts the clean-session count; nothing waits on that count now (EXP-014 and EXP-022 are scored).
+
+**Ruled out.**
+
+- *Remove the settings field `return_model_ref`* (and its sentiment twin `model_ref`): no reader is left, but a removed field moves a `PARAM` row, and the chore kept the twin on purpose. A cleanup of both together, not this fix.
+- *Take `DELIBERATOR_EFFORT` out too:* the master hands the effort at activation as well, but `Assert-EnvPreserved` compares the live names with the planned ones, so the next full `up` would refuse until run with `-DropEnv`; and the line states the first candidate's effort truthfully (`high`). Not worth a live step.
+- *Delete the deploy script's filter now that the pack names no vendor:* it guards against a vendor line coming back; `test_c2_deploy_filters_tunables_before_appending_llm_pack` keeps it.
+- *Two sprints:* two reviews and two version bumps for about a dozen changed lines of code and data.
+
+**Not measured.** Nothing paid; no LLM call. Whether a trained LightGBM booster exists anywhere: none is in the repository, and no fleet path would load one.
+
+**Next.** Codex builds S292; the planner verifies and merges; F1 at no cost.
+
 ## DL-326 - the judge rules on what distinguishes this order, and the reward-to-risk ratio is printed as a figure, not a passed gate - status: MEASURED and DECIDED (planner, 2026-11-22 13:50 AEDT); specced as [S291](sprints/sprint-291-the-judge-rules-on-what-distinguishes-the-order.md) for Codex; work-queue 118; the operator, 2026-11-22: *"sure, let's do 118"*, told the proof costs about $8 from the fleet's balance
 
 **Why.** [DL-280](design-log.md) found the judge ruling `revise` on every order, for a reason shared by every order, and `revise` changes no order. Re-measured before building: it is still true, and the packet line behind it breaks a locked clause (`DLIB-NEV-08`, DRIFT-118).

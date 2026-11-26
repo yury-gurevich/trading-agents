@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* (the prototype measured `0.131.09`)
 **Effort:** S
 **Decisions:** [DL-327](../design-log.md) (this sprint's five decisions, made and measured) · [DRIFT-117](../laws/drift-register.md) (the row this closes) · [DL-282](../design-log.md) decision 8 (the pack's provider lines, held back until the fidelity count allowed) · [work-queue 142 and 109](../work-queue.md)
@@ -214,15 +214,15 @@ PowerShell. Its docstring declares `Agent: tooling`, a `Role:` and `External I/O
 
 ## Success factors
 
-- [ ] The eleven files of Appendix B carry its blob ids.
-- [ ] A return `Model` node names the scorer: A1 both cases, A2.
-- [ ] The tunables pack names no vendor and keeps every other key: A3 to A6.
-- [ ] The six tests exist under the names given and pass; all seven cases were seen failing first.
-- [ ] No other existing test changed except the one attribute; none fails.
-- [ ] The law-cycle answer and the reading record are filled before the first change.
-- [ ] Each of the fifteen breaks was planted, seen red on its named test, and restored.
-- [ ] Every touched module is under 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
+- [x] The eleven files of Appendix B carry its blob ids.
+- [x] A return `Model` node names the scorer: A1 both cases, A2.
+- [x] The tunables pack names no vendor and keeps every other key: A3 to A6.
+- [x] The six tests exist under the names given and pass; all seven cases were seen failing first.
+- [x] No other existing test changed except the one attribute; none fails.
+- [x] The law-cycle answer and the reading record are filled before the first change.
+- [x] Each of the fifteen breaks was planted, seen red on its named test, and restored.
+- [x] Every touched module is under 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
 
 ---
 
@@ -378,15 +378,23 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| Return scorer, adapter and Model record | agents/forecaster/laws/laws.md and test-plan.md (whole); docs/laws/conventions.md; docs/laws/drift-register.md | FORE-IDN-01 / FORE-OUT-05 / FORE-TRG-01; PARAM return_model_id / return_model_ref | No; apply the decided Appendix B amendment exactly. |
+| Pack and tests | docs/laws/conventions.md; docs/laws/drift-register.md (including DRIFT-116 / DRIFT-117); DL-327 and DL-282 decision 8 | No agent clause governs pack values; DL-327; test module headers and citations | No; preserve every other pack key and existing test. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
-**Contradictions found between a law and this spec:** *to fill*
+**No new guarantee; one amendment.** No file in `contracts/` changes and no clause is added. The
+return leg starts to keep a promise `FORE-OUT-05` already makes, and `FORE-IDN-01`'s wording of
+that leg ("LightGBM") is corrected to what scores it, exactly as the forecaster image chore did for
+the sentiment leg (laws v1.13, DRIFT-116). So the law cycle is: v1.14, one Changelog line, the two
+test-plan rows, DRIFT-117 to CORRECTED, the ledger and INDEX rows. **The rollup stays 30 / 57.** All
+of it is written in Appendix B; apply it, do not reword it.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Contradictions found between a law and this spec:** None. Recorded on 2026-11-26 before any test or production edit; only this reading record changed first.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Laws found silent where a decision was needed:** None requiring a builder decision; DL-327 already decides the pack value changes.
+
+**Clauses that were ⬜ and are now proven:** None; Appendix B keeps the whole-purpose partial proof gray and the rollup 30 / 57.
 
 ---
 
@@ -394,56 +402,230 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_return_model_record_names_the_scorer` | `agents/forecaster/tests/test_forecaster_return_agent.py` | Passed; both cases red first | FORE-IDN-01 / FORE-OUT-05 |
+| A2 | `test_lightgbm_ref_names_the_algorithm_it_loads` | `agents/forecaster/tests/test_forecaster_lightgbm.py` | Passed; red first | FORE-IDN-01 |
+| A3 | `test_no_tunables_entry_carries_the_vendor_key_of_its_app` | `tests/test_tunables_pack_names_no_vendor.py` | Passed; red first | DL-327 |
+| A4 | `test_no_tunables_key_names_a_vendor` | `tests/test_tunables_pack_names_no_vendor.py` | Passed; red first | DL-327 |
+| A5 | `test_the_deliberators_keep_every_other_tunable` | `tests/test_tunables_pack_names_no_vendor.py` | Passed; red first | DL-327 |
+| A6 | `test_the_packs_note_records_the_move` | `tests/test_tunables_pack_names_no_vendor.py` | Passed; red first | DL-327 |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** None; six test functions, seven cases, plus the required `_RaisingReturnModel.ref` attribute.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT — build committed on the requested branch as `333398ad6c5b401a6100b039279011d87eb0d509`; this handback is a following documentation commit, whose final SHA is reported in the delivery reply.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s292`, branch `sprint-292-a-return-record-names-its-scorer-and-one-file-names-the-vendor`; base `dbb0fff21a91bde11feb30afc49df640100eba77` (also origin/main at start). No `.env` anywhere in this worktree (recursive check). All commands ran here; main was never checked out.
 
-**Result:** *to fill*
+**Result:** All local build proofs passed: exact eleven Appendix B blobs; seven new cases red first; 13 focused cases and 341 neighbours passed; all fifteen breaks red and restored; all sixteen CI steps passed, 5,348 passed / 8 skipped and 100.00 % coverage. Six new test functions only; existing test functions are AST-identical to the base, with only the required helper attribute added. The pack changes only the three vendor keys and `_measured`.
 
-**Files changed:** *to fill*
+**Files changed:** Exactly Appendix B's eleven files, the three test files, this spec and docs/sprints/README.md (16 total). Full diff against the base:
+
+```text
+ agents/forecaster/agent.py                         |   2 +-
+ agents/forecaster/laws/laws.md                     |  12 +-
+ agents/forecaster/laws/test-plan.md                |   4 +-
+ agents/forecaster/lightgbm_model.py                |   2 +
+ agents/forecaster/return_model.py                  |   4 +
+ .../forecaster/tests/test_forecaster_lightgbm.py   |  20 ++
+ .../tests/test_forecaster_return_agent.py          |  27 +++
+ docs/laws/INDEX.md                                 |   2 +-
+ docs/laws/drift-register.md                        |   2 +-
+ docs/laws/ledger.md                                |   2 +-
+ docs/sprints/README.md                             |   2 +-
+ ...mes-its-scorer-and-one-file-names-the-vendor.md | 250 ++++++++++++++++++---
+ orchestration/packs/trading_tunables.json          |   5 +-
+ pyproject.toml                                     |   2 +-
+ tests/test_tunables_pack_names_no_vendor.py        |  51 +++++
+ uv.lock                                            |   2 +-
+ 16 files changed, 339 insertions(+), 50 deletions(-)
+```
+
+**Proof — eleven blobs printed after `git apply`:**
+
+```text
+150ee807d6861d9b9abdadfee7cd99a487fdf2d7  agents/forecaster/agent.py
+73fea2ea05b7dff925a4985401ff2142c4b7ecb3  agents/forecaster/return_model.py
+6c77b7fc165468993721a6836b4a1fa6b4df51c3  agents/forecaster/lightgbm_model.py
+0f5fa1e8289b681cfc38fcf56c47791039d1857f  orchestration/packs/trading_tunables.json
+3771995f94e25ae2ce08f9da573a929adcd19982  agents/forecaster/laws/laws.md
+7601d96643c1d0e7f12592ec46175e2592e07bf3  agents/forecaster/laws/test-plan.md
+8a24adf94c1a8da9a255f4402a077e6a730af127  docs/laws/drift-register.md
+8e1273bbf5ea0cc576bd519de49494850b0e331b  docs/laws/ledger.md
+1bcf5452a7befd116a6af82b791f4dccab266ed4  docs/laws/INDEX.md
+e37819f36a62ced49d9863f2bfe229dcfbf14598  pyproject.toml
+98db7b5e9c2cbab427a4e5b4c89b17076cf7724e  uv.lock
+```
 
 **Design decisions:** recorded as [`DL-327`](../design-log.md) by the planner; none left to the builder.
 
 **Proof — the red run first:**
 
 ```text
-to fill
+.....FF.FFFFF                                                            [100%]
+================================== FAILURES ===================================
+______________ test_return_model_record_names_the_scorer[False] _______________
+agents\forecaster\tests\test_forecaster_return_agent.py:121: in test_return_model_record_names_the_scorer
+    assert node.props["ref"] == ("x" if injected else "fixed-fake-return")
+E   AssertionError: assert 'setting-is-not-the-scorer' == 'fixed-fake-return'
+E
+E     - fixed-fake-return
+E     + setting-is-not-the-scorer
+_______________ test_return_model_record_names_the_scorer[True] _______________
+agents\forecaster\tests\test_forecaster_return_agent.py:121: in test_return_model_record_names_the_scorer
+    assert node.props["ref"] == ("x" if injected else "fixed-fake-return")
+E   AssertionError: assert 'setting-is-not-the-scorer' == 'x'
+E
+E     - x
+E     + setting-is-not-the-scorer
+_______________ test_lightgbm_ref_names_the_algorithm_it_loads ________________
+agents\forecaster\tests\test_forecaster_lightgbm.py:41: in test_lightgbm_ref_names_the_algorithm_it_loads
+    assert model.ref == "lightgbm-gbdt"
+           ^^^^^^^^^
+E   AttributeError: 'LightGBMModel' object has no attribute 'ref'
+__________ test_no_tunables_entry_carries_the_vendor_key_of_its_app ___________
+tests\test_tunables_pack_names_no_vendor.py:22: in test_no_tunables_entry_carries_the_vendor_key_of_its_app
+    assert key not in TUNABLES["apps"].get(app, {})
+E   AssertionError: assert 'DELIBERATOR_LLM_PROVIDER' not in {'DELIBERATOR_LLM_PROVIDER': 'anthropic', 'DELIBERATOR_EFFORT': 'high', 'DELIBERATOR_REQUEST_TIMEOUT_SECONDS': '240', 'DELIBERATOR_DEBATE_CONCURRENCY': '3'}
+E    +  where {'DELIBERATOR_LLM_PROVIDER': 'anthropic', 'DELIBERATOR_EFFORT': 'high', 'DELIBERATOR_REQUEST_TIMEOUT_SECONDS': '240', 'DELIBERATOR_DEBATE_CONCURRENCY': '3'} = <built-in method get of dict object at 0x0000020443DD0D80>('deliberator-manager', {})
+E    +    where <built-in method get of dict object at 0x0000020443DD0D80> = {'scanner': {'SCANNER_CANDIDATE_CAP': '25'}, 'analyst': {'ANALYST_EXIT_CONFIDENCE_FLOOR': '0.50', 'ANALYST_STOP_TARGET..., 'execution': {'EXECUTION_DELIBERATION_GRACE_SECONDS': '1800', 'EXECUTION_ORDER_PRICE_TOLERANCE_MODE': 'scaled'}, ...}.get
+_____________________ test_no_tunables_key_names_a_vendor _____________________
+tests\test_tunables_pack_names_no_vendor.py:29: in test_no_tunables_key_names_a_vendor
+    assert not any(key.endswith("_LLM_PROVIDER") for key in keys)
+E   assert not True
+E    +  where True = any(<generator object test_no_tunables_key_names_a_vendor.<locals>.<genexpr> at 0x0000020443D07AC0>)
+_______________ test_the_deliberators_keep_every_other_tunable ________________
+tests\test_tunables_pack_names_no_vendor.py:34: in test_the_deliberators_keep_every_other_tunable
+    assert sorted(TUNABLES["apps"]["deliberator-manager"]) == [
+E   AssertionError: assert ['DELIBERATOR...EOUT_SECONDS'] == ['DELIBERATOR...EOUT_SECONDS']
+E
+E     At index 2 diff: 'DELIBERATOR_LLM_PROVIDER' != 'DELIBERATOR_REQUEST_TIMEOUT_SECONDS'
+E     Left contains one more item: 'DELIBERATOR_REQUEST_TIMEOUT_SECONDS'
+E     Use -v to get more diff
+____________________ test_the_packs_note_records_the_move _____________________
+tests\test_tunables_pack_names_no_vendor.py:49: in test_the_packs_note_records_the_move
+    assert "the three DELIBERATOR_LLM_PROVIDER lines" in note
+E   AssertionError: assert 'the three DELIBERATOR_LLM_PROVIDER lines' in 'Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. STAGED 2026-08-20: DELIBER...0: only the manager makes a peer request. This supersedes the 2026-09-04 sentence above that says the dial ships at 1.'
+=========================== short test summary info ===========================
+FAILED agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer[False]
+FAILED agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer[True]
+FAILED agents/forecaster/tests/test_forecaster_lightgbm.py::test_lightgbm_ref_names_the_algorithm_it_loads
+FAILED tests/test_tunables_pack_names_no_vendor.py::test_no_tunables_entry_carries_the_vendor_key_of_its_app
+FAILED tests/test_tunables_pack_names_no_vendor.py::test_no_tunables_key_names_a_vendor
+FAILED tests/test_tunables_pack_names_no_vendor.py::test_the_deliberators_keep_every_other_tunable
+FAILED tests/test_tunables_pack_names_no_vendor.py::test_the_packs_note_records_the_move
+7 failed, 6 passed in 8.78s
 ```
 
 **Proof — the green run:**
 
 ```text
-to fill
+.............                                                            [100%]
+13 passed in 2.32s
+GREEN_EXIT=0
+
+........................................................................ [ 21%]
+........................................................................ [ 42%]
+........................................................................ [ 63%]
+........................................................................ [ 84%]
+.....................................................                    [100%]
+341 passed in 34.07s
+NEIGHBOURS_EXIT=0
 ```
 
-**Guards planted:** *to fill*
+**Guards planted:** 15 planted, 15 named tests red, 15 restored; runner exit 0. Each restoration used the built index snapshot with `git checkout -- <file>` and verified byte equality. B15 restored the original deploy script.
 
-**Module line counts:** *to fill*
+```text
+B1: agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer went red (exit 1); restored with git checkout -- agents/forecaster/agent.py.
+B2: agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer went red (exit 1); restored with git checkout -- agents/forecaster/agent.py.
+B3: agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer went red (exit 1); restored with git checkout -- agents/forecaster/agent.py.
+B4: agents/forecaster/tests/test_forecaster_return_agent.py::test_return_model_record_names_the_scorer went red (exit 1); restored with git checkout -- agents/forecaster/return_model.py.
+B5: agents/forecaster/tests/test_forecaster_lightgbm.py::test_lightgbm_ref_names_the_algorithm_it_loads went red (exit 1); restored with git checkout -- agents/forecaster/lightgbm_model.py.
+B6: agents/forecaster/tests/test_forecaster_lightgbm.py::test_lightgbm_ref_names_the_algorithm_it_loads went red (exit 1); restored with git checkout -- agents/forecaster/lightgbm_model.py.
+B7: tests/test_tunables_pack_names_no_vendor.py::test_no_tunables_entry_carries_the_vendor_key_of_its_app went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B8: tests/test_tunables_pack_names_no_vendor.py::test_no_tunables_entry_carries_the_vendor_key_of_its_app went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B9: tests/test_tunables_pack_names_no_vendor.py::test_no_tunables_key_names_a_vendor went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B10: tests/test_tunables_pack_names_no_vendor.py::test_the_deliberators_keep_every_other_tunable went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B11: tests/test_tunables_pack_names_no_vendor.py::test_the_deliberators_keep_every_other_tunable went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B12: tests/test_tunables_pack_names_no_vendor.py::test_the_packs_note_records_the_move went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B13: tests/test_tunables_pack_names_no_vendor.py::test_the_packs_note_records_the_move went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B14: tests/test_tunables_pack_names_no_vendor.py::test_the_packs_note_records_the_move went red (exit 1); restored with git checkout -- orchestration/packs/trading_tunables.json.
+B15: tests/test_deploy_llm_pack.py::test_c2_deploy_filters_tunables_before_appending_llm_pack went red (exit 1); restored with git checkout -- infra/deploy-agents.ps1.
+```
 
-**`make ci`:** *to fill*
+**Module line counts:**
 
-**`make gate-ran`:** the planner's, after the push.
+```text
+125 agents/forecaster/tests/test_forecaster_return_agent.py
+44 agents/forecaster/tests/test_forecaster_lightgbm.py
+51 tests/test_tunables_pack_names_no_vendor.py
+```
 
-**Not met / verified failing:** *to fill*
+Production Python modules: agent.py 169; return_model.py 46; lightgbm_model.py 43. All touched modules are below 200 lines.
+
+**`make ci`:** `make ci > ../s292-make-ci.txt 2>&1`, with `UV_NO_SYNC=1`; output redirected directly to a file, never a pipe. Full log read from `C:\Users\yury_\Downloads\project\s292-make-ci.txt`; exit code **0**, also saved in `../s292-make-ci.exit.txt`. Sixteen commands counted from the target and actual run. Verdicts below follow the successful target exit and sequential completion; silent steps have no separate success message. No CI step is not done. Existing module/settings/tracker warnings remain; the audit rechecked the one accepted diskcache advisory (PYSEC-2026-2447), with no unaccepted vulnerability.
+
+```text
+MAKE_CI_EXIT=0
+01 PASS | uv run ruff check . --output-format=github
+02 PASS | uv run ruff format --check .
+03 PASS | uv run mypy kernel contracts agents orchestration surfaces
+04 PASS | uv run lint-imports
+05 PASS | uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+06 PASS | uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+07 PASS | uv run python scripts/check_law_coverage.py
+08 PASS | uv run python scripts/check_param_law_sync.py
+09 PASS | uv run python scripts/check_sprint_status.py
+10 PASS | uv run python scripts/check_tracker_size.py
+11 PASS | uv run python scripts/check_markdown_links.py
+12 PASS | uv run python scripts/check_version_scheme.py
+13 PASS | uv run pytest
+14 PASS | uv run python scripts/check_dependency_audit.py
+15 PASS | uv run pre-commit run detect-secrets --all-files
+16 PASS | uv run python scripts/check_untracked_secrets.py
+
+1849 files already formatted
+Success: no issues found in 1301 source files
+Contracts: 5 kept, 0 broken.
+docs_seen=298 SPEC=11 BUILT=0 MERGED=287 UNMAPPED=0 MISSING=0
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5348 passed, 8 skipped, 2470 warnings in 906.91s (0:15:06) ==========
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+detect-secrets (untracked): no untracked files to scan
+```
+
+**Final status recheck after setting BUILT in both files:**
+
+```text
+docs_seen=298 SPEC=10 BUILT=1 MERGED=287 UNMAPPED=0 MISSING=0
+STATUS_EXIT=0
+```
+
+**`make gate-ran`:** not done; the planner's, after the push.
+
+**Not met / verified failing:** No local build requirement is unmet or verified failing. Push, remote CI, `make gate-ran`, CodeQL comparison, merge and F1: **not done**, assigned to the planner by the sequencing section. Deployment: **not done**, explicitly excluded. The eight pytest skips and their reasons are pasted above; they are not represented as live proofs.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- The first documentation commit attempt was verified failing on trailing whitespace in three pasted pytest `E` lines. The hook trimmed those spaces; the output assertions and totals are unchanged, and the untrimmed original remains in `../s292-red.txt`. The corrected handback is retried with all hooks.
+- No path, count or command correction was needed. Builder test sizes differ from the prototype's illustrative sizes; the measured sizes above remain below 200.
+- The law reading record was the first file change, before tests or production. The law-cycle answer and Appendix B amendment were copied exactly; no new guarantee, no new clause, no contracts change, 30 / 57 unchanged.
+- Appendix B was extracted without retyping to `../s292-appendix-b.patch` and applied with `git apply`; all eleven hashes matched immediately and again after mutation restoration. Mutation logs are `../s292-B1.txt` through `../s292-B15.txt`, with `../s292-breaks-summary.txt`.
+- No `uv lock` or `uv sync` command ran. `UV_NO_SYNC=1` also protected make and commit hooks. No deployment script or az command ran; B15 changed only source temporarily for its test and restored it. No baseline entry was added. No design-log, state or work-queue file changed.
+- Build committed as `333398ad6c5b401a6100b039279011d87eb0d509`; the completed spec and README status are committed separately. Final handback SHA is reported in the delivery reply. Remote and live proof remain the planner's, as named above.
 
 ---
 

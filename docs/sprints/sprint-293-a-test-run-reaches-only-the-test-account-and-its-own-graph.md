@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-293-a-test-run-reaches-only-the-test-account-and-its-own-graph`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge* (the prototype measured `0.132.00`)
 **Effort:** M
 **Decisions:** [DL-328](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-307](../design-log.md) (the test lane's options; this is option A) · [work-queue 136](../work-queue.md)
@@ -279,15 +279,15 @@ with `ProviderSettings(max_staleness_days=7)`; `PaperBroker()`)
 
 ## Success factors
 
-- [ ] The eight files of Appendix B hold the blob ids it gives.
-- [ ] The five test files: every file errors on the unchanged tree; 75 tests pass after Appendix B.
-- [ ] The neighbours pass: `orchestration/tests` and `tests/test_accept_cli.py`.
-- [ ] 25 of 25 breaks of Appendix C red, each on the test named for it, each restored.
-- [ ] Every new module under 150 lines; no `# noqa` added beyond Appendix B's one; every module docstring
+- [x] The eight files of Appendix B hold the blob ids it gives.
+- [x] The five test modules and helper: every file errors on the unchanged tree; 75 tests pass after Appendix B.
+- [x] The neighbours pass: `orchestration/tests` and `tests/test_accept_cli.py`.
+- [x] 25 of 25 breaks of Appendix C red, each on the test named for it, each restored.
+- [x] Every new module under 150 lines; no `# noqa` added beyond Appendix B's one; every module docstring
       declares `Agent:`, `Role:`, `External I/O:`.
-- [ ] No change to any file outside Appendix B, the five test files, this spec and
+- [x] No change to any file outside Appendix B, the six test files, this spec and
       `docs/sprints/README.md`.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [ ] `make ci` exit 0: verified failing, exit 2 (dependency audit not done); coverage is 100.00 %.
 
 ---
 
@@ -459,15 +459,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Broker settings and execution stage | `agents/execution/laws/laws.md` (whole), `test-plan.md` (whole) | `EXEC-IDN-01`, `EXEC-OUT-03`, PARAM `alpaca_base_url` | Keep the paper base and call execution's own work pair; never change its stage. `EXEC-IDN-01` is gray in the existing plan; `EXEC-OUT-03` is green. |
+| In-process debate | `agents/deliberator/laws/laws.md` (whole), `test-plan.md` (whole) | `DLIB-OUT-01`, `DLIB-OUT-02` (both green) | Exercise the actual manager and peers with three counting fake clients and inspect the recorded verdicts. |
+| Lane placement and rounds | `orchestration/laws/dispatcher/laws.md` (whole) | `DSP-IDN-03` scope; DL-328 D4/D5 | The scheduled dispatcher book does not govern lane tooling; reuse placement without changing dispatch policy. |
+| All tests | `docs/laws/conventions.md`, `docs/laws/drift-register.md` (whole) | Conventions sections 3, 7, 7a; DL-328 D1-D7 | Cite the decisions and relevant agent clauses without claiming a complete proof of a gray clause. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Only orchestration tooling, its CLI, version lines and tests change. No contract, kernel or agent file changes; the agents retain their existing guarantees. The lane's new isolation guarantees are the already-decided DL-328 guarantees.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None found. Recorded before the first code change in `../ta-s293`, branch `sprint-293-a-test-run-reaches-only-the-test-account-and-its-own-graph`, clean base and local `origin/main` both `2352f5c902c9901b0d526520104b7ebcd3746036`.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** No new undecided silence. DL-328 already assigns lane orchestration guarantees to its decisions; the dispatcher book explicitly defines its own narrower scope.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** None claimed. `EXEC-IDN-01` remains gray; this sprint proves only lane wiring, not its full boundary obligation. No law or test-plan rollup changes.
 
 ---
 
@@ -475,41 +478,195 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Decision or clause cited |
 | --- | --- | --- | --- | --- |
-| A1–A23 | *(builder)* | | | |
+| A1 | `test_each_missing_lane_value_is_named` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A2 | `test_every_fleet_name_is_read_from_the_env_file_then_the_environment` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A3 | `test_a_test_value_equal_to_a_fleet_value_is_refused` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A4 | `test_an_endpoint_other_than_the_paper_host_is_refused` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 / EXEC-OUT-03 |
+| A5 | `test_the_fleets_database_endpoint_is_refused_direct_or_pooled` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A6 | `test_a_lane_graph_on_its_own_endpoint_starts` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A7 | `test_the_fleets_nightly_window_is_refused` | `orchestration/tests/test_lane_guard.py` | PASS | DL-328 D2 |
+| A8 | `test_the_lane_environment_holds_no_fleet_value` | `orchestration/tests/test_lane_env.py` | PASS | DL-328 D3 |
+| A9 | `test_settings_built_after_isolation_reach_only_the_lane` | `orchestration/tests/test_lane_env.py` | PASS | DL-328 D3 / EXEC-OUT-03 |
+| A10 | `test_a_surviving_fleet_value_is_refused_by_name` | `orchestration/tests/test_lane_env.py` | PASS | DL-328 D3 |
+| A11 | `test_the_pack_leaves_out_the_peers_and_refuses_a_conflict` | `orchestration/tests/test_lane_env.py` | PASS | DL-328 D3 |
+| A12 | `test_a_lane_run_id_is_its_start_in_utc_to_the_second` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D4 |
+| A13 | `test_the_session_is_the_last_one_settled_in_new_york` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D4 |
+| A14 | `test_no_session_in_ten_days_is_refused` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D4 |
+| A15 | `test_a_graph_holding_a_fleet_run_is_refused` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D4 |
+| A16 | `test_a_run_id_without_the_lane_prefix_is_refused` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D4 |
+| A17 | `test_rounds_run_until_one_advances_nothing` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D5 |
+| A18 | `test_rounds_stop_at_the_round_limit` | `orchestration/tests/test_lane_run.py` | PASS | DL-328 D5 |
+| A19 | `test_each_stage_drives_the_function_its_entrypoint_hands_work_loop` | `orchestration/tests/test_lane_stages.py` | PASS | DL-328 D1 / EXEC-IDN-01 |
+| A20 | `test_a_lane_run_passes_acceptance_with_real_debates` | `orchestration/tests/test_lane_stages.py` | PASS | DL-328 D1/D5/D6 / DLIB-OUT-01 / DLIB-OUT-02 |
+| A21 | `test_an_unsafe_start_is_refused_before_any_endpoint` | `tests/test_run_lane_cli.py` | PASS | DL-328 D2 |
+| A22 | `test_an_isolated_start_runs_one_lane_run_and_prints_its_verdict` | `tests/test_run_lane_cli.py` | PASS | DL-328 D3/D4/D5/D6 |
+| A23 | `test_the_default_universe_is_the_fleets` | `tests/test_run_lane_cli.py` | PASS | DL-328 D1 |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** None; 23 named tests expand to 75 cases. The helper contains literal measured name lists, whole-environment restoration, and deterministic clients.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT (local build and mutation proofs complete; CI result below).
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/Downloads/project/ta-s293`, requested sprint branch, base `2352f5c902c9901b0d526520104b7ebcd3746036`. No root `.env` present (existence check only); no actual `.env` read or created. Tests use fake values in temporary `lane-values.txt` files. `PYTHON_DOTENV_DISABLED=1`, `UV_NO_SYNC=1`, `UV_OFFLINE=1`, `PYTHONUTF8=1` set for commands; no lock/sync command run.
 
-**Result:** *(builder)*
+**Result:** BUILT locally: the required five collection errors preceded the exact production patch; 8/8 production blob ids match; all 75 new cases and 578 neighbors passed; 25/25 named breaks went red and were restored. Final full suite: 5,423 passed, 8 skipped, 100.00% coverage. Overall `make ci` is verified failing (exit 2): dependency audit not done because network access is prohibited. Both final local secrets checks passed (exit 0); all 15 runnable local recipes passed.
 
-**Files changed:** *(builder)*
+**Files changed:** Exactly the authorized 16 paths, against base `2352f5c902c9901b0d526520104b7ebcd3746036`:
 
-**Proof — the red run first:** *(builder)*
+```text
+docs/sprints/README.md                             |   2 +-
+ ...ches-only-the-test-account-and-its-own-graph.md | 213 ++++++++++++++++++---
+ orchestration/lane_debate.py                       |  76 ++++++++
+ orchestration/lane_env.py                          | 141 ++++++++++++++
+ orchestration/lane_guard.py                        | 146 ++++++++++++++
+ orchestration/lane_run.py                          | 127 ++++++++++++
+ orchestration/lane_stages.py                       | 149 ++++++++++++++
+ orchestration/tests/lane_fixtures.py               | 131 +++++++++++++
+ orchestration/tests/test_lane_env.py               | 123 ++++++++++++
+ orchestration/tests/test_lane_guard.py             | 125 ++++++++++++
+ orchestration/tests/test_lane_run.py               | 133 +++++++++++++
+ orchestration/tests/test_lane_stages.py            | 144 ++++++++++++++
+ pyproject.toml                                     |   2 +-
+ scripts/run_lane.py                                | 116 +++++++++++
+ tests/test_run_lane_cli.py                         | 123 ++++++++++++
+ uv.lock                                            |   2 +-
+ 16 files changed, 1722 insertions(+), 31 deletions(-)
+```
 
-**The eight blob ids:** *(builder)*
+**Proof — the red run first:** Before Appendix B, the prescribed five-module command exited 2 (`%TEMP%/s293-red.txt`). Each module failed on its missing lane import:
 
-**Proof — the green run:** *(builder)*
+```text
+ERROR orchestration/tests/test_lane_guard.py
+ERROR orchestration/tests/test_lane_env.py
+ERROR orchestration/tests/test_lane_run.py
+ERROR orchestration/tests/test_lane_stages.py
+ERROR tests/test_run_lane_cli.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!
+5 errors in 5.78s
+```
 
-**Guards planted:** *(builder: one line per break)*
+**The eight blob ids:** Clean `git apply` of `%TEMP%/s293-appendix-b.patch`; `git hash-object` printed, in Appendix B order:
 
-**Module line counts:** *(builder)*
+```text
+98095e73e4b3dfdd0bb02ac0b649ead1ef241e26  orchestration/lane_guard.py
+a5d291795c65042680d0e36d17f6b0bbe18e66f6  orchestration/lane_env.py
+96d5b58692f675d48d00cdaa0063acbe5a6414a0  orchestration/lane_debate.py
+449a701f405746c73fe4eaf429d1dada1c8c2635  orchestration/lane_stages.py
+63886f813205b0f84230b7cf4d712c901b78d553  orchestration/lane_run.py
+999b7c568bfa9faa3ab7d065bdff55ac188a9810  scripts/run_lane.py
+2135baf4bfec7df1a7eba6c29682c3ced11dab6a  pyproject.toml
+3f8acc110e622f7e350a26f06b1e031e16f9cd74  uv.lock
+```
 
-**`make ci`:** *(builder)*
+**Proof — the green run:** Prescribed commands, exit 0, before the style-only cleanup:
 
-**Not met / verified failing:** *(builder)*
+```text
+75 passed in 5.98s
+578 passed in 14.24s
+```
+
+Logs: `%TEMP%/s293-green.txt`, `%TEMP%/s293-neighbours.txt`. Final suite verification is recorded with CI below.
+
+**Guards planted:** Each exact Appendix C replacement was unique, its named test exited 1, then `git checkout -- <file>` restored its staged built bytes before the next. Full outputs: `%TEMP%/s293-mutations/B1.txt` through `B25.txt`.
+
+```text
+B1: orchestration/tests/test_lane_guard.py::test_every_fleet_name_is_read_from_the_env_file_then_the_environment | 1 failed, 13 passed in 1.46s | restored
+B2: orchestration/tests/test_lane_env.py::test_the_lane_environment_holds_no_fleet_value | 1 failed in 4.97s | restored
+B3: orchestration/tests/test_lane_guard.py::test_the_fleets_database_endpoint_is_refused_direct_or_pooled | 1 failed, 2 passed in 1.58s | restored
+B4: orchestration/tests/test_lane_guard.py::test_the_fleets_nightly_window_is_refused | 1 failed, 4 passed in 1.41s | restored
+B5: orchestration/tests/test_lane_guard.py::test_the_fleets_nightly_window_is_refused | 1 failed, 4 passed in 1.40s | restored
+B6: orchestration/tests/test_lane_guard.py::test_a_test_value_equal_to_a_fleet_value_is_refused | 14 failed, 14 passed in 1.63s | restored
+B7: orchestration/tests/test_lane_guard.py::test_an_endpoint_other_than_the_paper_host_is_refused | 1 failed, 2 passed in 1.40s | restored
+B8: orchestration/tests/test_lane_env.py::test_the_lane_environment_holds_no_fleet_value | 1 failed in 4.88s | restored
+B9: orchestration/tests/test_lane_env.py::test_the_lane_environment_holds_no_fleet_value | 1 failed in 5.38s | restored
+B10: orchestration/tests/test_lane_env.py::test_the_pack_leaves_out_the_peers_and_refuses_a_conflict | 1 failed in 4.89s | restored
+B11: orchestration/tests/test_lane_env.py::test_the_lane_environment_holds_no_fleet_value | 1 failed in 4.87s | restored
+B12: orchestration/tests/test_lane_env.py::test_a_surviving_fleet_value_is_refused_by_name | 1 failed in 4.87s | restored
+B13: orchestration/tests/test_lane_env.py::test_settings_built_after_isolation_reach_only_the_lane | 1 failed in 4.88s | restored
+B14: orchestration/tests/test_lane_env.py::test_the_lane_environment_holds_no_fleet_value | 1 failed in 4.98s | restored
+B15: orchestration/tests/test_lane_run.py::test_the_session_is_the_last_one_settled_in_new_york | 1 failed, 4 passed in 5.20s | restored
+B16: orchestration/tests/test_lane_run.py::test_a_graph_holding_a_fleet_run_is_refused | 1 failed in 5.17s | restored
+B17: orchestration/tests/test_lane_run.py::test_rounds_run_until_one_advances_nothing | 1 failed in 5.83s | restored
+B18: orchestration/tests/test_lane_run.py::test_a_run_id_without_the_lane_prefix_is_refused | 1 failed in 5.28s | restored
+B19: orchestration/tests/test_lane_stages.py::test_each_stage_drives_the_function_its_entrypoint_hands_work_loop | 1 failed in 5.25s | restored
+B20: orchestration/tests/test_lane_stages.py::test_each_stage_drives_the_function_its_entrypoint_hands_work_loop | 1 failed in 5.73s | restored
+B21: orchestration/tests/test_lane_stages.py::test_each_stage_drives_the_function_its_entrypoint_hands_work_loop | 1 failed in 5.33s | restored
+B22: orchestration/tests/test_lane_stages.py::test_a_lane_run_passes_acceptance_with_real_debates | 1 failed in 5.37s | restored
+B23: orchestration/tests/test_lane_stages.py::test_a_lane_run_passes_acceptance_with_real_debates | 1 failed in 5.24s | restored
+B24: tests/test_run_lane_cli.py::test_an_unsafe_start_is_refused_before_any_endpoint | 1 failed in 1.72s | restored
+B25: tests/test_run_lane_cli.py::test_an_isolated_start_runs_one_lane_run_and_prints_its_verdict | 1 failed in 5.67s | restored
+25/25 named breaks red and restored
+```
+
+**Module line counts:** After `uv run --no-sync ruff format`:
+
+```text
+131  orchestration/tests/lane_fixtures.py
+125  orchestration/tests/test_lane_guard.py
+123  orchestration/tests/test_lane_env.py
+133  orchestration/tests/test_lane_run.py
+144  orchestration/tests/test_lane_stages.py
+123  tests/test_run_lane_cli.py
+```
+
+**`make ci`:** `C:/Users/yury_/AppData/Local/Temp/s293-ci.txt`, exit **2**, redirected directly to the file, never piped. All 16 recipes counted from `Makefile`. The first 13 completed successfully. Recipes that print no verdict are proven exit 0 by make reaching the next recipe. Network audit is not done; the last two recipes were run separately, both exit 0, log `C:/Users/yury_/AppData/Local/Temp/s293-ci-final-two.txt`. No green overall gate claimed.
+
+| Step | Check | Observed verdict |
+| --- | --- | --- |
+| 1 | ruff | PASS, exit 0; next recipe reached |
+| 2 | format | PASS: `1861 files already formatted` |
+| 3 | mypy | PASS: `Success: no issues found in 1311 source files` |
+| 4 | import-linter | PASS: `Contracts: 5 kept, 0 broken.` |
+| 5 | module size | PASS, exit 0; existing warnings/legacy ceilings only; next recipe reached |
+| 6 | module header | PASS, exit 0; silent success, next recipe reached |
+| 7 | law coverage | PASS, exit 0; silent success, next recipe reached |
+| 8 | PARAM/settings sync | PASS, exit 0; existing PM envelope warnings, next recipe reached |
+| 9 | sprint status | PASS: `docs_seen=299 SPEC=10 BUILT=1 MERGED=288 UNMAPPED=0 MISSING=0` |
+| 10 | tracker size | PASS, exit 0; README at 95% is a warning, next recipe reached |
+| 11 | markdown links | PASS, exit 0; silent success, next recipe reached |
+| 12 | version scheme | PASS, exit 0; silent success, next recipe reached |
+| 13 | pytest / coverage | PASS: 5,423 passed, 8 skipped, 100.00% coverage |
+| 14 | dependency audit | **not done**; online pip-audit blocked before launch; recipe exit 1, `make ci` exit 2 |
+| 15 | detect-secrets | PASS, separately after make stopped: `Detect secrets...........................................................Passed` |
+| 16 | untracked secrets | PASS, separately: `detect-secrets (untracked): no untracked files to scan` |
+
+Selected raw output (not the whole log):
+
+```text
+TOTAL                                                           22224      0   4760      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5423 passed, 8 skipped, 2470 warnings in 518.96s (0:08:38) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit failed: not done: online pip-audit is prohibited by Sprint 293; query not launched
+make: *** [Makefile:60: ci] Error 1
+Detect secrets...........................................................Passed
+detect-secrets (untracked): no untracked files to scan
+detect-secrets exit=0; untracked-secrets exit=0
+```
+
+The initial secrets scan flagged the deliberately fake `other:other` test DSN. Added the permitted next-line pragma in the test; the final all-files scan above passed, and `.secrets.baseline` still matches base blob `b51ce58810805e652e932f7ceeb4628b82e7ca96`. The final 75-case rerun after formatting and this comment passed:
+
+```text
+75 passed in 28.20s
+```
+
+Markdown lint on both edited docs passed. Commit state at this evidence snapshot: not yet committed; the recorded source/proof checkpoint is added after commit.
+
+**Not met / verified failing:** `make ci` exit 0 is not met: exit 2 at the dependency audit. The online dependency audit is **not done**, deliberately prevented before launching pip-audit; no cached report substituted. Push, remote CI/CodeQL/security gates, merge, deployment, real Neon branch/account proof and F1 are **not done**, per the brief. The eight skips are the existing opt-in/credential/privilege checks listed in the CI log. No test failure occurred.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- Scope/count corrections: six test files including the helper, not five; Appendix B produces `scripts/run_lane.py` at 116 lines, not the approximate 120 in the narrative. All six test files remain below 150 lines.
+- A8 exercises both the all-names plant and the split-source plant described in Appendix A, plus a plain name present in shell and file. This exposes shell-only removal and env-file-name removal independently.
+- The initial test attempt used an incorrect PaperBroker import; the recorded red rerun corrected it and failed only on missing lane imports. The first green attempt found a test assertion treating string credentials as SecretStr; corrected the assertion. No production edit beyond Appendix B.
+- Dependency audit requires online advisory data; network use is forbidden, so it is not done. An external `%TEMP%/s293-offline-guard/sitecustomize.py` rejects only the audit script's pip-audit subprocess before launch. The actual Makefile is unchanged, `uv export --frozen` reads the lock offline, and no cached audit is substituted. `make ci` stops there; its two remaining local recipes are run separately and recorded below.
+- Carry-forward: the planner still owes remote gates and the live schema-only Neon branch/test-account/F1 sequence. No real lane or local runner, Azure command, paid model call, push, merge or deployment was run.
+- Version and lockfile changes are exactly Appendix B's two lines; `uv lock` and `uv sync` were never run. State/work-queue/design-log, existing tests, agents, kernel, contracts and secret baseline remain untouched.
 
 ---
 

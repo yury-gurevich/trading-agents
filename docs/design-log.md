@@ -12,6 +12,38 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-329 - the local demonstrator reaches nothing outside its own process: its live and paid flags leave, and a run on real data is the lane's - status: MEASURED and DECIDED (planner, delegated, 2026-11-28); the operator, 2026-11-28: *"write up 144 as S294 for Codex"*; specced as [S294](sprints/sprint-294-the-local-demonstrator-reaches-nothing-outside-its-process.md); work-queue 144
+
+**Why.** `scripts/run_local.py --real` builds its graph from `POSTGRES_DSN` after `load_dotenv()`: from the main checkout, the one tree with `.env`, it places a `local-1` RunRequest on the live graph, which an awake fleet would pick up. `docs/observability.md` gives it as the one-command test run. Since S293 the test lane is the run on real data that cannot reach the fleet (DL-328), so the demonstrator's live mode has no job left.
+
+**Measured, 2026-11-28 (kit OneDrive `wq144-2026-11-28/`, every outward connection refused by the probe).**
+
+- *`--real`*: from the main checkout the graph factory is reached with the env file's own `POSTGRES_DSN` (`probe_real_stops_at_graph.py`: the factory replaced by a raiser, sockets refused).
+- *`--veto` without `--real`*: `load_dotenv()` puts 52 names into the process, `POSTGRES_DSN` among them, and builds an OpenAI (`gpt-5.5`) debate client and an Anthropic (`claude-opus-4-8`) judge on the fleet's keys; 0 network attempts, because the demo approves no order (the analyst rejects AAPL and MSFT, `target_estimate_unavailable`), so the flag only loads the fleet's secrets.
+- *The demo* (`--trace --observe`, main checkout): 0 `load_dotenv` calls, 0 names added, 0 network attempts. The agents' settings read `.env` from the working directory (`kernel/config.py::AgentSettings`), as every agent's do; nothing built from them reaches out.
+- *The live graph*: 122 RunRequests, 0 `local-` (21 not `sched-`: `check-`, `confirm-`, `manual-`, `probe-`, `verify-`): no stored record to correct (`live_local_runs.py`, read-only).
+- *Readers*: `--universe` is the only code that reads `scripts/universe_sp500.txt`; `--chunk-size`, `--chunk-delay` and `--ohlcv-only` act only on a real feed; no test runs `run_local.py`, and `scripts/` is outside the coverage source.
+- *A prototype* (`proto-s294`, never pushed): 15 of 19 new test cases red on the unchanged tree and all green after; the file goes from 227 to 138 lines, so its size-baseline entry is deleted.
+
+**Decided (technical, delegated).**
+
+1. **D1 Six flags leave:** `--real`, `--veto`, `--universe`, `--chunk-size`, `--chunk-delay`, `--ohlcv-only`. argparse refuses each (exit 2) before any graph, settings or model is built. `--trace`, `--observe` and `--run-id` stay.
+2. **D2 The demonstrator is in-memory only:** `InMemoryGraphStore`, `FakeDataSource`, `PaperBroker`, no `.env` loaded, no environment name written, no model built. A test runs every remaining flag with `load_dotenv`, `dotenv_values`, the graph factory and the socket calls replaced by raisers.
+3. **D3 Every pointer moves:** the module docstring names `scripts/run_lane.py` as the run on real data; `accept.py`, `observatory.py` and `trace_run.py` say they read a fleet run; the two universe files say who reads them; `docs/observability.md`'s one-command test run is the lane, and its stale Aura and Neo4j lines go.
+4. **D4 A fix: PATCH**, both version lines carried in the spec; `uv lock` is not run.
+5. **D5 No deploy.** No agent image changes behaviour; `scripts/universe_sp100.txt` is copied into the orchestration image and changes in one comment line its loader skips.
+
+**Ruled out.**
+
+- *Point `--real` at the lane's guard.* Two real modes would differ: `cascade_once` runs a subset of each agent's work (DL-328), so a guarded `--real` would be a second, weaker lane.
+- *Refuse `--real` when `POSTGRES_DSN` looks like the fleet's.* The process cannot tell a fleet DSN from another by its shape; the lane refuses by comparing two named values, which the demonstrator does not hold.
+- *Keep `--veto` on fake models.* On the demo's data no order reaches the debate, so the flag would print an empty verdict; the lane runs the deliberator's own roles on fakes.
+- *Keep `--universe` for the fake source.* The fake holds bars for two tickers; any other universe fails pre-flight.
+- *Delete `scripts/universe_sp500.txt`.* The ledger cites it as the S&P-500 list; removing data is a separate decision.
+- *Change the `--run-id` default (`local-1`) of `accept.py`, `observatory.py` and `trace_run.py`.* A behaviour change outside the fix; their docstrings name the fleet run instead.
+
+**Named, not done.** `cascade_once` keeps its `deliberation_llm` parameters (its tests use them). The agents' settings still read a `.env` in the working directory (the kernel's design, every agent's).
+
 ## DL-328 - a test lane: one process runs the fleet's own work on the test paper account and a graph of its own, and refuses any start that could reach the fleet - status: MEASURED and DECIDED (planner, delegated, 2026-11-27); option A of DL-307 (below); the operator, 2026-11-27: *"write the sprint for Codex"*; specced as [S293](sprints/sprint-293-a-test-run-reaches-only-the-test-account-and-its-own-graph.md); work-queue 136
 
 **Why.** A test run today is a run of the live fleet, and two were declined in October because its first step cancels the orders a previous run left pending (DL-307). The second paper account exists since 2026-11-26. Option A is the cheapest lane that tests the agents' logic end to end on real data: one process on the planner's machine.

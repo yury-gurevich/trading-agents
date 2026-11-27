@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: the single ranked work queue — what to do next, in order, with provenance -->
 # Work queue — the one ranked list
 
-**Open rows: 17, counted from the table on 2026-11-26.** Closed and folded rows, and the dated recounts that stood here, are in [work-queue-archive/](work-queue-archive/INDEX.md). They leave this file at the weekly trim ([housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM).
+**Open rows: 15, counted from the table on 2026-11-27.** Closed and folded rows, and the dated recounts that stood here, are in [work-queue-archive/](work-queue-archive/INDEX.md). They leave this file at the weekly trim ([housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM).
 
 > **This file is the only ranked queue.** The out-of-repo `..\debt.md` was **deleted 2026-08-19** —
 > it was not a second opinion, it was a 2026-08-14 ancestor of this file, and everything in it was

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-293-a-test-run-reaches-only-the-test-account-and-its-own-graph`
-**Status:** MERGED 2026-11-27 — `0.132.00`, fast-forwarded to `21b33b82`, tag `v0.132.00`, GATE PROVEN; F1 passed except one limb owed (a start inside the window, 22:00 to 24:00 UTC); no deploy
+**Status:** MERGED 2026-11-27 — `0.132.00`, fast-forwarded to `21b33b82`, tag `v0.132.00`, GATE PROVEN; F1 passed (its last limb, a start inside the window refused, 2026-11-27 22:22 UTC); no deploy
 **Version:** *next available MINOR at merge* (the prototype measured `0.132.00`)
 **Effort:** M
 **Decisions:** [DL-328](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-307](../design-log.md) (the test lane's options; this is option A) · [work-queue 136](../work-queue.md)
@@ -692,9 +692,11 @@ fast-forwarded to `21b33b82`, tag `v0.132.00`; `main`'s image build, CodeQL and 
 6. Teardown: the 5 orders cancelled (HTTP 204 each; re-read: 0 open, 5 `canceled`). Kept: the branch,
    its rows and `LANE_POSTGRES_DSN` (they are the lane).
 
-**Owed:** the second planted refusal, a start between 22:00 and 24:00 UTC (expected `REFUSED: inside
-the fleet's nightly window`, exit 2), at the next window (Saturday 28 November, 09:00 to 11:00 AEDT,
-beside S291's F2 read). Work-queue 136 closes on it.
+**The second planted refusal, passed 2026-11-27 22:22 UTC** (Saturday 28 November 09:22 AEDT; kit
+`f1_window_refusal.txt`): from the main checkout, `.venv/Scripts/python.exe scripts/run_lane.py
+--tickers AAPL` printed `REFUSED: inside the fleet's nightly window (22:00 to 24:00 UTC): the lane shares the data vendors' budgets with the fleet's run`,
+exit 2, in 3 seconds. `f1_state.py` after it: the test account 0 open orders, the lane graph still
+holds only `lane-20261127-083147`, the live graph 0 `lane-` RunRequests. Work-queue 136 closed.
 
 ---
 

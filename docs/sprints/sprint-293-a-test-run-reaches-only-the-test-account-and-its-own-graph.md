@@ -653,7 +653,7 @@ The initial secrets scan flagged the deliberately fake `other:other` test DSN. A
 75 passed in 28.20s
 ```
 
-Markdown lint on both edited docs passed. Commit state at this evidence snapshot: not yet committed; the recorded source/proof checkpoint is added after commit.
+Markdown lint on both edited docs passed. **Committed source/proof checkpoint:** `2ef1bd4879236d125215ed1e27913f4721158e8c` on the requested sprint branch. All applicable commit hooks passed (raw output `%TEMP%/s293-commit.txt`); no hooks bypassed. This subsequent handback-only commit records that checkpoint SHA; production and tests remain identical to it.
 
 **Not met / verified failing:** `make ci` exit 0 is not met: exit 2 at the dependency audit. The online dependency audit is **not done**, deliberately prevented before launching pip-audit; no cached report substituted. Push, remote CI/CodeQL/security gates, merge, deployment, real Neon branch/account proof and F1 are **not done**, per the brief. The eight skips are the existing opt-in/credential/privilege checks listed in the CI log. No test failure occurred.
 

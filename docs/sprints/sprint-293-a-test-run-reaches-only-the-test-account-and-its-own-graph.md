@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-293-a-test-run-reaches-only-the-test-account-and-its-own-graph`
-**Status:** BUILT
+**Status:** MERGED 2026-11-27 — `0.132.00`, fast-forwarded to `21b33b82`, tag `v0.132.00`, GATE PROVEN; F1 passed except one limb owed (a start inside the window, 22:00 to 24:00 UTC); no deploy
 **Version:** *next available MINOR at merge* (the prototype measured `0.132.00`)
 **Effort:** M
 **Decisions:** [DL-328](../design-log.md) (this sprint's seven decisions, made and measured) · [DL-307](../design-log.md) (the test lane's options; this is option A) · [work-queue 136](../work-queue.md)
@@ -656,6 +656,45 @@ The initial secrets scan flagged the deliberately fake `other:other` test DSN. A
 Markdown lint on both edited docs passed. **Committed source/proof checkpoint:** `2ef1bd4879236d125215ed1e27913f4721158e8c` on the requested sprint branch. All applicable commit hooks passed (raw output `%TEMP%/s293-commit.txt`); no hooks bypassed. This subsequent handback-only commit records that checkpoint SHA; production and tests remain identical to it.
 
 **Not met / verified failing:** `make ci` exit 0 is not met: exit 2 at the dependency audit. The online dependency audit is **not done**, deliberately prevented before launching pip-audit; no cached report substituted. Push, remote CI/CodeQL/security gates, merge, deployment, real Neon branch/account proof and F1 are **not done**, per the brief. The eight skips are the existing opt-in/credential/privilege checks listed in the CI log. No test failure occurred.
+
+## Planner review and F1 — 2026-11-27
+
+**Review of the handback (`21b33b82`, built by Codex in 16 minutes plus its `make ci`).** The eight
+production blobs equal Appendix B's; the diff touches exactly the sixteen allowed paths, no CRLF file,
+no `.secrets.baseline` entry, no `noqa` in the tests. The planner's tests in place of the builder's:
+75 passed. The 25 breaks of Appendix C against the builder's tests: 25 of 25 red, the tree clean
+after (kit `wq136-2026-11-27/breaks_builder.txt`). The builder's `make ci` stopped at the dependency
+audit (no network in its sandbox), every other step green; the remote gate ran it: **GATE PROVEN
+`21b33b82`** (CI, CodeQL, Security Findings, attempt 1), run from `../ta-s293` with that `HEAD`. CodeQL
+on the branch: 138 open alerts, the same rule-and-path set as the S292 baseline, 0 errors. `main`
+fast-forwarded to `21b33b82`, tag `v0.132.00`; `main`'s image build, CodeQL and Security Findings
+`success` on it.
+
+**F1 (the planner's, main checkout with `.env`, 08:30 to 08:34 UTC; kit `wq136-2026-11-27/f1_*`).**
+
+1. The lane's branch: Neon `lane` (`br-odd-flower-a7t9ir2t`), `init_source` schema-only (reported
+   `parent-schema`), its own read-write endpoint, autoscaling 0.25 to 1 CU; its URI written to the
+   main checkout's `.env` as `LANE_POSTGRES_DSN`, never printed; its endpoint differs from the live one.
+2. Before: the fleet account 40 positions and 40 open orders; the test account 0 and 0; the live graph
+   0 `lane-` RunRequests; the lane graph empty.
+3. A planted refusal for real: a copy of the env file outside the repository with `LANE_POSTGRES_DSN`
+   set to the live DSN: `REFUSED: LANE_POSTGRES_DSN is on the fleet's database endpoint: the lane would
+   write to the live graph`, exit 2; the copy deleted.
+4. `scripts/run_lane.py --tickers AAPL,MSFT,KO,JNJ,XOM`: run `lane-20261127-083147`, session
+   2026-11-25 (Thanksgiving skipped); rounds 1 to 3 advanced, round 4 nothing, no stage failed;
+   `ACCEPTANCE UNPROVEN - completed; orders submitted but none filled yet (queued for the open)`, the
+   fleet's own verdict for a run before the open; exit 0.
+5. After: the fleet account 40 and 40 (unchanged); the live graph 0 `lane-` RunRequests; the test
+   account 5 open buy limit orders (AAPL, JNJ, KO, MSFT, XOM); the lane graph one RunRequest, one
+   `DeliberationRun` (5 real debates, all `uphold`, 0 failed open, 0 orphaned replies), one
+   ExecutionRun (5 submitted, 0 rejected), 5 pending Fills, 5 `BarrierForecast`, 25 `LLMCall` (the
+   fakes), one Snapshot, 0 Faults.
+6. Teardown: the 5 orders cancelled (HTTP 204 each; re-read: 0 open, 5 `canceled`). Kept: the branch,
+   its rows and `LANE_POSTGRES_DSN` (they are the lane).
+
+**Owed:** the second planted refusal, a start between 22:00 and 24:00 UTC (expected `REFUSED: inside
+the fleet's nightly window`, exit 2), at the next window (Saturday 28 November, 09:00 to 11:00 AEDT,
+beside S291's F2 read). Work-queue 136 closes on it.
 
 ---
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back`
-**Status:** MERGED 2026-11-28 — `0.133.00`, fast-forwarded to `9d7e2bf3`, tag `v0.133.00`, GATE PROVEN; F1 owed (it needs the operator's test bot); no deploy
+**Status:** MERGED 2026-11-28 — `0.133.00`, fast-forwarded to `9d7e2bf3`, tag `v0.133.00`, GATE PROVEN; F1 2026-11-28: (a) and (c) PASS, (b) VERIFIED FAILING on a fleet defect (work-queue 146, DL-331); no deploy
 **Version:** *next available MINOR at merge* (the prototype measured `0.133.00`)
 **Effort:** S
 **Decisions:** [DL-330](../design-log.md) (this sprint's six decisions, made and measured) · [DL-328](../design-log.md) (the test lane: no fleet secret in a test) · [work-queue 120](../work-queue.md) part (a)
@@ -713,8 +713,20 @@ fleet's bot unnoticed, and Telegram refuses such a token on the first call, so t
 (exit 1, the D6 path) where a refusal would exit 2. The only cost is the refusal message's wording
 (*digits, a colon, a key*), which promises a key that `bot_id` does not check.
 
-**F1: owed.** It needs the operator's test bot (Sequencing step 3), then runs from the main checkout
-outside 22:00 to 24:00 UTC with the operator at their phone. Work-queue 120 (a) closes at F1.
+**F1, 2026-11-28 09:09 to 10:03 UTC, with the operator at their phone (kit `wq120-2026-11-28/`).** The test bot
+`@yury_traiding_alrerts_test_bot`: a bot id other than the fleet's (`getMe`), no webhook, its token
+in the main checkout's `.env`. **(a) PASS** on the second run, traced: 2 of 2, faults 0, exit 0 (the
+first read 0 of 2 on presses beyond the one asked for). **(b) VERIFIED FAILING**, 1 of 2 on both
+runs: round 1 recorded a press up to 78 s old and placed the run, with a `telegram` Fault per press
+(`answerCallbackQuery` HTTP 400 `query is too old`); round 2 saw no press because Telegram had
+dropped it unfetched (read in the queue at 09:59:08 UTC, gone at the 10:02:52 poll, no call
+between). A probe kept 3 of 3 presses for 150 s and had every acknowledgement after about 15 s
+refused. The drill did what it was built for: at the fleet's ten-minute cadence a press is usually
+lost, and one that arrives writes a Fault. Filed as work-queue 146, the constraint as
+[DL-331](../design-log.md); it keeps 120 (a) open, and part (b) is 146's proof. **(c) PASS**:
+`REFUSED: ... is the fleet's bot`, exit 2, the copy deleted. The test bot read 0 pending updates
+after each part. 🪤 Never read the bot while a drill runs: a concurrent `getUpdates` gave the
+drill's drain a 409 Conflict (09:26:42 UTC).
 
 ---
 

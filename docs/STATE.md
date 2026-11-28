@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-11-28 23:55 AEDT · **Version:** **0.133.00 on `main`** (`9d7e2bf3`, tag `v0.133.00`, GATE PROVEN) · **[S295](sprints/sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back.md)'s drill found the one place the fleet asks the operator broken at the fleet's own cadence (work-queue 146, DL-331); the fix is specced for Codex as [S296](sprints/sprint-296-a-held-run-hears-the-operators-press-at-once.md). S291's F2 reads again after `sched-2026-11-30`.**
+**Last updated:** 2026-11-28 22:30 AEDT · **Version:** **0.133.00 on `main`** (`9d7e2bf3`, tag `v0.133.00`, GATE PROVEN) · **[S295](sprints/sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back.md)'s drill found the one place the fleet asks the operator broken at the fleet's own cadence (work-queue 146, DL-331); the fix is specced for Codex as [S296](sprints/sprint-296-a-held-run-hears-the-operators-press-at-once.md). S291's F2 reads again after `sched-2026-11-30`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…24.md` + git). **LAW-02:** an item is "shipped" only when

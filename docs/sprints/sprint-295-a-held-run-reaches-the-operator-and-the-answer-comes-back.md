@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back`
-**Status:** BUILT
+**Status:** MERGED 2026-11-28 — `0.133.00`, fast-forwarded to `9d7e2bf3`, tag `v0.133.00`, GATE PROVEN; F1 owed (it needs the operator's test bot); no deploy
 **Version:** *next available MINOR at merge* (the prototype measured `0.133.00`)
 **Effort:** S
 **Decisions:** [DL-330](../design-log.md) (this sprint's six decisions, made and measured) · [DL-328](../design-log.md) (the test lane: no fleet secret in a test) · [work-queue 120](../work-queue.md) part (a)
@@ -688,6 +688,33 @@ The nine skips named prerequisites absent from this tree: local `.env` (two), Ce
 - The network audit requires a live service. An external Python startup guard in `C:\Users\yury_\AppData\Local\Temp\s295-ci-no-network` stops that recipe before its script launches. `UV_NO_SYNC=1`, `UV_OFFLINE=1`, `PIP_NO_INDEX=1` and file-only Git transport protect the local gate; no repository gate was edited and no cached audit was substituted.
 - Read-only finding outside the named test plan: Appendix B's `bot_id` checks digits and a colon but does not inspect the key after the colon. An empty-key value therefore satisfies that predicate by inspection. The required exact production patch and test plan were preserved; rejection of that additional malformed shape is not proven here.
 - Push, remote gates, `make gate-ran`, merge, deployment, bot creation and F1 are not done. No live drill, Telegram call, Azure command, lock/sync command, state/design-log edit or secrets-baseline entry was made.
+
+---
+
+## Planner review — 2026-11-28
+
+**Review of the handback (`9d7e2bf3`, built by Codex; build commit `00ca3a4f`).** The six production
+blobs equal Appendix B's and the prototype's; the diff touches exactly those six paths, the four test
+files, this spec and the sprint README; no `.secrets.baseline` entry. The planner's four test files in
+place of the builder's: 30 passed, the tree restored clean after (kit
+`wq120-2026-11-28/planner_tests_on_builder_9d7e2bf3.txt`). The 21 breaks of Appendix C against the
+builder's tests: 21 of 21 red, the tree clean after (kit `breaks_builder_9d7e2bf3.txt`). The builder's
+own `make ci` log, read: 5,471 passed, 9 skipped, 100.00 %, exit 2 at the dependency audit alone (its
+sandbox had no network; the remote gate runs the audit). The remote gate: **GATE PROVEN `9d7e2bf3`**
+(CI, CodeQL, Security Findings, attempt 1), run from `../ta-s295` with that `HEAD`. CodeQL on the
+branch: 138 open alerts, the same rule-and-path set as the S294 baseline, 0 errors, none on this
+sprint's files (kit `codeql_open_sprint295.txt`, the new baseline). 🪤 Read after `codeql.yml`'s
+analysis but before `ci.yml`'s `security` job had uploaded its own, the branch showed 80 open and 58
+"gone": set-diff only once CI has finished. `main` fast-forwarded to `9d7e2bf3`, tag `v0.133.00`.
+
+**The builder's finding, judged.** `bot_id("123:")` returns `123`, so a test token with nothing after
+its colon passes the guard. Accepted, no row: the bot ids are still compared, so it cannot be the
+fleet's bot unnoticed, and Telegram refuses such a token on the first call, so the round fails at once
+(exit 1, the D6 path) where a refusal would exit 2. The only cost is the refusal message's wording
+(*digits, a colon, a key*), which promises a key that `bot_id` does not check.
+
+**F1: owed.** It needs the operator's test bot (Sequencing step 3), then runs from the main checkout
+outside 22:00 to 24:00 UTC with the operator at their phone. Work-queue 120 (a) closes at F1.
 
 ---
 

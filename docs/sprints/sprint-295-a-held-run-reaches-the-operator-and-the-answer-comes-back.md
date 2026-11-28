@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge* (the prototype measured `0.133.00`)
 **Effort:** S
 **Decisions:** [DL-330](../design-log.md) (this sprint's six decisions, made and measured) · [DL-328](../design-log.md) (the test lane: no fleet secret in a test) · [work-queue 120](../work-queue.md) part (a)
@@ -279,15 +279,15 @@ presses are made by monkeypatching `cli._sleep`. Env files are written under `tm
 
 ## Success factors
 
-- [ ] The six files of Appendix B carry its blob ids.
-- [ ] A start is refused for a missing value, a non-token, the fleet's bot, or inside the fleet's window: G1 to G5, C1.
-- [ ] Each round holds a past session, sends one notice with both buttons, records the press from Telegram, and places or skips as asked: D1 to D3, D10.
-- [ ] A round fails on the other button, on no press, on a refused notice, and on a cursor left behind; a waiting press does not count; a refused acknowledgement is a printed fault: D4 to D9.
-- [ ] The CLI exits 0, 1 or 2 as stated, reads its env file without loading it, and bounds its two numbers: C1 to C5.
-- [ ] The four test files exist under the names given; the three test files were seen failing first, then all 30 cases pass.
-- [ ] The law-cycle answer and the reading record are filled before the first change.
-- [ ] Each of the 21 breaks was planted, seen red on its named test, and restored.
-- [ ] Every new module under 200 lines (under 150 on the prototype).
+- [x] The six files of Appendix B carry its blob ids.
+- [x] A start is refused for a missing value, a non-token, the fleet's bot, or inside the fleet's window: G1 to G5, C1.
+- [x] Each round holds a past session, sends one notice with both buttons, records the press from Telegram, and places or skips as asked: D1 to D3, D10.
+- [x] A round fails on the other button, on no press, on a refused notice, and on a cursor left behind; a waiting press does not count; a refused acknowledgement is a printed fault: D4 to D9.
+- [x] The CLI exits 0, 1 or 2 as stated, reads its env file without loading it, and bounds its two numbers: C1 to C5.
+- [x] The four test files exist under the names given; the three test files were seen failing first, then all 30 cases pass.
+- [x] The law-cycle answer and the reading record are filled before the first change.
+- [x] Each of the 21 breaks was planted, seen red on its named test, and restored.
+- [x] Every new module under 200 lines (under 150 on the prototype).
 - [ ] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
 
 ---
@@ -454,15 +454,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| Drill and verdict modules | `orchestration/laws/dispatcher/laws.md` v1.8 and `test-plan.md`, whole; `docs/laws/conventions.md`, whole | DSP-IN-04, DSP-OUT-03/05, DSP-ORD-02, DSP-STA-02, DSP-FAIL-01 | No: call the unchanged dispatcher through an injected Telegram port, on an in-memory graph. |
+| Guard and CLI | Same dispatcher book and plan; conventions; `docs/laws/drift-register.md`, whole; DL-330, whole; DL-328 Decided list | DSP-SEC-01; DL-330 D1-D6 and DL-328 D2/D3 | No: synthetic test bot values only; env file read, never loaded; no live calls. |
+| Four test files | Conventions and DL-330 Test plan | DL-330 D1-D5, no DSP test citations | No: the tests prove tooling decisions and leave the law rollup unchanged. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+Recorded as the first worktree edit, before any test or production change, on branch
+`sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back`, base
+`999c40f26693d50ee4a4fb1678669cbff205ae55`. Required readings completed before this edit.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No: tooling only; no contract, agent guarantee or dispatcher change.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Contradictions found between a law and this spec:** none found.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Laws found silent where a decision was needed:** none requiring a new decision; DL-330 supplies the tooling decisions.
+
+**Clauses that were ⬜ and are now proven:** none; this sprint proves no DSP clause.
 
 ---
 
@@ -470,43 +476,218 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder)* | | | | |
+| G1 | `test_each_missing_drill_value_is_named` | `orchestration/tests/test_hold_drill_guard.py` | passed (1 case) | DL-330 D1 |
+| G2 | `test_a_value_that_is_not_a_bot_token_is_refused` | `orchestration/tests/test_hold_drill_guard.py` | passed (4 cases) | DL-330 D1 |
+| G3 | `test_the_fleets_bot_is_refused_under_any_key` | `orchestration/tests/test_hold_drill_guard.py` | passed (2 cases) | DL-330 D1 |
+| G4 | `test_a_start_inside_the_fleets_window_is_refused` | `orchestration/tests/test_hold_drill_guard.py` | passed (4 cases) | DL-330 D5 |
+| G5 | `test_the_values_never_print_the_token` | `orchestration/tests/test_hold_drill_guard.py` | passed (1 case) | DL-330 D1 |
+| D1 | `test_the_two_sessions_are_the_last_before_today` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D3 |
+| D2 | `test_run_now_is_recorded_from_telegram_and_places_the_run` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D2, D3, D4 |
+| D3 | `test_skip_today_is_recorded_from_telegram_and_skips_the_run` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D4 | `test_the_other_button_fails_the_round_and_is_still_acted_on` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D5 | `test_no_press_fails_the_round_after_the_wait` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D6 | `test_a_notice_telegram_refuses_fails_the_round_at_once` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D7 | `test_a_press_waiting_before_the_notice_does_not_count` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D8 | `test_a_late_acknowledgement_is_a_fault_not_a_failure` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D9 | `test_a_cursor_left_behind_fails_the_round` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| D10 | `test_the_drill_asks_run_now_then_skip_today_and_says_when_done` | `orchestration/tests/test_hold_drill.py` | passed | DL-330 D4 |
+| C1 | `test_a_refused_start_exits_2_and_calls_no_bot` | `tests/test_run_hold_drill_cli.py` | passed | DL-330 D1, D5 |
+| C2 | `test_both_rounds_passing_exit_0` | `tests/test_run_hold_drill_cli.py` | passed | DL-330 D5 |
+| C3 | `test_a_failed_round_exits_1` | `tests/test_run_hold_drill_cli.py` | passed | DL-330 D5 |
+| C4 | `test_the_env_file_is_read_not_loaded` | `tests/test_run_hold_drill_cli.py` | passed | DL-330 D1, D5 |
+| C5 | `test_a_poll_outside_its_bounds_is_refused` | `tests/test_run_hold_drill_cli.py` | passed (4 cases) | DL-330 D5 |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** none; 20 named test functions, 30 parametrized cases, and the specified fake helper module.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s295`; no `.env` (Test-Path returned False).
 
-**Result:** *(builder)*
+**Result:** BUILT: Appendix B's six blobs match, the prescribed red run produced 3 collection errors, the green run passed 30 cases, all 21 breaks went red on their named tests and were restored, and the full suite passed 5,471 tests with 100.00% coverage (9 skipped). Fifteen local CI recipes passed. Full `make ci` is **verified failing**, exit 2: the dependency audit is **not done**, blocked before launch because network calls are forbidden.
 
-**Files changed:** *(builder)*
+**Files changed:** exactly the six Appendix B files, four new test files, this spec and `docs/sprints/README.md`, against base `999c40f26693d50ee4a4fb1678669cbff205ae55`:
+
+```text
+ docs/sprints/README.md                                                               |   2 +-
+ docs/sprints/sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back.md | 239 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------
+ orchestration/hold_drill.py                                                          | 131 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ orchestration/hold_drill_guard.py                                                    |  78 +++++++++++++++++++++++++++++++++++
+ orchestration/hold_drill_verdict.py                                                  |  77 +++++++++++++++++++++++++++++++++++
+ orchestration/tests/hold_drill_fakes.py                                              | 102 ++++++++++++++++++++++++++++++++++++++++++++++
+ orchestration/tests/test_hold_drill.py                                               | 142 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ orchestration/tests/test_hold_drill_guard.py                                         |  82 +++++++++++++++++++++++++++++++++++++
+ pyproject.toml                                                                       |   2 +-
+ scripts/run_hold_drill.py                                                            | 103 ++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_run_hold_drill_cli.py                                                     | 173 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ uv.lock                                                                              |   2 +-
+ 12 files changed, 1101 insertions(+), 32 deletions(-)
+```
+
+**Commit:** not done yet; the build and completed evidence will be committed on the named sprint branch, then the build SHA recorded here in the final documentation commit.
 
 **Design decisions:** recorded as [`DL-330`](../design-log.md) by the planner before the build.
 
-**Proof — the red run first:** *(builder)*
+**Proof — the red run first:** exit 2 on unchanged production files, before Appendix B.
 
-**Proof — the green run:** *(builder)*
+```text
 
-**Guards planted:** *(builder: the 21 breaks, one line each)*
+=================================== ERRORS ====================================
+________ ERROR collecting orchestration/tests/test_hold_drill_guard.py ________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s295\orchestration\tests\test_hold_drill_guard.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_hold_drill_guard.py:12: in <module>
+    from orchestration.hold_drill_guard import (
+E   ModuleNotFoundError: No module named 'orchestration.hold_drill_guard'
+___________ ERROR collecting orchestration/tests/test_hold_drill.py ___________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s295\orchestration\tests\test_hold_drill.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+orchestration\tests\test_hold_drill.py:10: in <module>
+    from orchestration.hold_drill import prior_sessions, run_drill, run_round
+E   ModuleNotFoundError: No module named 'orchestration.hold_drill'
+______________ ERROR collecting tests/test_run_hold_drill_cli.py ______________
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\ta-s295\tests\test_run_hold_drill_cli.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_run_hold_drill_cli.py:15: in <module>
+    from orchestration.tests.hold_drill_fakes import (
+orchestration\tests\hold_drill_fakes.py:13: in <module>
+    from orchestration.hold_drill import Drill
+E   ModuleNotFoundError: No module named 'orchestration.hold_drill'
+=========================== short test summary info ===========================
+ERROR orchestration/tests/test_hold_drill_guard.py
+ERROR orchestration/tests/test_hold_drill.py
+ERROR tests/test_run_hold_drill_cli.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!
+3 errors in 0.65s
+```
 
-**Module line counts:** *(builder)*
+**Proof — the green run:** exit 0, same command after Appendix B.
 
-**`make ci`:** *(builder)*
+```text
+..............................                                           [100%]
+30 passed in 1.99s
+```
+
+**Six blobs after git apply:**
+
+```text
+a03268526bc309f40803a0e5e6458df6ebfe9959  orchestration/hold_drill.py
+bf51c08ff04648ecaa94ddf4f7379a6b92d22237  orchestration/hold_drill_guard.py
+b052eef0e572e44a2970b8a3599f2811ff35232b  orchestration/hold_drill_verdict.py
+ac99f503369aef821396f08e833c75517ac178a5  scripts/run_hold_drill.py
+1b8bb883b537cc8cf18b642fc4d105fc61327aa9  pyproject.toml
+a2d99c22a7f2d4b672cab5de8151fb781c898c7c  uv.lock
+```
+
+**Guards planted:**
+
+```text
+B1: orchestration/tests/test_hold_drill_guard.py::test_a_start_inside_the_fleets_window_is_refused — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B2: orchestration/tests/test_hold_drill_guard.py::test_the_fleets_bot_is_refused_under_any_key — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B3: orchestration/tests/test_hold_drill_guard.py::test_the_fleets_bot_is_refused_under_any_key — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B4: orchestration/tests/test_hold_drill_guard.py::test_each_missing_drill_value_is_named — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B5: orchestration/tests/test_hold_drill_guard.py::test_a_value_that_is_not_a_bot_token_is_refused — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B6: orchestration/tests/test_hold_drill_guard.py::test_the_values_never_print_the_token — red (exit 1), restored with git checkout; blob bf51c08ff04648ecaa94ddf4f7379a6b92d22237
+B7: orchestration/tests/test_hold_drill.py::test_the_two_sessions_are_the_last_before_today — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B8: orchestration/tests/test_hold_drill.py::test_a_press_waiting_before_the_notice_does_not_count — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B9: orchestration/tests/test_hold_drill.py::test_no_press_fails_the_round_after_the_wait — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B10: orchestration/tests/test_hold_drill.py::test_a_notice_telegram_refuses_fails_the_round_at_once — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B11: orchestration/tests/test_hold_drill.py::test_run_now_is_recorded_from_telegram_and_places_the_run — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B12: orchestration/tests/test_hold_drill.py::test_run_now_is_recorded_from_telegram_and_places_the_run — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B13: orchestration/tests/test_hold_drill.py::test_the_drill_asks_run_now_then_skip_today_and_says_when_done — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B14: orchestration/tests/test_hold_drill.py::test_run_now_is_recorded_from_telegram_and_places_the_run — red (exit 1), restored with git checkout; blob a03268526bc309f40803a0e5e6458df6ebfe9959
+B15: orchestration/tests/test_hold_drill.py::test_the_other_button_fails_the_round_and_is_still_acted_on — red (exit 1), restored with git checkout; blob b052eef0e572e44a2970b8a3599f2811ff35232b
+B16: orchestration/tests/test_hold_drill.py::test_a_cursor_left_behind_fails_the_round — red (exit 1), restored with git checkout; blob b052eef0e572e44a2970b8a3599f2811ff35232b
+B17: orchestration/tests/test_hold_drill.py::test_a_late_acknowledgement_is_a_fault_not_a_failure — red (exit 1), restored with git checkout; blob b052eef0e572e44a2970b8a3599f2811ff35232b
+B18: tests/test_run_hold_drill_cli.py::test_the_env_file_is_read_not_loaded — red (exit 1), restored with git checkout; blob ac99f503369aef821396f08e833c75517ac178a5
+B19: tests/test_run_hold_drill_cli.py::test_a_failed_round_exits_1 — red (exit 1), restored with git checkout; blob ac99f503369aef821396f08e833c75517ac178a5
+B20: tests/test_run_hold_drill_cli.py::test_a_poll_outside_its_bounds_is_refused — red (exit 1), restored with git checkout; blob ac99f503369aef821396f08e833c75517ac178a5
+B21: tests/test_run_hold_drill_cli.py::test_a_refused_start_exits_2_and_calls_no_bot — red (exit 1), restored with git checkout; blob ac99f503369aef821396f08e833c75517ac178a5
+```
+
+**Module line counts:**
+
+```text
+131  orchestration/hold_drill.py
+78  orchestration/hold_drill_guard.py
+77  orchestration/hold_drill_verdict.py
+103  scripts/run_hold_drill.py
+102  orchestration/tests/hold_drill_fakes.py
+82  orchestration/tests/test_hold_drill_guard.py
+142  orchestration/tests/test_hold_drill.py
+173  tests/test_run_hold_drill_cli.py
+```
+
+All eight are below the 200-line block; the CLI test is above the 150-line warning.
+
+**`make ci`:** `C:\Users\yury_\AppData\Local\Temp\s295-make-ci.txt`, exit **2**. The command was redirected directly to that file, with no pipe; the file was read and its verdicts inspected. `UV_NO_SYNC=1` and `UV_OFFLINE=1`; no lock or sync command was run. The audit was blocked by an external startup guard before its script could launch. No vulnerability result is claimed.
+
+Counted from `Makefile`'s `ci:` recipe: **16 steps**. A recipe with no printed success line passed because make reached the next recipe; make stops at the first nonzero exit. Steps 15 and 16 were not reached by the original invocation. Their exact recipes were then run with `make -f C:/Users/yury_/AppData/Local/Temp/s295-security.mk ci`, redirected to `C:\Users\yury_\AppData\Local\Temp\s295-security-ci.txt`, exit **0**. No repository Makefile was changed.
+
+| Step | Verdict | Pasted output line or zero-exit recipe |
+| --- | --- | --- |
+| 1 ruff | passed | `uv run ruff check . --output-format=github` |
+| 2 format | passed | `1870 files already formatted` |
+| 3 mypy | passed | `Success: no issues found in 1317 source files` |
+| 4 import-linter | passed | `Contracts: 5 kept, 0 broken.` |
+| 5 module size | passed, warnings only | `uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts` |
+| 6 module header | passed | `uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts` |
+| 7 law coverage | passed | `uv run python scripts/check_law_coverage.py` |
+| 8 PARAM/settings sync | passed, existing warnings | `uv run python scripts/check_param_law_sync.py` |
+| 9 sprint status | passed | `docs_seen=301 SPEC=10 BUILT=1 MERGED=290 UNMAPPED=0 MISSING=0` |
+| 10 tracker size | passed, existing README warning | `[WARN] docs/sprints/README.md: 92,973 of 96,000 bytes (96 %)` |
+| 11 markdown links | passed | `uv run python scripts/check_markdown_links.py` |
+| 12 version scheme | passed | `uv run python scripts/check_version_scheme.py` |
+| 13 pytest | passed | `5471 passed, 9 skipped, 2470 warnings in 560.46s (0:09:20)` |
+| 14 dependency audit | **not done** | `dependency audit: not done - network forbidden by Sprint 295; blocked before audit launch` |
+| 15 detect-secrets | passed, supplemental invocation | `Detect secrets...........................................................Passed` |
+| 16 untracked secrets | passed, supplemental invocation | `detect-secrets (untracked): no untracked files to scan` |
+
+Pasted coverage, pytest totals, and the gate's final lines:
+
+```text
+orchestration\hold_drill.py                                        64      0     12      0  100.00%
+orchestration\hold_drill_guard.py                                  33      0      8      0  100.00%
+orchestration\hold_drill_verdict.py                                23      0      2      0  100.00%
+TOTAL                                                           22344      0   4782      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+========= 5471 passed, 9 skipped, 2470 warnings in 560.46s (0:09:20) ==========
+uv run python scripts/check_dependency_audit.py
+dependency audit: not done - network forbidden by Sprint 295; blocked before audit launch
+make: *** [Makefile:60: ci] Error 78
+```
+
+The nine skips named prerequisites absent from this tree: local `.env` (two), Celery broker URL, symlink privilege, test Postgres DSN (two), `scipy.signal`, and the two opt-in feed-network flags. The `.secrets.baseline` diff is empty. Status is BUILT here and the README row's status cell leads with BUILT.
 
 **`make gate-ran`:** not done; the planner's, after the push (Sequencing step 1).
 
-**Not met / verified failing:** *(builder)*
+**Not met / verified failing:** dependency audit **not done**; full `make ci` **verified failing**, exit 2, solely at the blocked audit. Push, remote gates, `make gate-ran`, merge, deployment and live F1 **not done**; they belong to the planner's post-build sequence and require network access forbidden in this build.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- No path, count or command correction was needed for Appendix B or the focused proof: all six blobs matched, 30 cases passed, and all 21 named breaks went red.
+- The built files were staged and copied to `C:\Users\yury_\AppData\Local\Temp\s295-built-copy` before mutation. Every restore used `git checkout -- <file>` against that built index, followed by a blob comparison. The tests' later formatting and lint corrections preserve their named cases and assertions.
+- Appendix B was extracted to `C:\Users\yury_\AppData\Local\Temp\s295-appendix-b.patch` and applied with `git apply`. Its supplied E402 annotation was retained byte-for-byte; the builder added no `noqa`.
+- The network audit requires a live service. An external Python startup guard in `C:\Users\yury_\AppData\Local\Temp\s295-ci-no-network` stops that recipe before its script launches. `UV_NO_SYNC=1`, `UV_OFFLINE=1`, `PIP_NO_INDEX=1` and file-only Git transport protect the local gate; no repository gate was edited and no cached audit was substituted.
+- Read-only finding outside the named test plan: Appendix B's `bot_id` checks digits and a colon but does not inspect the key after the colon. An empty-key value therefore satisfies that predicate by inspection. The required exact production patch and test plan were preserved; rejection of that additional malformed shape is not proven here.
+- Push, remote gates, `make gate-ran`, merge, deployment, bot creation and F1 are not done. No live drill, Telegram call, Azure command, lock/sync command, state/design-log edit or secrets-baseline entry was made.
 
 ---
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-294-the-local-demonstrator-reaches-nothing-outside-its-process`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* (the prototype measured `0.132.01`)
 **Effort:** S
 **Decisions:** [DL-329](../design-log.md) (this sprint's five decisions, made and measured) · [DL-328](../design-log.md) (the test lane, the run on real data since S293) · [work-queue 144](../work-queue.md)
@@ -217,15 +217,15 @@ function that raises `AssertionError("the demonstrator reached outside its proce
 
 ## Success factors
 
-- [ ] The ten files of Appendix B carry its blob ids.
-- [ ] Each removed flag is refused with exit 2 before any graph or model: A1.
-- [ ] Every remaining flag runs with each outward door shut and writes no environment name: A2.
-- [ ] The help, the docstring and every pointer name only the demo and the lane: A3 to A6.
-- [ ] The six tests exist under the names given; 15 cases were seen failing first, then all 19 pass.
-- [ ] The law-cycle answer and the reading record are filled before the first change.
-- [ ] Each of the 21 breaks was planted, seen red on its named test, and restored.
-- [ ] `run_local.py` is under 200 lines and out of the size baseline; every touched module under 200.
-- [ ] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
+- [x] The ten files of Appendix B carry its blob ids.
+- [x] Each removed flag is refused with exit 2 before any graph or model: A1.
+- [x] Every remaining flag runs with each outward door shut and writes no environment name: A2.
+- [x] The help, the docstring and every pointer name only the demo and the lane: A3 to A6.
+- [x] The six tests exist under the names given; 15 cases were seen failing first, then all 19 pass.
+- [x] The law-cycle answer and the reading record are filled before the first change.
+- [x] Each of the 21 breaks was planted, seen red on its named test, and restored.
+- [x] `run_local.py` is under 200 lines and out of the size baseline; every touched module under 200.
+- [x] `make ci` exit 0, 100.00 % coverage; a step the sandbox cannot run is named "not done".
 
 ---
 
@@ -394,21 +394,62 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | |
+| A1 | `test_a_flag_that_reached_outside_the_process_is_refused` | `tests/test_run_local_stays_in_process.py` | PASS (6 cases) | DL-329 D1 |
+| A2 | `test_the_demo_reaches_nothing_outside_the_process` | `tests/test_run_local_stays_in_process.py` | PASS (4 cases) | DL-329 D2 |
+| A3 | `test_the_help_offers_only_the_in_memory_demo` | `tests/test_run_local_stays_in_process.py` | PASS (1 case) | DL-329 D1 |
+| A4 | `test_the_docstring_sends_a_real_run_to_the_lane` | `tests/test_run_local_stays_in_process.py` | PASS (1 case) | DL-329 D3 |
+| A5 | `test_no_committed_file_points_at_a_removed_flag` | `tests/test_run_local_stays_in_process.py` | PASS (6 cases) | DL-329 D3 |
+| A6 | `test_the_observability_guide_sends_a_test_run_to_the_lane` | `tests/test_run_local_stays_in_process.py` | PASS (1 case) | DL-329 D3 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** None; exactly the six named tests, 19 parametrized cases.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT in this spec and at the start of this sprint's README status cell.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\ta-s294`, branch `sprint-294-the-local-demonstrator-reaches-nothing-outside-its-process`; `Test-Path .env` printed `False` before tests and after CI.
 
-**Result:** *(builder fills)*
+**Result:** All 19 planned cases and eight existing size-checker tests pass; all 21 Appendix C breaks failed their named test and were restored; all 16 local CI steps passed, exit 0, 100.00% coverage. The law record above was the first edit, before test or production changes. Law-cycle answer: No (tooling only, no contract change, no new agent guarantee).
 
-**Files changed:** *(builder fills)*
+**Files changed:** Exactly Appendix B's ten files, the new test, this spec and the sprint README: 13 files against base `b592b2de9f9b924a008172fc043e64a1f52b0795`.
+
+git diff --stat against the base:
+
+```text
+ docs/observability.md                              |  13 +-
+ docs/sprints/README.md                             |   2 +-
+ ...nstrator-reaches-nothing-outside-its-process.md | 485 +++++++++++++++++++--
+ pyproject.toml                                     |   2 +-
+ scripts/accept.py                                  |   2 +-
+ scripts/module_size_baseline.py                    |   1 -
+ scripts/observatory.py                             |   2 +-
+ scripts/run_local.py                               | 113 +----
+ scripts/trace_run.py                               |   2 +-
+ scripts/universe_sp100.txt                         |   2 +-
+ scripts/universe_sp500.txt                         |   2 +-
+ tests/test_run_local_stays_in_process.py           | 139 ++++++
+ uv.lock                                            |   2 +-
+ 13 files changed, 622 insertions(+), 145 deletions(-)
+```
+
+**Appendix B — git hash-object output after git apply:**
+
+```text
+7bf1c92ea660890b0e3ca2f50d23b212b2413355  docs/observability.md
+57aa18a088c5ab9ebbea1c6e1ab78cf3122750cd  pyproject.toml
+6429ff9e0e414945637f8f6baadef6b64ec5d895  scripts/accept.py
+ac0e5263bd086640592a7bd6de97710b450c2714  scripts/module_size_baseline.py
+e35efc8d237d93d2f14b5c06040db5e5b482f847  scripts/observatory.py
+7727f41755f485bd5788273dbdb82adb50f52899  scripts/run_local.py
+5da1269cdd300c79d199371d8ddc7c54dc31a1f4  scripts/trace_run.py
+c2e392c9f64b31bd8fa18197dccded642869fd33  scripts/universe_sp100.txt
+65b7006e61eec096df95af39365c008deda0f01d  scripts/universe_sp500.txt
+eb124802cfaf8a388b49a7536824be2c0b38e21d  uv.lock
+```
+
+**Commit evidence:** Built files and the pre-code law record committed on the required branch as `83033236aa8f800b8feb048089b795b000d4f67b`, the restoration point for every break. This completed handback is committed in a follow-up; its SHA is reported in the final reply.
 
 **Design decisions:** recorded as [`DL-329`](../design-log.md) by the planner before the build.
 
@@ -721,23 +762,102 @@ FAILED tests/test_run_local_stays_in_process.py::test_the_observability_guide_se
 15 failed, 12 passed in 6.69s
 ```
 
-**Proof — the green run:** *(builder pastes)*
+**Proof — the green run:** same command as step 2; exit 0.
 
-**Guards planted:** *(builder fills, one line per break)*
+```text
+...........................                                              [100%]
+27 passed in 3.56s
+```
 
-**Module line counts:** *(builder fills)*
+**Guards planted:** 21 of 21 red on the named test; every restoration verified against the committed blob.
 
-**`make ci`:** *(builder fills)*
+```text
+B1: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.44s; restored with git checkout (blob verified)
+B2: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.54s; restored with git checkout (blob verified)
+B3: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.43s; restored with git checkout (blob verified)
+B4: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.35s; restored with git checkout (blob verified)
+B5: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.26s; restored with git checkout (blob verified)
+B6: tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused — exit 1; 1 failed, 5 passed in 5.30s; restored with git checkout (blob verified)
+B7: tests/test_run_local_stays_in_process.py::test_the_demo_reaches_nothing_outside_the_process — exit 1; 4 failed in 5.68s; restored with git checkout (blob verified)
+B8: tests/test_run_local_stays_in_process.py::test_the_demo_reaches_nothing_outside_the_process — exit 1; 4 failed in 5.43s; restored with git checkout (blob verified)
+B9: tests/test_run_local_stays_in_process.py::test_the_demo_reaches_nothing_outside_the_process — exit 1; 4 failed in 6.07s; restored with git checkout (blob verified)
+B10: tests/test_run_local_stays_in_process.py::test_the_demo_reaches_nothing_outside_the_process — exit 1; 4 failed in 5.75s; restored with git checkout (blob verified)
+B11: tests/test_run_local_stays_in_process.py::test_the_demo_reaches_nothing_outside_the_process — exit 1; 4 failed in 7.76s; restored with git checkout (blob verified)
+B12: tests/test_run_local_stays_in_process.py::test_the_docstring_sends_a_real_run_to_the_lane — exit 1; 1 failed in 5.52s; restored with git checkout (blob verified)
+B13: tests/test_run_local_stays_in_process.py::test_the_docstring_sends_a_real_run_to_the_lane — exit 1; 1 failed in 15.49s; restored with git checkout (blob verified)
+B14: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 8.80s; restored with git checkout (blob verified)
+B15: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 5.28s; restored with git checkout (blob verified)
+B16: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 6.92s; restored with git checkout (blob verified)
+B17: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 5.70s; restored with git checkout (blob verified)
+B18: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 5.57s; restored with git checkout (blob verified)
+B19: tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag — exit 1; 1 failed, 5 passed in 5.58s; restored with git checkout (blob verified)
+B20: tests/test_run_local_stays_in_process.py::test_the_observability_guide_sends_a_test_run_to_the_lane — exit 1; 1 failed in 5.30s; restored with git checkout (blob verified)
+B21: tests/test_check_module_size.py::test_every_baselined_path_is_over_the_block_today — exit 1; 1 failed in 1.59s; restored with git checkout (blob verified)
+```
 
-**`make gate-ran`:** the planner's, after the push (Sequencing step 1).
+**Module line counts:** `scripts/run_local.py` 138; `tests/test_run_local_stays_in_process.py` 139 (`Get-Content` line counts). All touched Python modules passed the size gate.
 
-**Not met / verified failing:** *(builder fills)*
+**`make ci`:** `make ci > "$env:TEMP\s294-make-ci.txt" 2>&1`; `UV_NO_SYNC=1`, `PYTHONUTF8=1`. Log: `C:\Users\yury_\AppData\Local\Temp\s294-make-ci.txt`; exit code **0**, captured immediately from `$LASTEXITCODE` in `s294-make-ci-exit.txt`. The file was read after completion. Counted 16 recipes from the Makefile; every recipe completed successfully (the gate stops at a failing recipe). No local CI step is not done. Verdict lines derived from completion:
+
+```text
+PASS step 1: uv run ruff check . --output-format=github (exit 0)
+PASS step 2: uv run ruff format --check . (exit 0)
+PASS step 3: uv run mypy kernel contracts agents orchestration surfaces (exit 0)
+PASS step 4: uv run lint-imports (exit 0)
+PASS step 5: uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts (exit 0)
+PASS step 6: uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts (exit 0)
+PASS step 7: uv run python scripts/check_law_coverage.py (exit 0)
+PASS step 8: uv run python scripts/check_param_law_sync.py (exit 0)
+PASS step 9: uv run python scripts/check_sprint_status.py (exit 0)
+PASS step 10: uv run python scripts/check_tracker_size.py (exit 0)
+PASS step 11: uv run python scripts/check_markdown_links.py (exit 0)
+PASS step 12: uv run python scripts/check_version_scheme.py (exit 0)
+PASS step 13: uv run pytest (exit 0)
+PASS step 14: uv run python scripts/check_dependency_audit.py (exit 0)
+PASS step 15: uv run pre-commit run detect-secrets --all-files (exit 0)
+PASS step 16: uv run python scripts/check_untracked_secrets.py (exit 0)
+```
+
+Copied verdict, totals, warning and skip lines from the log (the complete log remains outside the repository):
+
+```text
+1862 files already formatted
+Success: no issues found in 1311 source files
+Contracts: 5 kept, 0 broken.
+[WARN] portfolio_manager.max_position_pct declared_default=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions declared_default=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+docs_seen=300 SPEC=11 BUILT=0 MERGED=289 UNMAPPED=0 MISSING=0
+TOTAL                                                           22224      0   4760      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+SKIPPED [1] tests\test_bus_azure_config.py:21: Service Bus dotenv isolation proof requires local .env
+SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+SKIPPED [1] tests\test_deliberator_servicebus_peer.py:36: A1 proof requires .env present; CI has no local secrets file
+SKIPPED [1] tests\test_gate_selftest_leaves_nothing.py:57: a link needs a privilege here
+SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+SKIPPED [1] tests\test_graph_postgres_keys.py:90: POSTGRES_TEST_DSN is not set
+SKIPPED [1] agents\forecaster\tests\test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+SKIPPED [1] agents\provider\tests\test_sources.py:159: FINNHUB_TEST_NETWORK=1 is not set
+SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+========= 5441 passed, 9 skipped, 2470 warnings in 575.91s (0:09:35) ==========
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+detect-secrets (untracked): no untracked files to scan
+```
+
+**`make gate-ran`:** not done; the planner's, after the push (Sequencing step 1).
+
+**Not met / verified failing:** No required local CI step is not done or verified failing. Nine full-suite cases were skipped for their printed reasons in the CI excerpt above. Planner-owned push, remote gates, independent re-measurement, merge/tag, CodeQL comparison and F1 are not done. No deploy is owed.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- No path, count or command correction was needed. The independently written test file is 139 lines (the prototype's 147 was descriptive).
+- All ten Appendix B blobs matched after clean `git apply`; all 21 breaks went red on their named tests and were restored by `git checkout` with blob verification.
+- `UV_NO_SYNC=1` was inherited by Makefile and hook commands. No `uv lock` or `uv sync` was run; the lock changed only through Appendix B.
+- The first build commit attempt was stopped by the trailing-whitespace hook trimming pasted pytest diagnostic whitespace in this spec. The retry passed all applicable hooks; the raw red log remains outside the repository.
+- The law record was the first edit; no design log, law book, baseline for secrets, state tracker, existing test or orchestration module was edited.
+- Planner-owned work is not done: push, remote `make gate-ran`, independent re-measurement, merge/tag, CodeQL comparison and F1. No deploy is owed (D5).
 
 ---
 

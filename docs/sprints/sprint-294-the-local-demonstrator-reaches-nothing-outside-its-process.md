@@ -378,15 +378,15 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| Appendix B tooling, guide and version lines; new CLI tests | `docs/laws/conventions.md` (whole); `docs/laws/drift-register.md` (whole); DL-329 (whole); DL-328 Decided D1-D7 | conventions §7 test citations and §9 drift reporting; repository module-header rule; DL-329 D1-D5 | No. Read before this record, the first edit; tooling tests cite DL-329 D1-D3 and preserve the whole environment. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No: tooling only; no contract change and no new agent guarantee.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None. No agent law governs the demonstrator; conventions §7 applies to agent functional tests, while these tooling tests cite DL-329.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** None; DL-329 already settles every tooling decision.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** None; no agent clause changes or is claimed green.
 
 ---
 
@@ -412,7 +412,314 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Design decisions:** recorded as [`DL-329`](../design-log.md) by the planner before the build.
 
-**Proof — the red run first:** *(builder pastes)*
+**Proof — the red run first:** unchanged production files at base `b592b2de9f9b924a008172fc043e64a1f52b0795`; exit 1.
+
+```text
+FFFFFF....FFFFFFFFF........                                              [100%]
+================================== FAILURES ===================================
+_______ test_a_flag_that_reached_outside_the_process_is_refused[--real] _______
+tests\test_run_local_stays_in_process.py:59: in test_a_flag_that_reached_outside_the_process_is_refused
+    run_local.main()
+scripts\run_local.py:143: in main
+    load_dotenv()
+tests\test_run_local_stays_in_process.py:39: in reached_outside
+    raise AssertionError("the demonstrator reached outside its process")
+E   AssertionError: the demonstrator reached outside its process
+_______ test_a_flag_that_reached_outside_the_process_is_refused[--veto] _______
+tests\test_run_local_stays_in_process.py:59: in test_a_flag_that_reached_outside_the_process_is_refused
+    run_local.main()
+scripts\run_local.py:190: in main
+    deliberation_llm, deliberation_judge_llm = build_role_llms(True)
+                                               ^^^^^^^^^^^^^^^^^^^^^
+scripts\deliberate.py:158: in build_role_llms
+    _load_dotenv()
+scripts\deliberate.py:138: in _load_dotenv
+    load_dotenv(_ROOT / ".env")
+tests\test_run_local_stays_in_process.py:39: in reached_outside
+    raise AssertionError("the demonstrator reached outside its process")
+E   AssertionError: the demonstrator reached outside its process
+---------------------------- Captured stdout call -----------------------------
+MODE: demo  (in-memory + fake data)
+
+PRE-FLIGHT
+  [OK ] graph reachable          ok
+  [OK ] data source configured   FakeDataSource
+  [OK ] universe non-empty       2 tickers
+
+DISPATCHER
+  placed RunRequest run-request:local-1 (2 tickers)
+_____ test_a_flag_that_reached_outside_the_process_is_refused[--universe] _____
+tests\test_run_local_stays_in_process.py:58: in test_a_flag_that_reached_outside_the_process_is_refused
+    with pytest.raises(SystemExit) as raised:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SystemExit
+---------------------------- Captured stdout call -----------------------------
+MODE: demo  (in-memory + fake data)
+UNIVERSE: scripts/universe_sp100.txt  (99 tickers)
+
+PRE-FLIGHT
+  [OK ] graph reachable          ok
+  [OK ] data source configured   FakeDataSource
+  [OK ] universe non-empty       99 tickers
+
+DISPATCHER
+  placed RunRequest run-request:local-1 (99 tickers)
+
+CASCADE (one graph-pull pass per agent)
+  position_sync      woke: processed 1
+  provider           woke: processed 1
+  scanner            woke: processed 1
+  analyst            woke: processed 1
+  provider_barrier_history idle: processed 0
+  forecaster         woke: processed 1
+  forecaster_settlement woke: processed 1
+  portfolio_manager  woke: processed 1
+  execution          woke: processed 1
+  monitor            woke: processed 1
+  reporter           woke: processed 1
+
+GRAPH (provenance chain)
+  RunRequest     1
+  MarketData     1
+  ScanRun        1
+  AnalystRun     1
+  PMRun          1
+  ExecutionRun   1
+  MonitorRun     2
+  Snapshot       1
+____ test_a_flag_that_reached_outside_the_process_is_refused[--chunk-size] ____
+tests\test_run_local_stays_in_process.py:58: in test_a_flag_that_reached_outside_the_process_is_refused
+    with pytest.raises(SystemExit) as raised:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SystemExit
+---------------------------- Captured stdout call -----------------------------
+MODE: demo  (in-memory + fake data)
+INGEST: chunked  size=5  delay=60.0s
+
+PRE-FLIGHT
+  [OK ] graph reachable          ok
+  [OK ] data source configured   FakeDataSource
+  [OK ] universe non-empty       2 tickers
+
+DISPATCHER
+  placed RunRequest run-request:local-1 (2 tickers)
+
+CASCADE (one graph-pull pass per agent)
+  position_sync      woke: processed 1
+  provider           woke: processed 1
+  scanner            woke: processed 1
+  analyst            woke: processed 1
+  provider_barrier_history idle: processed 0
+  forecaster         woke: processed 1
+  forecaster_settlement woke: processed 1
+  portfolio_manager  woke: processed 1
+  execution          woke: processed 1
+  monitor            woke: processed 1
+  reporter           woke: processed 1
+
+GRAPH (provenance chain)
+  RunRequest     1
+  MarketData     1
+  ScanRun        1
+  AnalystRun     1
+  PMRun          1
+  ExecutionRun   1
+  MonitorRun     2
+  Snapshot       1
+___ test_a_flag_that_reached_outside_the_process_is_refused[--chunk-delay] ____
+tests\test_run_local_stays_in_process.py:58: in test_a_flag_that_reached_outside_the_process_is_refused
+    with pytest.raises(SystemExit) as raised:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SystemExit
+---------------------------- Captured stdout call -----------------------------
+MODE: demo  (in-memory + fake data)
+
+PRE-FLIGHT
+  [OK ] graph reachable          ok
+  [OK ] data source configured   FakeDataSource
+  [OK ] universe non-empty       2 tickers
+
+DISPATCHER
+  placed RunRequest run-request:local-1 (2 tickers)
+
+CASCADE (one graph-pull pass per agent)
+  position_sync      woke: processed 1
+  provider           woke: processed 1
+  scanner            woke: processed 1
+  analyst            woke: processed 1
+  provider_barrier_history idle: processed 0
+  forecaster         woke: processed 1
+  forecaster_settlement woke: processed 1
+  portfolio_manager  woke: processed 1
+  execution          woke: processed 1
+  monitor            woke: processed 1
+  reporter           woke: processed 1
+
+GRAPH (provenance chain)
+  RunRequest     1
+  MarketData     1
+  ScanRun        1
+  AnalystRun     1
+  PMRun          1
+  ExecutionRun   1
+  MonitorRun     2
+  Snapshot       1
+____ test_a_flag_that_reached_outside_the_process_is_refused[--ohlcv-only] ____
+tests\test_run_local_stays_in_process.py:58: in test_a_flag_that_reached_outside_the_process_is_refused
+    with pytest.raises(SystemExit) as raised:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SystemExit
+---------------------------- Captured stdout call -----------------------------
+MODE: demo  (in-memory + fake data)
+INGEST: OHLCV-only fast mode (enrichment skipped, DL-29)
+
+PRE-FLIGHT
+  [OK ] graph reachable          ok
+  [OK ] data source configured   FakeDataSource
+  [OK ] universe non-empty       2 tickers
+
+DISPATCHER
+  placed RunRequest run-request:local-1 (2 tickers)
+
+CASCADE (one graph-pull pass per agent)
+  position_sync      woke: processed 1
+  provider           woke: processed 1
+  scanner            woke: processed 1
+  analyst            woke: processed 1
+  provider_barrier_history idle: processed 0
+  forecaster         woke: processed 1
+  forecaster_settlement woke: processed 1
+  portfolio_manager  woke: processed 1
+  execution          woke: processed 1
+  monitor            woke: processed 1
+  reporter           woke: processed 1
+
+GRAPH (provenance chain)
+  RunRequest     1
+  MarketData     1
+  ScanRun        1
+  AnalystRun     1
+  PMRun          1
+  ExecutionRun   1
+  MonitorRun     2
+  Snapshot       1
+________________ test_the_help_offers_only_the_in_memory_demo _________________
+tests\test_run_local_stays_in_process.py:95: in test_the_help_offers_only_the_in_memory_demo
+    assert set(re.findall(r"--[a-z][a-z-]*", output)) == {
+E   AssertionError: assert {'--chunk-del...'--real', ...} == {'--help', '-...d', '--trace'}
+E
+E     Extra items in the left set:
+E     '--real'
+E     '--chunk-delay'
+E     '--veto'
+E     '--chunk-size'
+E     '--universe'
+E     '--ohlcv-only'
+E     Use -v to get more diff
+_______________ test_the_docstring_sends_a_real_run_to_the_lane _______________
+tests\test_run_local_stays_in_process.py:109: in test_the_docstring_sends_a_real_run_to_the_lane
+    assert "scripts/run_lane.py" in doc
+E   AssertionError: assert 'scripts/run_lane.py' in 'Local end-to-end demonstrator for the graph-pull pipeline.\n\nAgent: tooling\nRole: start the system in one process —...Postgres + real market data\n  PYTHONPATH=. python scripts/run_local.py --real --universe scripts/universe_sp100.txt\n'
+_____ test_no_committed_file_points_at_a_removed_flag[scripts/accept.py] ______
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   assert 'run_local.py --real' not in '"""Layer-3 ...    main()\n'
+E
+E     'run_local.py --real' is contained here:
+E        after a `run_local.py --real` run.
+E       External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout; exit code.
+E
+E       Run it:
+E         PYTHONPATH=. python scripts/accept.py --run-id <id>...
+E
+E     ...Full output truncated (31 lines hidden), use '-vv' to show
+___ test_no_committed_file_points_at_a_removed_flag[scripts/observatory.py] ___
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   assert 'run_local.py --real' not in '"""Pipeline...    main()\n'
+E
+E     'run_local.py --real' is contained here:
+E       se after `run_local.py --real` has written the provenance chain.
+E     ?           +++++++++++++++++++
+E       External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout.
+E
+E       Run it:...
+E
+E     ...Full output truncated (33 lines hidden), use '-vv' to show
+____ test_no_committed_file_points_at_a_removed_flag[scripts/trace_run.py] ____
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   assert 'run_local.py --real' not in '"""Post-run...    main()\n'
+E
+E     'run_local.py --real' is contained here:
+E       se after `run_local.py --real` has written the provenance chain.
+E     ?           +++++++++++++++++++
+E       External I/O: PostgreSQL (POSTGRES_DSN from .env).
+E
+E       Run it:...
+E
+E     ...Full output truncated (29 lines hidden), use '-vv' to show
+_ test_no_committed_file_points_at_a_removed_flag[scripts/universe_sp100.txt] _
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   AssertionError: assert 'run_local.py --real' not in '# S&P 100 l...\nWMT\nXOM\n'
+E
+E     'run_local.py --real' is contained here:
+E       : scripts/run_local.py --real --universe scripts/universe_sp100.txt
+E     ?           +++++++++++++++++++
+E       # Note (DL-17): BK dropped — Alpaca's free `iex` feed had no recent BK bars
+E       #       (latest 2026-05-20, ~5 weeks stale), which tainted the whole batch;
+E       #       the `sip` feed (fuller coverage) is 403 on the free plan. 99 tickers....
+E
+E     ...Full output truncated (99 lines hidden), use '-vv' to show
+_ test_no_committed_file_points_at_a_removed_flag[scripts/universe_sp500.txt] _
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   AssertionError: assert 'run_local.py --universe' not in '# S&P-500 u...nZBRA\nZTS\n'
+E
+E     'run_local.py --universe' is contained here:
+E       . Read by run_local.py --universe.
+E       A
+E       AAPL
+E       ABBV
+E       ABNB...
+E
+E     ...Full output truncated (499 lines hidden), use '-vv' to show
+___ test_no_committed_file_points_at_a_removed_flag[docs/observability.md] ____
+tests\test_run_local_stays_in_process.py:132: in test_no_committed_file_points_at_a_removed_flag
+    assert f"run_local.py {argv[0]}" not in text
+E   AssertionError: assert 'run_local.py --real' not in '# Observabi...breakdown)\n'
+E
+E     'run_local.py --real' is contained here:
+E       n scripts/run_local.py --real --observe`
+E         (live Aura + Tiingo; `--observe` alone is the in-memory demo, no creds). *Validated live against the free
+E         Aura (`c3ce91d0`) on 2026-06-25:* a 3-ticker run pulled 41 real Tiingo bars/name, opened 1 position
+E         (`AAPL qty=34 est=$293.32`), and reported `OBSERVATORY OK - all invariants hold`.
+E       - **Monitor a persisted run after the fact:** `PYTHONPATH=. python scripts/observatory.py --run-id <id>`...
+E
+E     ...Full output truncated (67 lines hidden), use '-vv' to show
+__________ test_the_observability_guide_sends_a_test_run_to_the_lane __________
+tests\test_run_local_stays_in_process.py:138: in test_the_observability_guide_sends_a_test_run_to_the_lane
+    assert "scripts/run_lane.py --tickers" in text
+E   AssertionError: assert 'scripts/run_lane.py --tickers' in '# Observability & Historical Data\n\n**Principle:** the system is loud *inward* and quiet *outward*. Internally it\nc...lts by agent — same metric broken out by `agent` label\n7–10. (additional panels for throughput and agent breakdown)\n'
+=========================== short test summary info ===========================
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--real]
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--veto]
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--universe]
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--chunk-size]
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--chunk-delay]
+FAILED tests/test_run_local_stays_in_process.py::test_a_flag_that_reached_outside_the_process_is_refused[--ohlcv-only]
+FAILED tests/test_run_local_stays_in_process.py::test_the_help_offers_only_the_in_memory_demo
+FAILED tests/test_run_local_stays_in_process.py::test_the_docstring_sends_a_real_run_to_the_lane
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[scripts/accept.py]
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[scripts/observatory.py]
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[scripts/trace_run.py]
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[scripts/universe_sp100.txt]
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[scripts/universe_sp500.txt]
+FAILED tests/test_run_local_stays_in_process.py::test_no_committed_file_points_at_a_removed_flag[docs/observability.md]
+FAILED tests/test_run_local_stays_in_process.py::test_the_observability_guide_sends_a_test_run_to_the_lane
+15 failed, 12 passed in 6.69s
+```
 
 **Proof — the green run:** *(builder pastes)*
 

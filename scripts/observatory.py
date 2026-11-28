@@ -3,7 +3,7 @@
 Agent: tooling
 Role: load the graph store from .env and print the observatory for a given run_id —
       per-stage I/O plus floor/ceiling/required WARNs against the locked trading
-      baseline. Use after `run_local.py --real` has written the provenance chain.
+      baseline. Use on a fleet run (`--run-id sched-YYYY-MM-DD`).
 External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout.
 
 Run it:

@@ -4,7 +4,7 @@ Agent: tooling
 Role: load the graph store from .env and run the acceptance gate for a given
       run_id — every per-stage invariant + the cross-stage conservation
       boundaries. Exits non-zero on FAIL, so it can gate a deploy.
-      Use after a `run_local.py --real` run.
+      Use on a fleet run (`--run-id sched-YYYY-MM-DD`); the test lane prints its own.
 External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout; exit code.
 
 Run it:

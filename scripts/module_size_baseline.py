@@ -28,7 +28,6 @@ LEGACY_MAX_LINES: dict[str, int] = {
     "scripts/deliberation_replay_batch.py": 240,
     "scripts/evaluate_return_model.py": 288,
     "scripts/gate_selftest_cases.py": 346,
-    "scripts/run_local.py": 227,
     "scripts/sb_sas_plan.py": 212,
     "scripts/servicebus_request.py": 216,
     "scripts/vocabulary_resolution.py": 268,

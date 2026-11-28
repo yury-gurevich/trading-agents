@@ -1,6 +1,6 @@
 # S&P-500 universe (503 tickers, incl. dual share classes).
 # Source: datasets/s-and-p-500-companies (GitHub), fetched 2026-06-25.
-# Refresh: re-fetch the same CSV. Read by run_local.py --universe.
+# Refresh: re-fetch the same CSV. No code reads it since DL-329 removed its one reader.
 A
 AAPL
 ABBV

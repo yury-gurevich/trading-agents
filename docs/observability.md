@@ -49,12 +49,13 @@ floor/ceiling/required invariants flagged — use the **pipeline observatory** (
 substrate + `orchestration/packs/trading_observatory.py` trading pack; DL-27). It applies the deliberation
 firewall pattern (baseline + floor/ceiling) to the data pipeline.
 
-- **Run a test + monitor it in one command:** `PYTHONPATH=. python scripts/run_local.py --real --observe`
-  (live Aura + Tiingo; `--observe` alone is the in-memory demo, no creds). *Validated live against the free
-  Aura (`c3ce91d0`) on 2026-06-25:* a 3-ticker run pulled 41 real Tiingo bars/name, opened 1 position
-  (`AAPL qty=34 est=$293.32`), and reported `OBSERVATORY OK - all invariants hold`.
-- **Monitor a persisted run after the fact:** `PYTHONPATH=. python scripts/observatory.py --run-id <id>`
-  (reads the run back from Neo4j).
+- **Run a test on real data:** `python scripts/run_lane.py --tickers AAPL,MSFT` with the main checkout's
+  venv, from the main checkout: the test lane (DL-328), on the test paper account and a graph of its own.
+  It prints each round and the fleet's acceptance verdict, and refuses a start from 22:00 to 24:00 UTC.
+- **See the observatory with no credentials:** `PYTHONPATH=. python scripts/run_local.py --observe` runs
+  the in-memory demo on fake data, with no network, and prints it (DL-329).
+- **Monitor a persisted fleet run after the fact:** `PYTHONPATH=. python scripts/observatory.py --run-id <id>`
+  (reads the run back from the graph `POSTGRES_DSN` names: the live one, from the main checkout).
 
 It prints the full `provider → reporter` spine, each stage as `[stage]  <- (trigger)` with its output
 artifacts, and flags:

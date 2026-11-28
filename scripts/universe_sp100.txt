@@ -1,6 +1,6 @@
 # S&P 100 large-cap universe — liquid US tickers for populate/load runs.
 # Format: one ticker per line; blank lines and #-comments ignored.
-# Used by: scripts/run_local.py --real --universe scripts/universe_sp100.txt
+# Used by: the `sp500` universe (agents/scanner/universe.py): the dispatcher, scripts/run_lane.py.
 # Note (DL-17): BK dropped — Alpaca's free `iex` feed had no recent BK bars
 #       (latest 2026-05-20, ~5 weeks stale), which tainted the whole batch;
 #       the `sip` feed (fuller coverage) is 403 on the free plan. 99 tickers.

@@ -2,7 +2,7 @@
 
 Agent: tooling
 Role: load the graph store from .env and print the batch trace for a given run_id.
-      Intended for use after `run_local.py --real` has written the provenance chain.
+      Use on a fleet run (`--run-id sched-YYYY-MM-DD`).
 External I/O: PostgreSQL (POSTGRES_DSN from .env).
 
 Run it:

@@ -527,7 +527,7 @@ Recorded as the first worktree edit, before any test or production change, on br
  12 files changed, 1101 insertions(+), 32 deletions(-)
 ```
 
-**Commit:** not done yet; the build and completed evidence will be committed on the named sprint branch, then the build SHA recorded here in the final documentation commit.
+**Commit:** build and proof committed as `00ca3a4f4a0d8a7b59e8e5427bae16f62bc32e09` on `sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back`. All applicable commit hooks passed, including mypy, markdownlint, detect-secrets and import-linter. A following documentation-only commit records this build SHA; its final tip is reported in the chat handback.
 
 **Design decisions:** recorded as [`DL-330`](../design-log.md) by the planner before the build.
 

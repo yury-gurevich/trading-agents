@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-294-the-local-demonstrator-reaches-nothing-outside-its-process`
-**Status:** BUILT
-**Version:** *next available PATCH at merge* (the prototype measured `0.132.01`)
+**Status:** MERGED 2026-11-28 — `0.132.01`, fast-forwarded to `054d1141`, tag `v0.132.01`, GATE PROVEN; F1 passed (05:24 UTC); no deploy
+**Version:** `0.132.01` (PATCH)
 **Effort:** S
 **Decisions:** [DL-329](../design-log.md) (this sprint's five decisions, made and measured) · [DL-328](../design-log.md) (the test lane, the run on real data since S293) · [work-queue 144](../work-queue.md)
 
@@ -847,6 +847,35 @@ detect-secrets (untracked): no untracked files to scan
 **`make gate-ran`:** not done; the planner's, after the push (Sequencing step 1).
 
 **Not met / verified failing:** No required local CI step is not done or verified failing. Nine full-suite cases were skipped for their printed reasons in the CI excerpt above. Planner-owned push, remote gates, independent re-measurement, merge/tag, CodeQL comparison and F1 are not done. No deploy is owed.
+
+---
+
+## Planner review and F1 — 2026-11-28
+
+**Review of the handback (`054d1141`, built by Codex).** The ten production blobs equal Appendix B's;
+the diff touches exactly those ten paths, the new test, this spec and the sprint README; no
+`.secrets.baseline` entry. The planner's test in place of the builder's, with the size checker's
+tests: 27 passed. The 21 breaks of Appendix C against the builder's test: 21 of 21 red, the tree
+clean after (kit `wq144-2026-11-28/breaks_builder_054d1141.txt`). The builder's own `make ci` log,
+read: exit 0, the dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`
+(its sandbox reached the network this time), 5,441 passed, 9 skipped, 100.00 %. The remote gate:
+**GATE PROVEN `054d1141`** (CI, CodeQL, Security Findings, attempt 1), run from `../ta-s294` with
+that `HEAD`. CodeQL on the branch: 138 open alerts, the same rule-and-path set as the S293 baseline,
+0 errors (kit `codeql_open_sprint294.txt`, the new baseline). `main` fast-forwarded to `054d1141`,
+tag `v0.132.01`.
+
+**F1 (the planner's, main checkout with `.env`, each probe refusing every socket lookup and connect,
+05:24 UTC; kit `wq144-2026-11-28/f1*_main_054d1141.txt`).**
+
+1. `probe_real_stops_at_graph.py`: `run_local.py: error: unrecognized arguments: --real`, exit 2;
+   the graph factory is never reached (before the merge it was reached once, with `.env`'s
+   `POSTGRES_DSN`, kit `probe_real.txt`).
+2. `probe_demo_network.py --trace --observe`: 0 `load_dotenv` calls, 0 names added
+   (`POSTGRES_DSN` not in the environment), 0 network attempts; RunRequest 1, Snapshot 1; exit 0.
+3. `live_local_runs.py .env`: the live graph's 122 RunRequests, 0 with a `local-` key, byte-identical
+   to the reading taken before the build (kit `live_local_runs.txt`).
+
+Nothing to tear down. Work-queue 144 closed. No deploy (DL-329 D5).
 
 ---
 

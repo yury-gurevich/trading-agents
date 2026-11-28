@@ -12,6 +12,32 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-332 - a held fire stays on the operator's bot until shortly before the next fire, and hears, acknowledges and acts on a press at once - status: MEASURED and DECIDED (planner, delegated, 2026-11-28); the operator, 2026-11-28: *"work-queue 146 for Codex"*; specced as [S296](sprints/sprint-296-a-held-run-hears-the-operators-press-at-once.md); work-queue 146; fixes what DL-331 measured
+
+**Why.** A press on a held run's notice lives about 2.5 to 4 minutes unread and can be acknowledged for about 15 seconds (DL-331); the dispatcher reads answers once per ten-minute fire. So most presses are lost, and every one it reads writes a Fault while the operator sees no *Answer recorded*.
+
+**Measured, 2026-11-28 (kit OneDrive `wq120-2026-11-28/`).**
+
+- *Telegram's long poll* (`probe_long_poll.py`, the test bot, nothing sent): `getUpdates` with `timeout` 8 on an empty queue returned empty after 8.9 s. Two polls that overlap: **the older one gets HTTP 409** (`Conflict: terminated by other getUpdates request`) and the newer one proceeds, both for a short poll after a long one and for two long polls.
+- *The job* (read-only `az`): cron `*/10 22-23 * * 1-5`, replica timeout 1800 s, parallelism 1, retry 0; its last 100 executions (2026-11-17 to 11-27) all `Succeeded`, each starting at its tick and taking 35 to 61 s (median 37 s). None has ever run into the next tick.
+- *The fire* (read whole: `scheduled_dispatch_human.py`, `scheduled_dispatch_polling.py`, `scheduled_dispatch_actions.py`, `scripts/dispatch_scheduled_run.py`): a fire polls answers once, only when a hold is active; `poll_answers` records, acknowledges and confirms in one pass; `is_action_time` floors the clock to the ten-minute tick, so a fire at 23:19 still counts as the 23:10 tick.
+- *The graph connection* (read: `kernel/graph_postgres.py`): a dropped connection is reconnected once per statement (written for Neon idling out long-lived surfaces), so a fire that holds its connection for minutes recovers on its next query.
+- *An image guard* (`tests/test_dispatch_scheduled_run.py::test_dispatcher_image_copies_everything_its_entrypoint_imports`) turned red on the prototype until `orchestration/Dockerfile` copied the new module: the fix reaches the fleet only with a dispatcher image.
+
+**Decided.**
+
+- **D1 — where: a listener the job calls after a held fire.** `orchestration/hold_listener.py::listen_while_held`, called by `scripts/dispatch_scheduled_run.py` when the fire's result is `held`, before the graph closes. *Ruled out:* firing every minute while a hold is open (an acknowledgement up to a minute late is still refused, so a Fault per press stays; ten times the fires and sensor reads a night); a webhook on a fleet app's ingress (a public endpoint and a secret, and the master would write answers it does not own).
+- **D2 — how long: until 30 s before the next tick, in long polls of at most 25 s.** The next fire's first poll would end an overlapping one with 409; 30 s off the tick keeps them apart, and a fire starts at its tick. At most four waits for each one the time allows, so waits that return at once (a flood of updates, a stopped clock) cannot hold a fire. A held fire then runs about 9.5 minutes instead of 37 s; the job's replica timeout is 30 minutes.
+- **D3 — on a press: record, acknowledge, confirm, then act, by 23:10.** The listener calls the unchanged `poll_answers` (record, acknowledge, confirm) at once, so the acknowledgement lands within seconds; while the time is at or before `_ACT_BY` (23:10:00 UTC, the time the notice names) it acts through the unchanged `dispatch_with_human_answer`, so a `run_now` starts the run in that fire; after 23:10:00 it records only, as the notice says. It stops at the run's first effective answer.
+- **D4 — an update that is not an answer is confirmed after the wait that returned it.** A long poll returns at once while any update waits, so typed text would make every wait return at once. An answer is confirmed only by `poll_answers`, after it is recorded (`DSP-IN-04`, unchanged).
+- **D5 — a failed wait is one Fault and ends the listening.** Through the existing `fault_safe` (`DSP-STA-02`); the fire's result stands and the next fire polls and listens again.
+- **D6 — the fire prints a second line**: `listened <s> s: <outcome>`; `DSP-OBS-04` amended.
+- **D7 — the drill listens the same way.** `run_round` calls the listener after its notice, on a planted clock that starts at the first placing fire and moves in real time; `--poll-seconds` and `--wait-minutes` leave (they imitated the late polling this removes). Its F1 is the live proof.
+- **D8 — law cycle, dispatcher v1.9.** New `DSP-TRG-05` (the listening) and `DSP-PERF-02` (a press acknowledged within seconds); `DSP-STA-02` (wait failures), `DSP-OBS-04` (the second line) and `CAP` (`wait_answer`) amended; 47 / 50 → 49 / 52. PATCH `0.133.01`: it fixes a defect.
+- **D9 — deploy.** The dispatcher image gains a module, so the fleet runs the fix only after a dispatcher retag: the operator's word, after F1. On a held fire the container sensor now runs after the listening, up to 9.5 minutes later; its reads overlap by `container_sensor_overlap_minutes`, so no event is lost.
+
+**Proof, on the prototype (`../ta-s296-proto`, local `proto-s296` `feb6534b`):** red 3 errors during collection, green 31 passed; `make ci` exit 0 (5,484 passed, 8 skipped, 100.00 %); 19 of 19 breaks red. Detail in S296's *Closeout of the planner's prototype*.
+
 ## DL-331 - a press on a Telegram button leaves the bot's queue unfetched within about four minutes, and its acknowledgement is refused after about fifteen seconds; the fleet reads answers every ten minutes - status: MEASURED, fix OPEN (planner, 2026-11-28, S295's F1 with the operator at their phone); work-queue 146; corrects DL-330's "stays up to 24 hours"
 
 **Why.** S295's drill ran the dispatcher's hold path for real on a test bot (work-queue 120 (a)). At a 5-second poll every press was recorded and acted on; at the 5-minute poll of its part (b), as late as the fleet's ten-minute fires can be, presses went missing.

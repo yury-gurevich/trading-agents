@@ -549,7 +549,7 @@ final commit `feb6534b`. Kit OneDrive `wq120-2026-11-28/`.
 - **Two existing guards went red on the way, and their fixes are part of the change:** the dispatcher
   image's module list (`orchestration/Dockerfile`) and the capability guard (a listening fire uses
   `wait_answer`).
-- **Dry run** from the committed spec in `../ta-s296`: DRY_RUN_PENDING.
+- **Dry run** from the committed spec (`e472a1d8`) in `../ta-s296`, the planner's seven test files in place: red 3 errors during collection; Appendix B extracted and applied with `git apply`, **0 of 16 blobs differ** (the pre-commit hook had stripped the blank context lines' single space; `git apply` took them); green 31 passed; the tree restored clean (kit `dry_run_296.txt`).
 
 ---
 

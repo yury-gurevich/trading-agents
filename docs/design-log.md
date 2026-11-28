@@ -12,6 +12,43 @@ and is marked CLOSED here.
 
 **Older entries are in [design-log-archive/](design-log-archive/INDEX.md)** (tracker trim, [housekeeping charter](../ops/departments/housekeeping/charter.md), OPS-TRIM): this file keeps the newest forty entries and every older entry that the work queue or STATE links.
 
+## DL-330 - the hold drill: the dispatcher's own fire holds a past session on an in-memory graph and asks the operator through a test bot of their own - status: MEASURED and DECIDED (planner, delegated, 2026-11-28); the operator, 2026-11-28: *"measure it, build the prototype and write the spec for Codex"*; specced as [S295](sprints/sprint-295-a-held-run-reaches-the-operator-and-the-answer-comes-back.md); work-queue 120 (a)
+
+**Why.** The one path where the fleet asks the operator, a held run's Telegram notice with *Run now* and *Skip today* read back at the next fire, has never run for real: the live graph holds 0 `RunHold` and 0 `RunHoldAnswer`, though 8 of its 327 `FleetPreflight` facts failed (none was the newest at a placing fire). Its first real run would be on a night when something is wrong.
+
+**Measured, 2026-11-28 (kit OneDrive `wq120-2026-11-28/`).**
+
+- *The fire, in memory* (`measure_fire.py`: the unchanged `dispatch_with_human_answer`, the real `TelegramClient` on a scripted Bot API): a failing preflight at 22:25 UTC and a fire at 22:30:05 hold the run and send one notice with the buttons `run_now:<run id>` and `skip_today:<run id>`; a second fire sends no second notice; after a press the next fire records the answer (`source` telegram, its update id), acknowledges it (`Answer recorded`), confirms the cursor (`offset` = the update id + 1) and places the run (99 tickers) or skips it (`reason=operator`); 0 Faults.
+- *A press on the fleet's bot cannot be fenced off*: the run id is `sched-<as_of>` (`scheduled_dispatch.py::scheduled_run_id`), and `poll_answers` records every legal press whatever run it names (`scheduled_dispatch_polling.py`). A press the drill leaves unread stays in the bot's queue up to 24 hours (Bot API, `getUpdates`), and the fleet's next hold records it into the live graph; for the same run id, `effective_answer` acts on it.
+- *The fleet's bot* (read-only `getMe`, `getWebhookInfo`; no value printed): no webhook, 0 pending updates. `.env` holds `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` only; the chat id is positive, a private chat, so a second bot reaches the same person once they press Start in it.
+- *The lane's graph cannot take a drill*: `GraphStore` has no delete, and a `run_now` answer places `run-request:sched-<date>`, a RunRequest that is not the lane's, after which `run_lane.py` refuses the branch (DL-328).
+- *No brief fires in a drill*: within a fire the brief runs before the act (`scheduled_dispatch_human.py`), so no RunRequest exists when it runs, and the drill fires no more after the act (`daily_brief.py::attempt_brief` returns early without one).
+- *The only degradable agent is `operator`* (`orchestration/packs/trading_run_postures.json`), so a planted failure on `execution` reads `failing`; the live graph's failures read like `transient:execution:alpaca-broker:TimeoutError` (read-only).
+- *A refused notice's Fault says `telegram_message_id_missing`*: `send_hold_notice` overwrites the transport's `telegram_response_invalid` (`orchestration/telegram_client.py`), so the Fault says neither that Telegram refused the message nor why. Found by the prototype's test; work-queue 145.
+- *The acknowledgement's age limit* *[ASSUMED, not measured]*: the Bot API documents none; third-party sources say about 10 to 15 seconds. The fleet acknowledges at its next ten-minute fire, so a real press probably writes a Fault each time; F1 (b) measures it.
+- *A prototype* (`proto-s295`, never pushed): the new tests fail to collect on the unchanged tree (3 errors) and 30 pass after; 21 planted breaks red; `make ci` exit 0.
+
+**Decided (technical, delegated).**
+
+1. **D1 A test bot of the operator's own.** The drill reads `TELEGRAM_TEST_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from the env file (read, never loaded) and refuses a missing value, a value that is not a bot token (digits, a colon, a key), and a test bot whose id (the digits before the colon) is the fleet's `TELEGRAM_BOT_TOKEN`'s, from the file or the environment. The token never appears in a repr or a printed line; the bot id does.
+2. **D2 An in-memory graph, nothing else.** No Postgres, no feed, no broker, no model; nothing to tear down but the two notices left in the chat.
+3. **D3 The dispatcher's own fire, unchanged.** Each round holds one of the two NYSE sessions before today (the calendar's own; past, so no notice can pass for tonight's run): a failing `FleetPreflight` planted at 22:25 UTC on that date (`transient:execution:alpaca-broker:hold-drill`), the first fire at 22:30:05 and every later fire at 22:40:05, all inside the placing window. A plain message before each notice says it is a drill and names the button to press.
+4. **D4 Two rounds, each judged.** *Run now* on the newer session, then *Skip today*. A round passes when the notice was sent, the answer recorded from Telegram is the one asked, the dispatcher placed (one RunRequest) or skipped (`operator`, none), and no answer for the run is left unconfirmed. Faults are printed, not judged. A press already waiting before the notice is confirmed away first. With no press the round fails after the wait (1 to 30 minutes, default 10); the poll is 1 to 600 seconds, default 5.
+5. **D5 Refusals and exits.** Refused inside 22:00 to 24:00 UTC (the fleet's window: a drill notice there could be read as the fleet's own hold). Exit 0 when both rounds pass, 1 when one does not, 2 when refused. No name of the env file enters the process environment.
+6. **D6 A new capability: MINOR**, both version lines carried in the spec; `uv lock` is not run. No deploy: nothing runs in Azure.
+
+**Ruled out.**
+
+- *The fleet's bot.* A press left unread reaches the fleet's next hold (above), and the lane's rule is that no fleet secret is used (DL-328).
+- *The lane's Neon graph.* A *Run now* would leave a RunRequest the lane then refuses, removable only by raw SQL; the Postgres round trip of a hold's properties is not what is unproven.
+- *Driving `TelegramClient` directly.* It would prove the client, not the path: hold, notice, poll, record, acknowledge, confirm, act.
+- *The real clock.* The placing window, 22:30 to 23:10 UTC, is inside the fleet's own.
+- *Future sessions.* A notice naming one could pass for a real hold.
+- *A drill wording in the notice itself.* That changes the fleet's notice; the drill proves the text the fleet sends, and its own message before the notice says it is a drill.
+- *The fleet's ten-minute cadence by default.* The operator would wait up to ten minutes a round; `--poll-seconds 300` is the faithful form, for F1 (b).
+
+**Named, not done.** The refused-notice Fault text (work-queue 145). What a late acknowledgement does in the fleet waits on F1 (b). Work-queue 120 (b), commands typed from the phone, stays open.
+
 ## DL-329 - the local demonstrator reaches nothing outside its own process: its live and paid flags leave, and a run on real data is the lane's - status: MEASURED and DECIDED (planner, delegated, 2026-11-28); the operator, 2026-11-28: *"write up 144 as S294 for Codex"*; specced as [S294](sprints/sprint-294-the-local-demonstrator-reaches-nothing-outside-its-process.md); work-queue 144
 
 **Why.** `scripts/run_local.py --real` builds its graph from `POSTGRES_DSN` after `load_dotenv()`: from the main checkout, the one tree with `.env`, it places a `local-1` RunRequest on the live graph, which an awake fleet would pick up. `docs/observability.md` gives it as the one-command test run. Since S293 the test lane is the run on real data that cannot reach the fleet (DL-328), so the demonstrator's live mode has no job left.
